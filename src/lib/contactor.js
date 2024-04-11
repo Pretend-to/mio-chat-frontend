@@ -1,6 +1,3 @@
-/**
- * @author <Mio> <mio@krumio.com>
- */
 import Onebot from './adapter/onebot.js';
 import Openai from './adapter/openai.js';
 import EventEmmiter from './event.js';
