@@ -21,8 +21,8 @@ jobs:
 
       - name: Set up Git
         run: |
-          git config --global user.email "you@example.com"
-          git config --global user.name "Your Name"
+          git config --global user.email "mio@krumio.com"
+          git config --global user.name "Github Actions"
 
       - name: Update LastUpdate
         if: steps.check_commit.outcome == 'success'
@@ -32,7 +32,7 @@ jobs:
           for file in $(find . -name "*.js"); do
             first_commit_info=$(git log --diff-filter=A --follow --format="%an <%ae>" -- $file | tail -1)
             if ! grep -q '\/\*\*' $file; then
-              echo -e "/**\n * @author ${first_commit_info}\n * @lastEditor ${first_commit_info}\n * @lastEditTime ${current_time}\n */\n$(cat $file)" > $file
+              echo -e "/**\n * @author ${first_commit_info}\n * @lastEditor ${first_commit_info}\n * @lastEditTime ${current_time}\n */\n\n$(cat $file)" > $file
             else
               sed -i "/^\/\*\*$/,/^ \*\/$/ { s/\(@lastEditTime \).*/\1${current_time}/; s/\(@lastEditor \).*/\1${first_commit_info}/; }" $file
             fi
