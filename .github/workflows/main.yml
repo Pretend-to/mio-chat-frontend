@@ -20,7 +20,7 @@ jobs:
           fi
 
       - name: Update LastUpdate
-        if: steps.check_commit.outcome != 'success'
+        if: steps.check_commit.outcome == 'success'
         run: |
           current_time=$(date "+%Y-%m-%d %H:%M:%S")
 
