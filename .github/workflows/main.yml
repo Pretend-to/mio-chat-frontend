@@ -21,7 +21,7 @@ jobs:
           last_commit_hash=$(git log -1 --pretty=format:"%H")
           commit_message=$(git log -1 --pretty=%B)
 
-          changed_files=$(git diff-tree --no-commit-id --name-only -r $last_commit_hash | grep '\.js')
+          changed_files=$(git show --name-only $last_commit_hash | grep '\.js')
 
           for file in $changed_files; do
             first_commit_info=$(git log --diff-filter=A --follow --format="%an <%ae>" -- $file | tail -1)
