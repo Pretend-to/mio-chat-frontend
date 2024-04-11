@@ -1,7 +1,7 @@
 /**
  * @author Mio-FCIP <1099834705@qq.com>
  * @lastEditor Mio-FCIP <1099834705@qq.com>
- * @lastEditTime 2024-04-11 11:39:45
+ * @lastEditTime 2024-04-11 11:49:12
  */
 import Onebot from './adapter/onebot.js';
 import Openai from './adapter/openai.js';
