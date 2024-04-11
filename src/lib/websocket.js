@@ -4,22 +4,24 @@
  * @lastEditTime 2024-04-11 12:42:01
  */
 
+import EventEmitter from "./event.js";
+
 /**
  * websocket连接类
  */
-export default class Socket {
+export default class Socket extends EventEmitter {
     /**
      * @param {String} url websocket地址
      * @param {String} id 机器人QQ号
      * @param {String} code 机器人QQ登录令牌
      */
     constructor(url, id, code) {
+        super();
         this.available = null;
         this.url = url;
         this.socket = null;
         this.code = code;
         this.id = id;
-        this.connect()
     }
 
     /**
@@ -30,6 +32,7 @@ export default class Socket {
         this.socket.onopen = () => {
             this.available = true;
             console.log('WebSocket连接成功');
+            this.emit('open');
         };
         this.socket.onclose = () => {
             this.available = false;
