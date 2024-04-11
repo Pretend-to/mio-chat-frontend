@@ -14,8 +14,8 @@ jobs:
         id: check_commit
         run: |
           commit_message=$(git log --format=%B -n 1 $GITHUB_SHA)
-          if [[ $commit_message == *"update-lastupdate"* ]]; then
-            echo "Skipping update operation as commit message contains 'update-lastupdate'."
+          if [[ $commit_message == *"🤖:"* ]]; then
+            echo "Skipping update operation as commit message contains '🤖:'."
             exit 0
           fi
 
@@ -39,5 +39,5 @@ jobs:
             git add $file
           done
 
-          git commit -m "Update LastUpdate info" --allow-empty
+          git commit -m "🤖: $commit_message" --allow-empty
           git push
