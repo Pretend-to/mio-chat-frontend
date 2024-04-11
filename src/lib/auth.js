@@ -4,5 +4,11 @@
  * @lastEditTime 2024-04-11 12:42:01
  */
 export default class Auth {
+    constructor() {
 
+    }
+
+    test() {
+
+    }
 }

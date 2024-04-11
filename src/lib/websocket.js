@@ -3,12 +3,22 @@
  * @lastEditor Mio-FCIP <1099834705@qq.com>
  * @lastEditTime 2024-04-11 12:42:01
  */
-export default class socket {
-    constructor(url) {
+
+/**
+ * websocket连接类
+ */
+export default class Socket {
+    /**
+     * @param {String} url websocket地址
+     * @param {String} id 机器人QQ号
+     * @param {String} code 机器人QQ登录令牌
+     */
+    constructor(url, id, code) {
         this.available = null;
         this.url = url;
         this.socket = null;
-
+        this.code = code;
+        this.id = id;
         this.connect()
     }
 
@@ -16,7 +26,7 @@ export default class socket {
      * 连接websocket
      */
     connect() {
-        this.socket = new WebSocket(this.url);
+        this.socket = new WebSocket(this.url, { headers: { "fake-qq-id": this.id, "authorization": "Bearer " + this.code } });
         this.socket.onopen = () => {
             this.available = true;
             console.log('WebSocket连接成功');
