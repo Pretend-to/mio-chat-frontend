@@ -16,7 +16,6 @@ jobs:
           git config --global user.name "Mio Actions"
 
       - name: Update LastUpdate
-        if: steps.check_commit.outcome == 'success'
         run: |
           current_time=$(date "+%Y-%m-%d %H:%M:%S")
           changed_files=$(git diff --name-only HEAD^ HEAD | grep '\.js$')
