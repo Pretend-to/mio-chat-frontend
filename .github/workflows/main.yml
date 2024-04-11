@@ -1,0 +1,43 @@
+name: Update LastUpdate Info
+
+on: 
+  push:
+    paths:
+      - '**.js'
+    branches:
+      - main
+
+jobs:
+  update-lastupdate:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Check commit message
+      id: check_commit
+      run: |
+        commit_message=$(git log --format=%B -n 1 $GITHUB_SHA)
+        if [[ $commit_message == *"update-lastupdate"* ]]; then
+          echo "Skipping update operation as commit message contains 'update-lastupdate'."
+          exit 0
+        fi
+
+    - name: Update LastUpdate
+      if: steps.check_commit.outcome != 'success'
+      run: |
+        current_time=$(date "+%Y-%m-%d %H:%M:%S")
+        
+        for file in $(find . -name "*.js"); do
+          first_commit_info=$(git log --diff-filter=A --follow --format="%an <%ae>" -- $file | tail -1)
+          if ! grep -q '\/\*\*' $file; then
+            echo -e "/**\n * @author ${first_commit_info}\n * @lastEditor ${first_commit_info}\n * @lastEditTime ${current_time}\n */\n$(cat $file)" > $file
+          else
+            sed -i "/^\/\*\*$/,/^ \*\/$/ { s/\(@lastEditTime \).*/\1${current_time}/; s/\(@lastEditor \).*/\1${first_commit_info}/; }" $file
+          fi
+          git add $file
+        done
+        
+        git commit -m "Update LastUpdate info" --allow-empty
+        git push
