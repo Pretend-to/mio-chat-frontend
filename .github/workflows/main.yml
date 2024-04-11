@@ -18,7 +18,8 @@ jobs:
       - name: Update LastUpdate
         run: |
           current_time=$(date "+%Y-%m-%d %H:%M:%S")
-          changed_files=$(git diff --name-only HEAD^ | grep '\.js$')
+          changed_files=$(git show --name-only HEAD | grep '\.js$')
+
 
           for file in $changed_files; do
             first_commit_info=$(git log --diff-filter=A --follow --format="%an <%ae>" -- $file | tail -1)
