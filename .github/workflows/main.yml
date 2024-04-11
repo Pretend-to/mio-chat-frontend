@@ -19,6 +19,11 @@ jobs:
             exit 0
           fi
 
+      - name: Set up Git
+        run: |
+          git config --global user.email "you@example.com"
+          git config --global user.name "Your Name"
+
       - name: Update LastUpdate
         if: steps.check_commit.outcome == 'success'
         run: |
