@@ -20,6 +20,14 @@ const router = createRouter({
         {
           path: 'profile',
           component: () => import('../views/ProfileView.vue')
+        },
+        {
+          path: 'chat/:id',
+          component: () => import('../views/ChatView.vue')
+        },
+        {
+          path: 'profile/:id',
+          component: () => import('../views/ProfileView.vue')
         }
       ]
     },

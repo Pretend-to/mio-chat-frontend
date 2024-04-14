@@ -10,7 +10,22 @@ export default {
         }
     },
     methods: {
-
+        showChat(id) {
+            // 如果当前路径是 /home 或 /home/chat 或 /home/chat/:id ,跳转到 /home/chat/:id
+            this.$router.push({ path: '/home/chat/' + id })
+        },
+        getId(index) {
+            // 获取当前页面的id
+            let currentId = this.$route.params.id
+            // 获取当前页面的contactorId
+            let contactorId = this.contactorList[index].id
+            // 如果当前页面的id和contactorId相同，则返回active
+            if (currentId == contactorId) {
+                return "active"
+            } else {
+                return this.contactorList[index].priority == 0 ? "important" : ""
+            }
+        }
     }
 }
 </script>
@@ -32,7 +47,8 @@ export default {
             </div>
         </div>
         <div class="people">
-            <div @click="showChat(item.id)" v-for="(item, index) of contactorList" :key="index" class="lists">
+            <div @click="showChat(item.id)" v-for="(item, index) of contactorList" :key="index" class="lists"
+                :id="getId(index)">
                 <div class="avatar">
                     <img :src="item.avatar" :alt="item.name">
                 </div>

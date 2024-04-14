@@ -7,6 +7,12 @@ export default class Contactor extends EventEmmiter {
      * Constructor of Contactor class
      * @param {string} platform - Platform of contactor
      * @param {object} config - Configuration of contactor
+     * @param {string} config.id - ID of the contactor
+     * @param {string} config.name - Name of the contactor
+     * @param {string} config.avatar - Avatar of the contactor
+     * @param {string} config.title - Title of the contactor
+     * @param {object} config.options - Options of the contactor
+     * @param {number} config.priority - Priority of the contactor,from 0 to 1, 0 means highest priority
      */
     constructor(platform, config) {
         super();

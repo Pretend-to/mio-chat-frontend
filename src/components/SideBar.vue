@@ -207,4 +207,9 @@ export default {
     border-radius: 50%;
     background: linear-gradient(to bottom, rgb(52, 238, 143), rgb(54, 221, 150));
 }
+.side-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 </style>
