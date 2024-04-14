@@ -1,12 +1,29 @@
 <template>
-    <div id="friendlist"> friendlist </div>
-    <router-view></router-view>
+    <div id="main">
+        <friendlist></friendlist>
+        <router-view></router-view>
+    </div>
 </template>
 
 <script>
-export default {
+import friendlist from '@/components/FriendList.vue'
 
+export default {
+    data() {
+        return {
+
+        }
+    },
+    components: {
+        friendlist
+    }
 }
 </script>
 
-<style></style>
+<style>
+#main {
+    background-color: rgb(255, 255, 255);
+    flex-grow: 1;
+    display: flex;
+}
+</style>

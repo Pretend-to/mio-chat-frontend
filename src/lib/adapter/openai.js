@@ -1,11 +1,6 @@
-/**
- * @author Mio-FCIP <1099834705@qq.com>
- * @lastEditor Mio-FCIP <1099834705@qq.com>
- * @lastEditTime 2024-04-11 12:42:01
- */
-import EventEmitter from "../event.js"
+import Adapter from "./adapter.js";
 
-export default class Openai extends EventEmitter {
+export default class Openai extends Adapter {
     constructor(config) {
         super()
         this.apikey = config.apikey

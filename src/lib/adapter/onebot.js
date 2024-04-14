@@ -1,6 +1,15 @@
-/**
- * @author Mio-FCIP <1099834705@qq.com>
- * @lastEditor Mio-FCIP <1099834705@qq.com>
- * @lastEditTime 2024-04-11 12:42:01
- */
-export default class Onebot { }
+import Adapter from "./adapter.js";
+
+export default class Onebot extends Adapter {
+    constructor() {
+        super();
+    }
+
+    /**
+     * Send message to server
+     * @param {OnebotMessage} message 
+     */
+    async send(message) {
+        this.client.send(message)
+    }
+}
