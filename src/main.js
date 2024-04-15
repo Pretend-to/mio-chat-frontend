@@ -1,10 +1,11 @@
 /**
  * @author Mio-FCIP <1099834705@qq.com>
- * @lastEditor 彭志勇 <118327380+ZY16263646566679@users.noreply.github.com>
- * @lastEditTime 2024-04-15 16:13:30
+ * @lastEditor Mio-FCIP <1099834705@qq.com>
+ * @lastEditTime 2024-04-14 10:16:36
  */
 
-import './assets/main.css'
+import './assets/main.sass'
+import '//at.alicdn.com/t/c/font_4459318_cmd4krl96d.js' // 项目图标库
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
