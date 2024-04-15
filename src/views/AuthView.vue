@@ -9,9 +9,17 @@
         width: 50%
         margin: 0 auto
         text-align: center
+        animation: fly-into 1s
 
+        @keyframes fly-into
+            from 
+                transform: translateX(-150px)
+                opacity: 0
+            to
+                transform: translateX(0)
+                opacity: 1
         .icon
-            font-size: 36px
+            font-size: 46px
             border-radius: 10px
             background: lightcyan
             animation: rotation 5s infinite linear
@@ -37,10 +45,17 @@
 
         input
             margin: 25px
-            border: 1px solid lightgray
+            border: 1px solid cyan
             border-radius: 6px
             height: 35px
             padding: 0 10px
+            outline: 1px solid lightcyan
+            caret-color: cyan
+            text-align: center
+            letter-spacing: 1px
+
+            &:focus
+                outline: 1px solid cyan
 
             &::placeholder
                 text-align: center
@@ -67,7 +82,7 @@
             </svg>
             <h1 class="title">登录验证</h1>
             <p class="hint">管理员开启了密码验证，请在下方填入访问码</p>
-            <input type="text" v-model="accessCode" placeholder="在此处填写访问码">
+            <input type="password" v-model="accessCode" placeholder="在此处填写访问码">
             <div class="controls">
                 <button class="later">游客登录</button>
                 <button class="login" @click="login">Login</button>
