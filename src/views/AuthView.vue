@@ -1,55 +1,97 @@
+<style lang="sass" scoped>
+.auth-view
+    background-color: white
+    flex-grow: 1
+    display: grid
+    place-items: center
+
+    .container
+        width: 50%
+        margin: 0 auto
+        text-align: center
+
+        .icon
+            font-size: 36px
+            border-radius: 10px
+            background: lightcyan
+            animation: rotation 5s infinite linear
+
+            @keyframes rotation
+                from
+                    transform: rotate(0)
+                50%
+                    transform: rotate(180deg)
+                to
+                    transform: rotate(360deg)
+
+        .title
+            font-size: 50px
+            letter-spacing: 5px
+            color: transparent
+            -webkit-text-stroke: 2px cyan
+            margin: 25px
+
+        .hint
+            font-size: 15px
+            font-weight: 300
+
+        input
+            margin: 25px
+            border: 1px solid lightgray
+            border-radius: 6px
+            height: 35px
+            padding: 0 10px
+
+            &::placeholder
+                text-align: center
+
+        .controls
+            display: flex
+            justify-content: space-around
+
+            .later
+                background: transparent
+
+            .login
+                color: white
+                padding: 10px 15px
+                border-radius: 8px
+                background: rgb(29, 147, 171)
+</style>
+
 <template>
-    <div id="auth-view">
-        <h1>Auth View</h1>
-        <input type="text" v-model="code">
-        <button @click="login">Login</button>
-        <button @click="logout">Logout</button>
-        <div>{{ client.id }}</div>
+    <div class="auth-view">
+        <div class="container">
+            <svg class="icon" aria-hidden="true">
+                <use xlink:href="#icon-ChatGPT"></use>
+            </svg>
+            <h1 class="title">登录验证</h1>
+            <p class="hint">管理员开启了密码验证，请在下方填入访问码</p>
+            <input type="text" v-model="accessCode" placeholder="在此处填写访问码">
+            <div class="controls">
+                <button class="later">游客登录</button>
+                <button class="login" @click="login">Login</button>
+            </div>
+        </div>
     </div>
 </template>
 
-<script>
-import { client } from '@/lib/runtime.js'
+<script setup>
+import { ref } from 'vue'
 import router from '@/router'
+import { client } from '@/lib/runtime.js'
 
-export default {
-    name: 'AuthView',
-    data() {
-        return {
-            code: '',
-            client: client
-        }
-    },
-    methods: {
-        async login() {
-            try {
-                const code = this.code
-                const result = await client.login(code)
-                if (result) {
-                    router.push('/home')
-                }
-            } catch (error) {
-                console.error(error)
-            }
+const accessCode = ref()
 
-        },
-        async logout() {
-            try {
-                const result = await client.logout()
-                if (result) {
-                    router.push('/auth')
-                }
-            } catch (error) {
-                console.error(error)
-            }
+const login = async () => {
+    try {
+        const code = accessCode.value
+        const result = await client.login(code)
+        if (result) {
+            await router.push('/home')
         }
+    } catch (error) {
+        console.error(error)
     }
 }
 </script>
-
-<style scoped>
-#auth-view {
-    background-color: white;
-    flex-grow: 1;
-}
-</style>
