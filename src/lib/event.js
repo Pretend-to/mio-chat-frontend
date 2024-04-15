@@ -1,7 +1,7 @@
 /**
  * @author Mio-FCIP <1099834705@qq.com>
- * @lastEditor Mio-FCIP <1099834705@qq.com>
- * @lastEditTime 2024-04-14 10:16:36
+ * @lastEditor 彭志勇 <118327380+ZY16263646566679@users.noreply.github.com>
+ * @lastEditTime 2024-04-15 16:15:44
  */
 
 export default class EventEmitter {
