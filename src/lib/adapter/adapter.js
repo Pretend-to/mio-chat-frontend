@@ -13,8 +13,8 @@ export default class Adapter extends EventEmitter {
 
     }
 
-    async init() {
-        this.client = client;
-        if (this.client.isConnected) return true;
+    async fetch(url,data){
+        return await client.socket.fetch(url,data);
     }
+
 }

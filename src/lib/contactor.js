@@ -23,7 +23,7 @@ export default class Contactor extends EventEmmiter {
         this.title = config.title;
         this.options = config.options;
         this.priority = config.priority;
-        this.messageChain = [];
+        this.messageChain = config.messageChain || [];
 
         this.kernel = this.platform == 'onebot' ?
             new Onebot(config) :
@@ -35,8 +35,27 @@ export default class Contactor extends EventEmmiter {
      * @param {OnebotMessage} message 
      */
     async send(message) {
-
         await this.kernel.send(message);
+    }
+
+    /**
+     * 从网页前端发来的消息
+     */
+    async webSend(message){
+        console.log(message)
+        this.messageChain.push(message)
+        return await this.kernel.send(this.id,message.content)
+    }
+
+    /**
+     * 接收到消息
+     * @param {string} id - ID of the contactor
+     * @param {object} message - Message received from contactor
+     */
+    revMessage(id,message) {
+        const webMessage = this.kernel.convertMessage(id,message)
+        this.emit('revMessage', webMessage)
+        console.log(this.messageChain)
     }
 
     getLastTime() {

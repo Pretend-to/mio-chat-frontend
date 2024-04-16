@@ -25,5 +25,6 @@ export default {
     background-color: rgb(255, 255, 255);
     flex-grow: 1;
     display: flex;
+    width: calc(100% - 4.5rem);
 }
 </style>

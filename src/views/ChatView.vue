@@ -1,24 +1,37 @@
 <script>
 import { MdPreview } from "md-editor-v3"
 import "emoji-picker-element"
+import {client} from "@/lib/runtime.js"
 
 export default {
     data() {
+        const currentId = parseInt(this.$route.params.id)
+        const contactor = client.getContactor(currentId)
+        console.log(contactor)
         return {
+            acting: contactor,
+            showwindow: true,
+            showemoji: false,
+            userInput: '',
+            todld: false,
+            client: client,
         }
     }, methods: {
+        getSafeText(text) {
+            return text.replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        },
         handleKeyDown(event) {
             if (event.ctrlKey && event.key === "Enter") {
                 if (this.userInput && this.isValidInput(this.userInput)) this.send()
-                else makeTips.warn("不能发送空消息")
+                else this.$message({message:'不能发送空消息',type:'warning'})
                 // 处理按下 Ctrl+Enter 键的逻辑
             }
         }, async send() {
             this.$refs.textarea.focus()
 
-            const msg = this.userInput
+            const msg = this.getSafeText(this.userInput)
             this.userInput = this.textareaRef.value = null
-            this.adjustTextareaHeight()
+
             const container = {
                 role: "user",
                 time: new Date().getTime(),
@@ -28,18 +41,12 @@ export default {
                     text: [msg]
                 }
             }
-            this.acting.addmsg(container) //存储于store
-            this.toupdate = true
-            this.global.stroge() //持久化存储
-            try {
-                const reqid = await this.one.getRequest(msg)
-                console.log("创建请求：" + reqid)
-                this.tasks.resign(this.acting, reqid)
 
-            } catch (error) {
-                makeTips.warn("请求发送失败")
-                console.log(error)
-            }
+            const message_id = await this.acting.webSend(container) //发送消息
+            container.id = message_id
+            setTimeout(this.tobuttom, 0)
+            client.setLocalStorage() //持久化存储
+
         }, eemoji() {
             this.showemoji = !this.showemoji
         }, getemoji(e) {
@@ -59,7 +66,7 @@ export default {
             const textarea = this.$refs.textarea
             this.cursorPosition = textarea.selectionStart
         }, tobuttom(clicked) {
-            if (clicked) makeTips.info("已滑至底部")
+            if (clicked) this.$message("已滑至底部")
             const chatWindow = this.$refs.chatWindow
             //console.log("滑动条位置顶部与元素顶部间距："+ chatWindow.scrollTop + "元素高度" + chatWindow.scrollHeight)
             chatWindow.scrollTop = chatWindow.scrollHeight
@@ -72,23 +79,13 @@ export default {
         }, tolist() {
             this.global.alldown()
             this.global.tochat(false)
-        }, adjustTextareaHeight() {
-            if (window.innerWidth < 600) {
-
-                this.textareaRef.style.height = this.textareaRef.value ? this.textareaRef.scrollHeight - 4 + "px" : "24px"
-
-                if (parseInt(this.textareaRef.style.height) > 200) {
-                    this.textareaRef.style.height = "200px"
-                }
-            }
-            console.log(this.textareaRef.value)
         }, isValidInput(input) {
             // 使用正则表达式检查用户输入是否只包含换行符和空格
             const regex = /^[ \n]+$/
             const result = !regex.test(input)
             return result
         }, waiting() {
-            makeTips.warn("此功能尚未开放")
+            this.$message({message:"此功能尚未开放",type:'warning'})
         }, async voiceList() {
             let data = ["关闭"]
             const list = await this.one.getVoices()
@@ -144,68 +141,10 @@ export default {
 
             const endedHandler = () => {
                 this.playing = false
-                audio.removeEventListener("ended", endedHandler)
+                audioNaNpxoveEventListener("ended", endedHandler)
             }
 
             audio.addEventListener("ended", endedHandler)
-        }, toimg() {
-            makeTips.info("请稍候，加紧制作中")
-            let ra = this.readra()
-            console.log(ra)
-            // 获取要截图的元素
-            const targetElement = this.$refs.chatWindow
-
-            // 获取元素的实际宽度和高度
-
-            const rect = targetElement.getBoundingClientRect()
-            const elementWidth = rect.width
-
-            console.log(rect.width)
-
-            // 计算子元素的高度之和
-            let totalHeight = 0
-            for (let child of targetElement.children) {
-                totalHeight += child.offsetHeight
-                console.log(child.offsetHeight)
-            }
-
-            // 使用 html2canvas 将元素转换为 canvas，并设置 windowWidth 和 windowHeight 选项
-            html2canvas(targetElement, {
-                windowWidth: elementWidth,
-                windowHeight: totalHeight * ra
-            }).then(canvas => {
-                // 将 canvas 转换为 base64 编码的 PNG 图片
-                makeTips.info("制作完成！请右键(长按)保存！")
-
-                const imgData = canvas.toDataURL("image/png")
-                this.dldimg = imgData
-                this.todld = true
-
-            })
-        }, readra() {
-
-            var ratio = 0
-            var screen = window.screen
-            var ua = navigator.userAgent.toLowerCase()
-
-            if (window.devicePixelRatio !== undefined) {
-                ratio = window.devicePixelRatio
-            }
-            else if (~ua.indexOf("msie")) {
-                if (screen.deviceXDPI && screen.logicalXDPI) {
-                    ratio = screen.deviceXDPI / screen.logicalXDPI
-                }
-
-            }
-            else if (window.outerWidth !== undefined && window.innerWidth !== undefined) {
-                ratio = window.outerWidth / window.innerWidth
-            }
-
-            if (ratio) {
-                ratio = Math.round(ratio)
-            }
-            return ratio
-
         }, pickmsg(index) {
             const list = ["复制文本", "删除消息"]
             this.listype = 3
@@ -222,11 +161,11 @@ export default {
                 document.body.appendChild(textarea)
                 textarea.select()
                 document.execCommand("copy")
-                document.body.removeChild(textarea)
-                makeTips.info("已复制")
+                document.bodyNaNpxoveChild(textarea)
+                this.$message("已复制")
             } else {
                 this.acting.history.splice(this.pickedmsg, 1)
-                makeTips.info("已删除")
+                this.$message("已删除")
                 this.global.stroge() //持久化存储
             }
         }
@@ -235,9 +174,12 @@ export default {
         this.textareaRef.addEventListener("input", this.adjustTextareaHeight)
 
         console.log(this.acting)
-        this.one = new Lss233(this.acting)
         setTimeout(this.tobuttom, 50)
-        if (this.acting.uin && this.acting.uin !== 10000) { this.showwindow = true }
+
+        this.acting.on("revMessage", (message)=> {
+            this.acting.messageChain.push(message)
+            this.toupdate = true
+        })
     }, updated() {
         if (this.toupdate) {
             setTimeout(this.tobuttom, 0)
@@ -245,32 +187,12 @@ export default {
         }
     }, components: {
         MdPreview,
-        ChooseList
     }, watch: {
-        acting(newValue) {
-            if (newValue.uin) {
-                this.showwindow = true
-                this.one = new Lss233(newValue)
-                this.toupdate = true
-                console.log(newValue)
-                console.log("选中" + this.acting.name)
-                console.log(this.showwindow)
-            }
-        },
-        async leng(newValue, oldValue) {
-            if (newValue > oldValue) {
-                console.log("获取任务")
-                const task = this.tasks.msgs.pop()
-                await this.revmsg(task)
-            }
-        }
     }
 }
 </script>
 
 <template>
-    <div>
-        <ChooseList v-if="showchose" :tochoose="tochoose" @leave="showchose = false" @save="getList" />
         <div id="chatwindow">
             <div class="upsidebar" id="chat" v-show="showwindow">
                 <div class="return" @click="tolist">
@@ -320,24 +242,35 @@ export default {
                 </div>
             </div>
             <div class="message-window" ref="chatWindow" v-show="showwindow">
-                <div v-for="(item, index) of acting.history" :key="index" class="message-container" :id="item.role"
+                <div v-for="(item, index) of acting.messageChain" :key="index" class="message-container" :id="item.role"
                     ref="message">
                     <div class="avatar">
                         <img v-if="item.role === 'other'" :src="acting.avatar" :alt="acting.name">
-                        <img v-else :src="main.avatar" :alt="main.name">
+                        <img v-else :src="client.avatar" :alt="client.name">
                     </div>
-                    <div class="msg" @dblclick="pickmsg(index)">
+                    <div class="msg">
                         <div class="wholename">
-                            <div class="title">{{ item.role === "other" ? acting.title : main.title }}</div>
-                            <div class="name">{{ item.role === "other" ? acting.name : main.name }}</div>
+                            <div class="title">{{ item.role === "other" ? acting.title : client.title }}</div>
+                            <div class="name">{{ item.role === "other" ? acting.name : client.name }}</div>
                         </div>
                         <div v-if="item.content.text.length" class="content">
-                            <MdPreview v-for="(msg, index) of item.content.text" :key="index" editorId="preview-only"
+                            <MdPreview v-for="(msg, index) of item.content.text" previewTheme="github" :key="index" editorId="preview-only"
                                 :modelValue="msg" />
                         </div>
                         <div v-if="item.content.image.length" class="content">
-                            <MdPreview v-for="(img, index) of item.content.image" :key="index" editorId="preview-only"
-                                :modelValue="'![pics](' + img + ')'" />
+                            <!-- <MdPreview v-for="(img, index) of item.content.image" previewTheme="github" :key="index" editorId="preview-only"
+                                :modelValue="'![pics](' + img + ')'" /> -->
+                                <el-image  v-for="(img, index) of item.content.image"
+                                  style=" margin: 8px 0px; max-width: 20rem;border-radius: 1rem;"
+                                  :src="img"
+                                  :zoom-rate="1.2"
+                                  :max-scale="7"
+                                  :min-scale="0.2"
+                                  :preview-src-list="[img]"
+                                  :initial-index="4"
+                                  :key="index"
+                                  fit="cover"
+                                />
                         </div>
                         <div v-if="item.content.voice.length" class="content">
                             <div class="voice-box">
@@ -446,19 +379,138 @@ export default {
                         id="sendButton">发送</button>
                 </div>
             </div>
-            <div class="background" v-show="!showwindow">
-                <img src="@/assets/default.svg" alt="SVG图标">
-            </div>
         </div>
-        <div v-if="todld" @click.self="todld = false" class="black-overlay">
-            <img :src="dldimg" alt="pics" id="theimg">
-        </div>
-    </div>
-
-
 </template>
 
 <style scoped>
+#chatwindow {
+    z-index: 1;
+    min-width: .0625rem;
+    position: relative;
+    display: flex;
+    flex-grow: 1;
+    background-color: #f1f1f1;
+    flex-direction: column;
+}
+.upsidebar#chat {
+    flex-basis: 3.75rem;
+    flex-shrink: 0;
+    height: 3.75rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    border-bottom: .0625rem solid rgba(161,154,154,.626);
+}
+
+.somebody {
+    margin-left: 1.5rem;
+    margin-bottom: .5rem;
+    font-size: 1rem;
+}
+.upsidebar .options {
+    flex-basis: 6rem;
+    display: flex;
+    height: 100%;
+    flex-wrap: wrap;
+    flex-direction: row-reverse;
+}
+
+#system{
+    display: flex;
+    flex-basis: 100%;
+}
+
+#system .button {
+    display: flex;
+    justify-content: center;
+    padding-top: .5rem;
+    flex: 0 0 2rem;
+}
+
+.message-window {
+    flex-grow: 3;
+    overflow: auto;
+    overflow-x: hidden;
+    background-color: #f1f1f1;
+    min-height: 50%;
+}
+
+.inputbar {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    border: 0rem solid rgba(161,154,154,.626);
+    flex-basis: 11rem;
+}
+
+.chat-icon {
+    padding: .25rem .5rem 0 0;
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.inputbar>.options {
+    display: flex;
+    border-top: .0625rem solid rgba(128,128,128,.502);
+    padding: .25rem .5rem;
+}
+
+.input-box {
+    flex-grow: 1;
+    padding: 0 .5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: end;
+    border: 0rem solid black;
+}
+
+.input-content {
+    flex-wrap: wrap;
+    display: flex;
+    background-color: #f1f1f1;
+    border: 0rem;
+    flex-grow: 1;
+    width: 100%;
+}
+
+.input-box button {
+    white-space: nowrap;
+    color: #f0f8ff;
+    border-radius: .3125rem;
+    border: 0rem;
+    background-color: #09f;
+    padding: .25rem 1rem;
+    margin-bottom: .5rem;
+}
+
+p#ho-emoji {
+    text-wrap: nowrap;
+    display: none;
+    font-size: .75rem;
+    padding: .125rem .25rem;
+    background-color: #fff;
+    border: none;
+    box-shadow: 0 .125rem .25rem #0003;
+    position: absolute;
+    top: 80%;
+    left: 50%;
+    transform: translate(-60%);
+}
+
+.bu-emoji {
+    position: relative;
+}
+
+.input-content textarea {
+    overflow-y: auto;
+    resize: none;
+    font-size: 1rem;
+    background-color: #f1f1f1;
+    border: 0rem;
+    flex-grow: 1;
+    width: 100%;
+}
+
 .black-overlay {
 
     position: fixed;
@@ -488,8 +540,8 @@ export default {
 }
 
 #share svg {
-    width: 32px;
-    margin-right: 8px;
+    width: 2rem;
+    margin-right: .5rem;
 }
 
 #system {
@@ -500,8 +552,8 @@ export default {
 #system .button {
     display: flex;
     justify-content: center;
-    padding-top: 8px;
-    flex: 0 0 32px;
+    padding-top: .5rem;
+    flex: 0 0 2rem;
 }
 
 #system .button:hover {
@@ -513,8 +565,12 @@ export default {
     background-color: rgb(255, 0, 0)
 }
 
+.button#close:hover svg path{
+    fill:#fff;
+}
+
 .upsidebar .options {
-    flex-basis: 96px;
+    flex-basis: 6rem;
     display: flex;
     height: 100%;
     flex-wrap: wrap;
@@ -527,15 +583,24 @@ svg:hover {
 
 .voice-box {
     display: flex;
-    width: 180px;
-    height: 24px;
-    margin: 4px 0px;
+    width: 11.25rem;
+    height: 1.5rem;
+    margin: .25rem 0rem;
 }
 
+emoji-picker {
+    position: absolute;
+    top: -25.75rem;
+    right: -20rem;
+}
 
+.input-content textarea:focus {
+    border: 0rem;
+    outline: none;
+}
 
 .voice-box .icon {
-    flex-basis: 24px;
+    flex-basis: 1.5rem;
     background-color: rgb(0, 0, 0);
     display: flex;
     justify-content: center;
@@ -551,13 +616,13 @@ svg:hover {
 }
 
 .wave svg {
-    height: 20px;
+    height: 1.25rem;
     width: 80%;
 }
 
 .loader {
-    width: 10px;
-    padding: 4px;
+    width: .625rem;
+    padding: .25rem;
     aspect-ratio: 1;
     border-radius: 50%;
     background: rgb(0, 153, 255);
@@ -572,6 +637,116 @@ svg:hover {
     position: absolute;
 }
 
+.message-container {
+    padding: .625rem .625rem;
+    display: flex;
+    align-items: flex-start;
+    /* border: .0625rem solid black; */
+    overflow: hidden;
+}
+
+.message-container#other {
+    flex-direction: row;
+}
+
+.message-container#user {
+    flex-direction: row-reverse;
+}
+
+.avatar {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    max-width: 2.5rem;
+    max-height: 2.5rem;
+    border-radius: 50%;
+}
+
+.avatar img {
+    width: 100%;
+    border-radius: 50%;
+}
+
+.msg {
+    max-width: calc(100% - 5rem);
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+#other .msg {
+    align-items: flex-start;
+}
+
+#user .msg {
+    align-items: flex-end;
+}
+
+.wholename {
+    margin: 0rem .5rem;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+}
+
+.wholename>.name,
+.wholename>.title {
+    font-size: .625rem;
+    margin: .25rem;
+    text-wrap: nowrap;
+
+}
+
+
+.wholename>.title {
+    font-size: .375rem;
+    font-family: Arial, sans-serif;
+    color: rgb(0, 153, 255);
+    padding: .0625rem .125rem .125rem .125rem;
+    background-color: rgb(194, 225, 245);
+    border-radius: .3125rem;
+}
+
+.wholename>.name {
+    padding-top: .0625rem;
+    font-family: Arial, sans-serif;
+    color: rgb(120, 124, 127)
+}
+
+.content {
+    max-width: calc(100% - 1.25rem);
+    padding: .25rem .75rem;
+    border-radius: .5rem;
+    margin: .5rem;
+
+}
+
+
+.message-container#user > .msg > .content > * {
+    background-color: rgb(0, 153, 255);
+}
+
+.message-container#user .loader {
+    left:-2rem;
+    top: calc(45% - .3125rem)
+    
+}
+
+.message-container#other>.msg>.content {
+    background-color: rgb(255, 255, 255);
+}
+
+
+
+.message-container#user>.msg>.content {
+    background-color: rgb(0, 153, 255);
+
+}
+
+.content img {
+    margin: .5rem 0rem;
+    max-width: 20rem;
+    border-radius: 16px;
+}
 @keyframes l3 {
     to {
         transform: rotate(1turn)
@@ -582,7 +757,7 @@ svg:hover {
     display: none;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 37.5rem) {
     #chatwindow {
         height: 100%;
     }
@@ -603,8 +778,8 @@ svg:hover {
 
     .return {
         display: block;
-        margin-left: 16px;
-        margin-bottom: 8px;
+        margin-left: 1rem;
+        margin-bottom: .5rem;
     }
 
     .return svg {
@@ -614,11 +789,11 @@ svg:hover {
     #share {
         display: flex;
         align-items: end;
-        padding-bottom: 4px;
+        padding-bottom: .25rem;
     }
 
     .somebody {
-        padding-bottom: 4px;
+        padding-bottom: .25rem;
     }
 
     textarea {

@@ -17,6 +17,8 @@ export default class Socket extends EventEmitter {
         this.code = code;
         this.id = id;
         this.requests = [];
+        this.heartBeat = null;
+        this.delay = null;
     }
 
     /**
@@ -27,10 +29,7 @@ export default class Socket extends EventEmitter {
         // 获取当前页面的主机名和端口号
         const url = new URL(window.location.href);
         const host = url.host;
-        const wsURL = `ws://${host}/api/gateway`;
-
-        console.log(wsURL);
-        return wsURL;
+        return url.protocol === 'https:' ? `wss://${host}/api/gateway` : `ws://${host}/api/gateway`;
     }
 
     /**
@@ -59,17 +58,26 @@ export default class Socket extends EventEmitter {
                     console.log('WebSocket连接已断开，不执行emit操作');
                 }
             }, 1000); // 1秒后检查连接状态
+
+            // 每隔3秒发送心跳包
+            this.heartBeat = setInterval(async () => {
+                if (this.socket.readyState === WebSocket.OPEN) {
+                    const res = await this.fetch('/api/system/heartbeat',{timestamp:Date.now()});
+                    this.delay = res.delay;
+                }
+            }, 3000);
         };
         this.socket.onclose = () => {
             this.available = false;
-            console.log('WebSocket连接断开');
+            clearInterval(this.heartBeat);
+            console.error('WebSocket连接断开，将在5秒后尝试重新连接...');
+            setTimeout(()=>this.connect(), 5000); // 5秒后尝试重新连接
         };
         this.socket.onerror = (error) => {
-            console.log('WebSocket连接出错', error);
+            console.error('WebSocket连接出错', error);
         };
         this.socket.onmessage = (event) => {
             this.messageHandler(event.data);
-            console.log('WebSocket收到消息', event.data);
         };
     }
 
@@ -94,9 +102,15 @@ export default class Socket extends EventEmitter {
     messageHandler(message) {
         try {
             const e = JSON.parse(message);
-            console.log('WebSocket收到消息', e);
-            this.emit(e.request_id.toString(), e.data)
-            console.log('WebSocket触发事件', e.request_id.toString, e.data);
+            if (!e.data.delay) console.log('WebSocket收到事件，原始数据：', e);
+
+            this.emit(e.request_id, e.data);
+
+            if(e.protocol == 'onebot'){
+                this.emit('onebot_message',e)
+            }
+
+            // console.log('WebSocket触发事件', e.request_id.toString, e.data);
         } catch (error) {
             console.error('JSON解析失败:', error);
             // 进行错误处理，例如给出默认值或者其他操作
@@ -122,18 +136,20 @@ export default class Socket extends EventEmitter {
     fetch(url, data) {
         return new Promise((resolve, reject) => {
             const pathArray = url.split('/').filter(Boolean);
-            const proctol = pathArray[1];
+            const protocol = pathArray[1];
             const type = pathArray[2];
-            let requestID = this.genRequestID();
+            const id = pathArray[3];
+            let request_id = this.genRequestID();
 
             const request = {
-                requestID: requestID,
-                proctol: proctol,
+                request_id: request_id,
+                protocol: protocol,
                 type: type,
+                id: id,
                 data: data,
             }
 
-            this.requests.push(request.requestID);
+            this.requests.push(request.request_id);
 
             const timeOut = new Promise(reject => {
                 setTimeout(() => {
@@ -142,7 +158,7 @@ export default class Socket extends EventEmitter {
             })
 
             const response = new Promise(resolve => {
-                this.on(requestID, (res) => {
+                this.on(request_id, (res) => {
                     resolve(res)
                 })
             })
@@ -156,7 +172,7 @@ export default class Socket extends EventEmitter {
 
 
             this.sendObject(request)
-            console.log('WebSocket发送请求', url, request);
+            if(type !== 'heartbeat')console.log('WebSocket发送请求', url, request);
 
         })
     }

@@ -15,15 +15,16 @@ export default {
 
   },
   async created() {
+    await client.beforeInit();
+
     if (!client.isConnected) {
       const conncted = await client.init()
       if (conncted) {
         console.log('已经链接成功')
-        router.push('/home')
+        if (this.$route.path === '/' || this.$route.path === '/auth') router.push('/home')
       }
     }
   },
-  // 在 Vue 组件中的 methods 中添加以下代码
   methods: {}
 }
 </script>

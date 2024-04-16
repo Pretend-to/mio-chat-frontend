@@ -57,7 +57,7 @@ router.beforeEach(async (to) => {
     // ❗️ 避免无限重定向
     to.name !== 'auth'
   ) {
-    console.log(client)
+    console.log(`client.isLogin: ${client.isLogin} to.name!== auth: ${to.name!== 'auth'}`)
     console.log('未登录，重定向到登录页面')
     // 将用户重定向到登录页面
     return { name: 'auth' }

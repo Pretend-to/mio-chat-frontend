@@ -11,7 +11,9 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "element-plus": "^2.7.0",
     "emoji-picker-element": "^1.21.3",
+    "localforage": "^1.10.0",
     "md-editor-v3": "^4.13.0",
     "pinia": "^2.1.7",
     "vue": "^3.4.21",
