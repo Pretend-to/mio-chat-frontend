@@ -35,6 +35,7 @@ export default class Client {
       this.code = null
       this.genDefaultConctor()
       this.setLocalStorage()
+      console.log('生成默认信息')
     }
   }
 
@@ -171,10 +172,20 @@ export default class Client {
       if (type == 'message') {
         const contactor = this.getContactor(id)
         if (contactor) {
-          contactor.revMessage(e.request_id, content)
+          contactor.revMessage(content)
           this.setLocalStorage()
         }
-      }
+      }else if (type == 'del_msg'){
+        const onebotContactors = this.contactList.filter((item) => item.platform == 'onebot')
+        for(const onebotContactor of onebotContactors){
+          const deleted = onebotContactor.delMessage(content.message_id)
+          if(deleted){
+            this.setLocalStorage()
+            console.log('删除消息成功')
+            break
+          }
+        }
+      } 
     })
   }
 

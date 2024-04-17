@@ -6,11 +6,11 @@ export default class Onebot extends Adapter {
     }
 
 
-    convertMessage(id, message) {
+    convertMessage(data) {
         let voiceList = [];
         let imageList = [];
         let textList = [];
-        message.forEach(element => {
+        data.message.forEach(element => {
             if(element.type === "record") {
                 voiceList.push(element.data.file)
             } else if(element.type === "image") {
@@ -28,7 +28,7 @@ export default class Onebot extends Adapter {
                 voice: voiceList,
                 text: textList
             },
-            id: id,
+            id: data.message_id,
         }
         return webMessage
     }

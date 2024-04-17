@@ -18,15 +18,15 @@
     border-radius: 1rem;
 }
 
-.message-container#user .md-editor h1,
-.message-container#user .md-editor h2,
-.message-container#user .md-editor h3,
-.message-container#user .md-editor h4,
-.message-container#user .md-editor h5,
-.message-container#user .md-editor h6,
-.message-container#user .md-editor li,
-.message-container#user .md-editor ul,
-.message-container#user .md-editor p{
+.message-body#user .md-editor h1,
+.message-body#user .md-editor h2,
+.message-body#user .md-editor h3,
+.message-body#user .md-editor h4,
+.message-body#user .md-editor h5,
+.message-body#user .md-editor h6,
+.message-body#user .md-editor li,
+.message-body#user .md-editor ul,
+.message-body#user .md-editor p{
 
     color: aliceblue;
     background-color: rgb(0, 153, 255);

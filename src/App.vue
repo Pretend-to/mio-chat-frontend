@@ -66,6 +66,7 @@ export default {
   border-radius: 1rem;
   display: flex;
   overflow: hidden;
+  margin: 5rem 5rem;;
 }
 
 #sidebar {
