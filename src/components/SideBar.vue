@@ -4,19 +4,23 @@ export default {
     // 获取当前路径
     const currentPage = this.$route.path;
     let onProfile = false;
+    let onChat = false;
     if (currentPage.includes('/home/profile')) {
         onProfile = true;
+    } else if (currentPage.includes('/home/chat')) {
+        onChat = true;
     }
     return {
         avatar: 'https://api.krumio.com/qava?qq=1099834705',
         processedImage: '',
         onProfile: onProfile,
+        onChat: onChat,
     }
 },
 
     computed: {
         getChatId() {
-            return this.onProfile ? 'chat' : 'active'
+            return this.onChat ? 'active' : 'chat'
         },
         getProfileId() {
             return this.onProfile ? 'active' : 'profile'
@@ -60,12 +64,18 @@ export default {
         },
         tochat() {
             this.onProfile = false;
+            this.onChat = true;
             this.$router.push('/home');
         },
         toprofile() {
             this.onProfile = true;
+            this.onChat = false;
             this.$router.push('/home/profile');
         },
+        toconfig() {
+            this.onChat = this.onProfile = false;
+            this.$router.push('/settings');
+        }
 
 
     },
@@ -120,7 +130,7 @@ export default {
                             p-id="16394"></path>
                     </svg>
                 </a>
-                <div class="side-icon" @click="this.configging = !this.configging">
+                <div class="side-icon" @click="toconfig">
                     <svg t="1695150463577" class="icon" viewBox="0 0 1024 1024" version="1.1"
                         xmlns="http://www.w3.org/2000/svg" p-id="15301">
                         <path

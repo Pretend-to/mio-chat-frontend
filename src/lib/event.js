@@ -1,19 +1,14 @@
-/**
- * @author Mio-FCIP <1099834705@qq.com>
- * @lastEditor Mio-FCIP <1099834705@qq.com>
- * @lastEditTime 2024-04-14 10:16:36
- */
-
 export default class EventEmitter {
     constructor() {
         this.events = {};
     }
 
     on(eventName, listener) {
-        if (!this.events[eventName]) {
-            this.events[eventName] = [];
-        }
-        this.events[eventName].push(listener);
+        // 移除之前的回调函数
+        this.off(eventName);
+
+        // 添加新的回调函数
+        this.events[eventName] = [listener];
     }
 
     emit(eventName, data) {
@@ -24,9 +19,10 @@ export default class EventEmitter {
         }
     }
 
-    off(eventName, listener) {
+    off(eventName) {
         if (this.events[eventName]) {
-            this.events[eventName] = this.events[eventName].filter(fn => fn !== listener);
+            delete this.events[eventName];
         }
     }
 }
+

@@ -5,7 +5,9 @@
  */
 
 import Client from "./client.js";
+import Config from "./config.js";
 
+const config = new Config();
 const client = new Client();
 
-export { client }
+export { config,client }

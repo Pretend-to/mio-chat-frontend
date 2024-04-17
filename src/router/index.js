@@ -50,10 +50,12 @@ const router = createRouter({
   ]
 })
 
-router.beforeEach(async (to) => {
+router.beforeEach(async (to,from) => {
+  console.log(`router.beforeEach to: ${to.path} from: ${from.path}`)
+  const isLogin = await client.checkLogin()
   if (
     // 检查用户是否已登录
-    !client.isLogin &&
+    !isLogin &&
     // ❗️ 避免无限重定向
     to.name !== 'auth'
   ) {

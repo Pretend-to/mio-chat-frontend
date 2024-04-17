@@ -46,3 +46,7 @@ figure {
     -webkit-box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
     background: #adacac8a;
 }
+
+.el-popper__arrow {
+    display: none;
+}

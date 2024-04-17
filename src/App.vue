@@ -1,5 +1,5 @@
 <script>
-import { client } from '@/lib/runtime.js'
+import { client,config } from '@/lib/runtime.js'
 import sideBar from '@/components/SideBar.vue'
 import router from '@/router'
 
@@ -24,6 +24,8 @@ export default {
         if (this.$route.path === '/' || this.$route.path === '/auth') router.push('/home')
       }
     }
+
+    await config.init()
   },
   methods: {}
 }
@@ -66,7 +68,7 @@ export default {
   border-radius: 1rem;
   display: flex;
   overflow: hidden;
-  margin: 5rem 5rem;;
+  margin: 5rem 5rem;
 }
 
 #sidebar {

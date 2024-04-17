@@ -14,7 +14,10 @@ export default {
             showemoji: false,
             userInput: '',
             todld: false,
-            client: client
+            client: client,
+            warperOptions: [],
+            warperPresets: {},
+            selectedWarper: null,
         }
     },
     methods: {
@@ -32,7 +35,8 @@ export default {
             this.$refs.textarea.focus()
 
             const msg = this.getSafeText(this.userInput)
-            this.userInput = this.textareaRef.value = null
+            const warpedMessage = this.warpText(msg)
+            this.userInput = this.textareaRef.value = ''
 
             const container = {
                 role: 'user',
@@ -40,7 +44,7 @@ export default {
                 content: {
                     voice: [],
                     image: [],
-                    text: [msg]
+                    text: [warpedMessage]
                 }
             }
 
@@ -102,24 +106,14 @@ export default {
                 this.crtvoice === '关闭' ? 0 : 1 + list.findIndex((item) => item === this.crtvoice)
             this.showchose = true
         },
-        async modelList() {
-            let data = ['关闭']
-            const list = await getModels()
-            this.tochoose.list = data.concat(list)
-            this.tochoose.chosen = 0
-            this.showchose = true
-        },
-        getList(data) {
-            this.showchose = false
-            console.log(data)
-            console.log(this.listype)
-            if (this.listype === 1) {
-                console.log('dsdasdasdas')
-                this.changevoice(data)
-            } else if (this.listype === 2) {
-                this.changemodel(result)
-            } else if (this.listype === 3) {
-                this.readmsg(data)
+        async activeBotTools() {
+            const testMessage = 'text'
+            const testMessage2 = 'test'
+            const warpedMessage = this.warpText(testMessage)
+            const warpedMessage2 = this.warpText(testMessage2)
+            if (warpedMessage2 === warpedMessage) {
+                this.userInput = this.textareaRef.value = warpedMessage
+                await this.send()
             }
         },
         changevoice(data) {
@@ -152,7 +146,6 @@ export default {
                 this.playing = false
             }
 
-            audio.addEventListener('ended', endedHandler)
         },
         pickmsg(index) {
             const list = ['复制文本', '删除消息']
@@ -200,6 +193,28 @@ export default {
                     }
                 }
             }
+        },
+        getBotTools() {
+            const warper = this.acting.options.textWarper
+            this.warperOptions = warper.options
+            this.warperPresets = warper.presets
+        },
+        warpText(rawText){
+            if (!this.selectedWarper) return rawText
+            const warper = this.selectedWarper[this.selectedWarper.length - 1]
+            if (!warper) return rawText
+            const testText = '{xxx}'
+            const preset = this.warperPresets[warper]
+            const result = preset.replace(testText, rawText)
+            return result
+        },
+        getWarperName(){
+            if (!this.selectedWarper) return ''
+            const warper = this.selectedWarper[this.selectedWarper.length - 1]
+            if (!warper) return ''
+            const preset = this.warperPresets[warper]
+            const name = preset.replace('#', '').replace('{xxx}', '')
+            return name
         }
     },
     mounted() {
@@ -208,6 +223,8 @@ export default {
 
         console.log(this.acting)
         setTimeout(this.tobuttom, 50)
+
+        this.getBotTools()
 
         this.acting.on('revMessage', (message) => {
             this.acting.messageChain.push(message)
@@ -283,68 +300,67 @@ export default {
             </div>
         </div>
         <div class="message-window" ref="chatWindow" v-show="showwindow">
-            <div v-for="(item, index) of acting.messageChain" :key="index" class="message-container" 
-                ref="message">
+            <div v-for="(item, index) of acting.messageChain" :key="index" class="message-container" ref="message">
                 <div class="message-time" v-if="showTime(index).show">
                     {{ showTime(index).time }}
                 </div>
                 <div class="message-body" :id="item.role">
                     <div class="avatar" v-if="item.role !== 'system'">
-                    <img v-if="item.role === 'other'" :src="acting.avatar" :alt="acting.name" />
-                    <img v-else :src="client.avatar" :alt="client.name" />
-                </div>
-                <div class="msg" v-if="item.role !== 'system'">
-                    <div class="wholename">
-                        <div class="title">{{ item.role === 'other' ? acting.title : client.title }}</div>
-                        <div class="name">{{ item.role === 'other' ? acting.name : client.name }}</div>
+                        <img v-if="item.role === 'other'" :src="acting.avatar" :alt="acting.name" />
+                        <img v-else :src="client.avatar" :alt="client.name" />
                     </div>
-                    <div v-if="item.content.text.length" class="content">
-                        <MdPreview v-for="(msg, index) of item.content.text" previewTheme="github" :key="index"
-                            editorId="preview-only" :modelValue="msg" />
-                    </div>
-                    <div v-if="item.content.image.length" class="content">
-                        <!-- <MdPreview v-for="(img, index) of item.content.image" previewTheme="github" :key="index" editorId="preview-only"
-                                :modelValue="'![pics](' + img + ')'" /> -->
-                        <el-image v-for="(img, index) of item.content.image"
-                            style="margin: 8px 0px; max-width: 20rem; border-radius: 1rem" :src="img" :zoom-rate="1.2"
-                            :max-scale="7" :min-scale="0.2" :preview-src-list="[img]" :initial-index="4" :key="index"
-                            fit="cover" />
-                    </div>
-                    <div v-if="item.content.voice.length" class="content">
-                        <div class="voice-box">
-                            <div class="icon" @click="toplay(item.time)">
-                                <svg v-if="!playing" t="1698576153001" viewBox="0 0 1024 1024" version="1.1"
-                                    xmlns="http://www.w3.org/2000/svg" p-id="7815" width="13" height="13">
-                                    <path
-                                        d="M889.18 512.01c-128.19 94.47-241.09 167.88-338.7 220.25S326.29 839.69 170.75 897.44c-23.95-128.25-35.92-256.65-35.92-385.2s11.97-257.11 35.92-385.67c111.17 33.95 228.05 83.81 350.65 149.58 122.59 65.78 245.18 144.4 367.78 235.86z"
-                                        fill="#ffffff" p-id="7816"></path>
-                                    <path
-                                        d="M170.75 940.27c-7.32 0-14.6-1.88-21.1-5.56a42.8 42.8 0 0 1-20.99-29.4C104.34 775.07 92 642.79 92 512.24c0-130.53 12.34-262.94 36.66-393.51a42.708 42.708 0 0 1 19.89-28.77c10.43-6.32 23-7.95 34.71-4.35 113.38 34.65 233.95 86.05 358.37 152.8 123.96 66.5 249.47 147.01 373.14 239.29A42.806 42.806 0 0 1 932 512.14a42.816 42.816 0 0 1-17.4 34.36c-129.02 95.08-244.74 170.28-343.86 223.52-98.81 52.99-228.37 109.37-385.08 167.58a42.848 42.848 0 0 1-14.91 2.67z m33.73-757.78c-17.82 109.74-26.83 220.45-26.83 329.75 0 108.47 8.89 218.21 26.41 326.86 131.47-50.31 241.02-98.87 326.17-144.54 83.41-44.79 179.52-106.14 286.29-182.68C711.55 436.46 605.7 370 501.15 313.9c-102.61-55.06-202.19-99.14-296.67-131.41z"
-                                        fill="#ffffff" p-id="7817"></path>
-                                </svg>
-                                <svg v-else t="1698574343186" viewBox="0 0 1024 1024" version="1.1"
-                                    xmlns="http://www.w3.org/2000/svg" p-id="5329" id="mx_n_1698574343188" width="16"
-                                    height="16">
-                                    <path
-                                        d="M312.89 960a99.55 99.55 0 0 0 99.55-99.56V163.56A99.55 99.55 0 0 0 312.89 64a99.56 99.56 0 0 0-99.56 99.56v696.88A99.56 99.56 0 0 0 312.89 960z m298.67-796.44v696.88A99.55 99.55 0 0 0 711.11 960a99.56 99.56 0 0 0 99.56-99.56V163.56A99.56 99.56 0 0 0 711.11 64a99.55 99.55 0 0 0-99.55 99.56z"
-                                        p-id="5330" fill="#ffffff"></path>
-                                </svg>
-                            </div>
-                            <div class="wave">
-                                <svg t="1698574454596" viewBox="0 0 5939 1024" version="1.1"
-                                    xmlns="http://www.w3.org/2000/svg" p-id="6750">
-                                    <path
-                                        d="M665.6 358.4c28.16 0 51.2 21.504 51.2 47.7696v262.8608c0 26.2656-23.04 47.7696-51.2 47.7696s-51.2-21.504-51.2-47.7696V406.1696C614.4 379.904 636.9792 358.4 665.6 358.4z m1843.2 0c28.16 0 51.2 21.504 51.2 47.7696v262.8608c0 26.2656-23.04 47.7696-51.2 47.7696s-51.2-21.504-51.2-47.7696V406.1696C2457.6 379.904 2480.64 358.4 2508.8 358.4z m1536 0c28.16 0 51.2 21.504 51.2 47.7696v262.8608c0 26.2656-23.04 47.7696-51.2 47.7696s-51.2-21.504-51.2-47.7696V406.1696C3993.1392 379.904 4016.2304 358.4 4044.8 358.4z m1843.2 0c28.16 0 51.2 21.504 51.2 47.7696v262.8608c0 26.2656-23.04 47.7696-51.2 47.7696s-51.2-21.504-51.2-47.7696V406.1696c0-26.2656 22.5792-47.7696 51.2-47.7696zM2816 307.2c28.16 0 51.2 19.7632 51.2 43.8784v373.0432c0 24.1152-23.04 43.8784-51.2 43.8784s-51.2-19.7632-51.2-43.8784V351.0784c0-24.1152 23.04-43.8784 51.2-43.8784z m921.6-51.2c28.16 0 51.2 20.2752 51.2 45.056v473.088c0 24.7808-23.04 45.056-51.2 45.056s-51.2-20.2752-51.2-45.056V301.056c0-24.7808 23.04-45.056 51.2-45.056zM3123.2 358.4c28.16 0 51.2 23.04 51.2 51.2v204.8c0 28.16-23.04 51.2-51.2 51.2s-51.2-23.04-51.2-51.2V409.6c0-28.6208 23.04-51.2 51.2-51.2z m307.2-51.2c28.16 0 51.2 21.7088 51.2 48.128v313.344c0 26.4192-23.04 48.128-51.2 48.128s-51.2-21.7088-51.2-48.128V355.328c-0.4608-26.88 22.6304-48.128 51.2-48.128zM358.4 256c28.16 0 51.2 20.2752 51.2 45.056v473.088c0 24.7808-23.04 45.056-51.2 45.056s-51.2-20.2752-51.2-45.056V301.056C307.2 276.2752 330.24 256 358.4 256zM51.2 358.4c28.16 0 51.2 23.04 51.2 51.2v204.8c0 28.16-23.04 51.2-51.2 51.2s-51.2-23.04-51.2-51.2V409.6c0-28.6208 22.5792-51.2 51.2-51.2z m921.6-102.4c28.16 0 51.2 20.992 51.2 46.4896v419.0208c0 25.5488-23.04 46.4896-51.2 46.4896s-51.2-20.992-51.2-46.4896V302.4896C921.6 276.992 944.64 256 972.8 256z m1228.8 0c28.16 0 51.2 20.992 51.2 46.4896v419.0208c0 25.5488-23.04 46.4896-51.2 46.4896s-51.2-20.992-51.2-46.4896V302.4896C2150.4 276.992 2173.44 256 2201.6 256z m2150.4 0c28.16 0 51.2 22.016 51.2 48.9472v465.3056c0 26.88-23.04 48.9472-51.2 48.9472s-51.2-22.016-51.2-48.9472V304.9472c0-26.88 23.04-48.9472 51.2-48.9472z m1228.8 0c28.16 0 51.2 20.992 51.2 46.4896v419.0208c0 25.5488-23.04 46.4896-51.2 46.4896s-51.2-20.992-51.2-46.4896V302.4896c0-25.5488 23.04-46.4896 51.2-46.4896zM1280 204.8c28.16 0 51.2 21.2992 51.2 47.2064v519.9872c0 25.9072-23.04 47.2064-51.2 47.2064s-51.2-21.2992-51.2-47.2064V252.0064c0-25.9072 23.04-47.2064 51.2-47.2064z m614.4 0c28.16 0 51.2 20.6336 51.2 45.8752v573.8496c0 25.2416-23.04 45.8752-51.2 45.8752s-51.2-20.6336-51.2-45.8752V250.6752c0-25.2416 23.04-45.8752 51.2-45.8752z m2764.8-51.2c28.16 0 51.2 21.504 51.2 47.7696v621.2608c0 26.2656-23.04 47.7696-51.2 47.7696s-51.2-21.504-51.2-47.7696V201.3696C4607.5392 175.104 4630.6304 153.6 4659.2 153.6z m614.4 0c28.16 0 51.2 21.504 51.2 47.7696v621.2608c0 26.2656-23.04 47.7696-51.2 47.7696s-51.2-21.504-51.2-47.7696V201.3696c0-26.2656 22.5792-47.7696 51.2-47.7696zM1587.2 0c28.16 0 51.2 20.992 51.2 46.4896v931.0208c0 25.5488-23.04 46.4896-51.2 46.4896s-51.2-20.992-51.2-46.4896V46.4896C1536 20.992 1559.04 0 1587.2 0z m3379.2 51.2c28.16 0 51.2 20.736 51.2 46.08v829.44c0 25.344-23.04 46.08-51.2 46.08s-51.2-20.736-51.2-46.08V97.28c0-25.344 23.04-46.08 51.2-46.08z"
-                                        fill="#333333" p-id="6751"></path>
-                                </svg>
-                            </div>
+                    <div class="msg" v-if="item.role !== 'system'">
+                        <div class="wholename">
+                            <div class="title">{{ item.role === 'other' ? acting.title : client.title }}</div>
+                            <div class="name">{{ item.role === 'other' ? acting.name : client.name }}</div>
                         </div>
-                        <audio :src="item.content.voice[0]" :id="'voice-' + item.time"></audio>
+                        <div v-if="item.content.text.length" class="content">
+                            <MdPreview v-for="(msg, index) of item.content.text" previewTheme="github" :key="index"
+                                editorId="preview-only" :modelValue="msg" />
+                        </div>
+                        <div v-if="item.content.image.length" class="content">
+                            <!-- <MdPreview v-for="(img, index) of item.content.image" previewTheme="github" :key="index" editorId="preview-only"
+                                :modelValue="'![pics](' + img + ')'" /> -->
+                            <el-image v-for="(img, index) of item.content.image"
+                                style="margin: 8px 0px; max-width: 20rem; border-radius: 1rem" :src="img"
+                                :zoom-rate="1.2" :max-scale="7" :min-scale="0.2" :preview-src-list="[img]"
+                                :initial-index="4" :key="index" fit="cover" />
+                        </div>
+                        <div v-if="item.content.voice.length" class="content">
+                            <div class="voice-box">
+                                <div class="icon" @click="toplay(item.time)">
+                                    <svg v-if="!playing" t="1698576153001" viewBox="0 0 1024 1024" version="1.1"
+                                        xmlns="http://www.w3.org/2000/svg" p-id="7815" width="13" height="13">
+                                        <path
+                                            d="M889.18 512.01c-128.19 94.47-241.09 167.88-338.7 220.25S326.29 839.69 170.75 897.44c-23.95-128.25-35.92-256.65-35.92-385.2s11.97-257.11 35.92-385.67c111.17 33.95 228.05 83.81 350.65 149.58 122.59 65.78 245.18 144.4 367.78 235.86z"
+                                            fill="#ffffff" p-id="7816"></path>
+                                        <path
+                                            d="M170.75 940.27c-7.32 0-14.6-1.88-21.1-5.56a42.8 42.8 0 0 1-20.99-29.4C104.34 775.07 92 642.79 92 512.24c0-130.53 12.34-262.94 36.66-393.51a42.708 42.708 0 0 1 19.89-28.77c10.43-6.32 23-7.95 34.71-4.35 113.38 34.65 233.95 86.05 358.37 152.8 123.96 66.5 249.47 147.01 373.14 239.29A42.806 42.806 0 0 1 932 512.14a42.816 42.816 0 0 1-17.4 34.36c-129.02 95.08-244.74 170.28-343.86 223.52-98.81 52.99-228.37 109.37-385.08 167.58a42.848 42.848 0 0 1-14.91 2.67z m33.73-757.78c-17.82 109.74-26.83 220.45-26.83 329.75 0 108.47 8.89 218.21 26.41 326.86 131.47-50.31 241.02-98.87 326.17-144.54 83.41-44.79 179.52-106.14 286.29-182.68C711.55 436.46 605.7 370 501.15 313.9c-102.61-55.06-202.19-99.14-296.67-131.41z"
+                                            fill="#ffffff" p-id="7817"></path>
+                                    </svg>
+                                    <svg v-else t="1698574343186" viewBox="0 0 1024 1024" version="1.1"
+                                        xmlns="http://www.w3.org/2000/svg" p-id="5329" id="mx_n_1698574343188"
+                                        width="16" height="16">
+                                        <path
+                                            d="M312.89 960a99.55 99.55 0 0 0 99.55-99.56V163.56A99.55 99.55 0 0 0 312.89 64a99.56 99.56 0 0 0-99.56 99.56v696.88A99.56 99.56 0 0 0 312.89 960z m298.67-796.44v696.88A99.55 99.55 0 0 0 711.11 960a99.56 99.56 0 0 0 99.56-99.56V163.56A99.56 99.56 0 0 0 711.11 64a99.55 99.55 0 0 0-99.55 99.56z"
+                                            p-id="5330" fill="#ffffff"></path>
+                                    </svg>
+                                </div>
+                                <div class="wave">
+                                    <svg t="1698574454596" viewBox="0 0 5939 1024" version="1.1"
+                                        xmlns="http://www.w3.org/2000/svg" p-id="6750">
+                                        <path
+                                            d="M665.6 358.4c28.16 0 51.2 21.504 51.2 47.7696v262.8608c0 26.2656-23.04 47.7696-51.2 47.7696s-51.2-21.504-51.2-47.7696V406.1696C614.4 379.904 636.9792 358.4 665.6 358.4z m1843.2 0c28.16 0 51.2 21.504 51.2 47.7696v262.8608c0 26.2656-23.04 47.7696-51.2 47.7696s-51.2-21.504-51.2-47.7696V406.1696C2457.6 379.904 2480.64 358.4 2508.8 358.4z m1536 0c28.16 0 51.2 21.504 51.2 47.7696v262.8608c0 26.2656-23.04 47.7696-51.2 47.7696s-51.2-21.504-51.2-47.7696V406.1696C3993.1392 379.904 4016.2304 358.4 4044.8 358.4z m1843.2 0c28.16 0 51.2 21.504 51.2 47.7696v262.8608c0 26.2656-23.04 47.7696-51.2 47.7696s-51.2-21.504-51.2-47.7696V406.1696c0-26.2656 22.5792-47.7696 51.2-47.7696zM2816 307.2c28.16 0 51.2 19.7632 51.2 43.8784v373.0432c0 24.1152-23.04 43.8784-51.2 43.8784s-51.2-19.7632-51.2-43.8784V351.0784c0-24.1152 23.04-43.8784 51.2-43.8784z m921.6-51.2c28.16 0 51.2 20.2752 51.2 45.056v473.088c0 24.7808-23.04 45.056-51.2 45.056s-51.2-20.2752-51.2-45.056V301.056c0-24.7808 23.04-45.056 51.2-45.056zM3123.2 358.4c28.16 0 51.2 23.04 51.2 51.2v204.8c0 28.16-23.04 51.2-51.2 51.2s-51.2-23.04-51.2-51.2V409.6c0-28.6208 23.04-51.2 51.2-51.2z m307.2-51.2c28.16 0 51.2 21.7088 51.2 48.128v313.344c0 26.4192-23.04 48.128-51.2 48.128s-51.2-21.7088-51.2-48.128V355.328c-0.4608-26.88 22.6304-48.128 51.2-48.128zM358.4 256c28.16 0 51.2 20.2752 51.2 45.056v473.088c0 24.7808-23.04 45.056-51.2 45.056s-51.2-20.2752-51.2-45.056V301.056C307.2 276.2752 330.24 256 358.4 256zM51.2 358.4c28.16 0 51.2 23.04 51.2 51.2v204.8c0 28.16-23.04 51.2-51.2 51.2s-51.2-23.04-51.2-51.2V409.6c0-28.6208 22.5792-51.2 51.2-51.2z m921.6-102.4c28.16 0 51.2 20.992 51.2 46.4896v419.0208c0 25.5488-23.04 46.4896-51.2 46.4896s-51.2-20.992-51.2-46.4896V302.4896C921.6 276.992 944.64 256 972.8 256z m1228.8 0c28.16 0 51.2 20.992 51.2 46.4896v419.0208c0 25.5488-23.04 46.4896-51.2 46.4896s-51.2-20.992-51.2-46.4896V302.4896C2150.4 276.992 2173.44 256 2201.6 256z m2150.4 0c28.16 0 51.2 22.016 51.2 48.9472v465.3056c0 26.88-23.04 48.9472-51.2 48.9472s-51.2-22.016-51.2-48.9472V304.9472c0-26.88 23.04-48.9472 51.2-48.9472z m1228.8 0c28.16 0 51.2 20.992 51.2 46.4896v419.0208c0 25.5488-23.04 46.4896-51.2 46.4896s-51.2-20.992-51.2-46.4896V302.4896c0-25.5488 23.04-46.4896 51.2-46.4896zM1280 204.8c28.16 0 51.2 21.2992 51.2 47.2064v519.9872c0 25.9072-23.04 47.2064-51.2 47.2064s-51.2-21.2992-51.2-47.2064V252.0064c0-25.9072 23.04-47.2064 51.2-47.2064z m614.4 0c28.16 0 51.2 20.6336 51.2 45.8752v573.8496c0 25.2416-23.04 45.8752-51.2 45.8752s-51.2-20.6336-51.2-45.8752V250.6752c0-25.2416 23.04-45.8752 51.2-45.8752z m2764.8-51.2c28.16 0 51.2 21.504 51.2 47.7696v621.2608c0 26.2656-23.04 47.7696-51.2 47.7696s-51.2-21.504-51.2-47.7696V201.3696C4607.5392 175.104 4630.6304 153.6 4659.2 153.6z m614.4 0c28.16 0 51.2 21.504 51.2 47.7696v621.2608c0 26.2656-23.04 47.7696-51.2 47.7696s-51.2-21.504-51.2-47.7696V201.3696c0-26.2656 22.5792-47.7696 51.2-47.7696zM1587.2 0c28.16 0 51.2 20.992 51.2 46.4896v931.0208c0 25.5488-23.04 46.4896-51.2 46.4896s-51.2-20.992-51.2-46.4896V46.4896C1536 20.992 1559.04 0 1587.2 0z m3379.2 51.2c28.16 0 51.2 20.736 51.2 46.08v829.44c0 25.344-23.04 46.08-51.2 46.08s-51.2-20.736-51.2-46.08V97.28c0-25.344 23.04-46.08 51.2-46.08z"
+                                            fill="#333333" p-id="6751"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <audio :src="item.content.voice[0]" :id="'voice-' + item.time"></audio>
+                        </div>
                     </div>
-                </div>
-                <div class="system-message" v-if="item.role === 'system'">
-                    {{ item.content.text[0] }}
-                </div>
+                    <div class="system-message" v-if="item.role === 'system'">
+                        {{ item.content.text[0] }}
+                    </div>
                 </div>
             </div>
         </div>
@@ -404,12 +420,13 @@ export default {
                 </div>
                 <div class="bu-emoji">
                     <p id="ho-emoji">模型选择</p>
-                    <svg @click="waiting" t="1697536322502" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
-                        xmlns="http://www.w3.org/2000/svg" p-id="6223" width="24" height="24">
+                    <svg  t="1697536322502" class="chat-icon" viewBox="0 0 1024 1024"
+                        version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6223" width="24" height="24">
                         <path
                             d="M618.666667 106.666667H405.333333v85.333333h64v42.666667H149.333333v661.333333h725.333334V234.666667H554.666667V192h64V106.666667zM234.666667 810.666667V320h554.666666v490.666667H234.666667zM21.333333 448v234.666667h85.333334V448H21.333333z m896 0v234.666667h85.333334V448h-85.333334z m-469.333333 64h-106.666667v106.666667h106.666667v-106.666667z m234.666667 0h-106.666667v106.666667h106.666667v-106.666667z"
                             p-id="6224"></path>
                     </svg>
+                    <el-cascader v-model="selectedWarper" :options="warperOptions" style="position: absolute; right: 0.5rem; width:1.5rem; opacity: 0; " @change="activeBotTools" />
                 </div>
             </div>
             <div class="input-box">
@@ -418,7 +435,7 @@ export default {
                         @click="updateCursorPosition"></textarea>
                 </div>
                 <button @click.prevent="send" :disabled="!userInput || !isValidInput(userInput)" id="sendButton">
-                    发送
+                    发送{{ getWarperName() ? ` |  ${getWarperName()}` : '' }}
                 </button>
             </div>
         </div>
@@ -525,7 +542,8 @@ export default {
     border: 0rem;
     background-color: #09f;
     padding: 0.25rem 1rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.8rem;
+    margin-right: 0.5rem
 }
 
 p#ho-emoji {

@@ -47,7 +47,132 @@ export default class Client {
       title: '云崽',
       priority: 0,
       options: {
-        textWarperList: []
+        textWarper: {
+          options:  [
+                    {
+                        value: '',
+                        label: '默认'
+                    },
+                    {
+                        value: 'AP',
+                        label: '画图',
+                        children: [
+                            {
+                                value: 'apHelp',
+                                label: '帮助'
+                            },
+                            {
+                                value: 'apDraw',
+                                label: '画图',
+                                children: [
+                                    {
+                                        value: 'apDrawSquare',
+                                        label: '方图'
+                                    },
+                                    {
+                                        value: 'apDrawVertical',
+                                        label: '竖图'
+                                    },
+                                    {
+                                         value: 'apDrawHorizontal',
+                                        label: '横图'
+                                    }
+                                ]
+                            },
+                        ]
+                    },
+                    {
+                        value: 'GPT',
+                        label: 'AI对话',
+                        children: [
+                            {
+                                value: 'gptHelp',
+                                label: '帮助'
+                            },
+                            {
+                                value: 'gptCancel',
+                                label: '结束对话'
+                            },
+                            {
+                                value: 'gptChat',
+                                label: '聊天',
+                                children: [
+                                    {
+                                        value: 'gptAPI',
+                                        label: 'API'
+                                    },
+                                    {
+                                        value: 'gptGlm4',
+                                        label: 'glm4'
+                                    },
+                                    {
+                                        value: 'gptGemini',
+                                        label: 'gemini'
+                                    },
+                                    {
+                                        value: 'gptClaude',
+                                        label: 'claude'
+                                    }
+                                ]
+                            },
+                        ]
+                    },
+                    {
+                        value: 'Genshin',
+                        label: '原神',
+                        children: [
+                            {
+                                value: 'genshinHelp',
+                                label: '帮助'
+                            },
+                            {
+                                value: 'genshinBind',
+                                label: '绑定UID'
+                            },
+                            {
+                              value: 'genshinIUpdate',
+                              label: '更新面板'
+                            },
+                            {
+                                value: 'genshinPanel',
+                                label: '角色面板'
+                            },
+                            {
+                                value: 'genshinSk',
+                                label: '角色天赋'
+                            },
+                            {
+                                value: 'genshinCe',
+                                label: '角色命座'
+                            },
+                            {
+                                value: 'genshinOb',
+                                label: '角色养成材料'
+                            },
+                        ]
+                    }
+
+          ],
+          presets: {
+            apDrawSquare: '画图方图{xxx}',
+            apDrawVertical: '画图{xxx}',
+            apDrawHorizontal: '画图横图{xxx}',
+            apHelp: '#ap帮助',
+            gptHelp: '#chatgpt帮助',
+            gptCancel: '#chatgpt结束对话',
+            gptAPI: '#api{xxx}',
+            gptGlm4: '#glm4{xxx}',
+            gptGemini: '#gemini{xxx}',
+            gptClaude: '#claude{xxx}',
+            genshinHelp: '#帮助',
+            genshinIUpdate: '#更新面板',
+            genshinBind: '#绑定{xxx}',
+            genshinPanel: '#{xxx}面板',
+            genshinSk: '#{xxx}天赋',
+            genshinCe: '#{xxx}命座',
+            genshinOb: '#{xxx}材料'
+          }
+        }
       }
     }
     this.addConcator('onebot', onebotDefaultConfig)
@@ -59,6 +184,12 @@ export default class Client {
   }
 
   rmConcator() {}
+
+  reset(){
+    localforage.clear()
+    // 刷新页面
+    window.location.reload()
+  }
 
   async init() {
     if (this.isLogin) {
@@ -187,6 +318,7 @@ export default class Client {
         }
       } 
     })
+
   }
 
   /**
@@ -207,5 +339,14 @@ export default class Client {
    */
   getContactor(id) {
     return this.contactList.find((item) => item.id == id) ?? this.contactList[0]
+  }
+
+  async checkLogin() {
+    if (this.isLogin) return true
+    else {
+      const localConfig = await this.getLocalStorage()
+      if (localConfig.isLogin) return true
+      else return false
+    }
   }
 }

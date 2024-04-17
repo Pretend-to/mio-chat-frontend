@@ -69,7 +69,7 @@ export default class Socket extends EventEmitter {
         };
         this.socket.onclose = () => {
             this.available = false;
-            clearInterval(this.heartBeat);
+            this.disconnect();
             console.error('WebSocket连接断开，将在5秒后尝试重新连接...');
             setTimeout(()=>this.connect(), 5000); // 5秒后尝试重新连接
         };
@@ -84,6 +84,10 @@ export default class Socket extends EventEmitter {
     disconnect() {
         if (this.socket) {
             this.socket.close();
+            this.socket = null;
+            this.available = false;
+            clearInterval(this.heartBeat);
+            console.log('WebSocket连接已断开');
         }
     }
 
