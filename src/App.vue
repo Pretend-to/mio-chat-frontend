@@ -52,7 +52,6 @@ export default {
       await client.setLocalStorage()
     },
     '$route'() {
-      this.$message('切换路由')
       this.onPrivate = this.checkPrivate()
     }
   }
@@ -106,7 +105,6 @@ export default {
 .mio-chat-mobile {
   width: 100%;
   height: 100%;
-  min-height: 30rem;
   z-index: 1;
   box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.5);
   border-radius: 0;
