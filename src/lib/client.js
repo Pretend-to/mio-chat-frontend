@@ -49,110 +49,97 @@ export default class Client {
       options: {
         textWarper: {
           options:  [
+            {
+                "value": "",
+                "label": "默认"
+            },
+            {
+                "value": "AP",
+                "label": "画图",
+                "children": [
                     {
-                        value: '',
-                        label: '默认'
+                        "value": "apHelp",
+                        "label": "帮助"
                     },
                     {
-                        value: 'AP',
-                        label: '画图',
-                        children: [
-                            {
-                                value: 'apHelp',
-                                label: '帮助'
-                            },
-                            {
-                                value: 'apDraw',
-                                label: '画图',
-                                children: [
-                                    {
-                                        value: 'apDrawSquare',
-                                        label: '方图'
-                                    },
-                                    {
-                                        value: 'apDrawVertical',
-                                        label: '竖图'
-                                    },
-                                    {
-                                         value: 'apDrawHorizontal',
-                                        label: '横图'
-                                    }
-                                ]
-                            },
-                        ]
+                        "value": "apDrawSquare",
+                        "label": "画方图"
                     },
                     {
-                        value: 'GPT',
-                        label: 'AI对话',
-                        children: [
-                            {
-                                value: 'gptHelp',
-                                label: '帮助'
-                            },
-                            {
-                                value: 'gptCancel',
-                                label: '结束对话'
-                            },
-                            {
-                                value: 'gptChat',
-                                label: '聊天',
-                                children: [
-                                    {
-                                        value: 'gptAPI',
-                                        label: 'API'
-                                    },
-                                    {
-                                        value: 'gptGlm4',
-                                        label: 'glm4'
-                                    },
-                                    {
-                                        value: 'gptGemini',
-                                        label: 'gemini'
-                                    },
-                                    {
-                                        value: 'gptClaude',
-                                        label: 'claude'
-                                    }
-                                ]
-                            },
-                        ]
+                        "value": "apDrawVertical",
+                        "label": "画图"
                     },
                     {
-                        value: 'Genshin',
-                        label: '原神',
-                        children: [
-                            {
-                                value: 'genshinHelp',
-                                label: '帮助'
-                            },
-                            {
-                                value: 'genshinBind',
-                                label: '绑定UID'
-                            },
-                            {
-                              value: 'genshinIUpdate',
-                              label: '更新面板'
-                            },
-                            {
-                                value: 'genshinPanel',
-                                label: '角色面板'
-                            },
-                            {
-                                value: 'genshinSk',
-                                label: '角色天赋'
-                            },
-                            {
-                                value: 'genshinCe',
-                                label: '角色命座'
-                            },
-                            {
-                                value: 'genshinOb',
-                                label: '角色养成材料'
-                            },
-                        ]
+                        "value": "apDrawHorizontal",
+                        "label": "画横图"
                     }
-
-          ],
+                ]
+            },
+            {
+                "value": "GPT",
+                "label": "AI对话",
+                "children": [
+                    {
+                        "value": "gptHelp",
+                        "label": "帮助"
+                    },
+                    {
+                        "value": "gptCancel",
+                        "label": "结束对话"
+                    },
+                    {
+                        "value": "gptAPI",
+                        "label": "API"
+                    },
+                    {
+                        "value": "gptGlm4",
+                        "label": "glm4"
+                    },
+                    {
+                        "value": "gptGemini",
+                        "label": "gemini"
+                    },
+                    {
+                        "value": "gptClaude",
+                        "label": "claude"
+                    }
+                ]
+            },
+            {
+                "value": "Genshin",
+                "label": "原神",
+                "children": [
+                    {
+                        "value": "genshinHelp",
+                        "label": "帮助"
+                    },
+                    {
+                        "value": "genshinBind",
+                        "label": "绑定UID"
+                    },
+                    {
+                        "value": "genshinIUpdate",
+                        "label": "更新面板"
+                    },
+                    {
+                        "value": "genshinPanel",
+                        "label": "角色面板"
+                    },
+                    {
+                        "value": "genshinSk",
+                        "label": "角色天赋"
+                    },
+                    {
+                        "value": "genshinCe",
+                        "label": "角色命座"
+                    },
+                    {
+                        "value": "genshinOb",
+                        "label": "角色养成材料"
+                    }
+                ]
+            }
+        ],
           presets: {
             apDrawSquare: '画图方图{xxx}',
             apDrawVertical: '画图{xxx}',
