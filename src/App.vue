@@ -6,7 +6,7 @@ export default {
   data() {
     return {
       onPhone: window.innerWidth >= 600 ? false : true,
-      onPrivate: false
+      onPrivate: this.checkPrivate()
     }
   },
   components: {
@@ -41,7 +41,7 @@ export default {
   },
   methods: {
     checkPrivate(){
-      const onPrivate = !this.$router.name || this.$router.name === 'privateChat' || this.$router.name === 'privateProfile'
+      const onPrivate = this.$router.name === 'privateChat' || this.$router.name === 'privateProfile'
       return onPrivate
     }
   },
