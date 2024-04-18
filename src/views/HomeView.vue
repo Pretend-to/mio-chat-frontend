@@ -17,6 +17,7 @@ import { client } from '@/lib/runtime.js'
 
 export default {
     data() {
+
         return {
             client: client,
             onList: null
@@ -36,11 +37,10 @@ export default {
     },computed:{
     },
     watch: {
-        '$route': function (to) {
-            console.log('route changed')
-            if (to.name === 'toChat' || to.name === 'toProfile') {
+        '$route': function (newVal) {
+            if (newVal.name === 'toChat' || newVal.name === 'toProfile') {
                 this.onList = true
-            }else if(to.name === 'privateChat'){
+            }else if(newVal.name === 'privateChat'){
                 this.onList = false
             }
         }

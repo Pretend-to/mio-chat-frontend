@@ -41,7 +41,9 @@ export default {
   },
   methods: {
     checkPrivate(){
-      const onPrivate = this.$router.name === 'privateChat' || this.$router.name === 'privateProfile'
+      console.log(this.$route.name)
+
+      const onPrivate = this.$route.name === 'privateChat' || this.$route.name === 'privateProfile'
       return onPrivate
     }
   },
@@ -49,7 +51,8 @@ export default {
     async onPhone() {
       await client.setLocalStorage()
     },
-    '$route.name'() {
+    '$route'() {
+      this.$message('切换路由')
       this.onPrivate = this.checkPrivate()
     }
   }
