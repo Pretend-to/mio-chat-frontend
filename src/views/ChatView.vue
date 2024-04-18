@@ -32,7 +32,7 @@ export default {
             }
         },
         async send() {
-            if(!client.onPhone) this.$refs.textarea.focus()
+            this.$refs.textarea.focus()
 
             const msg = this.getSafeText(this.userInput)
             const warpedMessage = this.warpText(msg)
