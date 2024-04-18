@@ -18,7 +18,7 @@ export default class Client {
     this.socket = null
     this.qq = null
     this.avatar = null
-
+    this.onPhone = null
   }
 
   async beforeInit() {

@@ -4,8 +4,10 @@ import { client } from '@/lib/runtime.js';
 export default {
     data() {
         const contactorList = client.contactList
+        const onPhone = client.onPhone
 
         return {
+            onPhone: onPhone,
             contactorList: contactorList,
         }
     },
@@ -31,7 +33,7 @@ export default {
 </script>
 
 <template>
-    <div id="friendlists">
+    <div id="friendlists" :class="onPhone ? 'mobile' : ''">
         <div class="upsidebar" id="friends">
             <div class="search" id="people">
                 <svg t="1695130526763" class="listicon" viewBox="0 0 1024 1024" version="1.1"
@@ -67,10 +69,16 @@ export default {
     height: 100%;
     display: flex;
     flex-direction: column;
-    min-width: 12.5rem;
-    max-width: 12.5rem;
+    width: 12.5rem;
     border-left: .0625rem solid rgba(161, 154, 154, 0.626);
     border-right: .0625rem solid rgba(161, 154, 154, 0.626);
+}
+
+#friendlists.mobile {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
 }
 
 .upsidebar {

@@ -32,7 +32,7 @@ export default {
             }
         },
         async send() {
-            this.$refs.textarea.focus()
+            if(!client.onPhone) this.$refs.textarea.focus()
 
             const msg = this.getSafeText(this.userInput)
             const warpedMessage = this.warpText(msg)
@@ -135,6 +135,9 @@ export default {
             if (response.continue) this.revmsg(task)
             else console.log(content)
             this.toupdate = true
+        },
+        tolist(){
+            this.$router.push({ name: 'toChat' })
         },
         toplay(time) {
             const audioId = `voice-${time}`
@@ -254,7 +257,7 @@ export default {
 <template>
     <div id="chatwindow">
         <div class="upsidebar" id="chat" v-show="showwindow">
-            <div class="return" @click="tolist">
+            <div class="return" @click="tolist()">
                 <svg t="1696954263382" class="icon" viewBox="0 0 1024 1024" version="1.1"
                     xmlns="http://www.w3.org/2000/svg" p-id="1042" width="20" height="20">
                     <path
@@ -835,7 +838,7 @@ emoji-picker {
     display: none;
 }
 
-@media (max-width: 37.5rem) {
+@media (max-width: 600px) {
     #chatwindow {
         height: 100%;
     }
@@ -876,6 +879,10 @@ emoji-picker {
 
     textarea {
         overflow-y: auto;
+    }
+
+    .inputbar{
+        flex-basis: 4rem;
     }
 }
 </style>

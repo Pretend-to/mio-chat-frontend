@@ -1,11 +1,12 @@
 <script>
 import { client,config } from '@/lib/runtime.js'
 import sideBar from '@/components/SideBar.vue'
-import router from '@/router'
 
 export default {
   data() {
     return {
+      onPhone: window.innerWidth >= 600 ? false : true,
+      onPrivate: false
     }
   },
   components: {
@@ -21,21 +22,49 @@ export default {
       const conncted = await client.init()
       if (conncted) {
         console.log('已经链接成功')
-        if (this.$route.path === '/' || this.$route.path === '/auth') router.push('/home')
       }
     }
 
     await config.init()
   },
-  methods: {}
+  mounted() {
+    if (window.innerWidth < 600 ) this.onPhone = client.onPhone = true
+    else if(window.innerWidth >= 600 ) this.onPhone = client.onPhone = false
+    // 监听窗口宽度变化
+    window.addEventListener('resize', () => {
+      if (window.innerWidth < 600 ) {
+        this.onPhone = client.onPhone = true
+        console.log(client.onPhone)
+      }else if(window.innerWidth >= 600 ) {
+        this.onPhone = client.onPhone = false
+      } })
+  },
+  methods: {
+    checkPrivate(){
+      const onPrivate = !this.$router.name || this.$router.name === 'privateChat' || this.$router.name === 'privateProfile'
+      return onPrivate
+    }
+  },
+  watch: {
+    async onPhone() {
+      await client.setLocalStorage()
+    },
+    '$route.name'() {
+      this.onPrivate = this.checkPrivate()
+    }
+  }
 }
 </script>
 
 <template>
   <div id="app">
-    <div class="mio-chat">
+    <div class="mio-chat" v-if="!onPhone">
       <sideBar></sideBar>
       <router-view></router-view>
+    </div>
+    <div class="mio-chat-mobile" v-else>
+      <router-view></router-view>
+      <sideBar v-if="!onPrivate"></sideBar>
     </div>
   </div>
 </template>
@@ -71,8 +100,17 @@ export default {
   margin: 5rem 5rem;
 }
 
-#sidebar {
-  width: 4.5rem;
+.mio-chat-mobile {
+  width: 100%;
+  height: 100%;
+  min-height: 30rem;
+  z-index: 1;
+  box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.5);
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 0;
 }
 
 @media (min-width: 1024px) {}

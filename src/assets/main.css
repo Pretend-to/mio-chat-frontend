@@ -1,7 +1,8 @@
 body {
-  width: calc(100vw - 1rem);
-  height: calc(100vh - 1rem);
-  margin: 0.5rem;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  margin: 0;
 }
 
 #app {
