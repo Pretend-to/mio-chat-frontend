@@ -68,8 +68,8 @@ export default {
 #friendlists {
     height: 100%;
     display: flex;
+    width: 13rem;
     flex-direction: column;
-    width: 12.5rem;
     border-left: .0625rem solid rgba(161, 154, 154, 0.626);
     border-right: .0625rem solid rgba(161, 154, 154, 0.626);
 }
@@ -144,7 +144,8 @@ button#addcont {
 }
 
 .lists {
-
+    align-items: center;
+    min-width: 12rem;
     display: flex;
     padding: .25rem .5rem;
     height: 3.75rem;
@@ -172,11 +173,8 @@ button#addcont {
 }
 
 .lists>.avatar {
-    margin-top: .625rem;
-    max-width: 2.625rem;
-    min-width: 2.625rem;
-    max-height: 2.625rem;
-    min-height: 2.625rem;
+    width: 2.750rem;
+    height: 2.750rem;
 }
 
 .avatar>img {
@@ -188,6 +186,7 @@ button#addcont {
 
 
 .info {
+    height: 100%;
     display: flex;
     align-items: baseline;
     justify-content: space-between;

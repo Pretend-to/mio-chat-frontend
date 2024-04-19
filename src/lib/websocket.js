@@ -19,7 +19,7 @@ export default class Socket extends EventEmitter {
         this.requests = [];
         this.heartBeat = null;
         this.delay = null;
-    }
+    }   
 
     /**
      * 在浏览器端获取当前host:port
@@ -62,8 +62,12 @@ export default class Socket extends EventEmitter {
             // 每隔3秒发送心跳包
             this.heartBeat = setInterval(async () => {
                 if (this.socket.readyState === WebSocket.OPEN) {
-                    const res = await this.fetch('/api/system/heartbeat',{timestamp:Date.now()});
-                    this.delay = res.delay;
+                    const res = await this.fetch('/api/system/heartbeat',{timestamp:Date.now()})
+                    const serverRevTime = res.revTime
+                    const cuurentTime = Date.now()
+                    const delayTo = res.delay
+                    const delayBack = cuurentTime - serverRevTime
+                    this.delay = delayTo + delayBack
                 }
             }, 3000);
         };
@@ -106,12 +110,14 @@ export default class Socket extends EventEmitter {
     messageHandler(message) {
         try {
             const e = JSON.parse(message);
-            if (!e.data.delay) console.log('WebSocket收到事件，原始数据：', e);
+            if (!e.type == 'heartbeat') console.log('WebSocket收到事件，原始数据：', e);
 
             this.emit(e.request_id, e.data);
 
             if(e.protocol == 'onebot'){
                 this.emit('onebot_message',e)
+            }else if(e.protocol == 'system'){
+                this.emit('system_message',e)
             }
 
             // console.log('WebSocket触发事件', e.request_id.toString, e.data);
@@ -153,7 +159,7 @@ export default class Socket extends EventEmitter {
                 data: data,
             }
 
-            this.requests.push(request.request_id);
+            this.requests.push(request_id);
 
             const timeOut = new Promise(reject => {
                 setTimeout(() => {
@@ -163,6 +169,7 @@ export default class Socket extends EventEmitter {
 
             const response = new Promise(resolve => {
                 this.on(request_id, (res) => {
+                    this.requests.splice(this.requests.indexOf(request_id), 1)
                     resolve(res)
                 })
             })

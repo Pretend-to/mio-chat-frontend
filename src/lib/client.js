@@ -305,6 +305,9 @@ export default class Client {
         }
       } 
     })
+    this.socket.on('system_message', (e) => {
+      console.log(e)
+    })
 
   }
 

@@ -18,6 +18,7 @@ export default {
             warperOptions: [],
             warperPresets: {},
             selectedWarper: null,
+            currentDelay: 0,
         }
     },
     methods: {
@@ -136,7 +137,7 @@ export default {
             else console.log(content)
             this.toupdate = true
         },
-        tolist(){
+        tolist() {
             this.$router.push({ name: 'toChat' })
         },
         toplay(time) {
@@ -203,7 +204,7 @@ export default {
             this.warperOptions = warper.options
             this.warperPresets = warper.presets
         },
-        warpText(rawText){
+        warpText(rawText) {
             if (!this.selectedWarper) return rawText
             const warper = this.selectedWarper[this.selectedWarper.length - 1]
             if (!warper) return rawText
@@ -212,7 +213,7 @@ export default {
             const result = preset.replace(testText, rawText)
             return result
         },
-        getWarperName(){
+        getWarperName() {
             if (!this.selectedWarper) return ''
             const warper = this.selectedWarper[this.selectedWarper.length - 1]
             if (!warper) return ''
@@ -240,6 +241,10 @@ export default {
             this.acting.messageChain.splice(index, 1)
             this.toupdate = true
         })
+
+        setInterval(() => {
+            this.currentDelay = this.client.socket.delay
+        }, 3000)
     },
     updated() {
         if (this.toupdate) {
@@ -247,10 +252,17 @@ export default {
             this.toupdate = false
         }
     },
+    computed: {
+        delayStatus() {
+            return this.currentDelay > 1000 ? 'high' : this.currentDelay > 500 ? 'mid' : this.currentDelay > 100 ? 'low' : 'ultra'
+        }
+    },
     components: {
         MdPreview
     },
-    watch: {}
+    watch: {
+
+    }
 }
 </script>
 
@@ -265,7 +277,11 @@ export default {
                         p-id="1043"></path>
                 </svg>
             </div>
-            <div class="somebody" v-if="acting.name">{{ acting.name }}</div>
+            <div class="somebody">
+                {{ acting.name }}
+                <span class="delaystatus" :id="delayStatus"></span>
+                <span class="delaynum">当前延迟: {{ currentDelay }} ms</span>
+            </div>
             <div class="options">
                 <div id="system">
                     <div class="button" @click="waiting()" id="min">
@@ -424,13 +440,15 @@ export default {
                 </div>
                 <div class="bu-emoji">
                     <p id="ho-emoji">模型选择</p>
-                    <svg  t="1697536322502" class="chat-icon" viewBox="0 0 1024 1024"
-                        version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6223" width="24" height="24">
+                    <svg t="1697536322502" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
+                        xmlns="http://www.w3.org/2000/svg" p-id="6223" width="24" height="24">
                         <path
                             d="M618.666667 106.666667H405.333333v85.333333h64v42.666667H149.333333v661.333333h725.333334V234.666667H554.666667V192h64V106.666667zM234.666667 810.666667V320h554.666666v490.666667H234.666667zM21.333333 448v234.666667h85.333334V448H21.333333z m896 0v234.666667h85.333334V448h-85.333334z m-469.333333 64h-106.666667v106.666667h106.666667v-106.666667z m234.666667 0h-106.666667v106.666667h106.666667v-106.666667z"
                             p-id="6224"></path>
                     </svg>
-                    <el-cascader v-model="selectedWarper" :options="warperOptions" style="position: absolute; right: 0.5rem; width:1.5rem; opacity: 0; " @change="activeBotTools" />
+                    <el-cascader v-model="selectedWarper" :options="warperOptions"
+                        style="position: absolute; right: 0.5rem; width:1.5rem; opacity: 0; "
+                        @change="activeBotTools" />
                 </div>
             </div>
             <div class="input-box">
@@ -439,7 +457,7 @@ export default {
                         @click="updateCursorPosition"></textarea>
                 </div>
                 <button @click.prevent="send" :disabled="!userInput || !isValidInput(userInput)" id="sendButton">
-                    发送{{ getWarperName() ? ` |  ${getWarperName()}` : '' }}
+                    发送{{ getWarperName() ? ` | ${getWarperName()}` : '' }}
                 </button>
             </div>
         </div>
@@ -468,6 +486,7 @@ export default {
 }
 
 .somebody {
+    position: relative;
     margin-left: 1.5rem;
     margin-bottom: 0.5rem;
     font-size: 1rem;
@@ -494,7 +513,7 @@ export default {
 }
 
 .message-window {
-    flex-grow: 3;
+    flex-basis: 50rem;
     overflow: auto;
     overflow-x: hidden;
     background-color: #f1f1f1;
@@ -606,6 +625,7 @@ p#ho-emoji {
 
 #share svg {
     width: 2rem;
+    height: 2rem;
     margin-right: 0.5rem;
 }
 
@@ -827,6 +847,46 @@ emoji-picker {
     border-radius: 16px;
 }
 
+.delaystatus {
+    display: inline-block;
+    width: 0.5rem; /* 设置圆形的宽度 */
+    height: 0.5rem; /* 设置圆形的高度 */
+    border-radius: 50%; /* 将边框半径设置为50%，使其呈现圆形 */
+}
+
+.delaystatus:hover + .delaynum {
+    display: inline-block; /* 在鼠标悬停时显示.delaynum元素 */
+}
+
+.delaynum {
+    display: none;
+    position: absolute; /* 设置元素的定位方式为绝对定位 */
+    font-size: 0.8rem;
+    bottom: 0rem;
+    background-color: #fff;
+    border: 1px dashed #000;
+    border-radius: 0.25rem;
+    padding: 0.125rem 0.25rem;
+    margin-left: 1rem;
+    white-space: nowrap;
+}
+
+.delaystatus#ultra {
+    background-color: rgb(53, 233, 146); /* 绿色 */
+}
+
+.delaystatus#low {
+    background-color: rgb(255, 204, 0); /* 黄色 */
+}
+
+.delaystatus#mid {
+    background-color: rgb(255, 102, 102); /* 红色 */
+}
+.delaystatus#high {
+    background-color: #ccc; /* 设置圆形的背景颜色 */
+}
+
+
 @keyframes l3 {
     to {
         transform: rotate(1turn);
@@ -880,7 +940,7 @@ emoji-picker {
         overflow-y: auto;
     }
 
-    .inputbar{
+    .inputbar {
         flex-basis: 4rem;
     }
 }

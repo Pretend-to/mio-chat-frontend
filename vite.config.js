@@ -31,21 +31,11 @@ export default defineConfig({
     host: "0.0.0.0",
     port: "5173",
     proxy: {
-      "/qava": {
-        // 后台地址
-        target: "https://api.krumio.com/",
-        changeOrigin: true,
-      },
-      "/mava": {
-        // 后台地址
-        target: "http://mio.fcip.top:6050/",
-        changeOrigin: true,
-      },
       "/api/gateway": {
-        target: "ws://149.88.72.168:3080/",
+        target: "ws://127.0.0.1:3080/",
       },
       "/api": {
-        target: "http://149.88.72.168:3080/",
+        target: "http://127.0.0.1:3080/",
       }
     }
   }
