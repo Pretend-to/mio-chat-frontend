@@ -1,3 +1,9 @@
+/**
+ * @author 彭志勇 <2457305628@qq.com>
+ * @lastEditor 彭志勇 <2457305628@qq.com>
+ * @lastEditTime 2024-04-19 11:10:54
+ */
+
 import { fileURLToPath, URL } from 'node:url'
 
 import { defineConfig } from 'vite'
@@ -36,10 +42,10 @@ export default defineConfig({
         changeOrigin: true,
       },
       "/api/gateway": {
-        target: "ws://127.0.0.1:3080/",
+        target: "ws://149.88.72.168:3080/",
       },
       "/api": {
-        target: "http://127.0.0.1:3080/",
+        target: "http://149.88.72.168:3080/",
       }
     }
   }
