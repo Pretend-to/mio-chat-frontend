@@ -18,7 +18,8 @@
             to
                 transform: translateX(0)
                 opacity: 1
-        .icon
+        
+        .icon.ChatGPT
             font-size: 46px
             border-radius: 10px
             background: lightcyan
@@ -77,7 +78,7 @@
 <template>
     <div class="auth-view">
         <div class="container">
-            <svg class="icon" aria-hidden="true">
+            <svg class="icon ChatGPT" aria-hidden="true">
                 <use xlink:href="#icon-ChatGPT"></use>
             </svg>
             <h1 class="title">登录验证</h1>
