@@ -4,8 +4,10 @@ import { client } from '@/lib/runtime.js';
 export default {
     data() {
         const contactorList = client.contactList
+        const onPhone = client.onPhone
 
         return {
+            onPhone: onPhone,
             contactorList: contactorList,
         }
     },
@@ -31,7 +33,7 @@ export default {
 </script>
 
 <template>
-    <div id="friendlists">
+    <div id="friendlists" :class="onPhone ? 'mobile' : ''">
         <div class="upsidebar" id="friends">
             <div class="search" id="people">
                 <svg t="1695130526763" class="listicon" viewBox="0 0 1024 1024" version="1.1"
@@ -67,10 +69,16 @@ export default {
     height: 100%;
     display: flex;
     flex-direction: column;
-    min-width: 200px;
-    max-width: 200px;
-    border-left: 1px solid rgba(161, 154, 154, 0.626);
-    border-right: 1px solid rgba(161, 154, 154, 0.626);
+    width: 12.5rem;
+    border-left: .0625rem solid rgba(161, 154, 154, 0.626);
+    border-right: .0625rem solid rgba(161, 154, 154, 0.626);
+}
+
+#friendlists.mobile {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
 }
 
 .upsidebar {
@@ -78,58 +86,58 @@ export default {
     display: flex;
     flex-direction: row;
     background-color: rgb(255, 255, 255);
-    flex: 0 0 3rem;
-    padding: 22px 12px 8px 12px;
-    align-items: stretch;
-    border-bottom: 1px solid rgba(161, 154, 154, 0.626);
+    flex: 0 0 48px;
+    padding: 0.375rem .5em .5rem 0.5rem;
+    align-items: flex-end;
+    border-bottom: .0625rem solid rgba(161, 154, 154, 0.626);
 }
 
 input#tosearch {
-    width: calc(100% - 18px);
-    margin-top: 3px;
-    padding-left: 5px;
-    height: 18px;
+    width: calc(100% - 1.125rem);
+    margin-top: .1875rem;
+    padding-left: .3125rem;
+    height: 1.125rem;
     background-color: transparent;
-    border: 0px;
+    border: 0rem;
 }
 
 input#tosearch:focus {
     outline: none;
-    border: 0px;
+    border: 0rem;
 }
 
 button#searchButton {
-    width: 16px;
-    border: 0px;
-    border-radius: 5px;
-    margin-left: 8px;
+    width: 1rem;
+    border: 0rem;
+    border-radius: .3125rem;
+    margin-left: .5rem;
     text-wrap: nowrap;
 }
 
 .search {
     flex-grow: 1;
-    border-radius: 5px;
+    border-radius: .3125rem;
     background-color: rgb(245 245, 245);
-    height: 25px;
+    height: 1.5625rem;
     display: flex;
-    padding: 2px 4px;
+    padding: .125rem .25rem;
     align-items: center;
 }
 
 .bu-add {
-    width: 29px;
-    height: 29px;
-    margin-left: 8px;
+    width: 1.8125rem;
+    height: 1.8125rem;
+    margin-left: .5rem;
 }
 
 .listicon {
-    padding-top: 1px;
-    width: 16px;
-    height: 16px;
+    padding-top: .0625rem;
+    width: 1rem;
+    height: 1rem;
 }
 
 button#addcont {
-    border-radius: 5px;
+    border-radius: .3125rem;
     width: 100%;
     height: 100%;
     border: none;
@@ -138,11 +146,11 @@ button#addcont {
 .lists {
 
     display: flex;
-    padding: 4px 8px;
-    height: 60px;
-    max-height: 60px;
-    min-height: 60px;
-    /* border: 1px solid pink; */
+    padding: .25rem .5rem;
+    height: 3.75rem;
+    max-height: 3.75rem;
+    min-height: 3.75rem;
+    /* border: .0625rem solid pink; */
 }
 
 .lists#important {
@@ -151,12 +159,12 @@ button#addcont {
 
 .lists:hover {
     background-color: rgb(240, 240, 240)
-        /* border: 1px solid pink; */
+        /* border: .0625rem solid pink; */
 }
 
 .lists#important:hover {
     background-color: rgb(231, 231, 231);
-    /* border: 1px solid pink; */
+    /* border: .0625rem solid pink; */
 }
 
 .lists#active {
@@ -164,11 +172,11 @@ button#addcont {
 }
 
 .lists>.avatar {
-    margin-top: 10px;
-    max-width: 42px;
-    min-width: 42px;
-    max-height: 42px;
-    min-height: 42px;
+    margin-top: .625rem;
+    max-width: 2.625rem;
+    min-width: 2.625rem;
+    max-height: 2.625rem;
+    min-height: 2.625rem;
 }
 
 .avatar>img {
@@ -177,4 +185,43 @@ button#addcont {
     border-radius: 50%;
 
 }
+
+
+.info {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex: 0 0 calc(100% - 2.625rem);
+    flex-wrap: wrap;
+    width: calc(100% - 2.625rem);
+    min-width: calc(100% - 2.625rem);
+}
+
+.lists#active *{
+    color: #f0f8ff;
+}
+
+.lists .name {
+    flex-basis: 4rem;
+    margin-top: .75rem;
+    font-size: .875rem;
+    margin-left: .5rem;
+}
+
+.info #time {
+    font-size: .625rem;
+    flex-grow: 1;
+    text-align: right;
+}
+
+.info #msgctt {
+    flex-basis: 100%;
+    padding-right: 1rem;
+    font-size: .625rem;
+    margin-left: .5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 </style>

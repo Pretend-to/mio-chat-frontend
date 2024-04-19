@@ -17,22 +17,27 @@ const router = createRouter({
       children: [
         {
           path: '/',
+          name: 'home',
           component: () => import('../views/BlankView.vue')
         },
         {
           path: 'chat',
-          component: () => import('../views/ChatView.vue')
+          name: 'toChat',
+          component: () => import('../views/BlankView.vue')
         },
         {
           path: 'profile',
+          name: 'toProfile',
           component: () => import('../views/ProfileView.vue')
         },
         {
           path: 'chat/:id',
+          name: 'privateChat',
           component: () => import('../views/ChatView.vue')
         },
         {
           path: 'profile/:id',
+          name: 'privateProfile',
           component: () => import('../views/ProfileView.vue')
         }
       ]
@@ -50,14 +55,16 @@ const router = createRouter({
   ]
 })
 
-router.beforeEach(async (to) => {
+router.beforeEach(async (to,from) => {
+  console.log(`router.beforeEach to: ${to.path} from: ${from.path}`)
+  const isLogin = await client.checkLogin()
   if (
     // 检查用户是否已登录
-    !client.isLogin &&
+    !isLogin &&
     // ❗️ 避免无限重定向
     to.name !== 'auth'
   ) {
-    console.log(client)
+    console.log(`client.isLogin: ${client.isLogin} to.name!== auth: ${to.name!== 'auth'}`)
     console.log('未登录，重定向到登录页面')
     // 将用户重定向到登录页面
     return { name: 'auth' }

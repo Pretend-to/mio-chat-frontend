@@ -1,0 +1,52 @@
+.github-theme p {
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0.2rem 0;
+}
+
+.md-editor-preview-wrapper {
+    position: relative;
+    flex: 1;
+    box-sizing: border-box;
+    overflow: auto;
+    padding: 0 0 ;
+}
+.content img {
+    margin: 8px 0px;
+    max-width: 20rem;
+    border-radius: 1rem;
+}
+
+.message-body#user .md-editor h1,
+.message-body#user .md-editor h2,
+.message-body#user .md-editor h3,
+.message-body#user .md-editor h4,
+.message-body#user .md-editor h5,
+.message-body#user .md-editor h6,
+.message-body#user .md-editor li,
+.message-body#user .md-editor ul,
+.message-body#user .md-editor p{
+
+    color: aliceblue;
+    background-color: rgb(0, 153, 255);
+
+}
+
+
+figure {
+    margin: 0;
+}
+::-webkit-scrollbar {
+    width: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    -webkit-box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+    background: #adacac8a;
+}
+
+.el-popper__arrow {
+    display: none;
+}
