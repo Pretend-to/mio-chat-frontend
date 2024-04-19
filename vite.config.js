@@ -1,3 +1,9 @@
+/**
+ * @author 彭志勇 <2457305628@qq.com>
+ * @lastEditor 彭志勇 <2457305628@qq.com>
+ * @lastEditTime 2024-04-19 11:10:54
+ */
+
 import { fileURLToPath, URL } from 'node:url'
 
 import { defineConfig } from 'vite'
