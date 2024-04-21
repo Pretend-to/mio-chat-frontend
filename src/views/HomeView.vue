@@ -24,7 +24,7 @@ export default {
         }
     },
     components: {
-        friendlist
+        friendlist,
     },
     methods: {
     },mounted(){

@@ -1,5 +1,10 @@
 <template>
     <div class="blank-view">
-        <h1>Blank View</h1>
     </div>
 </template>
+<style scoped>
+.blank-view {
+    background-color: rgb(241,241,241);
+}
+
+</style>

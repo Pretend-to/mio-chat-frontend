@@ -19,6 +19,7 @@ export default {
             warperPresets: {},
             selectedWarper: null,
             currentDelay: 0,
+            toupdate: false,
         }
     },
     methods: {
@@ -36,7 +37,7 @@ export default {
             this.$refs.textarea.focus()
 
             const msg = this.getSafeText(this.userInput)
-            const warpedMessage = this.warpText(msg)
+            const warpedMessage = this.acting.platform === 'onebot'? this.warpText(msg) : msg
             this.userInput = this.textareaRef.value = ''
 
             const container = {
@@ -84,8 +85,12 @@ export default {
         },
         cleanScreen() {
             this.acting.messageChain = []
-            this.global.stroge() //持久化存储
+            client.setLocalStorage() //持久化存储
             this.toupdate = true
+        },
+        cleanHistoty(){
+            this.acting.updateFirstMessage()
+            this.$message({ message: '上下文信息已清除，之后的请求将不再记录上文记录', type:'success' })
         },
         async reset() {
             this.one.init()
@@ -99,23 +104,19 @@ export default {
         waiting() {
             this.$message({ message: '此功能尚未开放', type: 'warning' })
         },
-        async voiceList() {
-            let data = ['关闭']
-            const list = await this.one.getVoices()
-            this.tochoose.list = data.concat(list)
-            this.listype = 1
-            this.tochoose.chosen =
-                this.crtvoice === '关闭' ? 0 : 1 + list.findIndex((item) => item === this.crtvoice)
-            this.showchose = true
-        },
         async activeBotTools() {
-            const testMessage = 'text'
-            const testMessage2 = 'test'
-            const warpedMessage = this.warpText(testMessage)
-            const warpedMessage2 = this.warpText(testMessage2)
-            if (warpedMessage2 === warpedMessage) {
-                this.userInput = this.textareaRef.value = warpedMessage
-                await this.send()
+            if (this.acting.platform === 'onebot') {
+                const testMessage = 'text'
+                const testMessage2 = 'test'
+                const warpedMessage = this.warpText(testMessage)
+                const warpedMessage2 = this.warpText(testMessage2)
+                if (warpedMessage2 === warpedMessage) {
+                    this.userInput = this.textareaRef.value = warpedMessage
+                    await this.send()
+                }
+            } else {
+                this.acting.activeModel = this.selectedWarper[this.selectedWarper.length - 1]
+                this.$message({ message: '已切换到' + this.acting.activeModel + '模型', type: 'success' })
             }
         },
         changevoice(data) {
@@ -161,21 +162,8 @@ export default {
             this.pickedmsg = index
             console.log(this.acting.history[index])
         },
-        readmsg(data) {
-            console.log(data)
-            if (data.chosen === 0) {
-                var textarea = document.createElement('textarea')
-                textarea.value = this.acting.history[this.pickedmsg].content.text[0]
-                document.body.appendChild(textarea)
-                textarea.select()
-                document.execCommand('copy')
-                document.bodyNaNpxoveChild(textarea)
-                this.$message('已复制')
-            } else {
-                this.acting.history.splice(this.pickedmsg, 1)
-                this.$message('已删除')
-                this.global.stroge() //持久化存储
-            }
+        readmsg() {
+            
         },
         showTime(index) {
             const thisTime = this.acting.messageChain[index].time
@@ -200,9 +188,15 @@ export default {
             }
         },
         getBotTools() {
+            this.selectedWarper = [""]
             const warper = this.acting.options.textWarper
             this.warperOptions = warper.options
             this.warperPresets = warper.presets
+        },
+        getBotModels() {
+            this.selectedWarper = this.acting.activeModel ? [this.acting.activeModel] : ["gpt-3.5-turbo"]
+            this.warperOptions = this.acting.options.modelsOptions
+            this.acting.activeModel = "gpt-3.5-turbo"
         },
         warpText(rawText) {
             if (!this.selectedWarper) return rawText
@@ -214,12 +208,16 @@ export default {
             return result
         },
         getWarperName() {
-            if (!this.selectedWarper) return ''
+            if (this.acting.platform === 'onebot'){
+                if (!this.selectedWarper) return ''
             const warper = this.selectedWarper[this.selectedWarper.length - 1]
             if (!warper) return ''
             const preset = this.warperPresets[warper]
             const name = preset.replace('#', '').replace('{xxx}', '')
             return name
+            }else {
+                return this.selectedWarper ? this.selectedWarper[this.selectedWarper.length - 1] : ''
+            }
         }
     },
     mounted() {
@@ -227,9 +225,12 @@ export default {
         this.textareaRef.addEventListener('input', this.adjustTextareaHeight)
 
         console.log(this.acting)
-        setTimeout(this.tobuttom, 50)
+        setTimeout(this.tobuttom, 0)
 
-        this.getBotTools()
+        
+        if(this.acting.platform === 'onebot')this.getBotTools()
+        else this.getBotModels()
+        this.acting.active = true
 
         this.acting.on('revMessage', (message) => {
             this.acting.messageChain.push(message)
@@ -240,6 +241,17 @@ export default {
             // 从消息链中删除消息
             this.acting.messageChain.splice(index, 1)
             this.toupdate = true
+        })
+
+        this.acting.on(`updateMessage`, (e) => {
+            const messageIndex = e.messageIndex
+            const updatedMessage = e.updatedMessage
+            const rawMessage = this.acting.messageChain[messageIndex]
+            if (rawMessage) {
+                rawMessage.content.text[0] = updatedMessage
+            }
+            this.toupdate = true
+            client.setLocalStorage() //持久化存储
         })
 
         setInterval(() => {
@@ -261,7 +273,20 @@ export default {
         MdPreview
     },
     watch: {
-
+        '$route'(newVal, oldVal) {
+            const currentId = parseInt(newVal.params.id)
+            const contactor = client.getContactor(currentId)
+            this.acting = contactor
+            this.acting.active = true
+            this.tobuttom()
+            if (oldVal.params.id)  {
+                const oldId = parseInt(oldVal.params.id)
+                const oldContactor = client.getContactor(oldId)
+                oldContactor.active = false
+                if(this.acting.platform === 'onebot')this.getBotTools()
+                else this.getBotModels()
+            }
+        },
     }
 }
 </script>
@@ -309,7 +334,7 @@ export default {
                         </svg>
                     </div>
                 </div>
-                <div id="share" @click="toimg()">
+                <div id="share" @click="waiting()">
                     <svg t="1696841917190" class="icon" viewBox="0 0 1024 1024" version="1.1"
                         xmlns="http://www.w3.org/2000/svg" p-id="4742">
                         <path
@@ -377,6 +402,15 @@ export default {
                             </div>
                             <audio :src="item.content.voice[0]" :id="'voice-' + item.time"></audio>
                         </div>
+                        <div v-if="item.content.forward?.length" class="content">
+                        </div>
+                        <div v-if="!item.content.text.length && 
+                                   !item.content.image.length &&
+                                   !item.content.voice.length &&
+                                   !item.content.forward?.length" class="content">
+                            <MdPreview previewTheme="github" 
+                                editorId="preview-only" modelValue="`我正在思考...`" />
+                        </div>
                     </div>
                     <div class="system-message" v-if="item.role === 'system'">
                         {{ item.content.text[0] }}
@@ -410,7 +444,7 @@ export default {
                 </div>
                 <div class="bu-emoji">
                     <p id="ho-emoji">重置人格</p>
-                    <svg @click="waiting" t="1695146872454" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
+                    <svg @click="cleanHistoty" t="1695146872454" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
                         xmlns="http://www.w3.org/2000/svg" p-id="3849">
                         <path
                             d="M934.4 206.933333c-17.066667-4.266667-34.133333 6.4-38.4 23.466667l-23.466667 87.466667C797.866667 183.466667 654.933333 96 497.066667 96 264.533333 96 74.666667 281.6 74.666667 512s189.866667 416 422.4 416c179.2 0 339.2-110.933333 398.933333-275.2 6.4-17.066667-2.133333-34.133333-19.2-40.533333-17.066667-6.4-34.133333 2.133333-40.533333 19.2-51.2 138.666667-187.733333 232.533333-339.2 232.533333C298.666667 864 138.666667 706.133333 138.666667 512S300.8 160 497.066667 160c145.066667 0 277.333333 87.466667 330.666666 217.6l-128-36.266667c-17.066667-4.266667-34.133333 6.4-38.4 23.466667-4.266667 17.066667 6.4 34.133333 23.466667 38.4l185.6 49.066667c2.133333 0 6.4 2.133333 8.533333 2.133333 6.4 0 10.666667-2.133333 17.066667-4.266667 6.4-4.266667 12.8-10.666667 14.933333-19.2l49.066667-185.6c0-17.066667-8.533333-34.133333-25.6-38.4z"
@@ -431,7 +465,7 @@ export default {
                 </div>
                 <div class="bu-emoji">
                     <p id="ho-emoji">语音</p>
-                    <svg @click="voiceList" t="1697536440024" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
+                    <svg @click="waiting" t="1697536440024" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
                         xmlns="http://www.w3.org/2000/svg" p-id="7282" width="24" height="24">
                         <path
                             d="M544 851.946667V906.666667a32 32 0 0 1-64 0v-54.72C294.688 835.733333 149.333333 680.170667 149.333333 490.666667v-21.333334a32 32 0 0 1 64 0v21.333334c0 164.949333 133.717333 298.666667 298.666667 298.666666s298.666667-133.717333 298.666667-298.666666v-21.333334a32 32 0 0 1 64 0v21.333334c0 189.514667-145.354667 345.066667-330.666667 361.28zM298.666667 298.56C298.666667 180.8 394.165333 85.333333 512 85.333333c117.781333 0 213.333333 95.541333 213.333333 213.226667v192.213333C725.333333 608.533333 629.834667 704 512 704c-117.781333 0-213.333333-95.541333-213.333333-213.226667V298.56z m64 0v192.213333C362.666667 573.12 429.557333 640 512 640c82.496 0 149.333333-66.805333 149.333333-149.226667V298.56C661.333333 216.213333 594.442667 149.333333 512 149.333333c-82.496 0-149.333333 66.805333-149.333333 149.226667z"
@@ -465,6 +499,7 @@ export default {
 </template>
 
 <style scoped>
+
 #chatwindow {
     z-index: 1;
     min-width: 0.0625rem;

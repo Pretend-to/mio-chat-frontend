@@ -112,7 +112,7 @@ export default class Socket extends EventEmitter {
             const e = JSON.parse(message);
             if (!e.type == 'heartbeat') console.log('WebSocket收到事件，原始数据：', e);
 
-            this.emit(e.request_id, e.data);
+            this.emit(e.request_id, e);
 
             if(e.protocol == 'onebot'){
                 this.emit('onebot_message',e)
@@ -170,7 +170,7 @@ export default class Socket extends EventEmitter {
             const response = new Promise(resolve => {
                 this.on(request_id, (res) => {
                     this.requests.splice(this.requests.indexOf(request_id), 1)
-                    resolve(res)
+                    resolve(res.data)
                 })
             })
 
@@ -187,4 +187,45 @@ export default class Socket extends EventEmitter {
 
         })
     }
+
+    async *streamCompletions(data) {
+        console.log('WebSocket开始流式获取补全数据')
+        const request = {
+            request_id: this.genRequestID(),
+            protocol: 'openai',
+            type: 'completions',
+            data: data,
+        }
+    
+        this.requests.push(request.request_id);
+
+        this.sendObject(request)
+    
+        let resolve;
+        let reject;
+        let promise = new Promise((r, j) => { resolve = r; reject = j; });
+    
+        this.on(request.request_id, (data) => {
+            // console.log('WebSocket收到补全数据', data);
+            if (data.message === 'update') {
+                resolve(data.data.chunk);
+                promise = new Promise((r, j) => { resolve = r; reject = j; }); // Create a new promise for the next data chunk
+            } else if (data.message === 'completed' || data.message === 'failed') {
+                reject({ done: true }); // Reject the promise to stop the iteration
+            }
+        });
+    
+        try {
+            while(true) {
+                const chunk = await promise; // Wait for the 'on' callback to be called
+                yield chunk; // Yield the data chunk
+            }
+        } catch(e) {
+            if (e.done) {
+                return; // Stop the iteration
+            }
+            throw e; // If it's another error, rethrow it
+        }
+    }    
+    
 }

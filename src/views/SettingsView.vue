@@ -1,6 +1,6 @@
 <template>
     <div id="settings-view">
-        <button @click="reset()">点我重置</button>
+        <el-button class="reset-btn" @click="reset()" type="info" plain>点我重置</el-button>
     </div>
 </template>
 
@@ -28,6 +28,13 @@ export default {
     width: 100%;
     height: 100%;
     background-color: #f2f2f2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.reset-btn {
+
 }
 
 </style>
