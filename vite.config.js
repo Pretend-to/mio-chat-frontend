@@ -42,10 +42,10 @@ export default defineConfig({
         changeOrigin: true,
       },
       "/api/gateway": {
-        target: "ws://149.88.72.168:3080/",
+        target: "ws://127.0.0.1:3080/",
       },
       "/api": {
-        target: "http://149.88.72.168:3080/",
+        target: "http://127.0.0.1:3080/",
       }
     }
   }
