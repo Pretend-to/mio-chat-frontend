@@ -47,7 +47,6 @@ export default class Socket extends EventEmitter {
             // 发送登录信息
             const loginRes = await this.fetch('/api/system/login', headers);
             console.log('WebSocket登录成功', loginRes);
-            this.emit('login', loginRes);
 
 
             setTimeout(() => {
@@ -208,10 +207,12 @@ export default class Socket extends EventEmitter {
         this.on(request.request_id, (data) => {
             // console.log('WebSocket收到补全数据', data);
             if (data.message === 'update') {
-                resolve(data.data.chunk);
+                // resolve(data.data.chunk);
+                resolve(data);
                 promise = new Promise((r, j) => { resolve = r; reject = j; }); // Create a new promise for the next data chunk
             } else if (data.message === 'completed' || data.message === 'failed') {
-                reject({ done: true }); // Reject the promise to stop the iteration
+                console.log('WebSocket流式获取补全数据结束', data.message);
+                reject({ done: true,data: data }); // Reject the promise to stop the iteration
             }
         });
     
@@ -222,6 +223,7 @@ export default class Socket extends EventEmitter {
             }
         } catch(e) {
             if (e.done) {
+                yield e.data;
                 return; // Stop the iteration
             }
             throw e; // If it's another error, rethrow it

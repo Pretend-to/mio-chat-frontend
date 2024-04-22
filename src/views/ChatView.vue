@@ -85,6 +85,7 @@ export default {
         },
         cleanScreen() {
             this.acting.messageChain = []
+            this.acting.updateFirstMessage()
             client.setLocalStorage() //持久化存储
             this.toupdate = true
         },
@@ -218,6 +219,50 @@ export default {
             }else {
                 return this.selectedWarper ? this.selectedWarper[this.selectedWarper.length - 1] : ''
             }
+        },
+        initContactor(contactor){
+            contactor.active = true
+
+            contactor.on('revMessage', (message) => {
+                this.acting.messageChain.push(message)
+                this.toupdate = true
+            })
+            contactor.on('delMessage', (index) => {
+                console.log(`删除消息${index}`)
+                // 从消息链中删除消息
+                this.acting.messageChain.splice(index, 1)
+                this.toupdate = true
+            })
+
+            contactor.on('updateMessage', (e) => {
+                const messageIndex = e.messageIndex;
+                const updatedMessage = e.updatedMessage;
+                const rawMessage = this.acting.messageChain[messageIndex];
+                if (rawMessage) {
+                    rawMessage.content.text[0] = updatedMessage;
+                }
+                console.log(rawMessage.content.text[0]);
+                this.toupdate = true;
+            });
+
+
+            contactor.on(`completeMessage`,(e)=>{
+                const messageIndex = e.index
+                const rawMessage = this.acting.messageChain[messageIndex]
+                if (rawMessage) {
+                    rawMessage.content.text[0] = e.text
+                }
+                this.toupdate = true
+                client.setLocalStorage() //持久化存储
+            })
+        },
+        disableContactor(contactor){
+            contactor.active = false
+
+            contactor.off(`updateMessage`)
+            contactor.off(`revMessage`)
+            contactor.off(`delMessage`)
+            contactor.off(`completeMessage`)
         }
     },
     mounted() {
@@ -227,32 +272,14 @@ export default {
         console.log(this.acting)
         setTimeout(this.tobuttom, 0)
 
+        const currentId = this.$route.params.id
+        const contactor = client.getContactor(currentId)
+        this.initContactor(contactor)
+
         
         if(this.acting.platform === 'onebot')this.getBotTools()
         else this.getBotModels()
-        this.acting.active = true
-
-        this.acting.on('revMessage', (message) => {
-            this.acting.messageChain.push(message)
-            this.toupdate = true
-        })
-        this.acting.on('delMessage', (index) => {
-            console.log(`删除消息${index}`)
-            // 从消息链中删除消息
-            this.acting.messageChain.splice(index, 1)
-            this.toupdate = true
-        })
-
-        this.acting.on(`updateMessage`, (e) => {
-            const messageIndex = e.messageIndex
-            const updatedMessage = e.updatedMessage
-            const rawMessage = this.acting.messageChain[messageIndex]
-            if (rawMessage) {
-                rawMessage.content.text[0] = updatedMessage
-            }
-            this.toupdate = true
-            client.setLocalStorage() //持久化存储
-        })
+        
 
         setInterval(() => {
             this.currentDelay = this.client.socket.delay
@@ -273,19 +300,19 @@ export default {
         MdPreview
     },
     watch: {
-        '$route'(newVal, oldVal) {
-            const currentId = parseInt(newVal.params.id)
+        '$route.params.id'(newVal, oldVal) {
+            const currentId = parseInt(newVal)
             const contactor = client.getContactor(currentId)
             this.acting = contactor
-            this.acting.active = true
+            this.initContactor(this.acting)
             this.tobuttom()
-            if (oldVal.params.id)  {
-                const oldId = parseInt(oldVal.params.id)
+            if (oldVal) {
+                const oldId = parseInt(oldVal)
                 const oldContactor = client.getContactor(oldId)
-                oldContactor.active = false
-                if(this.acting.platform === 'onebot')this.getBotTools()
-                else this.getBotModels()
+                this.disableContactor(oldContactor)
             }
+            if(this.acting.platform === 'onebot')this.getBotTools()
+            else this.getBotModels()
         },
     }
 }
@@ -360,8 +387,9 @@ export default {
                             <div class="name">{{ item.role === 'other' ? acting.name : client.name }}</div>
                         </div>
                         <div v-if="item.content.text.length" class="content">
-                            <MdPreview v-for="(msg, index) of item.content.text" previewTheme="github" :key="index"
-                                editorId="preview-only" :modelValue="msg" />
+                            <MdPreview  previewTheme="github" 
+                                editorId="preview-only" :modelValue="item.content.text[0]" />
+                            <!-- <div>{{  }}</div> -->
                         </div>
                         <div v-if="item.content.image.length" class="content">
                             <!-- <MdPreview v-for="(img, index) of item.content.image" previewTheme="github" :key="index" editorId="preview-only"
@@ -473,16 +501,17 @@ export default {
                     </svg>
                 </div>
                 <div class="bu-emoji">
-                    <p id="ho-emoji">模型选择</p>
+                    <p id="ho-emoji">{{ acting.platform == 'openai' ? '模型选择' : '工具选择' }}</p>
+                    
+                    <el-cascader v-model="selectedWarper" :options="warperOptions"
+                        id="warper-selector"
+                        @change="activeBotTools" />
                     <svg t="1697536322502" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
                         xmlns="http://www.w3.org/2000/svg" p-id="6223" width="24" height="24">
                         <path
                             d="M618.666667 106.666667H405.333333v85.333333h64v42.666667H149.333333v661.333333h725.333334V234.666667H554.666667V192h64V106.666667zM234.666667 810.666667V320h554.666666v490.666667H234.666667zM21.333333 448v234.666667h85.333334V448H21.333333z m896 0v234.666667h85.333334V448h-85.333334z m-469.333333 64h-106.666667v106.666667h106.666667v-106.666667z m234.666667 0h-106.666667v106.666667h106.666667v-106.666667z"
                             p-id="6224"></path>
                     </svg>
-                    <el-cascader v-model="selectedWarper" :options="warperOptions"
-                        style="position: absolute; right: 0.5rem; width:1.5rem; opacity: 0; "
-                        @change="activeBotTools" />
                 </div>
             </div>
             <div class="input-box">
@@ -617,6 +646,10 @@ p#ho-emoji {
     transform: translate(-60%);
 }
 
+.bu-emoji:hover > p#ho-emoji {
+    display: block;
+}
+
 .bu-emoji {
     position: relative;
 }
@@ -684,9 +717,10 @@ p#ho-emoji {
     background-color: rgb(255, 0, 0);
 }
 
-.button#close:hover svg path {
+.button#close:hover svg {
     fill: #fff;
 }
+
 
 .upsidebar .options {
     flex-basis: 6rem;
@@ -945,6 +979,10 @@ emoji-picker {
     .upsidebar * {
         color: white;
         fill: white;
+    }
+
+    .delaynum {
+        color: black;
     }
 
     #system {

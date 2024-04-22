@@ -97,7 +97,7 @@ export default {
 <template>
     <div id="friendlists" :class="onPhone ? 'mobile' : ''">
         <div class="upsidebar" id="friends">
-            <div class="search" id="people">
+            <div class="search" >
                 <svg t="1695130526763" class="listicon" viewBox="0 0 1024 1024" version="1.1"
                     xmlns="http://www.w3.org/2000/svg" p-id="3427">
                     <path
@@ -136,8 +136,13 @@ export default {
     border-right: .0625rem solid rgba(161, 154, 154, 0.626);
 }
 
+.people {
+    height: calc(100% - 3rem);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
 #friendlists.mobile {
-    height: 100%;
+    height:100%;
     display: flex;
     flex-direction: column;
     width: 100%;

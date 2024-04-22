@@ -37,6 +37,7 @@ export default class Contactor extends EventEmmiter {
     }
 
     enableOpenaiListener() {
+        
         this.kernel.on('updateMessage', (e) => {
             let updatedMessage
             const messageIndex = e.index
@@ -46,9 +47,27 @@ export default class Contactor extends EventEmmiter {
                 if(rawMessage.content.text.length == 0) rawMessage.content.text.push('')
                 // 拼接
                 updatedMessage = rawMessage.content.text[0].concat(chunk)
+                
             }
-            this.emit('updateMessage', {messageIndex: messageIndex, updatedMessage: updatedMessage});
+                this.emit('updateMessage', {messageIndex: messageIndex, updatedMessage: updatedMessage});
+
         });
+
+
+        this.kernel.on('completeMessage', (e) => {
+            const messageIndex = e.index
+            const rawMessage = this.messageChain[messageIndex]
+            if(rawMessage){
+                this.emit('completeMessage',{text:rawMessage.content.text[0],index:messageIndex});
+            }
+        })
+        this.kernel.on('failedMessage', (e) => {
+            const messageIndex = e.index
+            const rawMessage = this.messageChain[messageIndex]
+            if(rawMessage){
+                this.emit('completeMessage', {text:e.error,index:messageIndex});
+            }
+        })
     }
 
     /**

@@ -58,7 +58,7 @@ export default {
 
 #main-mobile {
     width: 100%;
-    height: 100vh;
+    max-height: calc(100vh - 4rem);
     background-color: rgb(255, 255, 255);
     flex-grow: 1;
     display: flex;

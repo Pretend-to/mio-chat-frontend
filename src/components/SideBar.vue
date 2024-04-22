@@ -161,15 +161,17 @@ export default {
     justify-content: space-between;
     align-items: center;
     flex-grow: 1;
-    margin: 1.2rem 1.2rem;
+    /* margin: 1.2rem 1.2rem; */
 }
 
 .up-half,
 .down-half {
-    width: 100%;
+    width: 50%;
     display: flex;
     flex-direction: column;
-
+    justify-content: space-between;
+    flex-basis:8rem;
+    justify-content: center;
 }
 
 .icon-back {
@@ -226,10 +228,14 @@ export default {
 }
 
 @media screen and (max-width: 600px) {
+    .options {
+        justify-content: space-evenly;
+    }
+
     #sidebar {
         width: 100%;
         flex-direction: row;
-        height: 4rem;
+        flex-basis: 4rem;
     }
 
     .avatar {
@@ -243,7 +249,7 @@ export default {
 
     .up-half,
     .down-half {
-        width: 50%;
+        flex-basis: 50%;
         display: flex;
         flex-direction: row;
         justify-content:space-evenly;
