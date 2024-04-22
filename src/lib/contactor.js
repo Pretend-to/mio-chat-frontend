@@ -49,8 +49,8 @@ export default class Contactor extends EventEmmiter {
                 updatedMessage = rawMessage.content.text[0].concat(chunk)
                 
             }
-                this.emit('updateMessage', {messageIndex: messageIndex, updatedMessage: updatedMessage});
-
+            if(this.active) this.emit('updateMessage', {messageIndex: messageIndex, updatedMessage: updatedMessage});
+            else this.messageChain[messageIndex].content.text[0] = updatedMessage
         });
 
 
@@ -58,7 +58,7 @@ export default class Contactor extends EventEmmiter {
             const messageIndex = e.index
             const rawMessage = this.messageChain[messageIndex]
             if(rawMessage){
-                this.emit('completeMessage',{text:rawMessage.content.text[0],index:messageIndex});
+                if(this.active) this.emit('completeMessage',{text:rawMessage.content.text[0],index:messageIndex});
             }
         })
         this.kernel.on('failedMessage', (e) => {
