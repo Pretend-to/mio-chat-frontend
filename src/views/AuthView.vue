@@ -19,19 +19,10 @@
                 transform: translateX(0)
                 opacity: 1
         
-        .icon.ChatGPT
+        .iconfont.ChatGPT
             font-size: 46px
             border-radius: 10px
             background: lightcyan
-            animation: rotation 5s infinite linear
-
-            @keyframes rotation
-                from
-                    transform: rotate(0)
-                50%
-                    transform: rotate(180deg)
-                to
-                    transform: rotate(360deg)
 
         .title
             font-size: 50px
@@ -78,9 +69,7 @@
 <template>
     <div class="auth-view">
         <div class="container">
-            <svg class="icon ChatGPT" aria-hidden="true">
-                <use xlink:href="#icon-ChatGPT"></use>
-            </svg>
+            <i class="iconfont ChatGPT"></i>
             <h1 class="title">登录验证</h1>
             <p class="hint">管理员开启了密码验证，请在下方填入访问码</p>
             <input type="password" v-model="accessCode" placeholder="在此处填写访问码">
