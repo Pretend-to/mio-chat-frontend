@@ -6,7 +6,7 @@
     <div id="main-mobile" v-else-if="onList || this.$route.name === 'home'">
         <friendlist></friendlist>
     </div>
-    <div id="main-mobile" v-else>
+    <div id="main-mobile" class="mobile-chat" v-else>
         <router-view></router-view>
     </div>
 </template>
@@ -62,5 +62,9 @@ export default {
     background-color: rgb(255, 255, 255);
     flex-grow: 1;
     display: flex;
+}
+
+.mobile-chat#main-mobile {
+    max-height: 100%;
 }
 </style>
