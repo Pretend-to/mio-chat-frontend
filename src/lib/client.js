@@ -295,10 +295,10 @@ export default class Client {
     this.code = code
     return new Promise((resolve, reject) => {
       const socket = new Socket(this.id, this.code)
-      // 5秒内没有成功建立链接，则认为登录失败
+      // 3秒内没有成功建立链接，则认为登录失败
       const timer = setTimeout(() => {
-        reject('登录超时，请检查网络连接或重新登录')
-      }, 5000)
+        reject('登录超时，网络链接错误或存在已连接的标签页')
+      }, 3000)
       socket.on('connect', (info) => {
         console.log('登录成功')
         clearTimeout(timer)

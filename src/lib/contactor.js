@@ -229,7 +229,7 @@ export default class Contactor extends EventEmmiter {
     getLastContent() {
         const msg = this.messageChain[this.messageChain.length - 1]
         if (!msg) return ''
-        let shownMsg = '6'
+        let shownMsg = ''
 
         msg.content.forEach(element => {
             if(element.type == 'text') shownMsg += element.data.text

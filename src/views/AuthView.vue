@@ -8,6 +8,9 @@ $baseColor: #1d93ab
     place-items: center
 
     .container
+        display: flex
+        flex-direction: column
+        align-items: center
         width: 50%
         margin: 0 auto
         text-align: center
@@ -81,7 +84,9 @@ $baseColor: #1d93ab
             .login
                 color: white
                 background: $baseColor
+                width: 10rem
 </style>
+
 
 <template>
     <div class="auth-view">
@@ -123,8 +128,7 @@ const login = async () => {
                 await router.push('/home')
             }
         } catch (error) {
-            console.error(error)
-
+            this.$message.error(error)
         }
         requesting.value = false
     }

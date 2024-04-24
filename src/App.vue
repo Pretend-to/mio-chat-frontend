@@ -8,6 +8,7 @@ export default {
       onPhone: window.innerWidth >= 600 ? false : true,
       onPrivate: this.checkPrivate(),
       client: client,
+      fullScreen: true,
     }
   },
   components: {
@@ -26,6 +27,8 @@ export default {
       }
     }
 
+    this.fullScreen = client.fullScreen
+
     await config.init()
   },
   mounted() {
@@ -39,6 +42,7 @@ export default {
       }else if(window.innerWidth >= 600 ) {
         this.onPhone = client.onPhone = false
       } })
+
   },
   methods: {
     checkPrivate(){
@@ -61,7 +65,7 @@ export default {
 
 <template>
   <div id="app">
-    <div class="mio-chat" :id="client.fullScreen ? 'fullscreen' : ''" v-if="!onPhone">
+    <div class="mio-chat" :id="fullScreen ? 'fullscreen' : ''" v-if="!onPhone">
       <sideBar></sideBar>
       <router-view></router-view>
     </div>

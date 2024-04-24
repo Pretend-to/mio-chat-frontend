@@ -41,6 +41,7 @@ export default {
             const msg = this.getSafeText(this.userInput)
             const warpedMessage = this.acting.platform === 'onebot' ? this.warpText(msg) : msg
             this.userInput = this.textareaRef.value = ''
+            this.adjustTextareaHeight(); 
 
             const container = {
                 role: 'user',
@@ -266,6 +267,11 @@ export default {
             contactor.off(`revMessage`)
             contactor.off(`delMessage`)
             contactor.off(`completeMessage`)
+        },
+        adjustTextareaHeight() {
+            const textarea = this.$refs.textarea
+            textarea.style.height = 'auto'
+            textarea.style.height = textarea.scrollHeight + 'px'
         }
     },
     mounted() {
@@ -637,6 +643,7 @@ $icon-hover: #09f
 
     textarea
         overflow-y: auto
+        max-height: 20rem
         resize: none
         font-size: 1rem
         background-color: #f1f1f1
