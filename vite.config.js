@@ -29,13 +29,13 @@ export default defineConfig({
   },
   server: {
     host: "0.0.0.0",
-    port: "8080",
+    port: "1314",
     proxy: {
       "/api/gateway": {
-        target: "ws://127.0.0.1:3080/",
+        target: "ws://149.88.72.168:3080/",
       },
       "/api": {
-        target: "http://127.0.0.1:3080/",
+        target: "http://149.88.72.168:3080/",
       }
     }
   }

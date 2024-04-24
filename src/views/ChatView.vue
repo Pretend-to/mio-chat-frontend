@@ -561,7 +561,7 @@ $icon-hover: #09f
                     font-size: .9rem
 
                 .window-close
-                    margin-top: -.1rem
+                    margin-top: -.15rem
 
             @media (max-width: $mobile)
                 display: none
