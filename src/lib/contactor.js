@@ -44,13 +44,12 @@ export default class Contactor extends EventEmmiter {
             const chunk = e.chunk
             const rawMessage = this.messageChain[messageIndex]
             if(rawMessage){
-                if(rawMessage.content.text.length == 0) rawMessage.content.text.push('')
+                if(rawMessage.content[0].type == 'pending') rawMessage.content[0].type = 'text'
                 // 拼接
-                updatedMessage = rawMessage.content.text[0].concat(chunk)
-                
+                updatedMessage = rawMessage.content[0].data.text += chunk
             }
             if(this.active) this.emit('updateMessage', {messageIndex: messageIndex, updatedMessage: updatedMessage});
-            else this.messageChain[messageIndex].content.text[0] = updatedMessage
+            else this.messageChain[messageIndex].content[0].data.text = updatedMessage
         });
 
 
@@ -58,7 +57,7 @@ export default class Contactor extends EventEmmiter {
             const messageIndex = e.index
             const rawMessage = this.messageChain[messageIndex]
             if(rawMessage){
-                if(this.active) this.emit('completeMessage',{text:rawMessage.content.text[0],index:messageIndex});
+                if(this.active) this.emit('completeMessage',{text:rawMessage.content[0].data.text,index:messageIndex});
             }
         })
         this.kernel.on('failedMessage', (e) => {
@@ -89,17 +88,17 @@ export default class Contactor extends EventEmmiter {
         }else{
             // 截取从this.firstMessageIndex到结尾的消息
             const cuttedMessageList = this.messageChain.slice(this.firstMessageIndex)
-            const textMessageList = cuttedMessageList.filter(msg => msg.content.text.length)
+            const textMessageList = cuttedMessageList.filter(msg => msg.content[0].type == 'text')
             const validMessageList = textMessageList.filter(msg => msg.role!= 'system')
             const openaiMessageList = validMessageList.map(msg => {
                 return {
                     role: msg.role == 'user' ? 'user' : 'assistant',
-                    content: msg.content.text[0]
+                    content: msg.content[0].data.text
                 }
             })
 
             // 立即发生回复消息
-            this.revMessage({message:[]}) 
+            this.revMessage({content:[]}) 
 
             const settings = {
                 model: this.activeModel,
@@ -151,11 +150,12 @@ export default class Contactor extends EventEmmiter {
             role: "system",
             time: new Date().getTime(),
             id: new Date().getTime(),
-            content: {
-                voice: [],
-                image: [],
-                text: [text]
-            }
+            content: [{
+                type: "text",
+                data: {
+                    text: text
+                }
+            }]
         }
         this.emit('revMessage',container)
 
@@ -229,15 +229,16 @@ export default class Contactor extends EventEmmiter {
     getLastContent() {
         const msg = this.messageChain[this.messageChain.length - 1]
         if (!msg) return ''
-        let type = '';
-        if (msg.content.text.length) {
-            type = msg.content.text[0]
-        } else if (msg.content.image.length) {
-            type = "[图片]"
-        } else {
-            type = '[语音]'
-        }
-        return type;
+        let shownMsg = '6'
+
+        msg.content.forEach(element => {
+            if(element.type == 'text') shownMsg += element.data.text
+            else if(element.type == 'image') shownMsg += ('[图片]')
+            else if(element.type == 'record') shownMsg += ('[语音]')
+            else if(element.type == 'video') shownMsg += ('[视频]')
+            else shownMsg += ('[未知消息类型]') 
+        });
+        return shownMsg
     }
 
     updateFirstMessage(){

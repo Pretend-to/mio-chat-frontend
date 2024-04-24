@@ -14,28 +14,12 @@ export default class Openai extends Adapter {
 
     }
 
-    convertMessage(data){
-        let voiceList = [];
-        let imageList = [];
-        let textList = [];
-        data.message.forEach(element => {
-            if(element.type === "record") {
-                voiceList.push(element.data.file)
-            } else if(element.type === "image") {
-                const base64Data = element.data.file.replace(/^base64:\/\//, "data:image/jpeg;base64,");
-                imageList.push(base64Data)
-            } else if(element.type === "text") {
-                textList.push(element.data.text)
-            } 
-        });
+    convertMessage(){
+
         const webMessage = {
             role:'other',
             time: new Date().getTime(),
-            content:{
-                image: imageList,
-                voice: voiceList,
-                text: textList
-            },
+            content:[{type:'pending',data:{text:''}}],
             id: this.genRequestID(),
         }
         return webMessage
