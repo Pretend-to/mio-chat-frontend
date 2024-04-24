@@ -1,5 +1,7 @@
 <script>
 import { client } from '@/lib/runtime.js';
+import Contactor from '@/lib/contactor.js';
+// import addcontactor from '@/components/AddContactor.vue';
 
 export default {
     data() {
@@ -27,7 +29,67 @@ export default {
             } else {
                 return this.contactorList[index].priority == 0 ? "important" : ""
             }
+        },
+        genOpenaiContactor() {
+            const models = client.models
+            const options = models.map(modelGroup => {
+                return {
+                    value: modelGroup.owner,
+                    label: modelGroup.owner,
+                    children: modelGroup.models.map(model => {
+                        return {
+                            value: model,
+                            label: model,
+                        }
+                    })
+
+                }
+            })
+
+            const openaiDefaultConfig = {
+                id: this.genFakeId(),
+                name: 'OpenAI',
+                avatar: '/api/avatar/openai.png',
+                title: 'gpt',
+                priority: 1,
+                options: {
+                    models: client.models,
+                    modelsOptions: options,
+                    textWarper: {
+                        options: options,
+                        presets: {
+                            "default": ""
+                        }
+                    }
+                }
+            }
+            this.addConcator('openai', openaiDefaultConfig)
+        },
+        async addConcator(platform, config) {
+            const bot = new Contactor(platform, config)
+            this.contactorList.push(bot)
+            await client.setLocalStorage()
+        },
+        genFakeId() {
+            // 生成5位随机数
+            const randomNum = Math.floor(1000 + Math.random() * 9000)
+            // 将随机数转换为字符串
+            const randomNumStr = `1${randomNum}`
+            if (!this.id) {
+                // 将拼接后的字符串转换为数字并返回
+                return parseInt(randomNumStr)
+            } else {
+                // 生成5位随机数
+                const subRandomNum = Math.floor(1000 + Math.random() * 9000)
+                // 将随机数转换为字符串
+                const randomNumStr = `${this.id}${subRandomNum}`
+                return parseInt(randomNumStr)
+            }
         }
+
+    },
+    components: {
+        // addcontactor
     }
 }
 </script>
@@ -35,7 +97,7 @@ export default {
 <template>
     <div id="friendlists" :class="onPhone ? 'mobile' : ''">
         <div class="upsidebar" id="friends">
-            <div class="search" id="people">
+            <div class="search" >
                 <svg t="1695130526763" class="listicon" viewBox="0 0 1024 1024" version="1.1"
                     xmlns="http://www.w3.org/2000/svg" p-id="3427">
                     <path
@@ -45,7 +107,7 @@ export default {
                 <input type="text" id="tosearch" placeholder="搜索">
             </div>
             <div class="bu-add">
-                <button id="addcont" @click="addone">+</button>
+                <button id="addcont" @click="genOpenaiContactor">+</button>
             </div>
         </div>
         <div class="people">
@@ -68,14 +130,19 @@ export default {
 #friendlists {
     height: 100%;
     display: flex;
+    width: 13rem;
     flex-direction: column;
-    width: 12.5rem;
     border-left: .0625rem solid rgba(161, 154, 154, 0.626);
     border-right: .0625rem solid rgba(161, 154, 154, 0.626);
 }
 
+.people {
+    height: calc(100% - 3rem);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
 #friendlists.mobile {
-    height: 100%;
+    height:100%;
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -144,7 +211,8 @@ button#addcont {
 }
 
 .lists {
-
+    align-items: center;
+    min-width: 12rem;
     display: flex;
     padding: .25rem .5rem;
     height: 3.75rem;
@@ -172,11 +240,8 @@ button#addcont {
 }
 
 .lists>.avatar {
-    margin-top: .625rem;
-    max-width: 2.625rem;
-    min-width: 2.625rem;
-    max-height: 2.625rem;
-    min-height: 2.625rem;
+    width: 2.750rem;
+    height: 2.750rem;
 }
 
 .avatar>img {
@@ -188,6 +253,7 @@ button#addcont {
 
 
 .info {
+    height: 100%;
     display: flex;
     align-items: baseline;
     justify-content: space-between;
@@ -197,7 +263,7 @@ button#addcont {
     min-width: calc(100% - 2.625rem);
 }
 
-.lists#active *{
+.lists#active * {
     color: #f0f8ff;
 }
 
@@ -223,5 +289,4 @@ button#addcont {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
 </style>

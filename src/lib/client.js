@@ -17,8 +17,10 @@ export default class Client {
     this.contactList = []
     this.socket = null
     this.qq = null
+    this.botqq = null
     this.avatar = null
     this.onPhone = null
+    this.models = []
   }
 
   async beforeInit() {
@@ -33,7 +35,6 @@ export default class Client {
       // 使用者初次使用
       this.id = this.genFakeId()
       this.code = null
-      this.genDefaultConctor()
       this.setLocalStorage()
       console.log('生成默认信息')
     }
@@ -43,103 +44,103 @@ export default class Client {
     const onebotDefaultConfig = {
       id: this.genFakeId(),
       name: 'OneBot',
-      avatar: '/api/avatar/onebot.jpg',
+      avatar: `/api/qava?q=${this.botqq}`,
       title: '云崽',
       priority: 0,
       options: {
         textWarper: {
-          options:  [
+          options: [
             {
-                "value": "",
-                "label": "默认"
+              "value": "",
+              "label": "默认"
             },
             {
-                "value": "AP",
-                "label": "画图",
-                "children": [
-                    {
-                        "value": "apHelp",
-                        "label": "帮助"
-                    },
-                    {
-                        "value": "apDrawSquare",
-                        "label": "画方图"
-                    },
-                    {
-                        "value": "apDrawVertical",
-                        "label": "画图"
-                    },
-                    {
-                        "value": "apDrawHorizontal",
-                        "label": "画横图"
-                    }
-                ]
+              "value": "AP",
+              "label": "画图",
+              "children": [
+                {
+                  "value": "apHelp",
+                  "label": "帮助"
+                },
+                {
+                  "value": "apDrawSquare",
+                  "label": "画方图"
+                },
+                {
+                  "value": "apDrawVertical",
+                  "label": "画图"
+                },
+                {
+                  "value": "apDrawHorizontal",
+                  "label": "画横图"
+                }
+              ]
             },
             {
-                "value": "GPT",
-                "label": "AI对话",
-                "children": [
-                    {
-                        "value": "gptHelp",
-                        "label": "帮助"
-                    },
-                    {
-                        "value": "gptCancel",
-                        "label": "结束对话"
-                    },
-                    {
-                        "value": "gptAPI",
-                        "label": "API"
-                    },
-                    {
-                        "value": "gptGlm4",
-                        "label": "glm4"
-                    },
-                    {
-                        "value": "gptGemini",
-                        "label": "gemini"
-                    },
-                    {
-                        "value": "gptClaude",
-                        "label": "claude"
-                    }
-                ]
+              "value": "GPT",
+              "label": "AI对话",
+              "children": [
+                {
+                  "value": "gptHelp",
+                  "label": "帮助"
+                },
+                {
+                  "value": "gptCancel",
+                  "label": "结束对话"
+                },
+                {
+                  "value": "gptAPI",
+                  "label": "API"
+                },
+                {
+                  "value": "gptGlm4",
+                  "label": "glm4"
+                },
+                {
+                  "value": "gptGemini",
+                  "label": "gemini"
+                },
+                {
+                  "value": "gptClaude",
+                  "label": "claude"
+                }
+              ]
             },
             {
-                "value": "Genshin",
-                "label": "原神",
-                "children": [
-                    {
-                        "value": "genshinHelp",
-                        "label": "帮助"
-                    },
-                    {
-                        "value": "genshinBind",
-                        "label": "绑定UID"
-                    },
-                    {
-                        "value": "genshinIUpdate",
-                        "label": "更新面板"
-                    },
-                    {
-                        "value": "genshinPanel",
-                        "label": "角色面板"
-                    },
-                    {
-                        "value": "genshinSk",
-                        "label": "角色天赋"
-                    },
-                    {
-                        "value": "genshinCe",
-                        "label": "角色命座"
-                    },
-                    {
-                        "value": "genshinOb",
-                        "label": "角色养成材料"
-                    }
-                ]
+              "value": "Genshin",
+              "label": "原神",
+              "children": [
+                {
+                  "value": "genshinHelp",
+                  "label": "帮助"
+                },
+                {
+                  "value": "genshinBind",
+                  "label": "绑定UID"
+                },
+                {
+                  "value": "genshinIUpdate",
+                  "label": "更新面板"
+                },
+                {
+                  "value": "genshinPanel",
+                  "label": "角色面板"
+                },
+                {
+                  "value": "genshinSk",
+                  "label": "角色天赋"
+                },
+                {
+                  "value": "genshinCe",
+                  "label": "角色命座"
+                },
+                {
+                  "value": "genshinOb",
+                  "label": "角色养成材料"
+                }
+              ]
             }
-        ],
+          ],
           presets: {
             apDrawSquare: '画图方图{xxx}',
             apDrawVertical: '画图{xxx}',
@@ -163,6 +164,42 @@ export default class Client {
       }
     }
     this.addConcator('onebot', onebotDefaultConfig)
+    const models = this.models
+    const options = models.map(modelGroup => {
+      return {
+        value: modelGroup.owner,
+        label: modelGroup.owner,
+        children: modelGroup.models.map(model => {
+          return {
+            value: model,
+            label: model,
+          }
+        })
+
+      }
+    })
+    console.log(options)
+
+    const openaiDefaultConfig = {
+      id: this.genFakeId(),
+      name: 'OpenAI',
+      avatar: '/api/avatar/openai.png',
+      title: 'gpt',
+      priority: 1,
+      options: {
+        models: this.models,
+        modelsOptions: options,
+        textWarper: {
+          options: options,
+          presets: {
+            "default": ""
+          }
+        }
+      }
+    }
+    console.log(this.openaiDefaultConfig)
+    this.addConcator('openai', openaiDefaultConfig)
+
   }
 
   addConcator(platform, config) {
@@ -170,7 +207,9 @@ export default class Client {
     this.contactList.push(bot)
   }
 
-  rmConcator() {}
+  rmConcator() {
+
+  }
 
   reset(){
     localforage.clear()
@@ -265,12 +304,14 @@ export default class Client {
         clearTimeout(timer)
         this.qq = info.admin_qq
         this.avatar = `/api/qava?q=${this.qq}`
-        this.contactList[0].avatar = `/api/qava?q=${info.bot_qq}`
+        this.botqq = info.bot_qq
         this.isLogin = true
         this.isConnected = true
         this.socket = socket
+        this.models = info.models
         this.setLocalStorage()
         this.addMsgListener()
+        if(this.contactList.length == 0) this.genDefaultConctor()
         console.log(this)
         resolve(true)
       })
@@ -304,6 +345,9 @@ export default class Client {
           }
         }
       } 
+    })
+    this.socket.on('system_message', (e) => {
+      if(e.type != 'heartbeat') console.log(e)
     })
 
   }

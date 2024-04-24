@@ -5,6 +5,7 @@
  */
 
 import './assets/global.sass'
+import 'element-plus/dist/index.css'
 import 'md-editor-v3/lib/style.css';
 import './assets/mio.css'
 
@@ -12,7 +13,6 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 
 import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
 
 import App from './App.vue'
 import router from './router'

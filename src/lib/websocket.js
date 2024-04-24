@@ -19,7 +19,7 @@ export default class Socket extends EventEmitter {
         this.requests = [];
         this.heartBeat = null;
         this.delay = null;
-    }
+    }   
 
     /**
      * 在浏览器端获取当前host:port
@@ -47,7 +47,6 @@ export default class Socket extends EventEmitter {
             // 发送登录信息
             const loginRes = await this.fetch('/api/system/login', headers);
             console.log('WebSocket登录成功', loginRes);
-            this.emit('login', loginRes);
 
 
             setTimeout(() => {
@@ -62,8 +61,12 @@ export default class Socket extends EventEmitter {
             // 每隔3秒发送心跳包
             this.heartBeat = setInterval(async () => {
                 if (this.socket.readyState === WebSocket.OPEN) {
-                    const res = await this.fetch('/api/system/heartbeat',{timestamp:Date.now()});
-                    this.delay = res.delay;
+                    const res = await this.fetch('/api/system/heartbeat',{timestamp:Date.now()})
+                    const serverRevTime = res.revTime
+                    const cuurentTime = Date.now()
+                    const delayTo = res.delay
+                    const delayBack = cuurentTime - serverRevTime
+                    this.delay = delayTo + delayBack
                 }
             }, 3000);
         };
@@ -106,12 +109,14 @@ export default class Socket extends EventEmitter {
     messageHandler(message) {
         try {
             const e = JSON.parse(message);
-            if (!e.data.delay) console.log('WebSocket收到事件，原始数据：', e);
+            if (!e.type == 'heartbeat') console.log('WebSocket收到事件，原始数据：', e);
 
-            this.emit(e.request_id, e.data);
+            this.emit(e.request_id, e);
 
             if(e.protocol == 'onebot'){
                 this.emit('onebot_message',e)
+            }else if(e.protocol == 'system'){
+                this.emit('system_message',e)
             }
 
             // console.log('WebSocket触发事件', e.request_id.toString, e.data);
@@ -153,7 +158,7 @@ export default class Socket extends EventEmitter {
                 data: data,
             }
 
-            this.requests.push(request.request_id);
+            this.requests.push(request_id);
 
             const timeOut = new Promise(reject => {
                 setTimeout(() => {
@@ -163,7 +168,8 @@ export default class Socket extends EventEmitter {
 
             const response = new Promise(resolve => {
                 this.on(request_id, (res) => {
-                    resolve(res)
+                    this.requests.splice(this.requests.indexOf(request_id), 1)
+                    resolve(res.data)
                 })
             })
 
@@ -180,4 +186,48 @@ export default class Socket extends EventEmitter {
 
         })
     }
+
+    async *streamCompletions(data) {
+        console.log('WebSocket开始流式获取补全数据')
+        const request = {
+            request_id: this.genRequestID(),
+            protocol: 'openai',
+            type: 'completions',
+            data: data,
+        }
+    
+        this.requests.push(request.request_id);
+
+        this.sendObject(request)
+    
+        let resolve;
+        let reject;
+        let promise = new Promise((r, j) => { resolve = r; reject = j; });
+    
+        this.on(request.request_id, (data) => {
+            // console.log('WebSocket收到补全数据', data);
+            if (data.message === 'update') {
+                // resolve(data.data.chunk);
+                resolve(data);
+                promise = new Promise((r, j) => { resolve = r; reject = j; }); // Create a new promise for the next data chunk
+            } else if (data.message === 'completed' || data.message === 'failed') {
+                console.log('WebSocket流式获取补全数据结束', data.message);
+                reject({ done: true,data: data }); // Reject the promise to stop the iteration
+            }
+        });
+    
+        try {
+            while(true) {
+                const chunk = await promise; // Wait for the 'on' callback to be called
+                yield chunk; // Yield the data chunk
+            }
+        } catch(e) {
+            if (e.done) {
+                yield e.data;
+                return; // Stop the iteration
+            }
+            throw e; // If it's another error, rethrow it
+        }
+    }    
+    
 }

@@ -50,3 +50,25 @@ figure {
 .el-popper__arrow {
     display: none;
 }
+
+.code-block {
+    font-size: 0.8rem;
+}
+
+.bu-emoji .el-cascader {
+    position: absolute; 
+    right: 1.5rem; 
+    width: 1rem; 
+    opacity: 0%;
+}
+
+.bu-emoji .el-cascader:hover + svg {
+    fill:rgb(0, 153, 255);
+}
+
+@media (max-width: 600px) {
+    .code-block {
+        font-size: 0.6rem;
+    }
+    
+}

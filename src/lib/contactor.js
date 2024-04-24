@@ -23,11 +23,51 @@ export default class Contactor extends EventEmmiter {
         this.title = config.title;
         this.options = config.options;
         this.priority = config.priority;
+        this.firstMessageIndex = 0;
         this.messageChain = config.messageChain || [];
+        this.active = false;
+        this.activeModel = undefined;
 
         this.kernel = this.platform == 'onebot' ?
             new Onebot(config) :
-            new Openai(config);
+            new Openai(config) ;
+
+        if(this.platform == 'openai')
+            this.enableOpenaiListener()
+    }
+
+    enableOpenaiListener() {
+        
+        this.kernel.on('updateMessage', (e) => {
+            let updatedMessage
+            const messageIndex = e.index
+            const chunk = e.chunk
+            const rawMessage = this.messageChain[messageIndex]
+            if(rawMessage){
+                if(rawMessage.content.text.length == 0) rawMessage.content.text.push('')
+                // 拼接
+                updatedMessage = rawMessage.content.text[0].concat(chunk)
+                
+            }
+            if(this.active) this.emit('updateMessage', {messageIndex: messageIndex, updatedMessage: updatedMessage});
+            else this.messageChain[messageIndex].content.text[0] = updatedMessage
+        });
+
+
+        this.kernel.on('completeMessage', (e) => {
+            const messageIndex = e.index
+            const rawMessage = this.messageChain[messageIndex]
+            if(rawMessage){
+                if(this.active) this.emit('completeMessage',{text:rawMessage.content.text[0],index:messageIndex});
+            }
+        })
+        this.kernel.on('failedMessage', (e) => {
+            const messageIndex = e.index
+            const rawMessage = this.messageChain[messageIndex]
+            if(rawMessage){
+                this.emit('completeMessage', {text:e.error,index:messageIndex});
+            }
+        })
     }
 
     /**
@@ -44,8 +84,34 @@ export default class Contactor extends EventEmmiter {
     async webSend(message){
         console.log(message)
         this.messageChain.push(message)
-        return await this.kernel.send(this.id,message.content)
+        if(this.platform == 'onebot'){
+            return await this.kernel.send(this.id,message.content)
+        }else{
+            // 截取从this.firstMessageIndex到结尾的消息
+            const cuttedMessageList = this.messageChain.slice(this.firstMessageIndex)
+            const textMessageList = cuttedMessageList.filter(msg => msg.content.text.length)
+            const validMessageList = textMessageList.filter(msg => msg.role!= 'system')
+            const openaiMessageList = validMessageList.map(msg => {
+                return {
+                    role: msg.role == 'user' ? 'user' : 'assistant',
+                    content: msg.content.text[0]
+                }
+            })
+
+            // 立即发生回复消息
+            this.revMessage({message:[]}) 
+
+            const settings = {
+                model: this.activeModel,
+            }
+
+            const replyIndex = this.messageChain.length - 1
+            this.kernel.send(openaiMessageList,replyIndex,settings)
+
+            return Math.floor(Math.random() * 100000000).toString().padStart(8, '0')
+        }
     }
+        
 
     /**
      * 接收到消息
@@ -54,8 +120,14 @@ export default class Contactor extends EventEmmiter {
      */
     revMessage(message) {
         const webMessage = this.kernel.convertMessage(message)
-        this.emit('revMessage', webMessage)
+        console.log(`收到消息，id:${this.id},激活状态:${this.active}`)
+        console.log(webMessage)
+        
+        if(!this.active) this.messageChain.push(webMessage)
+        else this.emit('revMessage', webMessage)
+        
         console.log(this.messageChain)
+        return webMessage
     }
 
     /**
@@ -166,6 +238,10 @@ export default class Contactor extends EventEmmiter {
             type = '[语音]'
         }
         return type;
+    }
+
+    updateFirstMessage(){
+        this.firstMessageIndex = this.messageChain.length - 1
     }
 
 }

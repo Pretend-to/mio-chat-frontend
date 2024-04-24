@@ -6,7 +6,8 @@ export default {
   data() {
     return {
       onPhone: window.innerWidth >= 600 ? false : true,
-      onPrivate: this.checkPrivate()
+      onPrivate: this.checkPrivate(),
+      client: client,
     }
   },
   components: {
@@ -60,7 +61,7 @@ export default {
 
 <template>
   <div id="app">
-    <div class="mio-chat" v-if="!onPhone">
+    <div class="mio-chat" :id="client.fullScreen ? 'fullscreen' : ''" v-if="!onPhone">
       <sideBar></sideBar>
       <router-view></router-view>
     </div>
@@ -100,6 +101,13 @@ export default {
   display: flex;
   overflow: hidden;
   margin: 5rem 5rem;
+}
+
+.mio-chat#fullscreen {
+  width: 100%;
+  height: 100%;
+  border-radius: 0rem;
+  margin: 0rem;
 }
 
 .mio-chat-mobile {

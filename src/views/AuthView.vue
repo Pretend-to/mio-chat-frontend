@@ -93,7 +93,7 @@ $baseColor: #1d93ab
             <p class="hint">管理员开启了密码验证，请在下方填入访问码</p>
             <input type="password" v-model="accessCode" placeholder="在此处填写访问码">
             <div class="controls">
-                <button class="later">游客登录</button>
+                <button class="later" @click="login">游客登录</button>
                 <button class="login" @click="login">Login</button>
             </div>
         </div>
