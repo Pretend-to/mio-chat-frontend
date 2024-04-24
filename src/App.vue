@@ -58,6 +58,9 @@ export default {
     },
     '$route'() {
       this.onPrivate = this.checkPrivate()
+    },
+    'client.fullScreen'(val) {
+      this.fullScreen = val
     }
   }
 }
