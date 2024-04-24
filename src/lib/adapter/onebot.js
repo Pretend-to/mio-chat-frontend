@@ -35,7 +35,8 @@ export default class Onebot extends Adapter {
 
     /**
      * Send message to server
-     * @param {WebtMessage} message 
+     * @param {id} string
+     * @param {WebMessage} message 
      * @returns {Promise<number>} message_id
      */
     async send(id,message) {

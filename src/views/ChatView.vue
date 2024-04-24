@@ -1,5 +1,6 @@
 <script>
 import { MdPreview } from 'md-editor-v3'
+import ForwardMsg from '@/components/ForwardMsg.vue';
 import 'emoji-picker-element'
 import { client } from '@/lib/runtime.js'
 
@@ -152,16 +153,6 @@ export default {
                 audio.pause()
                 this.playing = false
             }
-
-        },
-        pickmsg(index) {
-            const list = ['复制文本', '删除消息']
-            this.listype = 3
-            this.tochoose.list = list
-            this.tochoose.chosen = null
-            this.showchose = true
-            this.pickedmsg = index
-            console.log(this.acting.history[index])
         },
         readmsg() {
             
@@ -297,7 +288,8 @@ export default {
         }
     },
     components: {
-        MdPreview
+        MdPreview,
+        ForwardMsg,
     },
     watch: {
         '$route.params.id'(newVal, oldVal) {
@@ -389,7 +381,6 @@ export default {
                         <div v-if="item.content.text.length" class="content">
                             <MdPreview  previewTheme="github" 
                                 editorId="preview-only" :modelValue="item.content.text[0]" />
-                            <!-- <div>{{  }}</div> -->
                         </div>
                         <div v-if="item.content.image.length" class="content">
                             <!-- <MdPreview v-for="(img, index) of item.content.image" previewTheme="github" :key="index" editorId="preview-only"

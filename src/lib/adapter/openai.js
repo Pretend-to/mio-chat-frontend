@@ -26,7 +26,7 @@ export default class Openai extends Adapter {
                 imageList.push(base64Data)
             } else if(element.type === "text") {
                 textList.push(element.data.text)
-            }
+            } 
         });
         const webMessage = {
             role:'other',

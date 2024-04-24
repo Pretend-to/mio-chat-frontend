@@ -97,16 +97,23 @@ import router from '@/router'
 import { client } from '@/lib/runtime.js'
 
 const accessCode = ref()
+const requesting = ref(false)
 
 const login = async () => {
-    try {
-        const code = accessCode.value
-        const result = await client.login(code)
-        if (result) {
-            await router.push('/home')
+    if (requesting.value) {
+        return
+    } else {
+        requesting.value = true
+        try {
+            const code = accessCode.value
+            const result = await client.login(code)
+            if (result) {
+                await router.push('/home')
+            }
+        } catch (error) {
+            console.error(error)
         }
-    } catch (error) {
-        console.error(error)
+        requesting.value = false
     }
 }
 </script>
