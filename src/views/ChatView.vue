@@ -1,6 +1,5 @@
 <script>
 import { MdPreview } from 'md-editor-v3'
-import ForwardMsg from '@/components/ForwardMsg.vue';
 import 'emoji-picker-element'
 import { client } from '@/lib/runtime.js'
 
@@ -283,13 +282,12 @@ export default {
         }
     },
     computed: {
-        delayStatus() {
+        getDelayStatus() {
             return this.currentDelay > 1000 ? 'high' : this.currentDelay > 500 ? 'mid' : this.currentDelay > 100 ? 'low' : 'ultra'
         }
     },
     components: {
         MdPreview,
-        ForwardMsg,
     },
     watch: {
         '$route.params.id'(newVal, oldVal) {
@@ -316,13 +314,20 @@ export default {
             <div class="return" @click="tolist()">
                 <i class="iconfont icon-return"></i>
             </div>
-            <div class="somebody" v-if="acting.name">{{ acting.name }}</div>
+            <div class="somebody">
+                {{ acting.name }}
+                <span :class="'delay-status ' + getDelayStatus"></span>
+                <span class="delay-num">当前延迟: {{ currentDelay }} ms</span>
+            </div>
             <div class="options">
                 <ul class="window-controls">
                     <li class="button" @click="waiting()">
                         <span class="window-min">—</span>
                     </li>
-                    <li class="button" @click="waiting()">
+                    <li v-if="client.fullScreen" class="button" @click="client.fullScreen = false">
+                        <span class="window-inmax">⿹</span>
+                    </li>
+                    <li v-else class="button" @click="client.fullScreen = true">
                         <span class="window-max">▢</span>
                     </li>
                     <li class="button" @click="waiting()" id="close">
@@ -524,6 +529,7 @@ $icon-hover: #09f
             margin-bottom: .8rem
 
     .somebody
+        position: relative
         margin-left: 1.5rem
         margin-bottom: 0.5rem
         font-size: 1rem
@@ -851,6 +857,41 @@ emoji-picker
     max-width: 20rem
     border-radius: 16px
 
+.delay-status
+    display: inline-block
+    width: 0.5rem 
+    height: 0.5rem 
+    border-radius: 50% 
+
+    &:hover + .delay-num
+        display: inline-block 
+
+    &.ultra
+        background-color: rgb(53, 233, 146) 
+
+    &.low
+        background-color: rgb(255, 204, 0) 
+
+    &.mid
+        background-color: rgb(255, 102, 102) 
+    
+    &.high
+        background-color: #ccc 
+
+.delay-num
+    display: none
+    position: absolute
+    font-size: 0.8rem
+    bottom: 0rem
+    background-color: #fff
+    border: 1px dashed #000
+    border-radius: 0.25rem
+    padding: 0.125rem 0.25rem
+    margin-left: 1rem
+    white-space: nowrap
+
+
+
 @keyframes l
     to
         transform: rotate(1turn)
@@ -865,6 +906,9 @@ emoji-picker
     .upsidebar *
         color: white
         fill: white
+
+    .delay-num
+        color: black
 
     .window-controls
         display: none
