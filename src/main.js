@@ -1,11 +1,10 @@
 /**
  * @author Mio-FCIP <1099834705@qq.com>
- * @lastEditor 彭志勇 <2457305628@qq.com>
- * @lastEditTime 2024-04-19 11:10:54
+ * @lastEditor 彭志勇 <118327380+ZY16263646566679@users.noreply.github.com>
+ * @lastEditTime 2024-04-24 09:28:40
  */
 
 import './assets/global.sass'
-import '//at.alicdn.com/t/c/font_4459318_ioeido0jcz.js' // 项目图标库
 import 'element-plus/dist/index.css'
 import 'md-editor-v3/lib/style.css';
 import './assets/mio.css'
