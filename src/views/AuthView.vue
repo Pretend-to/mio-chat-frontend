@@ -8,6 +8,9 @@ $baseColor: #1d93ab
     place-items: center
 
     .container
+        display: flex
+        flex-direction: column
+        align-items: center
         width: 50%
         margin: 0 auto
         text-align: center
@@ -81,7 +84,9 @@ $baseColor: #1d93ab
             .login
                 color: white
                 background: $baseColor
+                width: 10rem
 </style>
+
 
 <template>
     <div class="auth-view">
@@ -106,20 +111,26 @@ import router from '@/router'
 import { client } from '@/lib/runtime.js'
 
 const accessCode = ref()
+const requesting = ref(false)
 const iconContainer = ref()
 
 const login = async () => {
-    // 激活图标
     await nextTick(() => iconContainer.value.classList.add('active'))
 
-    try {
-        const code = accessCode.value
-        const result = await client.login(code)
-        if (result) {
-            await router.push('/home')
+    if (requesting.value) {
+        return
+    } else {
+        requesting.value = true
+        try {
+            const code = accessCode.value
+            const result = await client.login(code)
+            if (result) {
+                await router.push('/home')
+            }
+        } catch (error) {
+            this.$message.error(error)
         }
-    } catch (error) {
-        console.error(error)
+        requesting.value = false
     }
 }
 </script>
