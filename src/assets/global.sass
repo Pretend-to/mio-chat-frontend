@@ -25,3 +25,116 @@ body
     display: flex
     align-items: center
     justify-content: center
+
+
+.message-window
+    flex-grow: 3
+    overflow: auto
+    overflow-x: hidden
+    background-color: #f1f1f1
+
+    .message-time
+        width: 100%
+        display: flex
+        justify-content: center
+        align-items: center
+        font-size: 0.75rem
+        color: rgb(120, 124, 127)
+        margin: 0.5rem 0
+
+.message-body
+    padding: 0.625rem 0.625rem
+    display: flex
+    align-items: flex-start
+    /* border: .0625rem solid black; */
+    overflow: hidden
+
+    &#user
+        flex-direction: row-reverse
+
+        & > .msg > .content > *
+            background-color: rgb(0, 153, 255)
+
+        & > .msg > .content
+            background-color: rgb(0, 153, 255)
+
+        .loader
+            left: -2rem
+            top: calc(45% - 0.3125rem)
+
+    &#other
+        flex-direction: row
+
+        & > .msg > .content
+            background-color: rgb(255, 255, 255)
+
+.avatar
+    min-width: 2.5rem
+    min-height: 2.5rem
+    max-width: 2.5rem
+    max-height: 2.5rem
+    border-radius: 50%
+
+    img
+        width: 100%
+        border-radius: 50%
+
+.msg
+    max-width: calc(100% - 5rem)
+    flex-grow: 1
+    display: flex
+    flex-direction: column
+
+#other .msg
+    align-items: flex-start
+
+#user .msg
+    align-items: flex-end
+
+
+.wholename > .name,
+.wholename > .title
+    margin: 0.25rem
+    text-wrap: nowrap
+
+.wholename
+    margin: 0 0.5rem
+    display: flex
+    flex-direction: row
+    justify-content: flex-start 
+
+    & > .name
+        font-size: 0.625rem
+        padding-top: 0.0625rem
+        color: rgb(120, 124, 127)
+
+    & > .title
+        font-size: 0.375rem
+        color: rgb(0, 153, 255)
+        padding: 0.0625rem 0.125rem 0.125rem 0.125rem
+        background-color: rgb(194, 225, 245)
+        border-radius: 0.3125rem
+
+.content
+    max-width: calc(100% - 1.25rem)
+    padding: 0.25rem 0.75rem
+    border-radius: 0.5rem
+    margin: 0.5rem
+
+.system-message
+    width: 100%
+    display: flex
+    justify-content: center
+    align-items: center
+    font-size: 0.75rem
+    color: rgb(120, 124, 127)
+
+.message-container
+    display: flex
+    flex-direction: column
+    width: 100%
+
+.content img
+    margin: 0.5rem 0
+    max-width: 20rem
+    border-radius: 16px

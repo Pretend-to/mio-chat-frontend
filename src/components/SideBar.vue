@@ -92,9 +92,9 @@ export default {
 
 <template>
     <div id="sidebar">
-        <div class="avatar">
+        <div class="admin-avatar">
             <div class="status"></div>
-            <img :src="processedImage" alt="avatar">
+            <img :src="processedImage" alt="admin-avatar">
         </div>
         <div class="options" id="side">
             <div class="up-half">
@@ -195,7 +195,7 @@ export default {
     height: 1.8rem;
 }
 
-.avatar {
+.admin-avatar {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -205,7 +205,7 @@ export default {
     z-index: 10;
 }
 
-.avatar img {
+.admin-avatar img {
     border-radius: 50%;
     width: 60%;
 }
@@ -238,7 +238,7 @@ export default {
         flex-basis: 4rem;
     }
 
-    .avatar {
+    .admin-avatar {
         display: none;
     }
 
