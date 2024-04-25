@@ -87,7 +87,6 @@ $baseColor: #1d93ab
                 width: 10rem
 </style>
 
-
 <template>
     <div class="auth-view">
         <div class="container">
@@ -115,6 +114,7 @@ const requesting = ref(false)
 const iconContainer = ref()
 
 const login = async () => {
+    // 激活图标
     await nextTick(() => iconContainer.value.classList.add('active'))
 
     if (requesting.value) {

@@ -251,8 +251,6 @@ export default {
                 this.toupdate = true
             })
 
-
-            contactor.on(`completeMessage`, (e) => {
             contactor.on(`completeMessage`, (e) => {
                 const messageIndex = e.index
                 const rawMessage = this.acting.messageChain[messageIndex]
@@ -263,9 +261,8 @@ export default {
                 client.setLocalStorage() //持久化存储
             })
         },
-        disableContactor(contactor)  {
+        disableContactor(contactor) {
             contactor.active = false
-
             contactor.off(`updateMessage`)
             contactor.off(`revMessage`)
             contactor.off(`delMessage`)
@@ -451,13 +448,8 @@ export default {
                 </div>
                 <div class="bu-emoji">
                     <p id="ho-emoji">{{ acting.platform == 'openai' ? '模型选择' : '工具选择' }}</p>
-
                     <el-cascader v-model="selectedWarper" :options="warperOptions" id="warper-selector"
                         @change="activeBotTools" />
-
-                    <el-cascader v-model="selectedWarper" :options="warperOptions"
-                                 id="warper-selector"
-                                 @change="activeBotTools"/>
                     <svg t="1697536322502" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
                          xmlns="http://www.w3.org/2000/svg" p-id="6223" width="24" height="24">
                         <path
@@ -882,8 +874,6 @@ emoji-picker
     padding: 0.125rem 0.25rem
     margin-left: 1rem
     white-space: nowrap
-
-
 
 @keyframes l
     to
