@@ -226,18 +226,29 @@ export default class Contactor extends EventEmmiter {
         }
     }
 
-    getLastContent() {
-        const msg = this.messageChain[this.messageChain.length - 1]
-        if (!msg) return ''
+    getMessageSummary(message) {
         let shownMsg = ''
+        if (!message) {
+            const msg = this.messageChain[this.messageChain.length - 1]
+            if (!msg) return ''
+    
+            msg.content.forEach(element => {
+                if(element.type == 'text') shownMsg += element.data.text
+                else if(element.type == 'image') shownMsg += ('[图片]')
+                else if(element.type == 'record') shownMsg += ('[语音]')
+                else if(element.type == 'video') shownMsg += ('[视频]')
+                else shownMsg += ('[未知消息类型]') 
+            });
+        }else{
+            message.forEach(element => {
+                if(element.type == 'text') shownMsg += element.data.text
+                else if(element.type == 'image') shownMsg += ('[图片]')
+                else if(element.type == 'record') shownMsg += ('[语音]')
+                else if(element.type == 'video') shownMsg += ('[视频]')
+                else shownMsg += ('[未知消息类型]') 
+            });
+        }
 
-        msg.content.forEach(element => {
-            if(element.type == 'text') shownMsg += element.data.text
-            else if(element.type == 'image') shownMsg += ('[图片]')
-            else if(element.type == 'record') shownMsg += ('[语音]')
-            else if(element.type == 'video') shownMsg += ('[视频]')
-            else shownMsg += ('[未知消息类型]') 
-        });
         return shownMsg
     }
 

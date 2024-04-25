@@ -7,17 +7,32 @@ export default class Onebot extends Adapter {
 
 
     convertMessage(data) {
-
-        data.message.forEach(element => {
-            if(element.type === "image") {
+        console.log(data)
+        data.message.forEach((element,index) => {
+            if (element.type === "image") {
                 const base64Data = element.data.file.replace(/^base64:\/\//, "data:image/jpeg;base64,");
-                element.data.file = base64Data;
-            }
+                data.message[index].data.file = base64Data;
+                console.log(data.message[index])
+            }else if (element.type === "nodes") {
+                element.data.messages.forEach((node) => {
+                    if (node.type === "image") {
+                        const base64Data = node.data.file.replace(/^base64:\/\//, "data:image/jpeg;base64,");
+                        node.data.file = base64Data;
+                    }
+                })
+            } 
         });
+
+        const rplMessage = data.message.filter(element => element.type === "reply")
+        const midMessage = data.message.filter(element => element.type !== "reply")
+        if (rplMessage.length > 0) {
+            midMessage.push(rplMessage[0])
+        }
+
         const webMessage = {
             role:'other',
             time: new Date().getTime(),
-            content: data.message,
+            content: midMessage,
             id: data.message_id,
         }
         return webMessage

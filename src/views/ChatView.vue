@@ -1,5 +1,6 @@
 <script>
 import { MdPreview } from 'md-editor-v3'
+import  ForwardMsg  from '@/components/ForwardMsg.vue'
 import 'emoji-picker-element'
 import { client } from '@/lib/runtime.js'
 
@@ -272,6 +273,12 @@ export default {
             const textarea = this.$refs.textarea
             textarea.style.height = 'auto'
             textarea.style.height = textarea.scrollHeight + 'px'
+        },
+        getReplyText(id) {
+            const message = this.acting.messageChain.find((item) => item.id === id)
+            if (message) {
+                return `> ${message.content[0].data.text}`
+            }
         }
     },
     mounted() {
@@ -307,6 +314,7 @@ export default {
     },
     components: {
         MdPreview,
+        ForwardMsg
     },
     watch: {
         '$route.params.id'(newVal, oldVal) {
@@ -350,7 +358,7 @@ export default {
                         <span class="window-max">▢</span>
                     </li>
                     <li class="button" @click="waiting()" id="close">
-                        <span class="window-close">x</span>
+                        <span class="window-close">&times;</span>
                     </li>
                 </ul>
                 <div class="share" @click="toimg()">
@@ -381,6 +389,9 @@ export default {
                                     style="margin: 8px 0; max-width: 20rem; border-radius: 1rem" :src="element.data.file"
                                     :zoom-rate="1.2" :max-scale="7" :min-scale="0.2" :preview-src-list="[element.data.file]"
                                     :initial-index="4" :key="index" fit="cover" />
+                                <MdPreview  v-else-if="element.type === 'reply'" previewTheme="github" editorId="preview-only"
+                                    :modelValue="getReplyText(element.data.id)" />
+                                <ForwardMsg v-else-if="element.type === 'nodes'" :contactor="acting" :messages="element.data.messages"  />
                                 <MdPreview v-else previewTheme="github" editorId="preview-only"
                                     modelValue="`正在思考如何回复，请稍等...`" />
                             </div>
@@ -557,47 +568,6 @@ $icon-hover: #09f
                 .iconfont
                     font-size: 1.5rem
 
-.message-window
-    flex-grow: 3
-    overflow: auto
-    overflow-x: hidden
-    background-color: #f1f1f1
-
-    .message-time
-        width: 100%
-        display: flex
-        justify-content: center
-        align-items: center
-        font-size: 0.75rem
-        color: rgb(120, 124, 127)
-        margin: 0.5rem 0
-
-.message-body
-    padding: 0.625rem 0.625rem
-    display: flex
-    align-items: flex-start
-    /* border: .0625rem solid black; */
-    overflow: hidden
-
-    &#user
-        flex-direction: row-reverse
-
-        & > .msg > .content > *
-            background-color: rgb(0, 153, 255)
-
-        & > .msg > .content
-            background-color: rgb(0, 153, 255)
-
-        .loader
-            left: -2rem
-            top: calc(45% - 0.3125rem)
-
-    &#other
-        flex-direction: row
-
-        & > .msg > .content
-            background-color: rgb(255, 255, 255)
-
 .inputbar
     flex-shrink: 0
     display: flex
@@ -767,6 +737,114 @@ emoji-picker
     animation: l3 1s infinite linear
     position: absolute
 
+.delay-status
+    display: inline-block
+    width: 0.5rem 
+    height: 0.5rem 
+    border-radius: 50% 
+
+    &:hover + .delay-num
+        display: inline-block 
+
+    &.ultra
+        background-color: rgb(53, 233, 146) 
+
+    &.low
+        background-color: rgb(255, 204, 0) 
+
+    &.mid
+        background-color: rgb(255, 102, 102) 
+    
+    &.high
+        background-color: #ccc 
+
+.delay-num
+    display: none
+    position: absolute
+    font-size: 0.8rem
+    bottom: 0rem
+    background-color: #fff
+    border: 1px dashed #000
+    border-radius: 0.25rem
+    padding: 0.125rem 0.25rem
+    margin-left: 1rem
+    white-space: nowrap
+
+
+
+@keyframes l
+    to
+        transform: rotate(1turn)
+
+@media (max-width: 600px)
+    #chatwindow
+        height: 100%
+
+    .upsidebar
+        background: #00a8ff linear-gradient(to right, #00d2f8, #00a8ff)
+
+    .upsidebar *
+        color: white
+        fill: white
+
+    .delay-num
+        color: black
+
+    .window-controls
+        display: none
+
+    .somebody
+        padding-bottom: 0.25rem
+
+    textarea
+        overflow-y: auto
+
+    .inputbar
+        flex-basis: 4rem
+</style>
+
+<style lang="sass">
+.message-window
+    flex-grow: 3
+    overflow: auto
+    overflow-x: hidden
+    background-color: #f1f1f1
+
+    .message-time
+        width: 100%
+        display: flex
+        justify-content: center
+        align-items: center
+        font-size: 0.75rem
+        color: rgb(120, 124, 127)
+        margin: 0.5rem 0
+
+.message-body
+    padding: 0.625rem 0.625rem
+    display: flex
+    align-items: flex-start
+    /* border: .0625rem solid black; */
+    overflow: hidden
+
+    &#user
+        flex-direction: row-reverse
+
+        & > .msg > .content > *
+            background-color: rgb(0, 153, 255)
+
+        & > .msg > .content
+            background-color: rgb(0, 153, 255)
+
+        .loader
+            left: -2rem
+            top: calc(45% - 0.3125rem)
+
+    &#other
+        flex-direction: row
+
+        & > .msg > .content
+            background-color: rgb(255, 255, 255)
+
 .avatar
     min-width: 2.5rem
     min-height: 2.5rem
@@ -837,69 +915,4 @@ emoji-picker
     margin: 0.5rem 0
     max-width: 20rem
     border-radius: 16px
-
-.delay-status
-    display: inline-block
-    width: 0.5rem 
-    height: 0.5rem 
-    border-radius: 50% 
-
-    &:hover + .delay-num
-        display: inline-block 
-
-    &.ultra
-        background-color: rgb(53, 233, 146) 
-
-    &.low
-        background-color: rgb(255, 204, 0) 
-
-    &.mid
-        background-color: rgb(255, 102, 102) 
-    
-    &.high
-        background-color: #ccc 
-
-.delay-num
-    display: none
-    position: absolute
-    font-size: 0.8rem
-    bottom: 0rem
-    background-color: #fff
-    border: 1px dashed #000
-    border-radius: 0.25rem
-    padding: 0.125rem 0.25rem
-    margin-left: 1rem
-    white-space: nowrap
-
-
-
-@keyframes l
-    to
-        transform: rotate(1turn)
-
-@media (max-width: 600px)
-    #chatwindow
-        height: 100%
-
-    .upsidebar
-        background: #00a8ff linear-gradient(to right, #00d2f8, #00a8ff)
-
-    .upsidebar *
-        color: white
-        fill: white
-
-    .delay-num
-        color: black
-
-    .window-controls
-        display: none
-
-    .somebody
-        padding-bottom: 0.25rem
-
-    textarea
-        overflow-y: auto
-
-    .inputbar
-        flex-basis: 4rem
 </style>

@@ -119,7 +119,7 @@ export default {
                 <div class="info">
                     <div class="name">{{ item.name }}</div>
                     <div class="msginfo" id="time">{{ item.getLastTime() }}</div>
-                    <div class="msginfo" id="msgctt">{{ item.getLastContent() }}</div>
+                    <div class="msginfo" id="msgctt">{{ item.getMessageSummary() }}</div>
                 </div>
             </div>
         </div>

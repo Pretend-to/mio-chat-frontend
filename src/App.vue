@@ -38,7 +38,6 @@ export default {
     window.addEventListener('resize', () => {
       if (window.innerWidth < 600 ) {
         this.onPhone = client.onPhone = true
-        console.log(client.onPhone)
       }else if(window.innerWidth >= 600 ) {
         this.onPhone = client.onPhone = false
       } })
