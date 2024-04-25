@@ -70,7 +70,7 @@ $baseColor: #1d93ab
             align-items: center
 
             button
-                width: 300px
+                width: 10rem
                 margin-top: 20px
                 padding: 10px 15px
                 border-radius: 8px
@@ -84,9 +84,7 @@ $baseColor: #1d93ab
             .login
                 color: white
                 background: $baseColor
-                width: 10rem
 </style>
-
 
 <template>
     <div class="auth-view">
@@ -109,14 +107,16 @@ $baseColor: #1d93ab
 import { nextTick, ref } from 'vue'
 import router from '@/router'
 import { client } from '@/lib/runtime.js'
+import { ElMessage } from 'element-plus'
 
 const accessCode = ref()
 const requesting = ref(false)
 const iconContainer = ref()
 
 const login = async () => {
+    // 激活图标
     await nextTick(() => iconContainer.value.classList.add('active'))
-
+    
     if (requesting.value) {
         return
     } else {
@@ -128,7 +128,7 @@ const login = async () => {
                 await router.push('/home')
             }
         } catch (error) {
-            this.$message.error(error)
+            ElMessage.error(error.message)
         }
         requesting.value = false
     }

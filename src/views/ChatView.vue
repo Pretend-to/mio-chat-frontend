@@ -8,6 +8,7 @@ export default {
         const currentId = parseInt(this.$route.params.id)
         const contactor = client.getContactor(currentId)
         console.log(contactor)
+
         return {
             acting: contactor,
             showwindow: true,
@@ -102,9 +103,9 @@ export default {
             client.setLocalStorage() //持久化存储
             this.toupdate = true
         },
-        cleanHistoty() {
+        cleanHistoty()  {
             this.acting.updateFirstMessage()
-            this.$message({ message: '上下文信息已清除，之后的请求将不再记录上文记录', type: 'success' })
+            this.$message({ message: '上下文信息已清除，之后的请求将不再记录上文记录', type:  'success' })
         },
         async reset() {
             this.one.init()
@@ -168,6 +169,7 @@ export default {
         },
         readmsg() {
 
+
         },
         showTime(index) {
             const thisTime = this.acting.messageChain[index].time
@@ -192,15 +194,15 @@ export default {
             }
         },
         getBotTools() {
-            this.selectedWarper = [""]
+            this.selectedWarper = ['']
             const warper = this.acting.options.textWarper
             this.warperOptions = warper.options
             this.warperPresets = warper.presets
         },
         getBotModels() {
-            this.selectedWarper = this.acting.activeModel ? [this.acting.activeModel] : ["gpt-3.5-turbo"]
+            this.selectedWarper = this.acting.activeModel ? [this.acting.activeModel] : ['gpt-3.5-turbo']
             this.warperOptions = this.acting.options.modelsOptions
-            this.acting.activeModel = "gpt-3.5-turbo"
+            this.acting.activeModel = 'gpt-3.5-turbo'
         },
         warpText(rawText) {
             if (!this.selectedWarper) return rawText
@@ -212,18 +214,18 @@ export default {
             return result
         },
         getWarperName() {
-            if (this.acting.platform === 'onebot') {
+            if (this.acting.platform === 'onebot')  {
                 if (!this.selectedWarper) return ''
-                const warper = this.selectedWarper[this.selectedWarper.length - 1]
-                if (!warper) return ''
-                const preset = this.warperPresets[warper]
-                const name = preset.replace('#', '').replace('{xxx}', '')
-                return name
-            } else {
+                    const warper = this.selectedWarper[this.selectedWarper.length - 1]
+                    if (!warper) return ''
+                    const preset = this.warperPresets[warper]
+                    const name = preset.replace('#', '').replace('{xxx}', '')
+                    return name
+            }  else {
                 return this.selectedWarper ? this.selectedWarper[this.selectedWarper.length - 1] : ''
             }
         },
-        initContactor(contactor) {
+        initContactor(contactor)  {
             contactor.active = true
 
             contactor.on('revMessage', (message) => {
@@ -231,7 +233,7 @@ export default {
                 this.toupdate = true
             })
             contactor.on('delMessage', (index) => {
-                console.log(`删除消息${index}`)
+                console.log(`删除消息${ index }`)
                 // 从消息链中删除消息
                 this.acting.messageChain.splice(index, 1)
                 this.toupdate = true
@@ -239,16 +241,15 @@ export default {
 
             contactor.on('updateMessage', (e) => {
                 this.ydaKey++;
-                const messageIndex = e.messageIndex;
-                const updatedMessage = e.updatedMessage;
-                const rawMessage = this.acting.messageChain[messageIndex];
+                const messageIndex = e.messageIndex
+                const updatedMessage = e.updatedMessage
+                const rawMessage = this.acting.messageChain[messageIndex]
                 if (rawMessage) {
-                    rawMessage.content[0].data.text = updatedMessage;
+                    rawMessage.content[0].data.text = updatedMessage
                 }
-                console.log(rawMessage.content[0].data.text);
-                this.toupdate = true;
-            });
-
+                console.log(rawMessage.content[0].data.text)
+                this.toupdate = true
+            })
 
             contactor.on(`completeMessage`, (e) => {
                 const messageIndex = e.index
@@ -262,7 +263,6 @@ export default {
         },
         disableContactor(contactor) {
             contactor.active = false
-
             contactor.off(`updateMessage`)
             contactor.off(`revMessage`)
             contactor.off(`delMessage`)
@@ -320,16 +320,16 @@ export default {
                 const oldContactor = client.getContactor(oldId)
                 this.disableContactor(oldContactor)
             }
-            if (this.acting.platform === 'onebot') this.getBotTools()
+            if  (this.acting.platform === 'onebot')  this.getBotTools()
             else this.getBotModels()
-        },
+        }
     }
 }
 </script>
 
 <template>
-    <div id="chatwindow">
-        <div class="upsidebar" id="chat" v-show="showwindow">
+    <div id="chat-window">
+        <div class="upside-bar" v-show="showwindow">
             <div class="return" @click="tolist()">
                 <i class="iconfont icon-return"></i>
             </div>
@@ -392,7 +392,7 @@ export default {
                 </div>
             </div>
         </div>
-        <div class="inputbar" v-show="showwindow">
+        <div class="input-bar" v-show="showwindow">
             <div class="options">
                 <div class="bu-emoji">
                     <emoji-picker v-show="showemoji" ref="emojiPicker" @emoji-click="getemoji"></emoji-picker>
@@ -419,7 +419,7 @@ export default {
                 <div class="bu-emoji">
                     <p id="ho-emoji">重置人格</p>
                     <svg @click="cleanHistoty" t="1695146872454" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
-                        xmlns="http://www.w3.org/2000/svg" p-id="3849">
+                         xmlns="http://www.w3.org/2000/svg" p-id="3849">
                         <path
                             d="M934.4 206.933333c-17.066667-4.266667-34.133333 6.4-38.4 23.466667l-23.466667 87.466667C797.866667 183.466667 654.933333 96 497.066667 96 264.533333 96 74.666667 281.6 74.666667 512s189.866667 416 422.4 416c179.2 0 339.2-110.933333 398.933333-275.2 6.4-17.066667-2.133333-34.133333-19.2-40.533333-17.066667-6.4-34.133333 2.133333-40.533333 19.2-51.2 138.666667-187.733333 232.533333-339.2 232.533333C298.666667 864 138.666667 706.133333 138.666667 512S300.8 160 497.066667 160c145.066667 0 277.333333 87.466667 330.666666 217.6l-128-36.266667c-17.066667-4.266667-34.133333 6.4-38.4 23.466667-4.266667 17.066667 6.4 34.133333 23.466667 38.4l185.6 49.066667c2.133333 0 6.4 2.133333 8.533333 2.133333 6.4 0 10.666667-2.133333 17.066667-4.266667 6.4-4.266667 12.8-10.666667 14.933333-19.2l49.066667-185.6c0-17.066667-8.533333-34.133333-25.6-38.4z"
                             p-id="3850"></path>
@@ -440,7 +440,7 @@ export default {
                 <div class="bu-emoji">
                     <p id="ho-emoji">语音</p>
                     <svg @click="waiting" t="1697536440024" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
-                        xmlns="http://www.w3.org/2000/svg" p-id="7282" width="24" height="24">
+                         xmlns="http://www.w3.org/2000/svg" p-id="7282" width="24" height="24">
                         <path
                             d="M544 851.946667V906.666667a32 32 0 0 1-64 0v-54.72C294.688 835.733333 149.333333 680.170667 149.333333 490.666667v-21.333334a32 32 0 0 1 64 0v21.333334c0 164.949333 133.717333 298.666667 298.666667 298.666666s298.666667-133.717333 298.666667-298.666666v-21.333334a32 32 0 0 1 64 0v21.333334c0 189.514667-145.354667 345.066667-330.666667 361.28zM298.666667 298.56C298.666667 180.8 394.165333 85.333333 512 85.333333c117.781333 0 213.333333 95.541333 213.333333 213.226667v192.213333C725.333333 608.533333 629.834667 704 512 704c-117.781333 0-213.333333-95.541333-213.333333-213.226667V298.56z m64 0v192.213333C362.666667 573.12 429.557333 640 512 640c82.496 0 149.333333-66.805333 149.333333-149.226667V298.56C661.333333 216.213333 594.442667 149.333333 512 149.333333c-82.496 0-149.333333 66.805333-149.333333 149.226667z"
                             p-id="7283"></path>
@@ -448,11 +448,10 @@ export default {
                 </div>
                 <div class="bu-emoji">
                     <p id="ho-emoji">{{ acting.platform == 'openai' ? '模型选择' : '工具选择' }}</p>
-
                     <el-cascader v-model="selectedWarper" :options="warperOptions" id="warper-selector"
                         @change="activeBotTools" />
                     <svg t="1697536322502" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
-                        xmlns="http://www.w3.org/2000/svg" p-id="6223" width="24" height="24">
+                         xmlns="http://www.w3.org/2000/svg" p-id="6223" width="24" height="24">
                         <path
                             d="M618.666667 106.666667H405.333333v85.333333h64v42.666667H149.333333v661.333333h725.333334V234.666667H554.666667V192h64V106.666667zM234.666667 810.666667V320h554.666666v490.666667H234.666667zM21.333333 448v234.666667h85.333334V448H21.333333z m896 0v234.666667h85.333334V448h-85.333334z m-469.333333 64h-106.666667v106.666667h106.666667v-106.666667z m234.666667 0h-106.666667v106.666667h106.666667v-106.666667z"
                             p-id="6224"></path>
@@ -465,7 +464,7 @@ export default {
                         @click="updateCursorPosition"></textarea>
                 </div>
                 <button @click.prevent="send" :disabled="!userInput || !isValidInput(userInput)" id="sendButton">
-                    发送{{ getWarperName() ? ` | ${getWarperName()}` : '' }}
+                    发送{{ getWarperName() ? ` | ${ getWarperName() }` : '' }}
                 </button>
             </div>
         </div>
@@ -476,7 +475,7 @@ export default {
 $mobile: 600px
 $icon-hover: #09f
 
-#chatwindow
+#chat-window
     z-index: 1
     min-width: 0.0625rem
     position: relative
@@ -485,7 +484,10 @@ $icon-hover: #09f
     background-color: #f1f1f1
     flex-direction: column
 
-.upsidebar#chat
+    @media (max-width: $mobile)
+        height: 100%
+
+.upside-bar
     flex-basis: 3.75rem
     flex-shrink: 0
     height: 3.75rem
@@ -494,7 +496,13 @@ $icon-hover: #09f
     justify-content: space-between
     border-bottom: 0.0625rem solid rgba(161, 154, 154, 0.626)
 
-.upsidebar
+    @media (max-width: 600px)
+        background: #00a8ff linear-gradient(to right, #00d2f8, #00a8ff)
+
+        *
+            color: white
+            fill: white
+
     .return
         display: none
 
@@ -598,7 +606,7 @@ $icon-hover: #09f
         & > .msg > .content
             background-color: rgb(255, 255, 255)
 
-.inputbar
+.input-bar
     flex-shrink: 0
     display: flex
     flex-direction: column
@@ -699,6 +707,9 @@ p#ho-emoji
     display: flex
     flex-basis: 100%
 
+    @media (max-width: $mobile)
+        display: none
+
     .button
         display: flex
         justify-content: center
@@ -714,13 +725,6 @@ p#ho-emoji
 .button#close:hover svg path
     fill: #fff
 
-.upsidebar .options
-    flex-basis: 6rem
-    display: flex
-    height: 100%
-    flex-wrap: wrap
-    flex-direction: row-reverse
-
 svg:hover
     fill: rgb(0, 153, 255)
 
@@ -730,24 +734,24 @@ svg:hover
     height: 1.5rem
     margin: 0.25rem 0
 
+    .icon
+        flex-basis: 1.5rem
+        background-color: rgb(0, 0, 0)
+        display: flex
+        justify-content: center
+        align-items: center
+        border-radius: 50%
+
+    .wave
+        display: flex
+        justify-content: center
+        align-items: center
+        flex-grow: 1
+
 emoji-picker
     position: absolute
     top: -25.75rem
     right: -20rem
-
-.voice-box .icon
-    flex-basis: 1.5rem
-    background-color: rgb(0, 0, 0)
-    display: flex
-    justify-content: center
-    align-items: center
-    border-radius: 50%
-
-.voice-box .wave
-    display: flex
-    justify-content: center
-    align-items: center
-    flex-grow: 1
 
 .wave svg
     height: 1.25rem
@@ -871,8 +875,6 @@ emoji-picker
     margin-left: 1rem
     white-space: nowrap
 
-
-
 @keyframes l
     to
         transform: rotate(1turn)
@@ -900,6 +902,6 @@ emoji-picker
     textarea
         overflow-y: auto
 
-    .inputbar
+    .input-bar
         flex-basis: 4rem
 </style>
