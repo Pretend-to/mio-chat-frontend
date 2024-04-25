@@ -1,7 +1,7 @@
 /**
  * @author 彭志勇 <2457305628@qq.com>
- * @lastEditor 彭志勇 <2457305628@qq.com>
- * @lastEditTime 2024-04-24 08:36:05
+ * @lastEditor 彭志勇 <118327380+ZY16263646566679@users.noreply.github.com>
+ * @lastEditTime 2024-04-24 09:28:40
  */
 
 import { fileURLToPath, URL } from 'node:url'
@@ -32,10 +32,10 @@ export default defineConfig({
     port: "1314",
     proxy: {
       "/api/gateway": {
-        target: "ws://149.88.72.168:3080/",
+        target: "ws://127.0.0.1:3080/",
       },
       "/api": {
-        target: "http://149.88.72.168:3080/",
+        target: "http://127.0.0.1:3080/",
       }
     }
   }
