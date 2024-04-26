@@ -34,7 +34,7 @@
                                     :modelValue="message.data.text" />
                                 <el-image v-else-if="message.type === 'image'"
                                     style="margin: 8px 0; max-width: 20rem; border-radius: 1rem"
-                                    :src="message.data.file" :zoom-rate="1.2" :max-scale="7" :min-scale="0.2"
+                                    :src="message.data.file" :zoom-rate="1.2" :preview-teleported="true" :max-scale="7" :min-scale="0.2"
                                     :preview-src-list="[message.data.file]" :initial-index="4" :key="index"
                                     fit="cover" />
                                 <MdPreview v-else previewTheme="github" editorId="preview-only"

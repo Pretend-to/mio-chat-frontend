@@ -1,5 +1,5 @@
 <script>
-import { client,config } from '@/lib/runtime.js'
+import { client, config } from '@/lib/runtime.js'
 import sideBar from '@/components/SideBar.vue'
 
 export default {
@@ -32,19 +32,20 @@ export default {
     await config.init()
   },
   mounted() {
-    if (window.innerWidth < 600 ) this.onPhone = client.onPhone = true
-    else if(window.innerWidth >= 600 ) this.onPhone = client.onPhone = false
+    if (window.innerWidth < 600) this.onPhone = client.onPhone = true
+    else if (window.innerWidth >= 600) this.onPhone = client.onPhone = false
     // 监听窗口宽度变化
     window.addEventListener('resize', () => {
-      if (window.innerWidth < 600 ) {
+      if (window.innerWidth < 600) {
         this.onPhone = client.onPhone = true
-      }else if(window.innerWidth >= 600 ) {
+      } else if (window.innerWidth >= 600) {
         this.onPhone = client.onPhone = false
-      } })
+      }
+    })
 
   },
   methods: {
-    checkPrivate(){
+    checkPrivate() {
       console.log(this.$route.name)
 
       const onPrivate = this.$route.name === 'privateChat' || this.$route.name === 'privateProfile'
@@ -76,6 +77,7 @@ export default {
       <sideBar v-if="!onPrivate"></sideBar>
     </div>
   </div>
+  <a id="beian" href="https://beian.miit.gov.cn/" target="_blank">冀ICP备2023039866号</a>
 </template>
 
 <style scoped>
@@ -126,6 +128,16 @@ export default {
   flex-direction: column;
   overflow: hidden;
   margin: 0;
+}
+
+a#beian {
+  position: fixed;
+  bottom: 1rem;
+  right: 50%;
+  transform: translateX(50%);
+  font-size: 0.8rem;
+  color: #fff;
+  text-decoration: none;
 }
 
 @media (min-width: 1024px) {}

@@ -253,7 +253,7 @@ export default class Contactor extends EventEmmiter {
     }
 
     updateFirstMessage(){
-        this.firstMessageIndex = this.messageChain.length - 1
+        this.firstMessageIndex = this.messageChain.length
     }
 
 }
