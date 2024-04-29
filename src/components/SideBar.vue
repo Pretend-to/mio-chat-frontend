@@ -1,20 +1,13 @@
 <script>
 export default {
     data() {
-        // 获取当前路径
-        const currentPage = this.$route.path;
-        let onProfile = false;
-        let onChat = false;
-        if (currentPage.includes('/home/profile')) {
-            onProfile = true;
-        } else if (currentPage.includes('/home/chat')) {
-            onChat = true;
-        }
+
         return {
             avatar: 'https://api.krumio.com/qava?qq=1099834705',
             processedImage: '',
-            onProfile: onProfile,
-            onChat: onChat,
+            onProfile: false,
+            onChat: false,
+            currentPage: ''
         }
     },
 
@@ -86,6 +79,25 @@ export default {
     },
     mounted() {
         this.currentPage = this.$route.path;
+        // 获取当前路径
+
+        if (this.currentPage.includes('/home/profile')) {
+            this.onProfile = true;
+        } else if (this.currentPage.includes('/home/chat')) {
+            this.onChat = true;
+        }
+    },
+    watch: {
+        currentPage(newVal) {
+            // 监听当前路径变化
+            if (newVal.includes('/home/profile')) {
+                this.onProfile = true;
+                this.onChat = false;
+            } else if (newVal.includes('/home/chat')) {
+                this.onProfile = false;
+                this.onChat = true;
+            }
+        }
     }
 }
 </script>

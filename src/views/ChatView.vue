@@ -24,11 +24,18 @@ export default {
             toupdate: false,
             updatedImgs: [],
             ydaKey: 0,
+            showMenu: false,
+            menuTop: 0,
+            menuLeft: 0,
+            longPressTimer: null,
+            seletedMessageIndex: -1,
+            repliedMessage: null,
         }
     },
     methods: {
         getSafeText(text) {
-            return text.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            return text.replace(/<script>/g, '&lt;script&gt;').replace(/<\/script>/g, '&lt;/script&gt;')
+                .replace(/<style>/g, '&lt;style&gt;').replace(/<\/style>/g, '&lt;/style&gt;');
         },
         handleKeyDown(event) {
             if (event.ctrlKey && event.key === 'Enter') {
@@ -37,17 +44,19 @@ export default {
                 // 处理按下 Ctrl+Enter 键的逻辑
             }
         },
-        async send() {
+        presend() {
             this.$refs.textarea.focus()
 
-            const msg = this.getSafeText(this.userInput)
+            let msg = this.getSafeText(this.userInput)
+
             const warpedMessage = this.acting.platform === 'onebot' ? this.warpText(msg) : msg
             this.userInput = this.textareaRef.value = ''
-            this.adjustTextareaHeight(); 
+            this.adjustTextareaHeight();
 
             const container = {
                 role: 'user',
                 time: new Date().getTime(),
+                status: 'completed',
                 content: [{
                     type: 'text',
                     data: {
@@ -65,13 +74,23 @@ export default {
                 })
             })
 
+            if (this.repliedMessage) {
+                const replyData = {
+                    type: 'reply',
+                    data: {
+                        id: this.repliedMessage.id
+                    }
+                }
+                container.content.push(replyData)
+            }
+            return container
+        },
+        async send() {
+            const container = this.presend()
             const message_id = await this.acting.webSend(container) //发送消息
             container.id = message_id
             setTimeout(this.tobuttom, 0)
             client.setLocalStorage() //持久化存储
-        },
-        eemoji() {
-            this.showemoji = !this.showemoji
         },
         getemoji(e) {
             const unicode = e.detail.unicode
@@ -242,12 +261,8 @@ export default {
 
             contactor.on('updateMessage', (e) => {
                 this.ydaKey++;
-                const messageIndex = e.messageIndex
-                const updatedMessage = e.updatedMessage
-                const rawMessage = this.acting.messageChain[messageIndex]
-                if (rawMessage) {
-                    rawMessage.content[0].data.text = updatedMessage
-                }
+                const rawMessage = this.acting.messageChain[e.messageIndex]
+                rawMessage.content[0].data.text = e.updatedMessage
                 console.log(rawMessage.content[0].data.text)
                 this.toupdate = true
             })
@@ -255,9 +270,8 @@ export default {
             contactor.on(`completeMessage`, (e) => {
                 const messageIndex = e.index
                 const rawMessage = this.acting.messageChain[messageIndex]
-                if (rawMessage) {
-                    rawMessage.content[0].text = e.text
-                }
+                rawMessage.status = 'completed'
+                rawMessage.content[0].text = e.text
                 this.toupdate = true
                 client.setLocalStorage() //持久化存储
             })
@@ -275,13 +289,89 @@ export default {
             textarea.style.height = textarea.scrollHeight + 'px'
         },
         getReplyText(id) {
-            const message = this.acting.messageChain.find((item) => item.id === id)
+            let content = '';
+            const message = this.acting.messageChain.find((item) => item.id === id);
             if (message) {
-                return `> ${message.content[0].data.text}`
+                message.content.forEach(element => {
+                    if (element.type === 'text') {
+                        content += element.data.text;
+                    }else if (element.type === 'image') {
+                        content += '[图片]';
+                    }
+                });
+                if (content.length > 20) {
+                    return `> ${content.substr(0, 20)}...`;
+                } else {
+                    return `> ${content}`;
+                }
             }
-        }
+        },
+        showMessageMenu(event,messageIndex) {
+            this.seletedMessageIndex = messageIndex
+            event.preventDefault();
+            this.showMenu = true;
+            this.menuTop = event.clientY;
+            this.menuLeft = event.clientX;
+        },
+        messageMenuClick(event) {
+            // 处理菜单项点击事件
+            switch (event){
+                case 'copy':{
+                    const textarea = this.$refs.textarea
+                    let text = ''
+                    const message = this.acting.messageChain[this.seletedMessageIndex]
+                    message.content.forEach(element => {
+                    if (element.type === 'text') {
+                        text += element.data.text;
+                    }else if (element.type === 'image') {
+                        text += '[图片]';
+                    }
+                });
+                    textarea.value = text
+                    textarea.select()
+                    document.execCommand('copy')
+                    this.$message({ message: '复制成功', type:'success' })
+                    break;
+                }
+                case'reply':
+                    if (this.acting.platform === 'onebot') {
+                        this.repliedMessage = this.acting.messageChain[this.seletedMessageIndex]
+                        this.$message({ message: '已引用该消息', type:'success' })
+                    }else {
+                        this.userInput += this.getReplyText(this.acting.messageChain[this.seletedMessageIndex].id) + '\n\n'
+                    }
+                    
+                    break;
+                case 'delete':
+                    if (this.acting.platform === 'onebot')
+                        this.acting.messageChain.splice(this.seletedMessageIndex, 1)
+                    else {
+                        if( this.acting.messageChain[this.seletedMessageIndex].status === 'completed' && 
+                            this.acting.messageChain[this.acting.messageChain.length - 1].status === 'completed'){
+                                this.acting.messageChain.splice(this.seletedMessageIndex, 1)
+                            }else{
+                                this.$message({ message:'当前有消息在更新，等等再删叭', type: 'warning' })
+                            }
+                    }
+                    this.showMenu = false;
+                    break;
+                default:
+                    break;
+            }
+            this.showMenu = false;
+        },
     },
     mounted() {
+        document.addEventListener('click', () => {
+            this.showMenu = false;
+            // if( this.showemoji) this.showemoji = false;
+        });
+
+        this.$refs.chatWindow.addEventListener('scroll', () => {
+            this.showMenu = false;
+            if( this.showemoji) this.showemoji = false;
+        })
+
         this.textareaRef = this.$refs.textarea
         this.textareaRef.addEventListener('input', this.adjustTextareaHeight)
 
@@ -381,20 +471,28 @@ export default {
                             <div class="title">{{ item.role === 'other' ? acting.title : client.title }}</div>
                             <div class="name">{{ item.role === 'other' ? acting.name : client.name }}</div>
                         </div>
-                        <div class="content">
+                        <div class="content" @contextmenu="showMessageMenu($event, index)">
                             <div v-for="(element, index) of item.content" :key="index">
-                                <MdPreview :key="ydaKey" v-if="element.type === 'text'" previewTheme="github" editorId="preview-only"
-                                    :modelValue="element.data.text" />
+                                <MdPreview v-if="element.type === 'text'"
+                                    :key="item?.status !== 'completed' ? ydaKey : ''" previewTheme="github"
+                                    editorId="preview-only" :modelValue="element.data.text" />
                                 <el-image v-else-if="element.type === 'image'"
-                                    style="margin: 8px 0; max-width: 20rem; border-radius: 1rem" :src="element.data.file"
-                                    :zoom-rate="1.2" :max-scale="7" :min-scale="0.2" :preview-src-list="[element.data.file]"
-                                    :initial-index="4" :key="index" fit="cover" />
-                                <MdPreview  v-else-if="element.type === 'reply'" previewTheme="github" editorId="preview-only"
-                                    :modelValue="getReplyText(element.data.id)" />
-                                <ForwardMsg v-else-if="element.type === 'nodes'" :contactor="acting" :messages="element.data.messages"  />
+                                    style="margin: 8px 0; max-width: 20rem; border-radius: 1rem"
+                                    :src="element.data.file" :zoom-rate="1.2" :max-scale="7" :min-scale="0.2"
+                                    :preview-src-list="[element.data.file]" :initial-index="4" :key="index"
+                                    fit="cover" />
+                                <MdPreview v-else-if="element.type === 'reply'" previewTheme="github"
+                                    editorId="preview-only" :modelValue="getReplyText(element.data.id)" />
+                                <ForwardMsg v-else-if="element.type === 'nodes'" :contactor="acting"
+                                    :messages="element.data.messages" />
                                 <MdPreview v-else previewTheme="github" editorId="preview-only"
-                                    modelValue="`正在思考如何回复，请稍等...`" />
+                                    :modelValue="'未知的消息类型：```\n' + element   + '\n```'" />
                             </div>
+                        </div>
+                        <div v-if="showMenu && seletedMessageIndex === index" id="message-menu" :style="{ top: menuTop + 'px', left: menuLeft + 'px' }">
+                            <div @click="messageMenuClick('copy')"><i class="iconfont fuzhi"></i><span>复制</span></div>
+                            <div @click="messageMenuClick('reply')"><i class="iconfont yinyong"></i><span>引用</span></div>
+                            <div @click="messageMenuClick('delete')"><i class="iconfont shanchu"></i><span>删除</span></div>
                         </div>
                     </div>
                     <div v-else class="system-message">
@@ -408,8 +506,8 @@ export default {
                 <div class="bu-emoji">
                     <emoji-picker v-show="showemoji" ref="emojiPicker" @emoji-click="getemoji"></emoji-picker>
                     <p id="ho-emoji">表情</p>
-                    <svg @click="eemoji" t="1695146956319" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
-                        xmlns="http://www.w3.org/2000/svg" p-id="3988">
+                    <svg @click="showemoji = !showemoji" t="1695146956319" class="chat-icon" viewBox="0 0 1024 1024"
+                        version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3988">
                         <path
                             d="M512 74.666667C270.933333 74.666667 74.666667 270.933333 74.666667 512S270.933333 949.333333 512 949.333333 949.333333 753.066667 949.333333 512 753.066667 74.666667 512 74.666667z m0 810.666666c-204.8 0-373.333333-168.533333-373.333333-373.333333S307.2 138.666667 512 138.666667 885.333333 307.2 885.333333 512 716.8 885.333333 512 885.333333z"
                             p-id="3989"></path>
@@ -430,7 +528,7 @@ export default {
                 <div class="bu-emoji">
                     <p id="ho-emoji">重置人格</p>
                     <svg @click="cleanHistoty" t="1695146872454" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
-                         xmlns="http://www.w3.org/2000/svg" p-id="3849">
+                        xmlns="http://www.w3.org/2000/svg" p-id="3849">
                         <path
                             d="M934.4 206.933333c-17.066667-4.266667-34.133333 6.4-38.4 23.466667l-23.466667 87.466667C797.866667 183.466667 654.933333 96 497.066667 96 264.533333 96 74.666667 281.6 74.666667 512s189.866667 416 422.4 416c179.2 0 339.2-110.933333 398.933333-275.2 6.4-17.066667-2.133333-34.133333-19.2-40.533333-17.066667-6.4-34.133333 2.133333-40.533333 19.2-51.2 138.666667-187.733333 232.533333-339.2 232.533333C298.666667 864 138.666667 706.133333 138.666667 512S300.8 160 497.066667 160c145.066667 0 277.333333 87.466667 330.666666 217.6l-128-36.266667c-17.066667-4.266667-34.133333 6.4-38.4 23.466667-4.266667 17.066667 6.4 34.133333 23.466667 38.4l185.6 49.066667c2.133333 0 6.4 2.133333 8.533333 2.133333 6.4 0 10.666667-2.133333 17.066667-4.266667 6.4-4.266667 12.8-10.666667 14.933333-19.2l49.066667-185.6c0-17.066667-8.533333-34.133333-25.6-38.4z"
                             p-id="3850"></path>
@@ -451,7 +549,7 @@ export default {
                 <div class="bu-emoji">
                     <p id="ho-emoji">语音</p>
                     <svg @click="waiting" t="1697536440024" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
-                         xmlns="http://www.w3.org/2000/svg" p-id="7282" width="24" height="24">
+                        xmlns="http://www.w3.org/2000/svg" p-id="7282" width="24" height="24">
                         <path
                             d="M544 851.946667V906.666667a32 32 0 0 1-64 0v-54.72C294.688 835.733333 149.333333 680.170667 149.333333 490.666667v-21.333334a32 32 0 0 1 64 0v21.333334c0 164.949333 133.717333 298.666667 298.666667 298.666666s298.666667-133.717333 298.666667-298.666666v-21.333334a32 32 0 0 1 64 0v21.333334c0 189.514667-145.354667 345.066667-330.666667 361.28zM298.666667 298.56C298.666667 180.8 394.165333 85.333333 512 85.333333c117.781333 0 213.333333 95.541333 213.333333 213.226667v192.213333C725.333333 608.533333 629.834667 704 512 704c-117.781333 0-213.333333-95.541333-213.333333-213.226667V298.56z m64 0v192.213333C362.666667 573.12 429.557333 640 512 640c82.496 0 149.333333-66.805333 149.333333-149.226667V298.56C661.333333 216.213333 594.442667 149.333333 512 149.333333c-82.496 0-149.333333 66.805333-149.333333 149.226667z"
                             p-id="7283"></path>
@@ -462,7 +560,7 @@ export default {
                     <el-cascader v-model="selectedWarper" :options="warperOptions" id="warper-selector"
                         @change="activeBotTools" />
                     <svg t="1697536322502" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
-                         xmlns="http://www.w3.org/2000/svg" p-id="6223" width="24" height="24">
+                        xmlns="http://www.w3.org/2000/svg" p-id="6223" width="24" height="24">
                         <path
                             d="M618.666667 106.666667H405.333333v85.333333h64v42.666667H149.333333v661.333333h725.333334V234.666667H554.666667V192h64V106.666667zM234.666667 810.666667V320h554.666666v490.666667H234.666667zM21.333333 448v234.666667h85.333334V448H21.333333z m896 0v234.666667h85.333334V448h-85.333334z m-469.333333 64h-106.666667v106.666667h106.666667v-106.666667z m234.666667 0h-106.666667v106.666667h106.666667v-106.666667z"
                             p-id="6224"></path>
@@ -471,8 +569,8 @@ export default {
             </div>
             <div class="input-box">
                 <div class="input-content">
-                    <textarea @keydown="handleKeyDown" ref="textarea" v-model="userInput"
-                        @click="updateCursorPosition"></textarea>
+                    <textarea @keydown="handleKeyDown" ref="textarea" placeholder="按 Ctrl + Enter 以发送消息"
+                        v-model="userInput" @click="updateCursorPosition"></textarea>
                 </div>
                 <button @click.prevent="send" :disabled="!userInput || !isValidInput(userInput)" id="sendButton">
                     发送{{ getWarperName() ? ` | ${ getWarperName() }` : '' }}
@@ -649,6 +747,9 @@ p#ho-emoji
 .bu-emoji
     position: relative
 
+    &:hover p#ho-emoji
+        display: block
+
 .black-overlay
     position: fixed
     top: 0
@@ -803,118 +904,4 @@ emoji-picker
 
     .inputbar
         flex-basis: 4rem
-</style>
-
-<style lang="sass">
-.message-window
-    flex-grow: 3
-    overflow: auto
-    overflow-x: hidden
-    background-color: #f1f1f1
-
-    .message-time
-        width: 100%
-        display: flex
-        justify-content: center
-        align-items: center
-        font-size: 0.75rem
-        color: rgb(120, 124, 127)
-        margin: 0.5rem 0
-
-.message-body
-    padding: 0.625rem 0.625rem
-    display: flex
-    align-items: flex-start
-    /* border: .0625rem solid black; */
-    overflow: hidden
-
-    &#user
-        flex-direction: row-reverse
-
-        & > .msg > .content > *
-            background-color: rgb(0, 153, 255)
-
-        & > .msg > .content
-            background-color: rgb(0, 153, 255)
-
-        .loader
-            left: -2rem
-            top: calc(45% - 0.3125rem)
-
-    &#other
-        flex-direction: row
-
-        & > .msg > .content
-            background-color: rgb(255, 255, 255)
-
-.avatar
-    min-width: 2.5rem
-    min-height: 2.5rem
-    max-width: 2.5rem
-    max-height: 2.5rem
-    border-radius: 50%
-
-    img
-        width: 100%
-        border-radius: 50%
-
-.msg
-    max-width: calc(100% - 5rem)
-    flex-grow: 1
-    display: flex
-    flex-direction: column
-
-#other .msg
-    align-items: flex-start
-
-#user .msg
-    align-items: flex-end
-
-
-.wholename > .name,
-.wholename > .title
-    margin: 0.25rem
-    text-wrap: nowrap
-
-.wholename
-    margin: 0 0.5rem
-    display: flex
-    flex-direction: row
-    justify-content: flex-start 
-
-    & > .name
-        font-size: 0.625rem
-        padding-top: 0.0625rem
-        color: rgb(120, 124, 127)
-
-    & > .title
-        font-size: 0.375rem
-        color: rgb(0, 153, 255)
-        padding: 0.0625rem 0.125rem 0.125rem 0.125rem
-        background-color: rgb(194, 225, 245)
-        border-radius: 0.3125rem
-
-.content
-    max-width: calc(100% - 1.25rem)
-    padding: 0.25rem 0.75rem
-    border-radius: 0.5rem
-    margin: 0.5rem
-
-.system-message
-    width: 100%
-    display: flex
-    justify-content: center
-    align-items: center
-    font-size: 0.75rem
-    color: rgb(120, 124, 127)
-
-.message-container
-    display: flex
-    flex-direction: column
-    width: 100%
-
-.content img
-    margin: 0.5rem 0
-    max-width: 20rem
-    border-radius: 16px
 </style>

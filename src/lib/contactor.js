@@ -37,14 +37,14 @@ export default class Contactor extends EventEmmiter {
     }
 
     enableOpenaiListener() {
-        
         this.kernel.on('updateMessage', (e) => {
             let updatedMessage
             const messageIndex = e.index
             const chunk = e.chunk
             const rawMessage = this.messageChain[messageIndex]
             if(rawMessage){
-                if(rawMessage.content[0].type == 'pending') rawMessage.content[0].type = 'text'
+                if(rawMessage.content[0].data.text == '`正在思考如何回复，请稍等...`') 
+                    rawMessage.content[0].data.text = ''
                 // 拼接
                 updatedMessage = rawMessage.content[0].data.text += chunk
             }
@@ -137,7 +137,8 @@ export default class Contactor extends EventEmmiter {
     delMessage(message_id){
         for (let i = 0; i < this.messageChain.length; i++) {
             if (this.messageChain[i].id === message_id) {
-                this.emit('delMessage',i)
+                if(this.active) this.emit('delMessage',i)
+                else this.acting.messageChain.splice(i, 1)
                 this.makeSystemMessage(`${this.name}撤回了一条消息`)
                 return true;   // 删除成功
             }
@@ -157,8 +158,8 @@ export default class Contactor extends EventEmmiter {
                 }
             }]
         }
-        this.emit('revMessage',container)
-
+        if(this.active) this.emit('revMessage',container)
+        else this.messageChain.push(container)
     }
 
     getLastTime() {
@@ -245,7 +246,9 @@ export default class Contactor extends EventEmmiter {
                 else if(element.type == 'image') shownMsg += ('[图片]')
                 else if(element.type == 'record') shownMsg += ('[语音]')
                 else if(element.type == 'video') shownMsg += ('[视频]')
-                else shownMsg += ('[未知消息类型]') 
+                else if(element.type == 'file') shownMsg += ('[文件]')
+                else if(element.type == 'reply') shownMsg += ('')
+                else shownMsg += ('[未知消息类型]' + element.type) 
             });
         }
 

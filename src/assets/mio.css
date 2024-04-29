@@ -12,6 +12,11 @@
     overflow: auto;
     padding: 0 0 ;
 }
+
+.md-editor-preview-wrapper * {
+    user-select: text;
+}
+
 .content img {
     max-width: 20rem;
     border-radius: 1rem;

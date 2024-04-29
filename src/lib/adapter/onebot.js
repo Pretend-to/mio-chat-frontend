@@ -34,6 +34,7 @@ export default class Onebot extends Adapter {
             time: new Date().getTime(),
             content: midMessage,
             id: data.message_id,
+            status: 'completed'
         }
         return webMessage
     }

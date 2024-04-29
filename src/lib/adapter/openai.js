@@ -19,7 +19,8 @@ export default class Openai extends Adapter {
         const webMessage = {
             role:'other',
             time: new Date().getTime(),
-            content:[{type:'pending',data:{text:''}}],
+            content:[{type:'text',data:{text:'`正在思考如何回复，请稍等...`'}}],
+            status:'pending',
             id: this.genRequestID(),
         }
         return webMessage

@@ -109,6 +109,7 @@ export default {
   display: flex;
   overflow: hidden;
   margin: 5rem 5rem;
+  min-width: 35rem;
 }
 
 .mio-chat#fullscreen {
