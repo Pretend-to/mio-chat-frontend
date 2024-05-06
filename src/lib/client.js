@@ -139,32 +139,6 @@ export default class Client {
                   "label": "角色养成材料"
                 }
               ]
-            },
-            {
-              "value": "Sybed",
-              "label": "舒颐养老",
-              "children": [
-                {
-                  "value": "sybedHelp",
-                  "label": "帮助"
-                },
-                {
-                  "value": "sybedBind",
-                  "label": "绑定用户Token"
-                },
-                {
-                  "value": "sybedIUpdate",
-                  "label": "更新连接状态"
-                },
-                {
-                  "value": "sybedList",
-                  "label": "查看设备列表"
-                },
-                {
-                  "value": "sybedPanel",
-                  "label": "查看设备面板"
-                },
-              ]
             }
           ],
           presets: {
@@ -184,12 +158,7 @@ export default class Client {
             genshinPanel: '#{xxx}面板',
             genshinSk: '#{xxx}天赋',
             genshinCe: '#{xxx}命座',
-            genshinOb: '#{xxx}材料',
-            sybedHelp: '#舒颐帮助',
-            sybedBind: '#舒颐绑定{xxx}',
-            sybedIUpdate: '#舒颐更新连接状态',
-            sybedList: '#舒颐查看设备列表',
-            sybedPanel: '#舒颐查看{xxx}面板',
+            genshinOb: '#{xxx}材料'
           }
         }
       }
