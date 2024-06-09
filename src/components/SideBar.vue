@@ -3,7 +3,8 @@ export default {
     data() {
 
         return {
-            avatar: 'https://api.krumio.com/qava?qq=1099834705',
+            defaultAvatar: '/api/qava?q=1099834705',
+            adminAvatar: '',
             processedImage: '',
             onProfile: false,
             onChat: false,
@@ -26,8 +27,9 @@ export default {
             const ctx = canvas.getContext('2d');
             const img = new Image();
 
-            img.crossOrigin = 'Anonymous'; // 设置跨域属性
-
+            img.crossOrigin = 'anonymous'; // 设置跨域属性
+            img.src = imageUrl;
+            
             img.onload = () => {
                 canvas.width = img.width;
                 canvas.height = img.height;
@@ -38,7 +40,7 @@ export default {
                 // 创建透明的缺口
                 let centerX = img.width * 0.8; // 圆心X坐标
                 let centerY = img.height * 0.86; // 圆心Y坐标
-                let radius = 225; // 圆的半径，你可以根据需要调整这个值
+                let radius = 225; // 圆的半径
 
                 ctx.beginPath();
                 ctx.arc(centerX, centerY, radius, 0, Math.PI * 2, true);
@@ -52,8 +54,6 @@ export default {
                     console.log(url);
                 }, 'image/png');
             };
-
-            img.src = imageUrl;
         },
         tochat() {
             this.onProfile = false;
@@ -75,7 +75,7 @@ export default {
     components: {
     },
     created() {
-        this.processImage(this.avatar);
+        this.processImage(this.defaultAvatar);
     },
     mounted() {
         this.currentPage = this.$route.path;
@@ -224,8 +224,8 @@ export default {
 
 .status {
     position: absolute;
-    left: 67%;
-    top: 73%;
+    left: 68%;
+    top: 71%;
     transform: translate(-50%, -50%);
     width: 0.85rem;
     height: 0.85rem;

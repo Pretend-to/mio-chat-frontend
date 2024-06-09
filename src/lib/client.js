@@ -141,28 +141,28 @@ export default class Client {
               ]
             },
             {
-              "value": "Sybed",
-              "label": "舒颐养老",
+              "value": "Boomer",
+              "label": "电磁炮",
               "children": [
                 {
-                  "value": "sybedHelp",
-                  "label": "帮助"
+                  "value": "manualMode",
+                  "label": "切换手动模式"
                 },
                 {
-                  "value": "sybedBind",
-                  "label": "绑定用户Token"
+                  "value": "setDistance",
+                  "label": "设定距离"
                 },
                 {
-                  "value": "sybedIUpdate",
-                  "label": "更新连接状态"
+                  "value": "Boom",
+                  "label": "开炮"
                 },
                 {
-                  "value": "sybedList",
-                  "label": "查看设备列表"
+                  "value": "autoMode",
+                  "label": "切换自动模式"
                 },
                 {
-                  "value": "sybedPanel",
-                  "label": "查看设备面板"
+                  "value": "killProcess",
+                  "label": "结束进程"
                 },
               ]
             }
@@ -185,11 +185,11 @@ export default class Client {
             genshinSk: '#{xxx}天赋',
             genshinCe: '#{xxx}命座',
             genshinOb: '#{xxx}材料',
-            sybedHelp: '#舒颐帮助',
-            sybedBind: '#舒颐绑定{xxx}',
-            sybedIUpdate: '#舒颐更新连接状态',
-            sybedList: '#舒颐查看设备列表',
-            sybedPanel: '#舒颐查看{xxx}面板',
+            manualMode: '#电磁炮启用手动模式',
+            setDistance: '#电磁炮设定距离{xxx}',
+            Boom: '#电磁炮开炮',
+            autoMode: '#电磁炮启用自动模式',
+            killProcess: '#电磁炮结束进程',
           }
         }
       }
