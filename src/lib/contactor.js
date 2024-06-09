@@ -39,7 +39,6 @@ export default class Contactor extends EventEmmiter {
 
     enableOpenaiListener() {
         this.kernel.on('updateMessage', (e) => {
-            this.acting.lastUpdate = new Date().getTime()
             let updatedMessage
             const messageIndex = e.index
             const chunk = e.chunk
@@ -83,7 +82,6 @@ export default class Contactor extends EventEmmiter {
      * 从网页前端发来的消息
      */
     async webSend(message){
-        this.lastUpdate = new Date().getTime()
         console.log(message)
         this.messageChain.push(message)
         if(this.platform == 'onebot'){
@@ -121,7 +119,6 @@ export default class Contactor extends EventEmmiter {
      * @param {object} message - Message received from contactor
      */
     revMessage(message) {
-        this.lastUpdate = new Date().getTime()
         const webMessage = this.kernel.convertMessage(message)
         console.log(`收到消息，id:${this.id},激活状态:${this.active}`)
         console.log(webMessage)
@@ -261,6 +258,10 @@ export default class Contactor extends EventEmmiter {
 
     updateFirstMessage(){
         this.firstMessageIndex = this.messageChain.length
+    }
+
+    updateKey(){
+        this.lastUpdate = new Date().getTime()
     }
 
 }

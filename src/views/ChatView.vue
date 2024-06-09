@@ -260,6 +260,7 @@ export default {
             })
 
             contactor.on('updateMessage', (e) => {
+                this.acting.updateKey()
                 this.ydaKey++;
                 const rawMessage = this.acting.messageChain[e.messageIndex]
                 rawMessage.content[0].data.text = e.updatedMessage
