@@ -111,7 +111,7 @@ export default {
                 <div class="avatar">
                     <img :src="item.avatar" :alt="item.name">
                 </div>
-                <div class="info">
+                <div class="info" :key="item.lastUpdate">
                     <div class="name">{{ item.name }}</div>
                     <div class="msginfo" id="time">{{ item.getLastTime() }}</div>
                     <div class="msginfo" id="msgctt">{{ item.getMessageSummary() }}</div>

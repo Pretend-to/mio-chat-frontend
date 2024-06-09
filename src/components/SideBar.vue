@@ -227,8 +227,8 @@ export default {
     left: 68%;
     top: 71%;
     transform: translate(-50%, -50%);
-    width: 0.85rem;
-    height: 0.85rem;
+    width: 0.70rem;
+    height: 0.70rem;
     border-radius: 50%;
     background: linear-gradient(to bottom, rgb(52, 238, 143), rgb(54, 221, 150));
 }
