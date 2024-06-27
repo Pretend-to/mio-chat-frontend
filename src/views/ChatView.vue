@@ -1,6 +1,7 @@
 <script>
 import { MdPreview } from 'md-editor-v3'
-import  ForwardMsg  from '@/components/ForwardMsg.vue'
+import ForwardMsg from '@/components/ForwardMsg.vue'
+import InputEditor from '@/components/InputEditor.vue'
 import 'emoji-picker-element'
 import { client } from '@/lib/runtime.js'
 
@@ -19,6 +20,7 @@ export default {
             client: client,
             warperOptions: [],
             warperPresets: {},
+            cursorPosition:[],
             selectedWarper: null,
             currentDelay: 0,
             toupdate: false,
@@ -28,7 +30,7 @@ export default {
             menuTop: 0,
             menuLeft: 0,
             longPressTimer: null,
-            seletedMessageIndex: -1,
+            selectedMessageIndex: -1,
             repliedMessage: null,
         }
     },
@@ -37,13 +39,7 @@ export default {
             return text.replace(/<script>/g, '&lt;script&gt;').replace(/<\/script>/g, '&lt;/script&gt;')
                 .replace(/<style>/g, '&lt;style&gt;').replace(/<\/style>/g, '&lt;/style&gt;');
         },
-        handleKeyDown(event) {
-            if (event.ctrlKey && event.key === 'Enter') {
-                if (this.userInput && this.isValidInput(this.userInput)) this.send()
-                else this.$message({ message: '不能发送空消息', type: 'warning' })
-                // 处理按下 Ctrl+Enter 键的逻辑
-            }
-        },
+
         presend() {
             this.$refs.textarea.focus()
 
@@ -92,24 +88,7 @@ export default {
             setTimeout(this.tobuttom, 0)
             client.setLocalStorage() //持久化存储
         },
-        getemoji(e) {
-            const unicode = e.detail.unicode
-            const textarea = this.$refs.textarea
-            const startPos = textarea.selectionStart
-            const endPos = textarea.selectionEnd
-            const textBeforeCursor = this.userInput.substring(0, startPos)
-            const textAfterCursor = this.userInput.substring(endPos)
-            this.userInput = textBeforeCursor + unicode + textAfterCursor
-            const newCursorPos = startPos + unicode.length
-            textarea.selectionStart = newCursorPos
-            textarea.selectionEnd = newCursorPos
-            textarea.focus()
-            this.showemoji = !this.showemoji
-        },
-        updateCursorPosition() {
-            const textarea = this.$refs.textarea
-            this.cursorPosition = textarea.selectionStart
-        },
+
         tobuttom(clicked) {
             if (clicked) this.$message('已滑至底部')
             const chatWindow = this.$refs.chatWindow
@@ -123,9 +102,9 @@ export default {
             client.setLocalStorage() //持久化存储
             this.toupdate = true
         },
-        cleanHistoty()  {
+        cleanHistoty() {
             this.acting.updateFirstMessage()
-            this.$message({ message: '上下文信息已清除，之后的请求将不再记录上文记录', type:  'success' })
+            this.$message({ message: '上下文信息已清除，之后的请求将不再记录上文记录', type: 'success' })
         },
         async reset() {
             this.one.init()
@@ -233,19 +212,7 @@ export default {
             const result = preset.replace(testText, rawText)
             return result
         },
-        getWarperName() {
-            if (this.acting.platform === 'onebot')  {
-                if (!this.selectedWarper) return ''
-                    const warper = this.selectedWarper[this.selectedWarper.length - 1]
-                    if (!warper) return ''
-                    const preset = this.warperPresets[warper]
-                    const name = preset.replace('#', '').replace('{xxx}', '')
-                    return name
-            }  else {
-                return this.selectedWarper ? this.selectedWarper[this.selectedWarper.length - 1] : ''
-            }
-        },
-        initContactor(contactor)  {
+        initContactor(contactor) {
             contactor.active = true
 
             contactor.on('revMessage', (message) => {
@@ -253,7 +220,7 @@ export default {
                 this.toupdate = true
             })
             contactor.on('delMessage', (index) => {
-                console.log(`删除消息${ index }`)
+                console.log(`删除消息${index}`)
                 // 从消息链中删除消息
                 this.acting.messageChain.splice(index, 1)
                 this.toupdate = true
@@ -272,7 +239,7 @@ export default {
                 const messageIndex = e.index
                 const rawMessage = this.acting.messageChain[messageIndex]
                 rawMessage.status = 'completed'
-                rawMessage.content[0].text = e.text
+                rawMessage.content[0].data.text = e.text
                 this.toupdate = true
                 client.setLocalStorage() //持久化存储
             })
@@ -296,7 +263,7 @@ export default {
                 message.content.forEach(element => {
                     if (element.type === 'text') {
                         content += element.data.text;
-                    }else if (element.type === 'image') {
+                    } else if (element.type === 'image') {
                         content += '[图片]';
                     }
                 });
@@ -307,8 +274,9 @@ export default {
                 }
             }
         },
-        showMessageMenu(event,messageIndex) {
-            this.seletedMessageIndex = messageIndex
+        showMessageMenu(event, messageIndex) {
+            console.log(messageIndex)
+            this.selectedMessageIndex = messageIndex
             event.preventDefault();
             this.showMenu = true;
             this.menuTop = event.clientY;
@@ -316,43 +284,59 @@ export default {
         },
         messageMenuClick(event) {
             // 处理菜单项点击事件
-            switch (event){
-                case 'copy':{
-                    const textarea = this.$refs.textarea
-                    let text = ''
-                    const message = this.acting.messageChain[this.seletedMessageIndex]
+            switch (event) {
+                case 'copy': {
+                    // Construct the text to copy
+                    let text = '';
+                    const message = this.acting.messageChain[this.selectedMessageIndex]; // Corrected typo
+                    console.log(this.selectedMessageIndex);
                     message.content.forEach(element => {
-                    if (element.type === 'text') {
-                        text += element.data.text;
-                    }else if (element.type === 'image') {
-                        text += '[图片]';
+                        if (element.type === 'text') {
+                            text += element.data.text;
+                        } else if (element.type === 'image') {
+                            text += '[图片]';
+                        }
+                    });
+
+                    // Create a new textarea, append it to the body, set its value, and select the text
+                    const textarea = document.createElement('textarea');
+                    textarea.style.position = 'absolute';
+                    textarea.style.left = '-9999px'; // Move it off-screen
+                    textarea.value = text;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    textarea.setSelectionRange(0, 99999); // For mobile devices
+
+                    // Copy the text and remove the textarea
+                    try {
+                        document.execCommand('copy');
+                        this.$message({ message: '复制成功', type: 'success' });
+                    } catch (err) {
+                        console.error('Copy failed:', err);
+                    } finally {
+                        document.body.removeChild(textarea);
                     }
-                });
-                    textarea.value = text
-                    textarea.select()
-                    document.execCommand('copy')
-                    this.$message({ message: '复制成功', type:'success' })
                     break;
                 }
-                case'reply':
+                case 'reply':
                     if (this.acting.platform === 'onebot') {
-                        this.repliedMessage = this.acting.messageChain[this.seletedMessageIndex]
-                        this.$message({ message: '已引用该消息', type:'success' })
-                    }else {
-                        this.userInput += this.getReplyText(this.acting.messageChain[this.seletedMessageIndex].id) + '\n\n'
+                        this.repliedMessage = this.acting.messageChain[this.selectedMessageIndex]
+                        this.$message({ message: '已引用该消息', type: 'success' })
+                    } else {
+                        this.userInput += this.getReplyText(this.acting.messageChain[this.selectedMessageIndex].id) + '\n\n'
                     }
-                    
+
                     break;
                 case 'delete':
                     if (this.acting.platform === 'onebot')
-                        this.acting.messageChain.splice(this.seletedMessageIndex, 1)
+                        this.acting.messageChain.splice(this.selectedMessageIndex, 1)
                     else {
-                        if( this.acting.messageChain[this.seletedMessageIndex].status === 'completed' && 
-                            this.acting.messageChain[this.acting.messageChain.length - 1].status === 'completed'){
-                                this.acting.messageChain.splice(this.seletedMessageIndex, 1)
-                            }else{
-                                this.$message({ message:'当前有消息在更新，等等再删叭', type: 'warning' })
-                            }
+                        if (this.acting.messageChain[this.selectedMessageIndex].status === 'completed' &&
+                            this.acting.messageChain[this.acting.messageChain.length - 1].status === 'completed') {
+                            this.acting.messageChain.splice(this.selectedMessageIndex, 1)
+                        } else {
+                            this.$message({ message: '当前有消息在更新，等等再删叭', type: 'warning' })
+                        }
                     }
                     this.showMenu = false;
                     break;
@@ -370,7 +354,7 @@ export default {
 
         this.$refs.chatWindow.addEventListener('scroll', () => {
             this.showMenu = false;
-            if( this.showemoji) this.showemoji = false;
+            if (this.showemoji) this.showemoji = false;
         })
 
         this.textareaRef = this.$refs.textarea
@@ -405,7 +389,8 @@ export default {
     },
     components: {
         MdPreview,
-        ForwardMsg
+        ForwardMsg,
+        InputEditor
     },
     watch: {
         '$route.params.id'(newVal, oldVal) {
@@ -419,7 +404,7 @@ export default {
                 const oldContactor = client.getContactor(oldId)
                 this.disableContactor(oldContactor)
             }
-            if  (this.acting.platform === 'onebot')  this.getBotTools()
+            if (this.acting.platform === 'onebot') this.getBotTools()
             else this.getBotModels()
         }
     }
@@ -428,7 +413,7 @@ export default {
 
 <template>
     <div id="chat-window">
-        <div class="upside-bar" v-show="showwindow">
+        <div class="upside-bar">
             <div class="return" @click="tolist()">
                 <i class="iconfont icon-return"></i>
             </div>
@@ -457,7 +442,7 @@ export default {
                 </div>
             </div>
         </div>
-        <div class="message-window" ref="chatWindow" v-show="showwindow">
+        <div class="message-window" ref="chatWindow" >
             <div v-for="(item, index) of acting.messageChain" :key="index" class="message-container" ref="message">
                 <div class="message-time" v-if="showTime(index).show">
                     {{ showTime(index).time }}
@@ -487,13 +472,16 @@ export default {
                                 <ForwardMsg v-else-if="element.type === 'nodes'" :contactor="acting"
                                     :messages="element.data.messages" />
                                 <MdPreview v-else previewTheme="github" editorId="preview-only"
-                                    :modelValue="'未知的消息类型：```\n' + element   + '\n```'" />
+                                    :modelValue="'未知的消息类型：```\n' + element + '\n```'" />
                             </div>
                         </div>
-                        <div v-if="showMenu && seletedMessageIndex === index" id="message-menu" :style="{ top: menuTop + 'px', left: menuLeft + 'px' }">
+                        <div v-if="showMenu && selectedMessageIndex === index" id="message-menu"
+                            :style="{ top: menuTop + 'px', left: menuLeft + 'px' }">
                             <div @click="messageMenuClick('copy')"><i class="iconfont fuzhi"></i><span>复制</span></div>
-                            <div @click="messageMenuClick('reply')"><i class="iconfont yinyong"></i><span>引用</span></div>
-                            <div @click="messageMenuClick('delete')"><i class="iconfont shanchu"></i><span>删除</span></div>
+                            <div @click="messageMenuClick('reply')"><i class="iconfont yinyong"></i><span>引用</span>
+                            </div>
+                            <div @click="messageMenuClick('delete')"><i class="iconfont shanchu"></i><span>删除</span>
+                            </div>
                         </div>
                     </div>
                     <div v-else class="system-message">
@@ -502,7 +490,8 @@ export default {
                 </div>
             </div>
         </div>
-        <div class="input-bar" v-show="showwindow">
+        <InputEditor/>
+        <!-- <div class="input-bar"  ">
             <div class="options">
                 <div class="bu-emoji">
                     <emoji-picker v-show="showemoji" ref="emojiPicker" @emoji-click="getemoji"></emoji-picker>
@@ -570,14 +559,16 @@ export default {
             </div>
             <div class="input-box">
                 <div class="input-content">
-                    <textarea @keydown="handleKeyDown" ref="textarea" placeholder="按 Ctrl + Enter 以发送消息"
-                        v-model="userInput" @click="updateCursorPosition"></textarea>
+                    <div @keydown="handleKeyDown" @input="handleInput" class="input-area" ref="textarea"
+                        contenteditable="true" placeholder="按 Ctrl + Enter 以发送消息" @click="updateCursorPosition">
+                        {{ userInput }}
+                    </div>
                 </div>
                 <button @click.prevent="send" :disabled="!userInput || !isValidInput(userInput)" id="sendButton">
-                    发送{{ getWarperName() ? ` | ${ getWarperName() }` : '' }}
+                    发送{{ getWarperName() ? ` | ${getWarperName()}` : '' }}
                 </button>
             </div>
-        </div>
+        </div> -->
     </div>
 </template>
 
@@ -675,82 +666,6 @@ $icon-hover: #09f
                 .iconfont
                     font-size: 1.5rem
 
-.input-bar
-    flex-shrink: 0
-    display: flex
-    flex-direction: column
-    border: 0 solid rgba(161, 154, 154, 0.626)
-    flex-basis: 11rem
-
-    .options
-        display: flex
-        border-top: 0.0625rem solid rgba(128, 128, 128, 0.502)
-        padding: 0.25rem 0.5rem
-
-.chat-icon
-    padding: 0.25rem 0.5rem 0 0
-    width: 1.5rem
-    height: 1.5rem
-
-.input-box
-    flex-grow: 1
-    padding: 0 0.5rem
-    display: flex
-    flex-direction: column
-    align-items: end
-    border: 0 solid black
-
-    button
-        white-space: nowrap
-        color: #f0f8ff
-        border-radius: 0.3125rem
-        border: 0
-        background-color: #09f
-        padding: 0.25rem 1rem
-        margin-bottom: 0.8rem
-        margin-right: 0.5rem
-
-.input-content
-    flex-wrap: wrap
-    display: flex
-    background-color: #f1f1f1
-    border: 0
-    flex-grow: 1
-    width: 100%
-
-    textarea
-        overflow-y: auto
-        max-height: 20rem
-        resize: none
-        font-size: 1rem
-        background-color: #f1f1f1
-        border: 0
-        flex-grow: 1
-        width: 100%
-
-        &:focus
-            border: 0
-            outline: none
-
-p#ho-emoji
-    text-wrap: nowrap
-    display: none
-    font-size: 0.75rem
-    padding: 0.125rem 0.25rem
-    background-color: #fff
-    border: none
-    box-shadow: 0 0.125rem 0.25rem #0003
-    position: absolute
-    top: 80%
-    left: 50%
-    transform: translate(-60%)
-
-.bu-emoji
-    position: relative
-
-    &:hover p#ho-emoji
-        display: block
-
 .black-overlay
     position: fixed
     top: 0
@@ -819,11 +734,6 @@ svg:hover
         justify-content: center
         align-items: center
         flex-grow: 1
-
-emoji-picker
-    position: absolute
-    top: -25.75rem
-    right: -20rem
 
 .wave svg
     height: 1.25rem
@@ -900,7 +810,7 @@ emoji-picker
     .somebody
         padding-bottom: 0.25rem
 
-    textarea
+    .input-area
         overflow-y: auto
 
     .inputbar

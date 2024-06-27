@@ -1,6 +1,6 @@
 <script>
-import { client, config } from '@/lib/runtime.js'
-import sideBar from '@/components/SideBar.vue'
+import { client, config } from "@/lib/runtime.js";
+import sideBar from "@/components/SideBar.vue";
 
 export default {
   data() {
@@ -9,61 +9,60 @@ export default {
       onPrivate: this.checkPrivate(),
       client: client,
       fullScreen: true,
-    }
+      beian: "",
+    };
   },
   components: {
-    sideBar
+    sideBar,
   },
-  computed: {
-
-  },
+  computed: {},
   async created() {
-    await client.beforeInit();
+    const conncted = await client.init();
 
-    if (!client.isConnected) {
-      const conncted = await client.init()
-      if (conncted) {
-        console.log('已经链接成功')
-      }
+    if (conncted) {
+      console.log("已经链接成功");
     }
 
-    this.fullScreen = client.fullScreen
+    this.fullScreen = client.fullScreen;
+    this.beian = client.beian;
 
-    await config.init()
+    await config.init();
   },
   mounted() {
-    if (window.innerWidth < 600) this.onPhone = client.onPhone = true
-    else if (window.innerWidth >= 600) this.onPhone = client.onPhone = false
+    if (window.innerWidth < 600) this.onPhone = client.onPhone = true;
+    else if (window.innerWidth >= 600) this.onPhone = client.onPhone = false;
     // 监听窗口宽度变化
-    window.addEventListener('resize', () => {
+    window.addEventListener("resize", () => {
       if (window.innerWidth < 600) {
-        this.onPhone = client.onPhone = true
+        this.onPhone = client.onPhone = true;
       } else if (window.innerWidth >= 600) {
-        this.onPhone = client.onPhone = false
+        this.onPhone = client.onPhone = false;
       }
-    })
-
+    });
   },
   methods: {
     checkPrivate() {
-      console.log(this.$route.name)
+      console.log(this.$route.name);
 
-      const onPrivate = this.$route.name === 'privateChat' || this.$route.name === 'privateProfile'
-      return onPrivate
-    }
+      const onPrivate =
+        this.$route.name === "privateChat" ||
+        this.$route.name === "privateProfile";
+      return onPrivate;
+    },
   },
   watch: {
     async onPhone() {
-      await client.setLocalStorage()
+      await client.setLocalStorage();
     },
-    '$route'() {
-      this.onPrivate = this.checkPrivate()
+    $route() {
+      this.onPrivate = this.checkPrivate();
     },
-    'client.fullScreen'(val) {
+    "client.fullScreen"(val) {
       this.fullScreen = val
-    }
-  }
-}
+      client.setLocalStorage()
+    },
+  },
+};
 </script>
 
 <template>
@@ -77,12 +76,18 @@ export default {
       <sideBar v-if="!onPrivate"></sideBar>
     </div>
   </div>
-  <a id="beian" href="https://beian.miit.gov.cn/" target="_blank">冀ICP备2023039866号</a>
+  <a
+    v-if="beian"
+    id="beian"
+    href="https://beian.miit.gov.cn/"
+    target="_blank"
+    >{{ beian }}</a
+  >
 </template>
 
 <style scoped>
 #app {
-  background-image: url(https://blog.krumio.com/upload/background2.jpg);
+  background-image: url(/api/background/default.jpg);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -141,5 +146,6 @@ a#beian {
   text-decoration: none;
 }
 
-@media (min-width: 1024px) {}
+@media (min-width: 1024px) {
+}
 </style>

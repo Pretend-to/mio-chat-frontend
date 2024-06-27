@@ -3,12 +3,12 @@ import Contactor from './contactor.js'
 import localforage from 'localforage'
 
 localforage.config({
-  name: 'db_name'
+  name: 'mio-chat'
 })
 
 export default class Client {
   constructor() {
-    this.firstCome = null
+    this.everLogin = false
     this.id = null
     this.code = null
     this.isLogin = false
@@ -21,22 +21,36 @@ export default class Client {
     this.avatar = null
     this.onPhone = null
     this.models = []
+    this.beian = ""
+    this.fullScreen = false
   }
 
+  /**
+   * 预初始化
+   * @returns {object} 初始化信息
+   */
   async beforeInit() {
+
     const localConfig = await this.getLocalStorage()
     console.log(localConfig)
+
     if (localConfig) {
       localConfig.isConnected = false
       this.loadLocalStorage(localConfig)
-      console.log('从缓存加载用户信息')
-      console.log(localConfig)
+      console.log('从缓存加载客户端信息')
+      console.log(this)
+
     } else {
       // 使用者初次使用
       this.id = this.genFakeId()
       this.code = null
-      this.setLocalStorage()
       console.log('生成默认信息')
+
+      const base_info = await this.getBaseInfo()
+      this.beian = base_info.beian
+      this.fullScreen = base_info.fullScreen
+      this.setLocalStorage()
+
     }
   }
 
@@ -218,7 +232,7 @@ export default class Client {
   }
 
   async init() {
-    if (this.isLogin) {
+    if (this.everLogin) {
       console.log('检测到缓存，尝试自动重连')
       this.isLogin = false
       this.isConnected = false
@@ -257,6 +271,7 @@ export default class Client {
   async getLocalStorage() {
     const client = await localforage.getItem('client')
     if (client) {
+      console.log(client)
       return JSON.parse(client)
     } else {
       return false
@@ -270,12 +285,15 @@ export default class Client {
   loadLocalStorage(client) {
     // 把client对象的所有属性附加到this上
     Object.assign(this, client)
+    console.log(this)
     // 如果联系人列表存在，那么实例化为联系人对象
-    if (client.contactList.length != 0) {
+    if (this.contactList.length != 0) {
       console.log('从缓存加载联系人列表')
       console.log(client.contactList)
       this.contactList = []
       this.contactList = client.contactList.map((item) => new Contactor(item.platform, item))
+    }else{
+      console.log(client.contactList)
     }
   }
 
@@ -306,14 +324,15 @@ export default class Client {
         this.avatar = `/api/qava?q=${this.qq}`
         this.botqq = info.bot_qq
         this.isLogin = true
+        this.everLogin = true
         this.isConnected = true
         this.socket = socket
         this.models = info.models
         this.setLocalStorage()
         this.addMsgListener()
         if(this.contactList.length == 0) this.genDefaultConctor()
-        console.log(this)
-        resolve(true)
+        this.setLocalStorage()
+        resolve(info)
       })
 
       socket.connect()
@@ -372,12 +391,13 @@ export default class Client {
     return this.contactList.find((item) => item.id == id) ?? this.contactList[0]
   }
 
-  async checkLogin() {
-    if (this.isLogin) return true
-    else {
-      const localConfig = await this.getLocalStorage()
-      if (localConfig.isLogin) return true
-      else return false
+  async getBaseInfo() {
+    let info = await fetch('/api/base_info')
+    info = await info.json()
+    console.log(info)
+    return {
+      beian:info.data.beian || "",
+      fullScreen:info.data.full_screen
     }
   }
 }

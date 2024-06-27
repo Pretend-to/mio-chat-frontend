@@ -62,10 +62,11 @@ export default class Contactor extends EventEmmiter {
             }
         })
         this.kernel.on('failedMessage', (e) => {
+            console.log(e)
             const messageIndex = e.index
             const rawMessage = this.messageChain[messageIndex]
             if(rawMessage){
-                this.emit('completeMessage', {text:e.error,index:messageIndex});
+                this.emit('completeMessage', {text:"请求发生错误！\n" + JSON.stringify(e.error.error.message) + "\n",index:messageIndex});
             }
         })
     }

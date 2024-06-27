@@ -96,8 +96,8 @@ $baseColor: #1d93ab
             <p class="hint">管理员开启了密码验证，请在下方填入访问码</p>
             <input type="password" v-model="accessCode" placeholder="在此处填写访问码">
             <div class="controls">
-                <button class="later" @click="login">游客登录</button>
-                <button class="login" @click="login">Login</button>
+                <button class="later" @click="login()">游客登录</button>
+                <button class="login" @click="login(accessCode)">Login</button>
             </div>
         </div>
     </div>
@@ -113,7 +113,7 @@ const accessCode = ref()
 const requesting = ref(false)
 const iconContainer = ref()
 
-const login = async () => {
+const login = async (code) => {
     // 激活图标
     await nextTick(() => iconContainer.value.classList.add('active'))
     
@@ -122,9 +122,9 @@ const login = async () => {
     } else {
         requesting.value = true
         try {
-            const code = accessCode.value
             const result = await client.login(code)
             if (result) {
+                ElMessage.success(`成功以${result.is_admin ? '管理员身份' : '游客身份'}登录，欢迎使用!`)
                 await router.push('/home')
             }
         } catch (error) {
@@ -133,4 +133,11 @@ const login = async () => {
         requesting.value = false
     }
 }
+
+addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        login(accessCode.value)
+    }
+})
+
 </script>

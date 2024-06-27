@@ -6,6 +6,8 @@
 
 import { createRouter, createWebHistory } from 'vue-router'
 import { client } from '@/lib/runtime.js'
+import { ElMessage } from 'element-plus'
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -57,15 +59,17 @@ const router = createRouter({
 
 router.beforeEach(async (to,from) => {
   console.log(`router.beforeEach to: ${to.path} from: ${from.path}`)
-  const isLogin = await client.checkLogin()
+  console.log(client.isLogin)
+  const everLogin = client.everLogin
   if (
     // 检查用户是否已登录
-    !isLogin &&
+    !everLogin &&
     // ❗️ 避免无限重定向
-    to.name !== 'auth'
+    to.name !== 'auth' &&
+    to.name !== 'settings'
   ) {
     console.log(`client.isLogin: ${client.isLogin} to.name!== auth: ${to.name!== 'auth'}`)
-    console.log('未登录，重定向到登录页面')
+    ElMessage.warning('请先登录')
     // 将用户重定向到登录页面
     return { name: 'auth' }
   }

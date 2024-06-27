@@ -7,7 +7,6 @@
 <script>
 import {client} from '@/lib/runtime.js'
 
-
 export default {
     name: 'SettingsView',
     data() {
@@ -17,7 +16,12 @@ export default {
     },
     methods: {
         reset() {
-            client.reset()
+            this.$router.push('/auth')
+            console.log("666")
+            // client.reset()
+            setTimeout(() => {
+                client.reset()
+            }, 50)
         }
     }
 }

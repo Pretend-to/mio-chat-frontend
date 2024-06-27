@@ -45,18 +45,26 @@ export default class Socket extends EventEmitter {
             console.log('WebSocket连接成功');
 
             // 发送登录信息
-            const loginRes = await this.fetch('/api/system/login', headers);
-            console.log('WebSocket登录成功', loginRes);
-
-
-            setTimeout(() => {
-                if (this.socket.readyState === WebSocket.OPEN) {
-                    console.log('WebSocket仍然连接中，执行emit操作');
-                    this.emit('connect', loginRes);
-                } else {
-                    console.log('WebSocket连接已断开，不执行emit操作');
-                }
-            }, 1000); // 1秒后检查连接状态
+            const loginPromise = this.fetch('/api/system/login', headers);
+            const timeoutPromise = new Promise((resolve) => {
+                setTimeout(() => {
+                    resolve('WebSocket连接超时');
+                }, 1000); // 1秒后超时
+            });
+            
+            Promise.race([loginPromise, timeoutPromise])
+                .then(result => {
+                    if (result === 'WebSocket连接超时') {
+                        console.log('WebSocket连接超时，不执行emit操作');
+                    } else {
+                        if (this.socket.readyState === WebSocket.OPEN) {
+                            console.log('WebSocket登录成功', result);
+                            this.emit('connect', result);
+                        } else {
+                            console.log('WebSocket连接已断开，不执行emit操作');
+                        }
+                    }
+                });
 
             // 每隔3秒发送心跳包
             this.heartBeat = setInterval(async () => {
