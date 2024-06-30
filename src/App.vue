@@ -17,6 +17,7 @@ export default {
   },
   computed: {},
   async created() {
+    await client.beforeInit();
     const conncted = await client.init();
 
     if (conncted) {
@@ -25,7 +26,7 @@ export default {
 
     this.fullScreen = client.fullScreen;
     this.beian = client.beian;
-    document.title = client.title;
+    document.title = client.webTitle;
     this.$refs.sidebar.loadAvatar(client.admin_qq);
 
     await config.init();
@@ -45,9 +46,7 @@ export default {
 
   },
   methods: {
-    checkPrivate() {
-      console.log(this.$route.name);
-
+    checkPrivate() {  
       const onPrivate =
         this.$route.name === "privateChat" ||
         this.$route.name === "privateProfile";

@@ -35,11 +35,12 @@ export default {
     },
     methods: {
 
-        tobuttom(clicked) {
+        toButtom(clicked) {
             if (clicked) this.$message('已滑至底部')
             const chatWindow = this.$refs.chatWindow
             //console.log("滑动条位置顶部与元素顶部间距："+ chatWindow.scrollTop + "元素高度" + chatWindow.scrollHeight)
-            chatWindow.scrollTop = chatWindow.scrollHeight
+            setTimeout(() => chatWindow.scrollTop = chatWindow.scrollHeight, 0)
+            
             //console.log(chatWindow.scrollHeight)
         },
         cleanScreen() {
@@ -47,8 +48,10 @@ export default {
             this.acting.updateFirstMessage()
             client.setLocalStorage() //持久化存储
             this.toupdate = true
+            this.$message({ message: '已清除会话记录', type: 'success' })
+
         },
-        cleanHistoty() {
+        cleanHistory() {
             this.acting.updateFirstMessage()
             this.$message({ message: '上下文信息已清除，之后的请求将不再记录上文记录', type: 'success' })
         },
@@ -62,21 +65,7 @@ export default {
         waiting() {
             this.$message({ message: '此功能尚未开放', type: 'warning' })
         },
-        async activeBotTools() {
-            if (this.acting.platform === 'onebot') {
-                const testMessage = 'text'
-                const testMessage2 = 'test'
-                const wrappedMessage = this.wrapText(testMessage)
-                const wrappedMessage2 = this.wrapText(testMessage2)
-                if (wrappedMessage2 === wrappedMessage) {
-                    this.userInput = this.textareaRef.value = wrappedMessage
-                    await this.send()
-                }
-            } else {
-                this.acting.activeModel = this.selectedWraper[this.selectedWraper.length - 1]
-                this.$message({ message: '已切换到' + this.acting.activeModel + '模型', type: 'success' })
-            }
-        },
+
 
         tolist() {
             this.$router.push({ name: 'toChat' })
@@ -127,7 +116,7 @@ export default {
                 this.ydaKey++;
                 const rawMessage = this.acting.messageChain[e.messageIndex]
                 rawMessage.content[0].data.text = e.updatedMessage
-                console.log(rawMessage.content[0].data.text)
+                // console.log(rawMessage.content[0].data.text)
                 this.toupdate = true
             })
 
@@ -249,7 +238,7 @@ export default {
         })
 
         console.log(this.acting)
-        setTimeout(this.tobuttom, 0)
+        this.toButtom()
 
         const currentId = this.$route.params.id
         const contactor = client.getContactor(currentId)
@@ -262,7 +251,7 @@ export default {
     },
     updated() {
         if (this.toupdate) {
-            setTimeout(this.tobuttom, 0)
+            this.toButtom()
             this.toupdate = false
         }
     },
@@ -282,7 +271,7 @@ export default {
             const contactor = client.getContactor(currentId)
             this.acting = contactor
             this.initContactor(this.acting)
-            this.tobuttom()
+            this.toButtom()
             if (oldVal) {
                 const oldId = parseInt(oldVal)
                 const oldContactor = client.getContactor(oldId)
@@ -377,6 +366,10 @@ export default {
             :acting="acting" 
             @stroge="client.setLocalStorage()"
             @setModel="setModel"
+            @cleanScreen="cleanScreen"
+            @cleanHistory="cleanHistory"
+            @sendMessage="toButtom"
+
         />
     </div>
 </template>
@@ -521,8 +514,6 @@ $icon-hover: #09f
 .button#close:hover svg path
     fill: #fff
 
-svg:hover
-    fill: rgb(0, 153, 255)
 
 .voice-box
     display: flex

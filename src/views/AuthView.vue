@@ -104,7 +104,7 @@ $baseColor: #1d93ab
 </template>
 
 <script setup>
-import { nextTick, ref } from 'vue'
+import { nextTick, onUnmounted, onMounted ,ref } from 'vue'
 import router from '@/router'
 import { client } from '@/lib/runtime.js'
 import { ElMessage } from 'element-plus'
@@ -114,6 +114,9 @@ const requesting = ref(false)
 const iconContainer = ref()
 
 const login = async (code) => {
+
+    console.log("触发login了")
+
     // 激活图标
     await nextTick(() => iconContainer.value.classList.add('active'))
     
@@ -126,18 +129,43 @@ const login = async (code) => {
             if (result) {
                 ElMessage.success(`成功以${result.is_admin ? '管理员身份' : '游客身份'}登录，欢迎使用!`)
                 await router.push('/home')
+                // 删除回车触发login的监听
             }
         } catch (error) {
-            ElMessage.error(error.message)
+            ElMessage.error(error)
         }
         requesting.value = false
     }
 }
 
-addEventListener('keydown', (e) => {
+// 定义一个命名函数供事件监听和移除使用
+function handleEnter(e) {
     if (e.key === 'Enter') {
-        login(accessCode.value)
+        login(accessCode.value);
     }
+}
+
+
+// 在unmounted时移除监听
+onUnmounted(() => {
+    console.log('unmounted');
+    removeEventListener('keydown', handleEnter); // 使用相同的函数引用进行移除
+});
+
+onMounted(() => {
+    addEventListener('keydown',handleEnter)
+})
+
+
+// 在unmounted时移除监听
+onUnmounted(() => {
+    console.log('unmounted')
+
+    removeEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            login(accessCode.value)
+        }
+    })
 })
 
 </script>

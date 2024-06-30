@@ -10,8 +10,6 @@ import Config from "./config.js";
 const config = new Config();
 const client = new Client();
 
-await client.beforeInit();
-
 console.log(client)
 
 // 延时10s

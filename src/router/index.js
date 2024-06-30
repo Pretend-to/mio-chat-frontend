@@ -59,8 +59,10 @@ const router = createRouter({
 
 router.beforeEach(async (to,from) => {
   console.log(`router.beforeEach to: ${to.path} from: ${from.path}`)
-  console.log(client.isLogin)
-  const everLogin = client.everLogin
+  console.log(client.everLogin)
+  let everLogin = client.everLogin
+
+  if (!everLogin) everLogin = await client.getLoginHistory()
   if (
     // 检查用户是否已登录
     !everLogin &&
@@ -68,7 +70,7 @@ router.beforeEach(async (to,from) => {
     to.name !== 'auth' &&
     to.name !== 'settings'
   ) {
-    console.log(`client.isLogin: ${client.isLogin} to.name!== auth: ${to.name!== 'auth'}`)
+    console.log(`everLogin: ${everLogin} to.name!== auth: ${to.name!== 'auth'}`)
     ElMessage.warning('请先登录')
     // 将用户重定向到登录页面
     return { name: 'auth' }

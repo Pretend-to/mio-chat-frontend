@@ -41,7 +41,7 @@ export default {
                 // 创建透明的缺口
                 let centerX = img.width * 0.8; // 圆心X坐标
                 let centerY = img.height * 0.86; // 圆心Y坐标
-                let radius = 225; // 圆的半径
+                let radius = (5/24)*img.width; // 圆的半径
 
                 ctx.beginPath();
                 ctx.arc(centerX, centerY, radius, 0, Math.PI * 2, true);
@@ -79,7 +79,7 @@ export default {
     components: {
     },
     created() {
-        this.processImage(this.defaultAvatar);
+        // this.processImage(this.defaultAvatar);
     },
     mounted() {
         this.currentPage = this.$route.path;

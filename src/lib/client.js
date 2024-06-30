@@ -23,7 +23,9 @@ export default class Client {
     this.models = []
     this.beian = ""
     this.fullScreen = false
-    this.title = ""
+    this.title = "人工"
+    this.name = "user"
+    this.webTitle = ""
   }
 
   /**
@@ -51,7 +53,7 @@ export default class Client {
       this.beian = base_info.beian
       this.fullScreen = base_info.fullScreen
       this.admin_qq = base_info.admin_qq
-      this.title = base_info.title
+      this.webTitle = base_info.title
 
       this.setLocalStorage()
 
@@ -275,7 +277,6 @@ export default class Client {
   async getLocalStorage() {
     const client = await localforage.getItem('client')
     if (client) {
-      console.log(client)
       return JSON.parse(client)
     } else {
       return false
@@ -405,5 +406,10 @@ export default class Client {
       title:info.data.title || "Mio-Chat",
       admin_qq:info.data.admin_qq || "",
     }
+  }
+
+  async getLoginHistory() {
+    const myclient = await this.getLocalStorage()
+    return myclient.everLogin
   }
 }

@@ -25,7 +25,7 @@
             </div>
             <div class="bu-emoji">
                 <p id="ho-emoji">重置人格</p>
-                <svg @click="$emit('cleanHistoty')" t="1695146872454" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
+                <svg @click="$emit('cleanHistory')" t="1695146872454" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
                     xmlns="http://www.w3.org/2000/svg" p-id="3849">
                     <path
                         d="M934.4 206.933333c-17.066667-4.266667-34.133333 6.4-38.4 23.466667l-23.466667 87.466667C797.866667 183.466667 654.933333 96 497.066667 96 264.533333 96 74.666667 281.6 74.666667 512s189.866667 416 422.4 416c179.2 0 339.2-110.933333 398.933333-275.2 6.4-17.066667-2.133333-34.133333-19.2-40.533333-17.066667-6.4-34.133333 2.133333-40.533333 19.2-51.2 138.666667-187.733333 232.533333-339.2 232.533333C298.666667 864 138.666667 706.133333 138.666667 512S300.8 160 497.066667 160c145.066667 0 277.333333 87.466667 330.666666 217.6l-128-36.266667c-17.066667-4.266667-34.133333 6.4-38.4 23.466667-4.266667 17.066667 6.4 34.133333 23.466667 38.4l185.6 49.066667c2.133333 0 6.4 2.133333 8.533333 2.133333 6.4 0 10.666667-2.133333 17.066667-4.266667 6.4-4.266667 12.8-10.666667 14.933333-19.2l49.066667-185.6c0-17.066667-8.533333-34.133333-25.6-38.4z"
@@ -34,7 +34,7 @@
             </div>
             <div class="bu-emoji">
                 <p id="ho-emoji">清除记录</p>
-                <svg @click="cleanScreen" t="1695147353549" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
+                <svg @click="$emit('cleanScreen')" t="1695147353549" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
                     xmlns="http://www.w3.org/2000/svg" p-id="4763" width="20" height="20">
                     <path
                         d="M874.666667 241.066667h-202.666667V170.666667c0-40.533333-34.133333-74.666667-74.666667-74.666667h-170.666666c-40.533333 0-74.666667 34.133333-74.666667 74.666667v70.4H149.333333c-17.066667 0-32 14.933333-32 32s14.933333 32 32 32h53.333334V853.333333c0 40.533333 34.133333 74.666667 74.666666 74.666667h469.333334c40.533333 0 74.666667-34.133333 74.666666-74.666667V305.066667H874.666667c17.066667 0 32-14.933333 32-32s-14.933333-32-32-32zM416 170.666667c0-6.4 4.266667-10.666667 10.666667-10.666667h170.666666c6.4 0 10.666667 4.266667 10.666667 10.666667v70.4h-192V170.666667z m341.333333 682.666666c0 6.4-4.266667 10.666667-10.666666 10.666667H277.333333c-6.4 0-10.666667-4.266667-10.666666-10.666667V309.333333h490.666666V853.333333z"
@@ -69,7 +69,6 @@
             <div class="input-content">
                 <div @keydown="handleKeyDown" @input="handleInput" class="input-area" ref="textarea"
                     :v-html="userInput" contenteditable="true" placeholder="按 Ctrl + Enter 以发送消息" @click="updateCursorPosition">
-                    <!-- {{ userInput }} -->
                 </div>
             </div>
             <button @click.prevent="send" :disabled="!userInput || !isValidInput(userInput)" id="sendButton">
@@ -181,9 +180,9 @@ export default {
                 this.cursorPosition[1] = range.endOffset
 
             }
-            console.log(this.cursorPosition)
         },
         presend() {
+            console.log(this.userInput)
             this.$refs.textarea.focus()
 
             let msg = this.getSafeText(this.userInput)
@@ -238,11 +237,11 @@ export default {
             return container
         },
         async send() {
+            this.$emit('sendMessage')
             const container = this.presend()
             this.userInput = ""
             const message_id = await this.acting.webSend(container) //发送消息
             container.id = message_id
-            setTimeout(this.tobuttom, 0)
             this.$emit('stroge')
         },
         getSafeText(text) {
@@ -252,14 +251,28 @@ export default {
         cleanScreen() {
             this.$emit('cleanScreen')
         },
-        activeBotTools() {
-            this.$emit('activeBotTools')
+        async activeBotTools() {
+            if (this.acting.platform === 'onebot') {
+                const testMessage = 'text'
+                const testMessage2 = 'test'
+                const wrappedMessage = this.wrapText(testMessage)
+                const wrappedMessage2 = this.wrapText(testMessage2)
+                if (wrappedMessage2 === wrappedMessage) {
+                    this.userInput = this.textareaRef.value = wrappedMessage
+                    await this.send()
+                }
+            } else {
+                this.setModel(this.selectedWraper[this.selectedWraper.length - 1]) 
+                this.$message({ message: '已切换到' + this.acting.activeModel + '模型', type: 'success' })
+            }
         },
         isValidInput(input) {
             return input.trim().length > 0
         },
         handleKeyDown(event) {
+
             if (event.ctrlKey && event.key === 'Enter') {
+                this.userInput = this.replaceDivTags(this.userInput)
                 if (this.userInput && this.isValidInput(this.userInput)) this.send()
                 else this.$message({ message: '不能发送空消息', type: 'warning' })
                 // 处理按下 Ctrl+Enter 键的逻辑
@@ -268,16 +281,40 @@ export default {
                 this.updateCursorPosition()
             }, 0);
             
+        }, replaceDivTags(inputText) {
+            // 使用正则表达式匹配并替换指定的div标签
+            // 第一个div标签
+            let result = inputText.replace(/<div>/, "\n");
+
+            // 所有的成对div标签
+            result = result.replace(/<div><\/div>/g, "\n");
+
+            // 末尾的div标签
+            result = result.replace(/<\/div>$/, "\n");
+
+            return result;
         },
         handleInput() {
-            this.userInput = this.$refs.textarea.textContent
+            this.userInput = this.$refs.textarea.innerHTML
+            console.log(this.userInput)
         },
-    },mounted(){
+    }, mounted() {
         if (this.acting.platform === 'onebot') this.getBotTools()
         else this.getBotModels()
         this.textareaRef = this.$refs.textarea
         this.textareaRef.addEventListener('input', this.adjustTextareaHeight)
-    },watch: {
+        document.addEventListener('paste', function (e) {
+            e.preventDefault();
+            var text = (e.originalEvent || e).clipboardData.getData('text/plain');
+            document.execCommand('insertText', false, text);
+        });
+     
+    },unmounted() {
+        this.textareaRef.removeEventListener('input', this.adjustTextareaHeight)
+        this.textareaRef = null
+        document.removeEventListener('paste', this.adjustTextareaHeight)
+    },
+    watch: {
         '$route.params.id'() {
             if (this.acting.platform === 'onebot') this.getBotTools()
             else this.getBotModels()
@@ -289,6 +326,9 @@ export default {
 <style lang="sass" scoped>
 $mobile: 600px
 $icon-hover: #09f
+
+svg:hover
+    fill: rgb(0, 153, 255)
 
 .input-bar
     flex-shrink: 0
@@ -357,6 +397,9 @@ p#ho-emoji
     flex-grow: 1
     width: 100%
 
+
+
+
     .input-area
         overflow-y: auto
         max-height: 20rem
@@ -366,6 +409,14 @@ p#ho-emoji
         border: 0
         flex-grow: 1
         width: 100%
+
+        moz-user-select: -moz-none
+        -moz-user-select: none
+        -o-user-select: none
+        -khtml-user-select: none
+        -webkit-user-select: none
+        -ms-user-select: none
+        user-select: none
 
         &:focus
             border: 0
