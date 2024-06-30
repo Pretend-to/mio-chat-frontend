@@ -60,129 +60,19 @@ export default class Client {
     }
   }
 
-  genDefaultConctor() {
+  async genDefaultConctor() {
+    const onebotOptionsData = await fetch(`/api/onebot/plugins`)
+    const onebotOptionsJson = await onebotOptionsData.json()
+
     const onebotDefaultConfig = {
       id: this.genFakeId(),
       name: 'OneBot',
       avatar: `/api/qava?q=${this.botqq}`,
       title: '云崽',
       priority: 0,
-      options: {
-        textWraper: {
-          options: [
-            {
-              "value": "",
-              "label": "默认"
-            },
-            {
-              "value": "AP",
-              "label": "画图",
-              "children": [
-                {
-                  "value": "apHelp",
-                  "label": "帮助"
-                },
-                {
-                  "value": "apDrawSquare",
-                  "label": "画方图"
-                },
-                {
-                  "value": "apDrawVertical",
-                  "label": "画图"
-                },
-                {
-                  "value": "apDrawHorizontal",
-                  "label": "画横图"
-                }
-              ]
-            },
-            {
-              "value": "GPT",
-              "label": "AI对话",
-              "children": [
-                {
-                  "value": "gptHelp",
-                  "label": "帮助"
-                },
-                {
-                  "value": "gptCancel",
-                  "label": "结束对话"
-                },
-                {
-                  "value": "gptAPI",
-                  "label": "API"
-                },
-                {
-                  "value": "gptGlm4",
-                  "label": "glm4"
-                },
-                {
-                  "value": "gptGemini",
-                  "label": "gemini"
-                },
-                {
-                  "value": "gptClaude",
-                  "label": "claude"
-                }
-              ]
-            },
-            {
-              "value": "Genshin",
-              "label": "原神",
-              "children": [
-                {
-                  "value": "genshinHelp",
-                  "label": "帮助"
-                },
-                {
-                  "value": "genshinBind",
-                  "label": "绑定UID"
-                },
-                {
-                  "value": "genshinIUpdate",
-                  "label": "更新面板"
-                },
-                {
-                  "value": "genshinPanel",
-                  "label": "角色面板"
-                },
-                {
-                  "value": "genshinSk",
-                  "label": "角色天赋"
-                },
-                {
-                  "value": "genshinCe",
-                  "label": "角色命座"
-                },
-                {
-                  "value": "genshinOb",
-                  "label": "角色养成材料"
-                }
-              ]
-            }
-          ],
-          presets: {
-            apDrawSquare: '画图方图{xxx}',
-            apDrawVertical: '画图{xxx}',
-            apDrawHorizontal: '画图横图{xxx}',
-            apHelp: '#ap帮助',
-            gptHelp: '#chatgpt帮助',
-            gptCancel: '#chatgpt结束对话',
-            gptAPI: '#api{xxx}',
-            gptGlm4: '#glm4{xxx}',
-            gptGemini: '#gemini{xxx}',
-            gptClaude: '#claude{xxx}',
-            genshinHelp: '#帮助',
-            genshinIUpdate: '#更新面板',
-            genshinBind: '#绑定{xxx}',
-            genshinPanel: '#{xxx}面板',
-            genshinSk: '#{xxx}天赋',
-            genshinCe: '#{xxx}命座',
-            genshinOb: '#{xxx}材料'
-          }
-        }
-      }
+      options: onebotOptionsJson.data.options
     }
+    
     this.addConcator('onebot', onebotDefaultConfig)
     const models = this.models
     const options = models.map(modelGroup => {
@@ -322,7 +212,7 @@ export default class Client {
       const timer = setTimeout(() => {
         reject('登录超时，网络链接错误或存在已连接的标签页')
       }, 3000)
-      socket.on('connect', (info) => {
+      socket.on('connect', async (info) => {
         console.log('登录成功')
         clearTimeout(timer)
         this.qq = info.admin_qq
@@ -335,7 +225,7 @@ export default class Client {
         this.models = info.models
         this.setLocalStorage()
         this.addMsgListener()
-        if(this.contactList.length == 0) this.genDefaultConctor()
+        if(this.contactList.length == 0) await this.genDefaultConctor()
         this.setLocalStorage()
         resolve(info)
       })

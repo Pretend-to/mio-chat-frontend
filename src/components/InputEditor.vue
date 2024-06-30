@@ -88,7 +88,6 @@ export default {
             cursorPosition: [],
             showemoji: false,
             uploadedFiles: [],
-
         }
     },
     props: {
@@ -103,11 +102,8 @@ export default {
         },
         getBotTools() {
             this.selectedWraper = ['']
-            const wraper = this.acting.options.textWraper
+            const wraper = this.acting.options.textwraper
             this.wraperOptions = wraper.options
-            this.wraperPresets = wraper.presets
-            console.log(wraper)
-
         },
         getBotModels() {
             this.selectedWraper = this.acting.activeModel ? [this.acting.activeModel] : ['gpt-3.5-turbo']
@@ -119,7 +115,10 @@ export default {
             const wraper = this.selectedWraper[this.selectedWraper.length - 1]
             if (!wraper) return rawText
             const testText = '{xxx}'
-            const preset = this.wraperPresets[wraper]
+
+            const childrens = this.wraperOptions.find(item => item.value == this.selectedWraper[0]).children
+            const preset = childrens.find(child => child.value == this.selectedWraper[1]).preset
+
             const result = preset.replace(testText, rawText)
             return result
         },
@@ -133,7 +132,8 @@ export default {
                 if (!this.selectedWraper) return ''
                 const wraper = this.selectedWraper[this.selectedWraper.length - 1]
                 if (!wraper) return ''
-                const preset = this.wraperPresets[wraper]
+                const childrens = this.wraperOptions.find(item => item.value == this.selectedWraper[0]).children
+                const preset = childrens.find(child => child.value == this.selectedWraper[1]).preset
                 const name = preset.replace('#', '').replace('{xxx}', '')
                 return name
             } else {
@@ -182,7 +182,7 @@ export default {
             }
         },
         presend() {
-            console.log(this.userInput)
+            // console.log(this.userInput)
             this.$refs.textarea.focus()
 
             let msg = this.getSafeText(this.userInput)
