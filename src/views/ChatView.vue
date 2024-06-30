@@ -18,13 +18,12 @@ export default {
             userInput: '',
             todld: false,
             client: client,
-            warperOptions: [],
-            warperPresets: {},
+            wraperOptions: [],
+            wraperPresets: {},
             cursorPosition:[],
-            selectedWarper: null,
+            selectedWraper: null,
             currentDelay: 0,
             toupdate: false,
-            updatedImgs: [],
             ydaKey: 0,
             showMenu: false,
             menuTop: 0,
@@ -35,59 +34,6 @@ export default {
         }
     },
     methods: {
-        getSafeText(text) {
-            return text.replace(/<script>/g, '&lt;script&gt;').replace(/<\/script>/g, '&lt;/script&gt;')
-                .replace(/<style>/g, '&lt;style&gt;').replace(/<\/style>/g, '&lt;/style&gt;');
-        },
-
-        presend() {
-            this.$refs.textarea.focus()
-
-            let msg = this.getSafeText(this.userInput)
-
-            const warpedMessage = this.acting.platform === 'onebot' ? this.warpText(msg) : msg
-            this.userInput = this.textareaRef.value = ''
-            this.adjustTextareaHeight();
-
-            const container = {
-                role: 'user',
-                time: new Date().getTime(),
-                status: 'completed',
-                content: [{
-                    type: 'text',
-                    data: {
-                        text: warpedMessage
-                    }
-                }]
-            }
-
-            this.updatedImgs.forEach(image => {
-                container.content.push({
-                    type: 'image',
-                    data: {
-                        file: image
-                    }
-                })
-            })
-
-            if (this.repliedMessage) {
-                const replyData = {
-                    type: 'reply',
-                    data: {
-                        id: this.repliedMessage.id
-                    }
-                }
-                container.content.push(replyData)
-            }
-            return container
-        },
-        async send() {
-            const container = this.presend()
-            const message_id = await this.acting.webSend(container) //发送消息
-            container.id = message_id
-            setTimeout(this.tobuttom, 0)
-            client.setLocalStorage() //持久化存储
-        },
 
         tobuttom(clicked) {
             if (clicked) this.$message('已滑至底部')
@@ -106,9 +52,7 @@ export default {
             this.acting.updateFirstMessage()
             this.$message({ message: '上下文信息已清除，之后的请求将不再记录上文记录', type: 'success' })
         },
-        async reset() {
-            this.one.init()
-        },
+
         isValidInput(input) {
             // 使用正则表达式检查用户输入是否只包含换行符和空格
             const regex = /^[ \n]+$/
@@ -122,54 +66,26 @@ export default {
             if (this.acting.platform === 'onebot') {
                 const testMessage = 'text'
                 const testMessage2 = 'test'
-                const warpedMessage = this.warpText(testMessage)
-                const warpedMessage2 = this.warpText(testMessage2)
-                if (warpedMessage2 === warpedMessage) {
-                    this.userInput = this.textareaRef.value = warpedMessage
+                const wrappedMessage = this.wrapText(testMessage)
+                const wrappedMessage2 = this.wrapText(testMessage2)
+                if (wrappedMessage2 === wrappedMessage) {
+                    this.userInput = this.textareaRef.value = wrappedMessage
                     await this.send()
                 }
             } else {
-                this.acting.activeModel = this.selectedWarper[this.selectedWarper.length - 1]
+                this.acting.activeModel = this.selectedWraper[this.selectedWraper.length - 1]
                 this.$message({ message: '已切换到' + this.acting.activeModel + '模型', type: 'success' })
             }
         },
-        changevoice(data) {
-            console.log(data)
-            const result = data.list[data.chosen]
-            this.crtvoice = result
-            this.userInput = '切换语音 ' + result
-            this.send()
-        },
-        async revmsg(task) {
-            const response = await this.one.getResponse(task.reqid)
-            const content = response.container.content
-            if (content.text.length || content.image.length || content.voice.length) {
-                const theone = this.global.friend.find((item) => item.uin === task.uin)
-                theone.addmsg(response.container) //存储于store
-                this.global.stroge() //持久化存储
-            }
-            if (response.continue) this.revmsg(task)
-            else console.log(content)
-            this.toupdate = true
-        },
+
         tolist() {
             this.$router.push({ name: 'toChat' })
         },
-        toplay(time) {
-            const audioId = `voice-${time}`
-            const audio = document.getElementById(audioId)
-            if (audio.paused) {
-                audio.play()
-                this.playing = true
-            } else {
-                audio.pause()
-                this.playing = false
-            }
-        },
-        readmsg() {
 
-
+        setModel(name){
+            this.acting.activeModel = name
         },
+
         showTime(index) {
             const thisTime = this.acting.messageChain[index].time
             if (index === 0) {
@@ -191,26 +107,6 @@ export default {
                     }
                 }
             }
-        },
-        getBotTools() {
-            this.selectedWarper = ['']
-            const warper = this.acting.options.textWarper
-            this.warperOptions = warper.options
-            this.warperPresets = warper.presets
-        },
-        getBotModels() {
-            this.selectedWarper = this.acting.activeModel ? [this.acting.activeModel] : ['gpt-3.5-turbo']
-            this.warperOptions = this.acting.options.modelsOptions
-            this.acting.activeModel = 'gpt-3.5-turbo'
-        },
-        warpText(rawText) {
-            if (!this.selectedWarper) return rawText
-            const warper = this.selectedWarper[this.selectedWarper.length - 1]
-            if (!warper) return rawText
-            const testText = '{xxx}'
-            const preset = this.warperPresets[warper]
-            const result = preset.replace(testText, rawText)
-            return result
         },
         initContactor(contactor) {
             contactor.active = true
@@ -250,11 +146,6 @@ export default {
             contactor.off(`revMessage`)
             contactor.off(`delMessage`)
             contactor.off(`completeMessage`)
-        },
-        adjustTextareaHeight() {
-            const textarea = this.$refs.textarea
-            textarea.style.height = 'auto'
-            textarea.style.height = textarea.scrollHeight + 'px'
         },
         getReplyText(id) {
             let content = '';
@@ -357,19 +248,12 @@ export default {
             if (this.showemoji) this.showemoji = false;
         })
 
-        this.textareaRef = this.$refs.textarea
-        this.textareaRef.addEventListener('input', this.adjustTextareaHeight)
-
         console.log(this.acting)
         setTimeout(this.tobuttom, 0)
 
         const currentId = this.$route.params.id
         const contactor = client.getContactor(currentId)
         this.initContactor(contactor)
-
-
-        if (this.acting.platform === 'onebot') this.getBotTools()
-        else this.getBotModels()
 
 
         setInterval(() => {
@@ -404,8 +288,6 @@ export default {
                 const oldContactor = client.getContactor(oldId)
                 this.disableContactor(oldContactor)
             }
-            if (this.acting.platform === 'onebot') this.getBotTools()
-            else this.getBotModels()
         }
     }
 }
@@ -490,85 +372,12 @@ export default {
                 </div>
             </div>
         </div>
-        <InputEditor/>
-        <!-- <div class="input-bar"  ">
-            <div class="options">
-                <div class="bu-emoji">
-                    <emoji-picker v-show="showemoji" ref="emojiPicker" @emoji-click="getemoji"></emoji-picker>
-                    <p id="ho-emoji">表情</p>
-                    <svg @click="showemoji = !showemoji" t="1695146956319" class="chat-icon" viewBox="0 0 1024 1024"
-                        version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3988">
-                        <path
-                            d="M512 74.666667C270.933333 74.666667 74.666667 270.933333 74.666667 512S270.933333 949.333333 512 949.333333 949.333333 753.066667 949.333333 512 753.066667 74.666667 512 74.666667z m0 810.666666c-204.8 0-373.333333-168.533333-373.333333-373.333333S307.2 138.666667 512 138.666667 885.333333 307.2 885.333333 512 716.8 885.333333 512 885.333333z"
-                            p-id="3989"></path>
-                        <path
-                            d="M674.133333 608c-46.933333 57.6-100.266667 85.333333-162.133333 85.333333s-115.2-27.733333-162.133333-85.333333c-10.666667-12.8-32-14.933333-44.8-4.266667-12.8 10.666667-14.933333 32-4.266667 44.8 59.733333 70.4 130.133333 106.666667 211.2 106.666667s151.466667-36.266667 211.2-106.666667c10.666667-12.8 8.533333-34.133333-4.266667-44.8-12.8-10.666667-34.133333-8.533333-44.8 4.266667zM362.666667 512c23.466667 0 42.666667-19.2 42.666666-42.666667v-64c0-23.466667-19.2-42.666667-42.666666-42.666666s-42.666667 19.2-42.666667 42.666666v64c0 23.466667 19.2 42.666667 42.666667 42.666667zM661.333333 512c23.466667 0 42.666667-19.2 42.666667-42.666667v-64c0-23.466667-19.2-42.666667-42.666667-42.666666s-42.666667 19.2-42.666666 42.666666v64c0 23.466667 19.2 42.666667 42.666666 42.666667z"
-                            p-id="3990"></path>
-                    </svg>
-                </div>
-                <div class="bu-emoji">
-                    <p id="ho-emoji">滑到底部</p>
-                    <svg @click="tobuttom(1)" t="1695147151930" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
-                        xmlns="http://www.w3.org/2000/svg" p-id="4438" width="20" height="20">
-                        <path
-                            d="M896 864H128c-17.066667 0-32 14.933333-32 32s14.933333 32 32 32h768c17.066667 0 32-14.933333 32-32s-14.933333-32-32-32zM488.533333 727.466667c6.4 6.4 14.933333 8.533333 23.466667 8.533333s17.066667-2.133333 23.466667-8.533333l213.333333-213.333334c12.8-12.8 12.8-32 0-44.8-12.8-12.8-32-12.8-44.8 0l-157.866667 157.866667V170.666667c0-17.066667-14.933333-32-32-32s-34.133333 14.933333-34.133333 32v456.533333L322.133333 469.333333c-12.8-12.8-32-12.8-44.8 0-12.8 12.8-12.8 32 0 44.8l211.2 213.333334z"
-                            p-id="4439"></path>
-                    </svg>
-                </div>
-                <div class="bu-emoji">
-                    <p id="ho-emoji">重置人格</p>
-                    <svg @click="cleanHistoty" t="1695146872454" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
-                        xmlns="http://www.w3.org/2000/svg" p-id="3849">
-                        <path
-                            d="M934.4 206.933333c-17.066667-4.266667-34.133333 6.4-38.4 23.466667l-23.466667 87.466667C797.866667 183.466667 654.933333 96 497.066667 96 264.533333 96 74.666667 281.6 74.666667 512s189.866667 416 422.4 416c179.2 0 339.2-110.933333 398.933333-275.2 6.4-17.066667-2.133333-34.133333-19.2-40.533333-17.066667-6.4-34.133333 2.133333-40.533333 19.2-51.2 138.666667-187.733333 232.533333-339.2 232.533333C298.666667 864 138.666667 706.133333 138.666667 512S300.8 160 497.066667 160c145.066667 0 277.333333 87.466667 330.666666 217.6l-128-36.266667c-17.066667-4.266667-34.133333 6.4-38.4 23.466667-4.266667 17.066667 6.4 34.133333 23.466667 38.4l185.6 49.066667c2.133333 0 6.4 2.133333 8.533333 2.133333 6.4 0 10.666667-2.133333 17.066667-4.266667 6.4-4.266667 12.8-10.666667 14.933333-19.2l49.066667-185.6c0-17.066667-8.533333-34.133333-25.6-38.4z"
-                            p-id="3850"></path>
-                    </svg>
-                </div>
-                <div class="bu-emoji">
-                    <p id="ho-emoji">清除记录</p>
-                    <svg @click="cleanScreen" t="1695147353549" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
-                        xmlns="http://www.w3.org/2000/svg" p-id="4763" width="20" height="20">
-                        <path
-                            d="M874.666667 241.066667h-202.666667V170.666667c0-40.533333-34.133333-74.666667-74.666667-74.666667h-170.666666c-40.533333 0-74.666667 34.133333-74.666667 74.666667v70.4H149.333333c-17.066667 0-32 14.933333-32 32s14.933333 32 32 32h53.333334V853.333333c0 40.533333 34.133333 74.666667 74.666666 74.666667h469.333334c40.533333 0 74.666667-34.133333 74.666666-74.666667V305.066667H874.666667c17.066667 0 32-14.933333 32-32s-14.933333-32-32-32zM416 170.666667c0-6.4 4.266667-10.666667 10.666667-10.666667h170.666666c6.4 0 10.666667 4.266667 10.666667 10.666667v70.4h-192V170.666667z m341.333333 682.666666c0 6.4-4.266667 10.666667-10.666666 10.666667H277.333333c-6.4 0-10.666667-4.266667-10.666666-10.666667V309.333333h490.666666V853.333333z"
-                            p-id="4764"></path>
-                        <path
-                            d="M426.666667 736c17.066667 0 32-14.933333 32-32V490.666667c0-17.066667-14.933333-32-32-32s-32 14.933333-32 32v213.333333c0 17.066667 14.933333 32 32 32zM597.333333 736c17.066667 0 32-14.933333 32-32V490.666667c0-17.066667-14.933333-32-32-32s-32 14.933333-32 32v213.333333c0 17.066667 14.933333 32 32 32z"
-                            p-id="4765"></path>
-                    </svg>
-                </div>
-                <div class="bu-emoji">
-                    <p id="ho-emoji">语音</p>
-                    <svg @click="waiting" t="1697536440024" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
-                        xmlns="http://www.w3.org/2000/svg" p-id="7282" width="24" height="24">
-                        <path
-                            d="M544 851.946667V906.666667a32 32 0 0 1-64 0v-54.72C294.688 835.733333 149.333333 680.170667 149.333333 490.666667v-21.333334a32 32 0 0 1 64 0v21.333334c0 164.949333 133.717333 298.666667 298.666667 298.666666s298.666667-133.717333 298.666667-298.666666v-21.333334a32 32 0 0 1 64 0v21.333334c0 189.514667-145.354667 345.066667-330.666667 361.28zM298.666667 298.56C298.666667 180.8 394.165333 85.333333 512 85.333333c117.781333 0 213.333333 95.541333 213.333333 213.226667v192.213333C725.333333 608.533333 629.834667 704 512 704c-117.781333 0-213.333333-95.541333-213.333333-213.226667V298.56z m64 0v192.213333C362.666667 573.12 429.557333 640 512 640c82.496 0 149.333333-66.805333 149.333333-149.226667V298.56C661.333333 216.213333 594.442667 149.333333 512 149.333333c-82.496 0-149.333333 66.805333-149.333333 149.226667z"
-                            p-id="7283"></path>
-                    </svg>
-                </div>
-                <div class="bu-emoji">
-                    <p id="ho-emoji">{{ acting.platform == 'openai' ? '模型选择' : '工具选择' }}</p>
-                    <el-cascader v-model="selectedWarper" :options="warperOptions" id="warper-selector"
-                        @change="activeBotTools" />
-                    <svg t="1697536322502" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
-                        xmlns="http://www.w3.org/2000/svg" p-id="6223" width="24" height="24">
-                        <path
-                            d="M618.666667 106.666667H405.333333v85.333333h64v42.666667H149.333333v661.333333h725.333334V234.666667H554.666667V192h64V106.666667zM234.666667 810.666667V320h554.666666v490.666667H234.666667zM21.333333 448v234.666667h85.333334V448H21.333333z m896 0v234.666667h85.333334V448h-85.333334z m-469.333333 64h-106.666667v106.666667h106.666667v-106.666667z m234.666667 0h-106.666667v106.666667h106.666667v-106.666667z"
-                            p-id="6224"></path>
-                    </svg>
-                </div>
-            </div>
-            <div class="input-box">
-                <div class="input-content">
-                    <div @keydown="handleKeyDown" @input="handleInput" class="input-area" ref="textarea"
-                        contenteditable="true" placeholder="按 Ctrl + Enter 以发送消息" @click="updateCursorPosition">
-                        {{ userInput }}
-                    </div>
-                </div>
-                <button @click.prevent="send" :disabled="!userInput || !isValidInput(userInput)" id="sendButton">
-                    发送{{ getWarperName() ? ` | ${getWarperName()}` : '' }}
-                </button>
-            </div>
-        </div> -->
+        <InputEditor 
+            ref="inputEditor"
+            :acting="acting" 
+            @stroge="client.setLocalStorage()"
+            @setModel="setModel"
+        />
     </div>
 </template>
 

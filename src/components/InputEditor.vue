@@ -55,7 +55,7 @@
             </div>
             <div class="bu-emoji">
                 <p id="ho-emoji">{{ acting.platform == 'openai' ? '模型选择' : '工具选择' }}</p>
-                <el-cascader v-model="selectedWarper" :options="warperOptions" id="warper-selector"
+                <el-cascader v-model="selectedWraper" :options="wraperOptions" id="wraper-selector"
                     @change="activeBotTools" />
                 <svg t="1697536322502" class="chat-icon" viewBox="0 0 1024 1024" version="1.1"
                     xmlns="http://www.w3.org/2000/svg" p-id="6223" width="24" height="24">
@@ -68,12 +68,12 @@
         <div class="input-box">
             <div class="input-content">
                 <div @keydown="handleKeyDown" @input="handleInput" class="input-area" ref="textarea"
-                    contenteditable="true" placeholder="按 Ctrl + Enter 以发送消息" @click="updateCursorPosition">
-                    {{ userInput }}
+                    :v-html="userInput" contenteditable="true" placeholder="按 Ctrl + Enter 以发送消息" @click="updateCursorPosition">
+                    <!-- {{ userInput }} -->
                 </div>
             </div>
             <button @click.prevent="send" :disabled="!userInput || !isValidInput(userInput)" id="sendButton">
-                发送{{ getWarperName() ? ` | ${getWarperName()}` : '' }}
+                发送{{ getWraperName() ? ` | ${getWraperName()}` : '' }}
             </button>
         </div>
     </div>
@@ -84,10 +84,11 @@ export default {
     data() {
         return {
             userInput: '',
-            selectedWarper: [],
-            warperOptions: [],
-            cursorPosition: 0,
+            selectedWraper: null,
+            wraperOptions: [],
+            cursorPosition: [],
             showemoji: false,
+            uploadedFiles: [],
 
         }
     },
@@ -98,16 +99,46 @@ export default {
         }
     },
     methods: {
-        getWarperName() {
+        setModel(name){
+            this.$emit('setModel', name)
+        },
+        getBotTools() {
+            this.selectedWraper = ['']
+            const wraper = this.acting.options.textWraper
+            this.wraperOptions = wraper.options
+            this.wraperPresets = wraper.presets
+            console.log(wraper)
+
+        },
+        getBotModels() {
+            this.selectedWraper = this.acting.activeModel ? [this.acting.activeModel] : ['gpt-3.5-turbo']
+            this.wraperOptions = this.acting.options.modelsOptions
+            this.setModel(this.selectedWraper[0])
+        },
+        wrapText(rawText) {
+            if (!this.selectedWraper) return rawText
+            const wraper = this.selectedWraper[this.selectedWraper.length - 1]
+            if (!wraper) return rawText
+            const testText = '{xxx}'
+            const preset = this.wraperPresets[wraper]
+            const result = preset.replace(testText, rawText)
+            return result
+        },
+        adjustTextareaHeight() {
+            const textarea = this.$refs.textarea
+            textarea.style.height = 'auto'
+            textarea.style.height = textarea.scrollHeight + 'px'
+        },
+        getWraperName() {
             if (this.acting.platform === 'onebot') {
-                if (!this.selectedWarper) return ''
-                const warper = this.selectedWarper[this.selectedWarper.length - 1]
-                if (!warper) return ''
-                const preset = this.warperPresets[warper]
+                if (!this.selectedWraper) return ''
+                const wraper = this.selectedWraper[this.selectedWraper.length - 1]
+                if (!wraper) return ''
+                const preset = this.wraperPresets[wraper]
                 const name = preset.replace('#', '').replace('{xxx}', '')
                 return name
             } else {
-                return this.selectedWarper ? this.selectedWarper[this.selectedWarper.length - 1] : ''
+                return this.selectedWraper ? this.selectedWraper[this.selectedWraper.length - 1] : ''
             }
         },
         waiting() {
@@ -152,8 +183,71 @@ export default {
             }
             console.log(this.cursorPosition)
         },
-        send() {
-            this.$emit('send')
+        presend() {
+            this.$refs.textarea.focus()
+
+            let msg = this.getSafeText(this.userInput)
+
+            const wrappedMessage = this.acting.platform === 'onebot' ? this.wrapText(msg) : msg
+
+            this.userInput = this.$refs.textarea.innerHTML = ''
+
+            this.adjustTextareaHeight();
+
+            const container = {
+                role: 'user',
+                time: new Date().getTime(),
+                status: 'completed',
+                content: [{
+                    type: 'text',
+                    data: {
+                        text: wrappedMessage
+                    }
+                }]
+            }
+
+            this.uploadedFiles.forEach(file => {
+                if (file.type === 'image') {
+                    container.content.push({
+                        type: 'image',
+                        data: {
+                            file: file.data
+                        }
+                    })
+                }else if (file.type === 'doc'){
+                    container.content.push({
+                        type: 'doc',
+                        data: {
+                            file: file.data
+                        }
+                    })
+                }
+
+
+            })
+
+            if (this.repliedMessage) {
+                const replyData = {
+                    type: 'reply',
+                    data: {
+                        id: this.repliedMessage.id
+                    }
+                }
+                container.content.push(replyData)
+            }
+            return container
+        },
+        async send() {
+            const container = this.presend()
+            this.userInput = ""
+            const message_id = await this.acting.webSend(container) //发送消息
+            container.id = message_id
+            setTimeout(this.tobuttom, 0)
+            this.$emit('stroge')
+        },
+        getSafeText(text) {
+            return text.replace(/<script>/g, '&lt;script&gt;').replace(/<\/script>/g, '&lt;/script&gt;')
+                .replace(/<style>/g, '&lt;style&gt;').replace(/<\/style>/g, '&lt;/style&gt;');
         },
         cleanScreen() {
             this.$emit('cleanScreen')
@@ -165,9 +259,6 @@ export default {
             return input.trim().length > 0
         },
         handleKeyDown(event) {
-            if (event.key === "Enter") {
-                this.userInput += "<br>"; // 添加换行
-            }
             if (event.ctrlKey && event.key === 'Enter') {
                 if (this.userInput && this.isValidInput(this.userInput)) this.send()
                 else this.$message({ message: '不能发送空消息', type: 'warning' })
@@ -181,7 +272,17 @@ export default {
         handleInput() {
             this.userInput = this.$refs.textarea.textContent
         },
-    },
+    },mounted(){
+        if (this.acting.platform === 'onebot') this.getBotTools()
+        else this.getBotModels()
+        this.textareaRef = this.$refs.textarea
+        this.textareaRef.addEventListener('input', this.adjustTextareaHeight)
+    },watch: {
+        '$route.params.id'() {
+            if (this.acting.platform === 'onebot') this.getBotTools()
+            else this.getBotModels()
+        }
+    }
 }
 </script>
 

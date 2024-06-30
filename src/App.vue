@@ -25,6 +25,8 @@ export default {
 
     this.fullScreen = client.fullScreen;
     this.beian = client.beian;
+    document.title = client.title;
+    this.$refs.sidebar.loadAvatar(client.admin_qq);
 
     await config.init();
   },
@@ -39,6 +41,8 @@ export default {
         this.onPhone = client.onPhone = false;
       }
     });
+    
+
   },
   methods: {
     checkPrivate() {
@@ -68,7 +72,7 @@ export default {
 <template>
   <div id="app">
     <div class="mio-chat" :id="fullScreen ? 'fullscreen' : ''" v-if="!onPhone">
-      <sideBar></sideBar>
+      <sideBar ref="sidebar"></sideBar>
       <router-view></router-view>
     </div>
     <div class="mio-chat-mobile" v-else>

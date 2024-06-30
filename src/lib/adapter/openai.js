@@ -38,7 +38,7 @@ export default class Openai extends Adapter {
 
     async send(messages,index,settings){
         console.log("send message to openai")
-        // warp the message with prompt
+        // wrap the message with prompt
         const data = {
             // model: this.models[this.activeModelIndex],
             model: "gpt-3.5-turbo",

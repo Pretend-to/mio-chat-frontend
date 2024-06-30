@@ -1,7 +1,6 @@
 <script>
 export default {
     data() {
-
         return {
             defaultAvatar: '/api/qava?q=1099834705',
             adminAvatar: '',
@@ -23,6 +22,8 @@ export default {
     methods: {
 
         processImage(imageUrl) {
+            console.log(imageUrl);
+
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             const img = new Image();
@@ -69,7 +70,10 @@ export default {
             this.onChat = this.onProfile = false;
             this.$router.push('/settings');
         }
-
+        ,loadAvatar(adminId) {
+            this.adminAvatar = `/api/qava?q=${adminId}`;
+            this.processImage(this.adminAvatar);
+        }
 
     },
     components: {

@@ -23,6 +23,7 @@ export default class Client {
     this.models = []
     this.beian = ""
     this.fullScreen = false
+    this.title = ""
   }
 
   /**
@@ -49,6 +50,9 @@ export default class Client {
       const base_info = await this.getBaseInfo()
       this.beian = base_info.beian
       this.fullScreen = base_info.fullScreen
+      this.admin_qq = base_info.admin_qq
+      this.title = base_info.title
+
       this.setLocalStorage()
 
     }
@@ -62,7 +66,7 @@ export default class Client {
       title: '云崽',
       priority: 0,
       options: {
-        textWarper: {
+        textWraper: {
           options: [
             {
               "value": "",
@@ -203,7 +207,7 @@ export default class Client {
       options: {
         models: this.models,
         modelsOptions: options,
-        textWarper: {
+        textWraper: {
           options: options,
           presets: {
             "default": ""
@@ -397,7 +401,9 @@ export default class Client {
     console.log(info)
     return {
       beian:info.data.beian || "",
-      fullScreen:info.data.full_screen
+      fullScreen:info.data.full_screen || false,
+      title:info.data.title || "Mio-Chat",
+      admin_qq:info.data.admin_qq || "",
     }
   }
 }

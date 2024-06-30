@@ -55,7 +55,7 @@ export default {
                 options: {
                     models: client.models,
                     modelsOptions: options,
-                    textWarper: {
+                    textWraper: {
                         options: options,
                         presets: {
                             "default": ""
