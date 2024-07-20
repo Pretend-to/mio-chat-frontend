@@ -454,10 +454,16 @@ export default {
                   :messages="element.data.messages"
                 />
                 <MdPreview
+                  v-else-if="element.type === 'file'"
+                  previewTheme="github"
+                  editorId="preview-only"
+                  :modelValue="'> ' + element.data.file"
+                />
+                <MdPreview
                   v-else
                   previewTheme="github"
                   editorId="preview-only"
-                  :modelValue="'未知的消息类型：```\n' + element + '\n```'"
+                  :modelValue="'未知的消息类型：\n```\n' + element + '\n```'"
                 />
               </div>
             </div>

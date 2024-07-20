@@ -76,3 +76,7 @@ figure {
     }
     
 }
+
+.md-editor {
+    --md-bk-color : none;
+}

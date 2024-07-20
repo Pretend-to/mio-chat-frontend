@@ -99,7 +99,7 @@ export default class Contactor extends EventEmmiter {
                 messages.push({
                     role: msg.role == 'user'? 'user' : 'assistant',
                     content: msg.content.length == 1 ? msg.content[0].data.text : 
-                        msg.content[1].type == 'image' ? 
+                        msg.content[1]?.type == 'image' ? 
                         msg.content.map((item) =>  {
                         const obj = {}
                         obj.type = item.type == 'text' ? 'text' : 'image_url',
