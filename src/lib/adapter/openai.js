@@ -41,7 +41,6 @@ export default class Openai extends Adapter {
         // wrap the message with prompt
         const data = {
             // model: this.models[this.activeModelIndex],
-            model: "gpt-3.5-turbo",
             ...settings,
             messages:messages
         }

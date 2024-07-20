@@ -302,4 +302,42 @@ export default class Client {
     const myclient = await this.getLocalStorage()
     return myclient.everLogin
   }
+
+  async uploadFile(file) {
+    const formData = new FormData();
+    formData.append('file', file); // 将文件添加到 FormData
+
+    try {
+      const response = await fetch('/api/upload/file', {
+          method: 'POST',
+          body: formData
+      });
+
+      return await response.json();
+  } catch (error) {
+      console.error('Error uploading file:', error);
+  }
+
+  }
+
+  async uploadImage(image) {
+    const body = {
+      image : image
+    }
+
+    try {
+      const response = await fetch('/api/upload/image', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+      });
+
+      return await response.json();
+    }
+    catch (error) {
+      console.error('Error uploading image:', error);
+    }
+  }
 }

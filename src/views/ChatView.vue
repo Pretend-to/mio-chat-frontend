@@ -1,377 +1,498 @@
 <script>
-import { MdPreview } from 'md-editor-v3'
-import ForwardMsg from '@/components/ForwardMsg.vue'
-import InputEditor from '@/components/InputEditor.vue'
-import 'emoji-picker-element'
-import { client } from '@/lib/runtime.js'
+import { MdPreview } from "md-editor-v3";
+import ForwardMsg from "@/components/ForwardMsg.vue";
+import InputEditor from "@/components/InputEditor.vue";
+import "emoji-picker-element";
+import { client } from "@/lib/runtime.js";
 
 export default {
-    data() {
-        const currentId = parseInt(this.$route.params.id)
-        const contactor = client.getContactor(currentId)
-        console.log(contactor)
+  data() {
+    const currentId = parseInt(this.$route.params.id);
+    const contactor = client.getContactor(currentId);
+    console.log(contactor);
 
+    return {
+      acting: contactor,
+      showwindow: true,
+      showemoji: false,
+      userInput: "",
+      todld: false,
+      client: client,
+      wraperOptions: [],
+      wraperPresets: {},
+      cursorPosition: [],
+      selectedWraper: null,
+      currentDelay: 0,
+      toupdate: false,
+      ydaKey: 0,
+      showMenu: false,
+      menuTop: 0,
+      menuLeft: 0,
+      longPressTimer: null,
+      selectedMessageIndex: -1,
+      repliedMessage: null,
+    };
+  },
+  methods: {
+    toButtom(clicked) {
+      if (clicked) this.$message("已滑至底部");
+      const chatWindow = this.$refs.chatWindow;
+      //console.log("滑动条位置顶部与元素顶部间距："+ chatWindow.scrollTop + "元素高度" + chatWindow.scrollHeight)
+      setTimeout(() => (chatWindow.scrollTop = chatWindow.scrollHeight), 0);
+
+      //console.log(chatWindow.scrollHeight)
+    },
+    cleanScreen() {
+      this.acting.messageChain = [];
+      this.acting.updateFirstMessage();
+      client.setLocalStorage(); //持久化存储
+      this.toupdate = true;
+      this.$message({ message: "已清除会话记录", type: "success" });
+    },
+    cleanHistory() {
+      this.acting.updateFirstMessage();
+      this.$message({
+        message: "上下文信息已清除，之后的请求将不再记录上文记录",
+        type: "success",
+      });
+    },
+
+    isValidInput(input) {
+      // 使用正则表达式检查用户输入是否只包含换行符和空格
+      const regex = /^[ \n]+$/;
+      const result = !regex.test(input);
+      return result;
+    },
+    waiting() {
+      this.$message({ message: "此功能尚未开放", type: "warning" });
+    },
+
+    tolist() {
+      this.$router.push({ name: "toChat" });
+    },
+
+    setModel(name) {
+      this.acting.activeModel = name;
+    },
+
+    showTime(index) {
+      const thisTime = this.acting.messageChain[index].time;
+      if (index === 0) {
         return {
-            acting: contactor,
-            showwindow: true,
-            showemoji: false,
-            userInput: '',
-            todld: false,
-            client: client,
-            wraperOptions: [],
-            wraperPresets: {},
-            cursorPosition:[],
-            selectedWraper: null,
-            currentDelay: 0,
-            toupdate: false,
-            ydaKey: 0,
-            showMenu: false,
-            menuTop: 0,
-            menuLeft: 0,
-            longPressTimer: null,
-            selectedMessageIndex: -1,
-            repliedMessage: null,
+          show: true,
+          time: this.acting.getShownTime(thisTime),
+        };
+      } else {
+        const earlyTime = this.acting.messageChain[index - 1].time;
+        if (thisTime - earlyTime > 600000) {
+          return {
+            show: true,
+            time: this.acting.getShownTime(thisTime),
+          };
+        } else {
+          return {
+            show: false,
+            time: "",
+          };
         }
+      }
     },
-    methods: {
+    separateTextAndImages(markdownText) {
+      // 使用正则表达式匹配Markdown图片格式
+      const regex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+      let result = [];
+      let lastIndex = 0;
 
-        toButtom(clicked) {
-            if (clicked) this.$message('已滑至底部')
-            const chatWindow = this.$refs.chatWindow
-            //console.log("滑动条位置顶部与元素顶部间距："+ chatWindow.scrollTop + "元素高度" + chatWindow.scrollHeight)
-            setTimeout(() => chatWindow.scrollTop = chatWindow.scrollHeight, 0)
-            
-            //console.log(chatWindow.scrollHeight)
-        },
-        cleanScreen() {
-            this.acting.messageChain = []
-            this.acting.updateFirstMessage()
-            client.setLocalStorage() //持久化存储
-            this.toupdate = true
-            this.$message({ message: '已清除会话记录', type: 'success' })
+      // 查找所有匹配的图片
+      let matches;
+      while ((matches = regex.exec(markdownText)) !== null) {
+        // 处理匹配到的文本部分
+        if (matches.index > lastIndex) {
+          const textContent = markdownText
+            .slice(lastIndex, matches.index)
+            .trim();
+          if (textContent) {
+            result.push({
+              type: "text",
+              data: {
+                text: textContent,
+              },
+            });
+          }
+        }
 
-        },
-        cleanHistory() {
-            this.acting.updateFirstMessage()
-            this.$message({ message: '上下文信息已清除，之后的请求将不再记录上文记录', type: 'success' })
-        },
-
-        isValidInput(input) {
-            // 使用正则表达式检查用户输入是否只包含换行符和空格
-            const regex = /^[ \n]+$/
-            const result = !regex.test(input)
-            return result
-        },
-        waiting() {
-            this.$message({ message: '此功能尚未开放', type: 'warning' })
-        },
-
-
-        tolist() {
-            this.$router.push({ name: 'toChat' })
-        },
-
-        setModel(name){
-            this.acting.activeModel = name
-        },
-
-        showTime(index) {
-            const thisTime = this.acting.messageChain[index].time
-            if (index === 0) {
-                return {
-                    show: true,
-                    time: this.acting.getShownTime(thisTime)
-                }
-            } else {
-                const earlyTime = this.acting.messageChain[index - 1].time
-                if (thisTime - earlyTime > 600000) {
-                    return {
-                        show: true,
-                        time: this.acting.getShownTime(thisTime)
-                    }
-                } else {
-                    return {
-                        show: false,
-                        time: ''
-                    }
-                }
-            }
-        },
-        initContactor(contactor) {
-            contactor.active = true
-
-            contactor.on('revMessage', (message) => {
-                this.acting.messageChain.push(message)
-                this.toupdate = true
-            })
-            contactor.on('delMessage', (index) => {
-                console.log(`删除消息${index}`)
-                // 从消息链中删除消息
-                this.acting.messageChain.splice(index, 1)
-                this.toupdate = true
-            })
-
-            contactor.on('updateMessage', (e) => {
-                this.acting.updateKey()
-                this.ydaKey++;
-                const rawMessage = this.acting.messageChain[e.messageIndex]
-                rawMessage.content[0].data.text = e.updatedMessage
-                // console.log(rawMessage.content[0].data.text)
-                this.toupdate = true
-            })
-
-            contactor.on(`completeMessage`, (e) => {
-                const messageIndex = e.index
-                const rawMessage = this.acting.messageChain[messageIndex]
-                rawMessage.status = 'completed'
-                rawMessage.content[0].data.text = e.text
-                this.toupdate = true
-                client.setLocalStorage() //持久化存储
-            })
-        },
-        disableContactor(contactor) {
-            contactor.active = false
-            contactor.off(`updateMessage`)
-            contactor.off(`revMessage`)
-            contactor.off(`delMessage`)
-            contactor.off(`completeMessage`)
-        },
-        getReplyText(id) {
-            let content = '';
-            const message = this.acting.messageChain.find((item) => item.id === id);
-            if (message) {
-                message.content.forEach(element => {
-                    if (element.type === 'text') {
-                        content += element.data.text;
-                    } else if (element.type === 'image') {
-                        content += '[图片]';
-                    }
-                });
-                if (content.length > 20) {
-                    return `> ${content.substr(0, 20)}...`;
-                } else {
-                    return `> ${content}`;
-                }
-            }
-        },
-        showMessageMenu(event, messageIndex) {
-            console.log(messageIndex)
-            this.selectedMessageIndex = messageIndex
-            event.preventDefault();
-            this.showMenu = true;
-            this.menuTop = event.clientY;
-            this.menuLeft = event.clientX;
-        },
-        messageMenuClick(event) {
-            // 处理菜单项点击事件
-            switch (event) {
-                case 'copy': {
-                    // Construct the text to copy
-                    let text = '';
-                    const message = this.acting.messageChain[this.selectedMessageIndex]; // Corrected typo
-                    console.log(this.selectedMessageIndex);
-                    message.content.forEach(element => {
-                        if (element.type === 'text') {
-                            text += element.data.text;
-                        } else if (element.type === 'image') {
-                            text += '[图片]';
-                        }
-                    });
-
-                    // Create a new textarea, append it to the body, set its value, and select the text
-                    const textarea = document.createElement('textarea');
-                    textarea.style.position = 'absolute';
-                    textarea.style.left = '-9999px'; // Move it off-screen
-                    textarea.value = text;
-                    document.body.appendChild(textarea);
-                    textarea.select();
-                    textarea.setSelectionRange(0, 99999); // For mobile devices
-
-                    // Copy the text and remove the textarea
-                    try {
-                        document.execCommand('copy');
-                        this.$message({ message: '复制成功', type: 'success' });
-                    } catch (err) {
-                        console.error('Copy failed:', err);
-                    } finally {
-                        document.body.removeChild(textarea);
-                    }
-                    break;
-                }
-                case 'reply':
-                    if (this.acting.platform === 'onebot') {
-                        this.repliedMessage = this.acting.messageChain[this.selectedMessageIndex]
-                        this.$message({ message: '已引用该消息', type: 'success' })
-                    } else {
-                        this.userInput += this.getReplyText(this.acting.messageChain[this.selectedMessageIndex].id) + '\n\n'
-                    }
-
-                    break;
-                case 'delete':
-                    if (this.acting.platform === 'onebot')
-                        this.acting.messageChain.splice(this.selectedMessageIndex, 1)
-                    else {
-                        if (this.acting.messageChain[this.selectedMessageIndex].status === 'completed' &&
-                            this.acting.messageChain[this.acting.messageChain.length - 1].status === 'completed') {
-                            this.acting.messageChain.splice(this.selectedMessageIndex, 1)
-                        } else {
-                            this.$message({ message: '当前有消息在更新，等等再删叭', type: 'warning' })
-                        }
-                    }
-                    this.showMenu = false;
-                    break;
-                default:
-                    break;
-            }
-            this.showMenu = false;
-        },
-    },
-    mounted() {
-        document.addEventListener('click', () => {
-            this.showMenu = false;
-            // if( this.showemoji) this.showemoji = false;
+        // 处理匹配到的图片部分
+        result.push({
+          type: "image",
+          data: {
+            file: matches[2],
+          },
         });
 
-        this.$refs.chatWindow.addEventListener('scroll', () => {
-            this.showMenu = false;
-            if (this.showemoji) this.showemoji = false;
-        })
+        // 更新lastIndex到当前匹配结束的位置
+        lastIndex = regex.lastIndex;
+      }
 
-        console.log(this.acting)
-        this.toButtom()
-
-        const currentId = this.$route.params.id
-        const contactor = client.getContactor(currentId)
-        this.initContactor(contactor)
-
-
-        setInterval(() => {
-            this.currentDelay = this.client.socket.delay
-        }, 3000)
-    },
-    updated() {
-        if (this.toupdate) {
-            this.toButtom()
-            this.toupdate = false
+      // 处理最后一部分文本（如果有的话）
+      if (lastIndex < markdownText.length) {
+        const textContent = markdownText.slice(lastIndex).trim();
+        if (textContent) {
+          result.push({
+            type: "text",
+            data: {
+              text: textContent,
+            },
+          });
         }
+      }
+      console.log(result);
+
+      return result;
     },
-    computed: {
-        getDelayStatus() {
-            return this.currentDelay > 1000 ? 'high' : this.currentDelay > 500 ? 'mid' : this.currentDelay > 100 ? 'low' : 'ultra'
+
+    initContactor(contactor) {
+      contactor.active = true;
+
+      contactor.on("revMessage", (message) => {
+        this.acting.messageChain.push(message);
+        this.toupdate = true;
+      });
+      contactor.on("delMessage", (index) => {
+        console.log(`删除消息${index}`);
+        // 从消息链中删除消息
+        this.acting.messageChain.splice(index, 1);
+        this.toupdate = true;
+      });
+
+      contactor.on("updateMessage", (e) => {
+        this.acting.updateKey();
+        this.ydaKey++;
+        const rawMessage = this.acting.messageChain[e.messageIndex];
+        rawMessage.content[0].data.text = e.updatedMessage;
+        // console.log(rawMessage.content[0].data.text)
+        this.toupdate = true;
+      });
+
+      contactor.on(`completeMessage`, (e) => {
+        const messageIndex = e.index;
+        const rawMessage = this.acting.messageChain[messageIndex];
+        rawMessage.status = "completed";
+
+        const formatedMessage = this.separateTextAndImages(e.text);
+
+        rawMessage.content = formatedMessage;
+
+        this.toupdate = true;
+        client.setLocalStorage(); //持久化存储
+      });
+    },
+    disableContactor(contactor) {
+      contactor.active = false;
+      contactor.off(`updateMessage`);
+      contactor.off(`revMessage`);
+      contactor.off(`delMessage`);
+      contactor.off(`completeMessage`);
+    },
+    getReplyText(id) {
+      let content = "";
+      const message = this.acting.messageChain.find((item) => item.id === id);
+      if (message) {
+        message.content.forEach((element) => {
+          if (element.type === "text") {
+            content += element.data.text;
+          } else if (element.type === "image") {
+            content += "[图片]";
+          }
+        });
+        if (content.length > 20) {
+          return `> ${content.substr(0, 20)}...`;
+        } else {
+          return `> ${content}`;
         }
+      }
     },
-    components: {
-        MdPreview,
-        ForwardMsg,
-        InputEditor
+    showMessageMenu(event, messageIndex) {
+      console.log(messageIndex);
+      this.selectedMessageIndex = messageIndex;
+      event.preventDefault();
+      this.showMenu = true;
+      this.menuTop = event.clientY;
+      this.menuLeft = event.clientX;
     },
-    watch: {
-        '$route.params.id'(newVal, oldVal) {
-            const currentId = parseInt(newVal)
-            const contactor = client.getContactor(currentId)
-            this.acting = contactor
-            this.initContactor(this.acting)
-            this.toButtom()
-            if (oldVal) {
-                const oldId = parseInt(oldVal)
-                const oldContactor = client.getContactor(oldId)
-                this.disableContactor(oldContactor)
+    messageMenuClick(event) {
+      // 处理菜单项点击事件
+      switch (event) {
+        case "copy": {
+          // Construct the text to copy
+          let text = "";
+          const message = this.acting.messageChain[this.selectedMessageIndex]; // Corrected typo
+          console.log(this.selectedMessageIndex);
+          message.content.forEach((element) => {
+            if (element.type === "text") {
+              text += element.data.text;
+            } else if (element.type === "image") {
+              text += "[图片]";
             }
+          });
+
+          // Create a new textarea, append it to the body, set its value, and select the text
+          const textarea = document.createElement("textarea");
+          textarea.style.position = "absolute";
+          textarea.style.left = "-9999px"; // Move it off-screen
+          textarea.value = text;
+          document.body.appendChild(textarea);
+          textarea.select();
+          textarea.setSelectionRange(0, 99999); // For mobile devices
+
+          // Copy the text and remove the textarea
+          try {
+            document.execCommand("copy");
+            this.$message({ message: "复制成功", type: "success" });
+          } catch (err) {
+            console.error("Copy failed:", err);
+          } finally {
+            document.body.removeChild(textarea);
+          }
+          break;
         }
+        case "reply":
+          if (this.acting.platform === "onebot") {
+            this.repliedMessage =
+              this.acting.messageChain[this.selectedMessageIndex];
+            this.$message({ message: "已引用该消息", type: "success" });
+          } else {
+            this.userInput +=
+              this.getReplyText(
+                this.acting.messageChain[this.selectedMessageIndex].id
+              ) + "\n\n";
+          }
+
+          break;
+        case "delete":
+          if (this.acting.platform === "onebot")
+            this.acting.messageChain.splice(this.selectedMessageIndex, 1);
+          else {
+            if (
+              this.acting.messageChain[this.selectedMessageIndex].status ===
+                "completed" &&
+              this.acting.messageChain[this.acting.messageChain.length - 1]
+                .status === "completed"
+            ) {
+              this.acting.messageChain.splice(this.selectedMessageIndex, 1);
+            } else {
+              this.$message({
+                message: "当前有消息在更新，等等再删叭",
+                type: "warning",
+              });
+            }
+          }
+          this.showMenu = false;
+          break;
+        default:
+          break;
+      }
+      this.showMenu = false;
+    },
+  },
+  mounted() {
+    document.addEventListener("click", () => {
+      this.showMenu = false;
+      // if( this.showemoji) this.showemoji = false;
+    });
+
+    this.$refs.chatWindow.addEventListener("scroll", () => {
+      this.showMenu = false;
+      if (this.showemoji) this.showemoji = false;
+    });
+
+    console.log(this.acting);
+    this.toButtom();
+
+    const currentId = this.$route.params.id;
+    const contactor = client.getContactor(currentId);
+    this.initContactor(contactor);
+
+    setInterval(() => {
+      this.currentDelay = this.client.socket.delay;
+    }, 3000);
+  },
+  updated() {
+    if (this.toupdate) {
+      this.toButtom();
+      this.toupdate = false;
     }
-}
+  },
+  computed: {
+    getDelayStatus() {
+      return this.currentDelay > 1000
+        ? "high"
+        : this.currentDelay > 500
+          ? "mid"
+          : this.currentDelay > 100
+            ? "low"
+            : "ultra";
+    },
+  },
+  components: {
+    MdPreview,
+    ForwardMsg,
+    InputEditor,
+  },
+  watch: {
+    "$route.params.id"(newVal, oldVal) {
+      const currentId = parseInt(newVal);
+      const contactor = client.getContactor(currentId);
+      this.acting = contactor;
+      this.initContactor(this.acting);
+      this.toButtom();
+      if (oldVal) {
+        const oldId = parseInt(oldVal);
+        const oldContactor = client.getContactor(oldId);
+        this.disableContactor(oldContactor);
+      }
+    },
+  },
+};
 </script>
 
 <template>
-    <div id="chat-window">
-        <div class="upside-bar">
-            <div class="return" @click="tolist()">
-                <i class="iconfont icon-return"></i>
-            </div>
-            <div class="somebody">
-                {{ acting.name }}
-                <span :class="'delay-status ' + getDelayStatus"></span>
-                <span class="delay-num">当前延迟: {{ currentDelay }} ms</span>
-            </div>
-            <div class="options">
-                <ul class="window-controls">
-                    <li class="button" @click="waiting()">
-                        <span class="window-min">—</span>
-                    </li>
-                    <li v-if="client.fullScreen" class="button" @click="client.fullScreen = false">
-                        <span class="window-inmax">⿹</span>
-                    </li>
-                    <li v-else class="button" @click="client.fullScreen = true">
-                        <span class="window-max">▢</span>
-                    </li>
-                    <li class="button" @click="waiting()" id="close">
-                        <span class="window-close">&times;</span>
-                    </li>
-                </ul>
-                <div class="share" @click="toimg()">
-                    <i class="iconfont icon-share"></i>
-                </div>
-            </div>
+  <div id="chat-window">
+    <div class="upside-bar">
+      <div class="return" @click="tolist()">
+        <i class="iconfont icon-return"></i>
+      </div>
+      <div class="somebody">
+        {{ acting.name }}
+        <span :class="'delay-status ' + getDelayStatus"></span>
+        <span class="delay-num">当前延迟: {{ currentDelay }} ms</span>
+      </div>
+      <div class="options">
+        <ul class="window-controls">
+          <li class="button" @click="waiting()">
+            <span class="window-min">—</span>
+          </li>
+          <li
+            v-if="client.fullScreen"
+            class="button"
+            @click="client.fullScreen = false"
+          >
+            <span class="window-inmax">⿹</span>
+          </li>
+          <li v-else class="button" @click="client.fullScreen = true">
+            <span class="window-max">▢</span>
+          </li>
+          <li class="button" @click="waiting()" id="close">
+            <span class="window-close">&times;</span>
+          </li>
+        </ul>
+        <div class="share" @click="toimg()">
+          <i class="iconfont icon-share"></i>
         </div>
-        <div class="message-window" ref="chatWindow" >
-            <div v-for="(item, index) of acting.messageChain" :key="index" class="message-container" ref="message">
-                <div class="message-time" v-if="showTime(index).show">
-                    {{ showTime(index).time }}
-                </div>
-                <div class="message-body" :id="item.role">
-                    <div class="avatar" v-if="item.role !== 'system'">
-                        <img v-if="item.role === 'other'" :src="acting.avatar" :alt="acting.name" />
-                        <img v-else :src="client.avatar" :alt="client.name" />
-                    </div>
-                    <div class="msg" v-if="item.role !== 'system'">
-                        <div class="wholename">
-                            <div class="title">{{ item.role === 'other' ? acting.title : client.title }}</div>
-                            <div class="name">{{ item.role === 'other' ? acting.name : client.name }}</div>
-                        </div>
-                        <div class="content" @contextmenu="showMessageMenu($event, index)">
-                            <div v-for="(element, index) of item.content" :key="index">
-                                <MdPreview v-if="element.type === 'text'"
-                                    :key="item?.status !== 'completed' ? ydaKey : ''" previewTheme="github"
-                                    editorId="preview-only" :modelValue="element.data.text" />
-                                <el-image v-else-if="element.type === 'image'"
-                                    style="margin: 8px 0; max-width: 20rem; border-radius: 1rem"
-                                    :src="element.data.file" :zoom-rate="1.2" :max-scale="7" :min-scale="0.2"
-                                    :preview-src-list="[element.data.file]" :initial-index="4" :key="index"
-                                    fit="cover" />
-                                <MdPreview v-else-if="element.type === 'reply'" previewTheme="github"
-                                    editorId="preview-only" :modelValue="getReplyText(element.data.id)" />
-                                <ForwardMsg v-else-if="element.type === 'nodes'" :contactor="acting"
-                                    :messages="element.data.messages" />
-                                <MdPreview v-else previewTheme="github" editorId="preview-only"
-                                    :modelValue="'未知的消息类型：```\n' + element + '\n```'" />
-                            </div>
-                        </div>
-                        <div v-if="showMenu && selectedMessageIndex === index" id="message-menu"
-                            :style="{ top: menuTop + 'px', left: menuLeft + 'px' }">
-                            <div @click="messageMenuClick('copy')"><i class="iconfont fuzhi"></i><span>复制</span></div>
-                            <div @click="messageMenuClick('reply')"><i class="iconfont yinyong"></i><span>引用</span>
-                            </div>
-                            <div @click="messageMenuClick('delete')"><i class="iconfont shanchu"></i><span>删除</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div v-else class="system-message">
-                        {{ item.content[0].data.text }}
-                    </div>
-                </div>
-            </div>
-        </div>
-        <InputEditor 
-            ref="inputEditor"
-            :acting="acting" 
-            @stroge="client.setLocalStorage()"
-            @setModel="setModel"
-            @cleanScreen="cleanScreen"
-            @cleanHistory="cleanHistory"
-            @sendMessage="toButtom"
-
-        />
+      </div>
     </div>
+    <div class="message-window" ref="chatWindow">
+      <div
+        v-for="(item, index) of acting.messageChain"
+        :key="index"
+        class="message-container"
+        ref="message"
+      >
+        <div class="message-time" v-if="showTime(index).show">
+          {{ showTime(index).time }}
+        </div>
+        <div class="message-body" :id="item.role">
+          <div class="avatar" v-if="item.role !== 'system'">
+            <img
+              v-if="item.role === 'other'"
+              :src="acting.avatar"
+              :alt="acting.name"
+            />
+            <img v-else :src="client.avatar" :alt="client.name" />
+          </div>
+          <div class="msg" v-if="item.role !== 'system'">
+            <div class="wholename">
+              <div class="title">
+                {{ item.role === "other" ? acting.title : client.title }}
+              </div>
+              <div class="name">
+                {{ item.role === "other" ? acting.name : client.name }}
+              </div>
+            </div>
+            <div
+              class="content"
+              @contextmenu.self="showMessageMenu($event, index)"
+            >
+              <div v-for="(element, index) of item.content" :key="index">
+                <MdPreview
+                  v-if="element.type === 'text'"
+                  :key="item?.status !== 'completed' ? ydaKey : ''"
+                  previewTheme="github"
+                  editorId="preview-only"
+                  :modelValue="element.data.text"
+                />
+                <el-image
+                  v-else-if="element.type === 'image'"
+                  style="margin: 8px 0; max-width: 20rem; border-radius: 1rem"
+                  :src="element.data.file"
+                  :zoom-rate="1.2"
+                  :max-scale="7"
+                  :min-scale="0.2"
+                  :preview-src-list="[element.data.file]"
+                  :initial-index="4"
+                  :key="index"
+                  fit="cover"
+                />
+                <MdPreview
+                  v-else-if="element.type === 'reply'"
+                  previewTheme="github"
+                  editorId="preview-only"
+                  :modelValue="getReplyText(element.data.id)"
+                />
+                <ForwardMsg
+                  v-else-if="element.type === 'nodes'"
+                  :contactor="acting"
+                  :messages="element.data.messages"
+                />
+                <MdPreview
+                  v-else
+                  previewTheme="github"
+                  editorId="preview-only"
+                  :modelValue="'未知的消息类型：```\n' + element + '\n```'"
+                />
+              </div>
+            </div>
+            <div
+              v-if="showMenu && selectedMessageIndex === index"
+              id="message-menu"
+              :style="{ top: menuTop + 'px', left: menuLeft + 'px' }"
+            >
+              <div @click="messageMenuClick('copy')">
+                <i class="iconfont fuzhi"></i><span>复制</span>
+              </div>
+              <div @click="messageMenuClick('reply')">
+                <i class="iconfont yinyong"></i><span>引用</span>
+              </div>
+              <div @click="messageMenuClick('delete')">
+                <i class="iconfont shanchu"></i><span>删除</span>
+              </div>
+            </div>
+          </div>
+          <div v-else class="system-message">
+            {{ item.content[0].data.text }}
+          </div>
+        </div>
+      </div>
+    </div>
+    <InputEditor
+      ref="inputEditor"
+      :acting="acting"
+      @stroge="client.setLocalStorage()"
+      @setModel="setModel"
+      @cleanScreen="cleanScreen"
+      @cleanHistory="cleanHistory"
+      @sendMessage="toButtom"
+    />
+  </div>
 </template>
 
 <style lang="sass" scoped>
@@ -555,24 +676,24 @@ $icon-hover: #09f
 
 .delay-status
     display: inline-block
-    width: 0.5rem 
-    height: 0.5rem 
-    border-radius: 50% 
+    width: 0.5rem
+    height: 0.5rem
+    border-radius: 50%
 
     &:hover + .delay-num
-        display: inline-block 
+        display: inline-block
 
     &.ultra
-        background-color: rgb(53, 233, 146) 
+        background-color: rgb(53, 233, 146)
 
     &.low
-        background-color: rgb(255, 204, 0) 
+        background-color: rgb(255, 204, 0)
 
     &.mid
-        background-color: rgb(255, 102, 102) 
-    
+        background-color: rgb(255, 102, 102)
+
     &.high
-        background-color: #ccc 
+        background-color: #ccc
 
 .delay-num
     display: none

@@ -66,8 +66,8 @@ figure {
     opacity: 0%;
 }
 
-.bu-emoji .el-cascader:hover + svg {
-    fill:rgb(0, 153, 255);
+.bu-emoji .el-cascader:hover + i {
+    color:rgb(0, 153, 255);
 }
 
 @media (max-width: 600px) {

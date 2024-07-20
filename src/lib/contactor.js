@@ -88,16 +88,28 @@ export default class Contactor extends EventEmmiter {
         if(this.platform == 'onebot'){
             return await this.kernel.send(this.id,message.content)
         }else{
+            const messages = []
+
             // 截取从this.firstMessageIndex到结尾的消息
             const cuttedMessageList = this.messageChain.slice(this.firstMessageIndex)
-            const textMessageList = cuttedMessageList.filter(msg => msg.content[0].type == 'text')
-            const validMessageList = textMessageList.filter(msg => msg.role!= 'system')
-            const openaiMessageList = validMessageList.map(msg => {
-                return {
-                    role: msg.role == 'user' ? 'user' : 'assistant',
-                    content: msg.content[0].data.text
-                }
-            })
+            const validMessageList = cuttedMessageList.filter(msg => msg.role!= 'system')
+
+
+            for(const msg of validMessageList){
+                messages.push({
+                    role: msg.role == 'user'? 'user' : 'assistant',
+                    content: msg.content[0].data.text.length == 1 ? msg.content[0].data.text : msg.content.map((item) =>  {
+                        const obj = {}
+                        obj.type = item.type == 'text' ? 'text' : 'image_url',
+                        obj[(item.type == 'text'||item.type == 'file') ? 'content' : 'image_url' ] = item.data?.text || item.data?.file
+                        console.log(obj)
+
+                        return obj
+                    })
+                }) 
+            }
+
+            console.log(messages)
 
             // 立即发生回复消息
             this.revMessage({content:[]}) 
@@ -107,7 +119,7 @@ export default class Contactor extends EventEmmiter {
             }
 
             const replyIndex = this.messageChain.length - 1
-            this.kernel.send(openaiMessageList,replyIndex,settings)
+            this.kernel.send(messages,replyIndex,settings)
 
             return Math.floor(Math.random() * 100000000).toString().padStart(8, '0')
         }
