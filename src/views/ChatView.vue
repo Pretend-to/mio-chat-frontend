@@ -73,6 +73,8 @@ export default {
 
     setModel(name) {
       this.acting.activeModel = name;
+      this.acting.name = name;
+      client.setLocalStorage(); //持久化存储
     },
 
     showTime(index) {

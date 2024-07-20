@@ -48,7 +48,7 @@ export default {
 
             const openaiDefaultConfig = {
                 id: this.genFakeId(),
-                name: 'OpenAI',
+                name: '未初始化的联系人',
                 avatar: '/api/avatar/openai.png',
                 title: 'gpt',
                 priority: 1,
@@ -267,9 +267,13 @@ button#addcont {
 
 .lists .name {
     flex-basis: 4rem;
+    flex-grow: 1;
     margin-top: .75rem;
     font-size: .875rem;
     margin-left: .5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .info #time {
