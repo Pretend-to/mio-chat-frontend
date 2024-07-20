@@ -115,8 +115,10 @@ export default {
               const reader = new FileReader();
               reader.onload = async (e) => {
                 const base64 = e.target.result;
-                const upload = await client.uploadImage(base64);
-                this.uploaded.images.push(upload.data.url);
+                // const upload = await client.uploadImage(base64);
+                // this.uploaded.images.push(upload.data.url);
+                this.uploaded.images.push(base64);
+
               };
               reader.readAsDataURL(file);
             } else {
@@ -263,7 +265,7 @@ export default {
             container.content.push({
                 type: "image",
                 data: {
-                    file: this.host + file,
+                    file: file.startsWith('/') ? this.host + file : file,
                 },
             })
         })

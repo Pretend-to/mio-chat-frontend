@@ -98,14 +98,15 @@ export default class Contactor extends EventEmmiter {
             for(const msg of validMessageList){
                 messages.push({
                     role: msg.role == 'user'? 'user' : 'assistant',
-                    content: msg.content[0].data.text.length == 1 ? msg.content[0].data.text : msg.content.map((item) =>  {
+                    content: msg.content.length == 1 ? msg.content[0].data.text : 
+                        msg.content[1].type == 'image' ? 
+                        msg.content.map((item) =>  {
                         const obj = {}
                         obj.type = item.type == 'text' ? 'text' : 'image_url',
-                        obj[(item.type == 'text'||item.type == 'file') ? 'content' : 'image_url' ] = item.data?.text || item.data?.file
-                        console.log(obj)
-
+                        obj[((item.type == 'text')||(item.type == 'file')) ? 'text' : 'image_url' ] = item.data?.text || {url: item.data.file}
                         return obj
-                    })
+                    }) :
+                    msg.content[0].data.text + msg.content[1].data.file
                 }) 
             }
 
