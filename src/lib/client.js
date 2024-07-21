@@ -92,7 +92,8 @@ export default class Client {
 
     const openaiDefaultConfig = {
       id: this.genFakeId(),
-      name: 'OpenAI',
+      name: this.default_model,
+      activeModel: this.default_model,
       avatar: '/api/avatar/openai.png',
       title: 'gpt',
       priority: 1,
@@ -107,7 +108,7 @@ export default class Client {
         }
       }
     }
-    console.log(this.openaiDefaultConfig)
+    console.log(openaiDefaultConfig)
     this.addConcator('openai', openaiDefaultConfig)
 
   }
@@ -214,10 +215,12 @@ export default class Client {
       }, 3000)
       socket.on('connect', async (info) => {
         console.log('登录成功')
+        console.log(info)
         clearTimeout(timer)
         this.qq = info.admin_qq
         this.avatar = `/api/qava?q=${this.qq}`
         this.botqq = info.bot_qq
+        this.default_model = info.default_model
         this.isLogin = true
         this.everLogin = true
         this.isConnected = true

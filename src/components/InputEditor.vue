@@ -104,8 +104,8 @@ export default {
       fileInput.onchange = async (e) => {
         const file = e.target.files[0];
         if (file) {
-          if (file.size <= 10 * 1024 * 1024) {
-            // 检查文件大小是否小于等于10MB
+          if (file.size <= 100 * 1024 * 1024) {
+            // 检查文件大小是否小于等于100MB
             this.$message({
               message: "文件上传中...",
               type: "info",
@@ -148,6 +148,7 @@ export default {
       this.wraperOptions = wraper.options;
     },
     getBotModels() {
+        console.log(this.acting.activeModel)
       this.selectedWraper = this.acting.activeModel
         ? [this.acting.activeModel]
         : ["gpt-4o-mini"];

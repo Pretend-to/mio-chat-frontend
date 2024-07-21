@@ -26,7 +26,7 @@ export default class Contactor extends EventEmmiter {
         this.firstMessageIndex = 0;
         this.messageChain = config.messageChain || [];
         this.active = false;
-        this.activeModel = undefined;
+        this.activeModel = config.activeModel ;
         this.lastUpdate = undefined;
 
         this.kernel = this.platform == 'onebot' ?
@@ -98,7 +98,7 @@ export default class Contactor extends EventEmmiter {
             for(const msg of validMessageList){
                 messages.push({
                     role: msg.role == 'user'? 'user' : 'assistant',
-                    content: msg.content.length == 1 ? msg.content[0].data.text : 
+                    content: (msg.content.length == 1 || msg.role == 'other') ? msg.content[0].data.text : 
                         msg.content[1]?.type == 'image' ? 
                         msg.content.map((item) =>  {
                         const obj = {}

@@ -48,7 +48,8 @@ export default {
 
             const openaiDefaultConfig = {
                 id: this.genFakeId(),
-                name: '未初始化的联系人',
+                name: client.default_model,
+                activeModel: client.default_model,
                 avatar: '/api/avatar/openai.png',
                 title: 'gpt',
                 priority: 1,
@@ -70,6 +71,27 @@ export default {
             this.contactorList.push(bot)
             await client.setLocalStorage()
         },
+        startResize(event) {
+      this.isResizing = true;
+      this.startX = event.clientX;
+      this.startWidth = this.$refs.friendlists.offsetWidth;
+      document.addEventListener('mousemove', this.resize);
+      document.addEventListener('mouseup', this.stopResize);
+    },
+    resize(event) {
+      if (this.isResizing) {
+        let newWidth = this.startWidth + (event.clientX - this.startX);
+        const maxWidth = 500
+        const minWidth = 176
+        newWidth = newWidth > maxWidth? maxWidth : newWidth < minWidth? minWidth : newWidth
+        this.$refs.friendlists.style.width = newWidth + 'px';
+      }
+    },
+    stopResize() {
+      this.isResizing = false;
+      document.removeEventListener('mousemove', this.resize);
+      document.removeEventListener('mouseup', this.stopResize);
+    },
         genFakeId() {
             // 生成5位随机数
             const randomNum = Math.floor(1000 + Math.random() * 9000)
@@ -98,46 +120,52 @@ export default {
 </script>
 
 <template>
-    <div id="friendlists" :class="onPhone ? 'mobile' : ''">
-        <div class="upsidebar" id="friends">
-            <div class="search" >
-                <i class="iconfont sousuo listicon"></i>
-                <input type="text" id="tosearch" placeholder="搜索">
-            </div>
-            <div class="bu-add">
-                <button id="addcont" @click="genOpenaiContactor">+</button>
-            </div>
+    <div id="friendlists" ref="friendlists" :class="onPhone ? 'mobile' : ''">
+      <div class="upsidebar" id="friends">
+        <div class="search">
+          <i class="iconfont sousuo listicon"></i>
+          <input type="text" id="tosearch" placeholder="搜索">
         </div>
-        <div class="people">
-            <div @click="showChat(item.id)" v-for="(item, index) of contactorList" :key="index" class="lists"
-                :id="getId(index)">
-                <div class="avatar">
-                    <img :src="item.avatar" :alt="item.name">
-                </div>
-                <div class="info" :key="item.lastUpdate">
-                    <div class="name">{{ item.name }}</div>
-                    <div class="msginfo" id="time">{{ item.getLastTime() }}</div>
-                    <div class="msginfo" id="msgctt">{{ item.getMessageSummary() }}</div>
-                </div>
-            </div>
+        <div class="bu-add">
+          <button id="addcont" @click="genOpenaiContactor">+</button>
         </div>
+      </div>
+      <div class="people">
+        <div @click="showChat(item.id)" v-for="(item, index) of contactorList" :key="index" class="lists" :id="getId(index)">
+          <div class="avatar">
+            <img :src="item.avatar" :alt="item.name">
+          </div>
+          <div class="info">
+            <div class="name">{{ item.name }}</div>
+            <div class="msginfo" id="time">{{ item.getLastTime() }}</div>
+            <div class="msginfo" id="msgctt">{{ item.getMessageSummary() }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="resizer" @mousedown="startResize"></div>
     </div>
-</template>
+  </template>
 
 <style scoped>
 #friendlists {
-    height: 100%;
-    display: flex;
-    width: 13rem;
-    flex-direction: column;
-    border-left: .0625rem solid rgba(161, 154, 154, 0.626);
-    border-right: .0625rem solid rgba(161, 154, 154, 0.626);
+  height: 100%;
+  display: flex;
+  width: 13rem;
+
+  flex-direction: column;
+  border-left: .0625rem solid rgba(161, 154, 154, 0.626);
+  border-right: .0625rem solid rgba(161, 154, 154, 0.626);
+  position: relative;
 }
 
-.people {
-    height: calc(100% - 3rem);
-    overflow-y: auto;
-    overflow-x: hidden;
+.resizer {
+  width: 5px;
+  cursor: ew-resize;
+  background-color: transparent; /* 可视化的样式，你可以根据需求进行调整 */
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
 }
 #friendlists.mobile {
     height:100%;
@@ -210,7 +238,7 @@ button#addcont {
 
 .lists {
     align-items: center;
-    min-width: 12rem;
+    min-width: 10rem;
     display: flex;
     padding: .25rem .5rem;
     height: 3.75rem;
