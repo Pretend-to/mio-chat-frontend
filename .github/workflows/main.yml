@@ -3,7 +3,7 @@ name: Deploy to Mio Chat Backend
 on:
   push:
     branches:
-      - main  # 触发动作的分支
+      - master  # 触发动作的分支
 
 jobs:
   build-and-deploy:
