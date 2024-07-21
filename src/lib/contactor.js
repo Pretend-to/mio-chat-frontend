@@ -278,4 +278,18 @@ export default class Contactor extends EventEmmiter {
         this.lastUpdate = new Date().getTime()
     }
 
+    getAvatar(model){
+        console.log(model)
+        const basePath = '/api/avatar'
+        if(model.includes('gpt'))
+            return `${basePath}/openai.png`
+        else if(model.includes('moon'))
+            return `${basePath}/moonshot.png`
+        else if(model.includes('deepseek'))
+            return `${basePath}/deepseek.png`
+        else if(model.incluses('glm'))
+            return `${basePath}/chatglm.png}`
+        else return `${basePath}/openai.png`
+    }
+
 }

@@ -115,6 +115,8 @@ export default class Client {
 
   addConcator(platform, config) {
     const bot = new Contactor(platform, config)
+    if (platform == 'openai')
+      bot.avatar = bot.getAvatar(bot.activeModel)
     this.contactList.push(bot)
   }
 

@@ -64,10 +64,14 @@ export default {
                     }
                 }
             }
+
+            
             this.addConcator('openai', openaiDefaultConfig)
         },
         async addConcator(platform, config) {
             const bot = new Contactor(platform, config)
+            bot.avatar = bot.getAvatar(bot.activeModel)
+
             this.contactorList.push(bot)
             await client.setLocalStorage()
         },
