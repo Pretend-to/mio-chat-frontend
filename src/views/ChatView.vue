@@ -31,6 +31,7 @@ export default {
       longPressTimer: null,
       selectedMessageIndex: -1,
       repliedMessage: null,
+      autoScroll: false,
     };
   },
   methods: {
@@ -74,6 +75,7 @@ export default {
     setModel(name) {
       this.acting.activeModel = name;
       this.acting.name = name;
+      this.acting.avatar = this.acting.getAvatar(name);
       client.setLocalStorage(); //持久化存储
     },
 
@@ -151,6 +153,19 @@ export default {
       return result;
     },
 
+    getChatwindowScrollheight() {
+        var scrollTop = this.$refs.chatWindow.scrollTop; // 当前滚动条的垂直位置
+        var clientHeight = this.$refs.chatWindow.clientHeight; // 可视区域高度
+        var scrollHeight = this.$refs.chatWindow.scrollHeight; // 内容总高度
+
+        // 计算滚动位置的实际像素长度
+        var scrollPercentage = (scrollTop / (scrollHeight - clientHeight))
+        var height = scrollPercentage*scrollHeight
+
+        return scrollHeight-height
+
+    },
+
     initContactor(contactor) {
       contactor.active = true;
 
@@ -171,6 +186,7 @@ export default {
         const rawMessage = this.acting.messageChain[e.messageIndex];
         rawMessage.content[0].data.text = e.updatedMessage;
         // console.log(rawMessage.content[0].data.text)
+
         this.toupdate = true;
       });
 
@@ -304,6 +320,12 @@ export default {
     this.$refs.chatWindow.addEventListener("scroll", () => {
       this.showMenu = false;
       if (this.showemoji) this.showemoji = false;
+
+      const scrollHeight = this.getChatwindowScrollheight()
+
+      console.log(scrollHeight)
+
+      this.autoScroll = scrollHeight > 300 ? false : true;
     });
 
     console.log(this.acting);
@@ -318,10 +340,18 @@ export default {
     }, 3000);
   },
   updated() {
-    if (this.toupdate) {
+    if (this.toupdate && this.autoScroll) {
       this.toButtom();
       this.toupdate = false;
     }
+  },
+  unmounted() {
+    // 移除事件监听
+    this.disableContactor(this.acting);
+    this.$refs.chatWindow.removeEventListener("scroll", () => {
+      this.showMenu = false;
+      if (this.showemoji) this.showemoji = false;
+    });
   },
   computed: {
     getDelayStatus() {

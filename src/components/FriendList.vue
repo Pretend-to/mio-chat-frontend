@@ -323,4 +323,8 @@ button#addcont {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+.people {
+    overflow-y: auto;
+}
 </style>
