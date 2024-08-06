@@ -19,6 +19,11 @@ const router = createRouter({
       children: [
         {
           path: '/',
+          name: 'root',
+          component: () => import('../views/BlankView.vue')
+        },
+        {
+          path: '/home',
           name: 'home',
           component: () => import('../views/BlankView.vue')
         },
@@ -30,7 +35,7 @@ const router = createRouter({
         {
           path: 'profile',
           name: 'toProfile',
-          component: () => import('../views/ProfileView.vue')
+          component: () => import('../views/BlankView.vue')
         },
         {
           path: 'chat/:id',
