@@ -7,7 +7,7 @@
             <span class="window-min">—</span>
           </li>
           <li
-            v-if="client.fullScreen"
+            v-if="fullScreen"
             class="button"
             @click="configFullScreen(false)"
           >
@@ -31,7 +31,8 @@ export default {
   name: "BlankView",
   data() {
     return {
-      client: client,
+        fullScreen: false,
+        client: client,
     };
   },
   created() {
@@ -40,7 +41,7 @@ export default {
   methods: {
     configFullScreen(status) {
       client.emit("screenChange", status);
-      this.client.fullScreen = status;
+      this.fullScreen = status;
     },
     waiting() {
       this.$message({ message: "此功能尚未开放", type: "warning" });

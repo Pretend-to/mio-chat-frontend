@@ -25,7 +25,7 @@ export default class Client extends EventEmitter {
     this.models = []
     this.beian = ""
     this.fullScreen = false
-    this.title = "人工"
+    this.title = "用户"
     this.name = "user"
     this.webTitle = ""
   }

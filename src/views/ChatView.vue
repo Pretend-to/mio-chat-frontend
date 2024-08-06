@@ -32,12 +32,13 @@ export default {
       selectedMessageIndex: -1,
       repliedMessage: null,
       autoScroll: false,
+      fullScreen: false,
     };
   },
   methods: {
     configFullScreen(status) {
       client.emit("screenChange", status)
-      this.client.fullScreen = status;
+      this.fullScreen = status;
     },
     toButtom(clicked) {
       if (clicked) this.$message("已滑至底部");
@@ -339,6 +340,8 @@ export default {
     const currentId = this.$route.params.id;
     const contactor = client.getContactor(currentId);
     this.initContactor(contactor);
+
+    this.fullScreen = this.client.fullScreen;
 
     setInterval(() => {
       this.currentDelay = this.client.socket.delay;
