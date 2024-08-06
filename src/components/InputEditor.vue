@@ -28,7 +28,7 @@
       </div>
       <div class="bu-emoji">
         <p id="ho-emoji">
-          {{ acting.platform == "openai" ? "模型选择" : "工具选择" }}
+          {{ activeContactor.platform == "openai" ? "模型选择" : "工具选择" }}
         </p>
         <el-cascader
           v-model="selectedWraper"
@@ -79,7 +79,7 @@ export default {
     };
   },
   props: {
-    acting: {
+    activeContactor: {
       type: Object,
       required: true,
     },
@@ -144,15 +144,15 @@ export default {
     },
     getBotTools() {
       this.selectedWraper = [""];
-      const wraper = this.acting.options.textwraper;
+      const wraper = this.activeContactor.options.textwraper;
       this.wraperOptions = wraper.options;
     },
     getBotModels() {
-        console.log(this.acting.activeModel)
-      this.selectedWraper = this.acting.activeModel
-        ? [this.acting.activeModel]
+        console.log(this.activeContactor.activeModel)
+      this.selectedWraper = this.activeContactor.activeModel
+        ? [this.activeContactor.activeModel]
         : ["gpt-4o-mini"];
-      this.wraperOptions = this.acting.options.modelsOptions;
+      this.wraperOptions = this.activeContactor.options.modelsOptions;
       this.setModel(this.selectedWraper[0]);
     },
     wrapText(rawText) {
@@ -177,7 +177,7 @@ export default {
       textarea.style.height = textarea.scrollHeight + "px";
     },
     getWraperName() {
-      if (this.acting.platform === "onebot") {
+      if (this.activeContactor.platform === "onebot") {
         if (!this.selectedWraper) return "";
         const wraper = this.selectedWraper[this.selectedWraper.length - 1];
         if (!wraper) return "";
@@ -242,7 +242,7 @@ export default {
       let msg = this.getSafeText(this.userInput);
 
       const wrappedMessage =
-        this.acting.platform === "onebot" ? this.wrapText(msg) : msg;
+        this.activeContactor.platform === "onebot" ? this.wrapText(msg) : msg;
 
       this.userInput = this.$refs.textarea.innerHTML = "";
 
@@ -297,7 +297,7 @@ export default {
       this.$emit("sendMessage");
       const container = this.presend();
       this.userInput = "";
-      const message_id = await this.acting.webSend(container); //发送消息
+      const message_id = await this.activeContactor.webSend(container); //发送消息
       container.id = message_id;
       this.$emit("stroge");
       this.uploaded.images = [];
@@ -315,7 +315,7 @@ export default {
       this.$emit("cleanScreen");
     },
     async activeBotTools() {
-      if (this.acting.platform === "onebot") {
+      if (this.activeContactor.platform === "onebot") {
         const testMessage = "text";
         const testMessage2 = "test";
         const wrappedMessage = this.wrapText(testMessage);
@@ -327,7 +327,7 @@ export default {
       } else {
         this.setModel(this.selectedWraper[this.selectedWraper.length - 1]);
         this.$message({
-          message: "已切换到" + this.acting.activeModel + "模型",
+          message: "已切换到" + this.activeContactor.activeModel + "模型",
           type: "success",
         });
       }
@@ -365,7 +365,7 @@ export default {
     },
   },
   mounted() {
-    if (this.acting.platform === "onebot") this.getBotTools();
+    if (this.activeContactor.platform === "onebot") this.getBotTools();
     else this.getBotModels();
     this.textareaRef = this.$refs.textarea;
     this.textareaRef.addEventListener("input", this.adjustTextareaHeight);
@@ -384,7 +384,7 @@ export default {
   },
   watch: {
     "$route.params.id"() {
-      if (this.acting.platform === "onebot") this.getBotTools();
+      if (this.activeContactor.platform === "onebot") this.getBotTools();
       else this.getBotModels();
     },
   },

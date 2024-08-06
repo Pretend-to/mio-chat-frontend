@@ -30,6 +30,13 @@ export default {
     this.$refs.sidebar.loadAvatar(client.admin_qq);
 
     await config.init();
+
+    client.on("screenChange", async (status) => {
+      this.fullScreen = status
+      client.fullScreen = status
+      await client.setLocalStorage();
+    });
+
   },
   mounted() {
     if (window.innerWidth < 600) this.onPhone = client.onPhone = true;
@@ -42,7 +49,6 @@ export default {
         this.onPhone = client.onPhone = false;
       }
     });
-    
 
   },
   methods: {
@@ -59,10 +65,6 @@ export default {
     },
     $route() {
       this.onPrivate = this.checkPrivate();
-    },
-    "client.fullScreen"(val) {
-      this.fullScreen = val
-      client.setLocalStorage()
     },
   },
 };

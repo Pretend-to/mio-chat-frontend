@@ -1,13 +1,15 @@
 import Socket from './websocket.js'
 import Contactor from './contactor.js'
 import localforage from 'localforage'
+import EventEmitter from './event.js'
 
 localforage.config({
   name: 'mio-chat'
 })
 
-export default class Client {
+export default class Client extends EventEmitter {
   constructor() {
+    super()
     this.everLogin = false
     this.id = null
     this.code = null

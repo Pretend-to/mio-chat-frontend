@@ -12,7 +12,7 @@ export default {
     console.log(contactor);
 
     return {
-      acting: contactor,
+      activeContactor: contactor,
       showwindow: true,
       showemoji: false,
       userInput: "",
@@ -35,6 +35,10 @@ export default {
     };
   },
   methods: {
+    configFullScreen(status) {
+      client.emit("screenChange", status)
+      this.client.fullScreen = status;
+    },
     toButtom(clicked) {
       if (clicked) this.$message("已滑至底部");
       const chatWindow = this.$refs.chatWindow;
@@ -44,14 +48,14 @@ export default {
       //console.log(chatWindow.scrollHeight)
     },
     cleanScreen() {
-      this.acting.messageChain = [];
-      this.acting.updateFirstMessage();
+      this.activeContactor.messageChain = [];
+      this.activeContactor.updateFirstMessage();
       client.setLocalStorage(); //持久化存储
       this.toupdate = true;
       this.$message({ message: "已清除会话记录", type: "success" });
     },
     cleanHistory() {
-      this.acting.updateFirstMessage();
+      this.activeContactor.updateFirstMessage();
       this.$message({
         message: "上下文信息已清除，之后的请求将不再记录上文记录",
         type: "success",
@@ -73,25 +77,25 @@ export default {
     },
 
     setModel(name) {
-      this.acting.activeModel = name;
-      this.acting.name = name;
-      this.acting.avatar = this.acting.getAvatar(name);
+      this.activeContactor.activeModel = name;
+      this.activeContactor.name = name;
+      this.activeContactor.avatar = this.activeContactor.getAvatar(name);
       client.setLocalStorage(); //持久化存储
     },
 
     showTime(index) {
-      const thisTime = this.acting.messageChain[index].time;
+      const thisTime = this.activeContactor.messageChain[index].time;
       if (index === 0) {
         return {
           show: true,
-          time: this.acting.getShownTime(thisTime),
+          time: this.activeContactor.getShownTime(thisTime),
         };
       } else {
-        const earlyTime = this.acting.messageChain[index - 1].time;
+        const earlyTime = this.activeContactor.messageChain[index - 1].time;
         if (thisTime - earlyTime > 600000) {
           return {
             show: true,
-            time: this.acting.getShownTime(thisTime),
+            time: this.activeContactor.getShownTime(thisTime),
           };
         } else {
           return {
@@ -154,15 +158,15 @@ export default {
     },
 
     getChatwindowScrollheight() {
-        var scrollTop = this.$refs.chatWindow.scrollTop; // 当前滚动条的垂直位置
-        var clientHeight = this.$refs.chatWindow.clientHeight; // 可视区域高度
-        var scrollHeight = this.$refs.chatWindow.scrollHeight; // 内容总高度
+      var scrollTop = this.$refs.chatWindow.scrollTop; // 当前滚动条的垂直位置
+      var clientHeight = this.$refs.chatWindow.clientHeight; // 可视区域高度
+      var scrollHeight = this.$refs.chatWindow.scrollHeight; // 内容总高度
 
-        // 计算滚动位置的实际像素长度
-        var scrollPercentage = (scrollTop / (scrollHeight - clientHeight))
-        var height = scrollPercentage*scrollHeight
+      // 计算滚动位置的实际像素长度
+      var scrollPercentage = (scrollTop / (scrollHeight - clientHeight))
+      var height = scrollPercentage * scrollHeight
 
-        return scrollHeight-height
+      return scrollHeight - height
 
     },
 
@@ -170,20 +174,20 @@ export default {
       contactor.active = true;
 
       contactor.on("revMessage", (message) => {
-        this.acting.messageChain.push(message);
+        this.activeContactor.messageChain.push(message);
         this.toupdate = true;
       });
       contactor.on("delMessage", (index) => {
         console.log(`删除消息${index}`);
         // 从消息链中删除消息
-        this.acting.messageChain.splice(index, 1);
+        this.activeContactor.messageChain.splice(index, 1);
         this.toupdate = true;
       });
 
       contactor.on("updateMessage", (e) => {
-        this.acting.updateKey();
+        this.activeContactor.updateKey();
         this.ydaKey++;
-        const rawMessage = this.acting.messageChain[e.messageIndex];
+        const rawMessage = this.activeContactor.messageChain[e.messageIndex];
         rawMessage.content[0].data.text = e.updatedMessage;
         // console.log(rawMessage.content[0].data.text)
 
@@ -192,7 +196,7 @@ export default {
 
       contactor.on(`completeMessage`, (e) => {
         const messageIndex = e.index;
-        const rawMessage = this.acting.messageChain[messageIndex];
+        const rawMessage = this.activeContactor.messageChain[messageIndex];
         rawMessage.status = "completed";
 
         const formatedMessage = this.separateTextAndImages(e.text);
@@ -212,7 +216,7 @@ export default {
     },
     getReplyText(id) {
       let content = "";
-      const message = this.acting.messageChain.find((item) => item.id === id);
+      const message = this.activeContactor.messageChain.find((item) => item.id === id);
       if (message) {
         message.content.forEach((element) => {
           if (element.type === "text") {
@@ -242,7 +246,7 @@ export default {
         case "copy": {
           // Construct the text to copy
           let text = "";
-          const message = this.acting.messageChain[this.selectedMessageIndex]; // Corrected typo
+          const message = this.activeContactor.messageChain[this.selectedMessageIndex]; // Corrected typo
           console.log(this.selectedMessageIndex);
           message.content.forEach((element) => {
             if (element.type === "text") {
@@ -273,30 +277,31 @@ export default {
           break;
         }
         case "reply":
-          if (this.acting.platform === "onebot") {
+          if (this.activeContactor.platform === "onebot") {
             this.repliedMessage =
-              this.acting.messageChain[this.selectedMessageIndex];
+              this.activeContactor.messageChain[this.selectedMessageIndex];
             this.$message({ message: "已引用该消息", type: "success" });
           } else {
             this.userInput +=
               this.getReplyText(
-                this.acting.messageChain[this.selectedMessageIndex].id
+                this.activeContactor.messageChain[this.selectedMessageIndex].id
               ) + "\n\n";
           }
 
           break;
         case "delete":
-          if (this.acting.platform === "onebot")
-            this.acting.messageChain.splice(this.selectedMessageIndex, 1);
+          if (this.activeContactor.platform === "onebot")
+            this.activeContactor.messageChain.splice(this.selectedMessageIndex, 1);
           else {
             if (
-              this.acting.messageChain[this.selectedMessageIndex].status ===
-                "completed" &&
-              this.acting.messageChain[this.acting.messageChain.length - 1]
-                .status === "completed"
+              this.activeContactor.messageChain[this.selectedMessageIndex].status === "completed" ||
+              this.activeContactor.messageChain.filter(
+                (item) => item.status === "pending"
+              ).length === 1
             ) {
-              this.acting.messageChain.splice(this.selectedMessageIndex, 1);
-            } else {
+              this.activeContactor.messageChain.splice(this.selectedMessageIndex, 1);
+            }
+            else {
               this.$message({
                 message: "当前有消息在更新，等等再删叭",
                 type: "warning",
@@ -328,7 +333,7 @@ export default {
       this.autoScroll = scrollHeight > 300 ? false : true;
     });
 
-    console.log(this.acting);
+    console.log(this.activeContactor);
     this.toButtom();
 
     const currentId = this.$route.params.id;
@@ -347,7 +352,7 @@ export default {
   },
   unmounted() {
     // 移除事件监听
-    this.disableContactor(this.acting);
+    this.disableContactor(this.activeContactor);
     this.$refs.chatWindow.removeEventListener("scroll", () => {
       this.showMenu = false;
       if (this.showemoji) this.showemoji = false;
@@ -373,8 +378,8 @@ export default {
     "$route.params.id"(newVal, oldVal) {
       const currentId = parseInt(newVal);
       const contactor = client.getContactor(currentId);
-      this.acting = contactor;
-      this.initContactor(this.acting);
+      this.activeContactor = contactor;
+      this.initContactor(this.activeContactor);
       this.toButtom();
       if (oldVal) {
         const oldId = parseInt(oldVal);
@@ -393,7 +398,7 @@ export default {
         <i class="iconfont icon-return"></i>
       </div>
       <div class="somebody">
-        {{ acting.name }}
+        {{ activeContactor.name }}
         <span :class="'delay-status ' + getDelayStatus"></span>
         <span class="delay-num">当前延迟: {{ currentDelay }} ms</span>
       </div>
@@ -402,14 +407,10 @@ export default {
           <li class="button" @click="waiting()">
             <span class="window-min">—</span>
           </li>
-          <li
-            v-if="client.fullScreen"
-            class="button"
-            @click="client.fullScreen = false"
-          >
+          <li v-if="client.fullScreen" class="button" @click="configFullScreen(false)">
             <span class="window-inmax">⿹</span>
           </li>
-          <li v-else class="button" @click="client.fullScreen = true">
+          <li v-else class="button" @click="configFullScreen(true)">
             <span class="window-max">▢</span>
           </li>
           <li class="button" @click="waiting()" id="close">
@@ -422,87 +423,44 @@ export default {
       </div>
     </div>
     <div class="message-window" ref="chatWindow">
-      <div
-        v-for="(item, index) of acting.messageChain"
-        :key="index"
-        class="message-container"
-        ref="message"
-      >
+      <div v-for="(item, index) of activeContactor.messageChain" :key="index" class="message-container" ref="message">
         <div class="message-time" v-if="showTime(index).show">
           {{ showTime(index).time }}
         </div>
         <div class="message-body" :id="item.role">
           <div class="avatar" v-if="item.role !== 'system'">
-            <img
-              v-if="item.role === 'other'"
-              :src="acting.avatar"
-              :alt="acting.name"
-            />
+            <img v-if="item.role === 'other'" :src="activeContactor.avatar" :alt="activeContactor.name" />
             <img v-else :src="client.avatar" :alt="client.name" />
           </div>
           <div class="msg" v-if="item.role !== 'system'">
             <div class="wholename">
               <div class="title">
-                {{ item.role === "other" ? acting.title : client.title }}
+                {{ item.role === "other" ? activeContactor.title : client.title }}
               </div>
               <div class="name">
-                {{ item.role === "other" ? acting.name : client.name }}
+                {{ item.role === "other" ? activeContactor.name : client.name }}
               </div>
             </div>
-            <div
-              class="content"
-              @contextmenu.self="showMessageMenu($event, index)"
-            >
+            <div class="content" @contextmenu.self="showMessageMenu($event, index)">
               <div v-for="(element, index) of item.content" :key="index">
-                <MdPreview
-                  v-if="element.type === 'text'"
-                  :key="item?.status !== 'completed' ? ydaKey : ''"
-                  previewTheme="github"
-                  editorId="preview-only"
-                  :modelValue="element.data.text"
-                />
-                <el-image
-                  v-else-if="element.type === 'image'"
-                  style="margin: 8px 0; max-width: 20rem; border-radius: 1rem"
-                  :src="element.data.file"
-                  :zoom-rate="1.2"
-                  :max-scale="7"
-                  :min-scale="0.2"
-                  :preview-src-list="[element.data.file]"
-                  :initial-index="4"
-                  :key="index"
-                  fit="cover"
-                />
-                <MdPreview
-                  v-else-if="element.type === 'reply'"
-                  previewTheme="github"
-                  editorId="preview-only"
-                  :modelValue="getReplyText(element.data.id)"
-                />
-                <ForwardMsg
-                  v-else-if="element.type === 'nodes'"
-                  :contactor="acting"
-                  :messages="element.data.messages"
-                />
-                <MdPreview
-                  v-else-if="element.type === 'file'"
-                  previewTheme="github"
-                  editorId="preview-only"
-                  :modelValue="'> ' + element.data.file"
-                />
-                <MdPreview
-                  v-else
-                  previewTheme="github"
-                  editorId="preview-only"
-                  :modelValue="'未知的消息类型：\n```\n' + element + '\n```'"
-                />
+                <MdPreview v-if="element.type === 'text'" :key="item?.status !== 'completed' ? ydaKey : ''"
+                  previewTheme="github" editorId="preview-only" :modelValue="element.data.text" />
+                <el-image v-else-if="element.type === 'image'"
+                  style="margin: 8px 0; max-width: 20rem; border-radius: 1rem" :src="element.data.file" :zoom-rate="1.2"
+                  :max-scale="7" :min-scale="0.2" :preview-src-list="[element.data.file]" :initial-index="4"
+                  :key="index" fit="cover" />
+                <MdPreview v-else-if="element.type === 'reply'" previewTheme="github" editorId="preview-only"
+                  :modelValue="getReplyText(element.data.id)" />
+                <ForwardMsg v-else-if="element.type === 'nodes'" :contactor="activeContactor"
+                  :messages="element.data.messages" />
+                <MdPreview v-else-if="element.type === 'file'" previewTheme="github" editorId="preview-only"
+                  :modelValue="'> ' + element.data.file" />
+                <MdPreview v-else previewTheme="github" editorId="preview-only"
+                  :modelValue="'未知的消息类型：\n```\n' + element + '\n```'" />
               </div>
             </div>
-            <div
-              v-if="showMenu && selectedMessageIndex === index"
-              id="message-menu"
-              :style="{ top: menuTop + 'px', left: menuLeft + 'px' }"
-            >
+            <div v-if="showMenu && selectedMessageIndex === index" id="message-menu"
+              :style="{ top: menuTop + 'px', left: menuLeft + 'px' }">
               <div @click="messageMenuClick('copy')">
                 <i class="iconfont fuzhi"></i><span>复制</span>
               </div>
@@ -520,15 +478,8 @@ export default {
         </div>
       </div>
     </div>
-    <InputEditor
-      ref="inputEditor"
-      :acting="acting"
-      @stroge="client.setLocalStorage()"
-      @setModel="setModel"
-      @cleanScreen="cleanScreen"
-      @cleanHistory="cleanHistory"
-      @sendMessage="toButtom"
-    />
+    <InputEditor ref="inputEditor" :activeContactor="activeContactor" @stroge="client.setLocalStorage()"
+      @setModel="setModel" @cleanScreen="cleanScreen" @cleanHistory="cleanHistory" @sendMessage="toButtom" />
   </div>
 </template>
 
