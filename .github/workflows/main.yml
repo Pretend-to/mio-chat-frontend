@@ -27,7 +27,8 @@ jobs:
       - name: Clone Mio Chat Backend repository
         run: |
           git clone https://github.com/Pretend-to/mio-chat-backend.git
-          cp -r ./dist/* ./mio-chat-backend/dist/
+          rm -r ./mio-chat-backend/dist/
+          cp -r ./dist/ ./mio-chat-backend/
         env:
           GIT_TERMINAL_PROMPT: 0  # 避免交互式的输入提示
 
@@ -37,5 +38,5 @@ jobs:
           git config --global user.name "GitHub Action"
           git config --global user.email "mio@krumio.com"  # 替换为您的邮箱
           git add dist/*
-          git commit -m "Deploy changes from master branch"
+          git commit -m "update: 更新前端"
           git push https://x-access-token:${{ secrets.GH_SECRET }}@github.com/Pretend-to/mio-chat-backend.git HEAD:master
