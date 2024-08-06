@@ -38,6 +38,6 @@ jobs:
           git config --global user.email "mio@krumio.com"  # 替换为您的邮箱
           git add dist/*
           git commit -m "Deploy changes from master branch"
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/Pretend-to/mio-chat-backend.git HEAD:master
+          git push https://x-access-token:${{ GITHUB_TOKEN }}@github.com/Pretend-to/mio-chat-backend.git HEAD:master
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 使用 GitHub 提供的令牌进行身份验证
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}  # 使用 GitHub 提供的令牌进行身份验证
