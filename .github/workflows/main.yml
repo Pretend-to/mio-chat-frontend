@@ -40,4 +40,4 @@ jobs:
           git add dist/*
           git commit -m "update: 更新前端"
           git push https://x-access-token:${{ secrets.GH_SECRET }}@github.com/Pretend-to/mio-chat-backend.git HEAD:master
-          git push https://x-access-token:${{ secrets.GH_SECRET }}@github.com/Pretend-to/mio-chat-backend.git HEAD:dev
+

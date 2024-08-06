@@ -617,8 +617,10 @@ $icon-hover: #09f
         &:hover
             background-color: rgb(231, 231, 231)
 
-        #close:hover
+        &#close:hover
             background-color: rgb(255, 0, 0)
+            color: white
+
 
 .button#close:hover svg path
     fill: #fff
