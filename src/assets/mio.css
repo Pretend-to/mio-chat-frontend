@@ -80,3 +80,7 @@ figure {
 .md-editor {
     --md-bk-color : none;
 }
+
+#user code {
+    --md-theme-code-inline-bg-color: rgba(133, 206, 255, 0.562);
+}

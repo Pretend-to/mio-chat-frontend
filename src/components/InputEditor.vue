@@ -8,11 +8,11 @@
           @emoji-click="getemoji"
         ></emoji-picker>
         <p id="ho-emoji">表情</p>
-        <i @click="showemoji = !showemoji" class="iconfont smile"></i>
+        <i @click.prevent="ctrlEmojiPanel" class="iconfont smile"></i>
       </div>
       <div class="bu-emoji">
         <p id="ho-emoji">滑到底部</p>
-        <i @click="$emit('toButtom',1)" class="iconfont download"></i>
+        <i @click="$emit('toButtom', 1)" class="iconfont download"></i>
       </div>
       <div class="bu-emoji">
         <p id="ho-emoji">重置人格</p>
@@ -64,7 +64,7 @@
 </template>
 
 <script>
-import { client } from "@/lib/runtime.js"
+import { client } from "@/lib/runtime.js";
 
 export default {
   data() {
@@ -76,6 +76,7 @@ export default {
       showemoji: false,
       host: "",
       uploaded: { files: [], images: [] },
+      isPasting: false,
     };
   },
   props: {
@@ -85,6 +86,12 @@ export default {
     },
   },
   methods: {
+    ctrlEmojiPanel() {
+      this.showemoji = !this.showemoji;
+
+      const editor = this.$refs.textarea;
+      editor.focus();
+    },
     uploadFile() {
       const avaliableImageFromats = ["png", "jpg", "jpeg"];
       const avaliableDocFormats = ["docx", "pdf", "pptx", "xlsx"];
@@ -118,7 +125,6 @@ export default {
                 // const upload = await client.uploadImage(base64);
                 // this.uploaded.images.push(upload.data.url);
                 this.uploaded.images.push(base64);
-
               };
               reader.readAsDataURL(file);
             } else {
@@ -128,8 +134,7 @@ export default {
             this.$message({
               message: "文件上传成功",
               type: "success",
-            })
-
+            });
           } else {
             this.$message({
               message: "文件大小超过10MB，无法上传",
@@ -148,7 +153,7 @@ export default {
       this.wraperOptions = wraper.options;
     },
     getBotModels() {
-        console.log(this.activeContactor.activeModel)
+      console.log(this.activeContactor.activeModel);
       this.selectedWraper = this.activeContactor.activeModel
         ? [this.activeContactor.activeModel]
         : ["gpt-4o-mini"];
@@ -200,6 +205,8 @@ export default {
     },
     getemoji(e) {
       const inputer = this.$refs.textarea;
+      inputer.focus();
+
       const range = document.createRange();
       const sel = window.getSelection();
       if (!sel) return;
@@ -208,21 +215,19 @@ export default {
       const startPos = this.cursorPosition[0];
       const endPos = this.cursorPosition[1];
       const textBeforeCursor = this.userInput.substring(0, startPos);
-      console.log(textBeforeCursor);
       const textAfterCursor = this.userInput.substring(endPos);
-      console.log(textAfterCursor);
       this.userInput = textBeforeCursor + unicode + textAfterCursor;
+      inputer.innerHTML = this.userInput;
 
       // 移动光标位置到表情符号之后
       setTimeout(() => {
-        range.selectNodeContents(inputer);
         range.setStart(inputer.firstChild, startPos + unicode.length);
         range.setEnd(inputer.firstChild, startPos + unicode.length);
         sel.removeAllRanges();
         sel.addRange(range);
       }, 0);
 
-      this.showemoji = !this.showemoji;
+      this.ctrlEmojiPanel();
     },
     updateCursorPosition() {
       const selection = window.getSelection();
@@ -262,23 +267,22 @@ export default {
         ],
       };
 
-        this.uploaded.images.forEach((file) => {
-            container.content.push({
-                type: "image",
-                data: {
-                    file: file.startsWith('/') ? this.host + file : file,
-                },
-            })
-        })
-        this.uploaded.files.forEach((file) => {
-            container.content.push({
-                type: "file",
-                data: {
-                    file: this.host + file,
-                },
-            })
-        })
-
+      this.uploaded.images.forEach((file) => {
+        container.content.push({
+          type: "image",
+          data: {
+            file: file.startsWith("/") ? this.host + file : file,
+          },
+        });
+      });
+      this.uploaded.files.forEach((file) => {
+        container.content.push({
+          type: "file",
+          data: {
+            file: this.host + file,
+          },
+        });
+      });
 
       if (this.repliedMessage) {
         const replyData = {
@@ -290,7 +294,7 @@ export default {
         container.content.push(replyData);
       }
 
-      console.log(container)
+      console.log(container);
       return container;
     },
     async send() {
@@ -302,7 +306,6 @@ export default {
       this.$emit("stroge");
       this.uploaded.images = [];
       this.uploaded.files = [];
-
     },
     getSafeText(text) {
       return text
@@ -336,12 +339,19 @@ export default {
       return input.trim().length > 0;
     },
     handleKeyDown(event) {
-      if (event.ctrlKey && event.key === "Enter") {
-        this.userInput = this.replaceDivTags(this.userInput);
-        if (this.userInput && this.isValidInput(this.userInput)) this.send();
-        else this.$message({ message: "不能发送空消息", type: "warning" });
-        // 处理按下 Ctrl+Enter 键的逻辑
+      if (event.key === "Enter") {
+        if (event.ctrlKey) {
+          // this.userInput = this.replaceDivTags(this.userInput);
+          if (this.userInput && this.isValidInput(this.userInput)) this.send();
+          else this.$message({ message: "不能发送空消息", type: "warning" });
+          // 处理按下 Ctrl+Enter 键的逻辑
+        } else {
+          this.userInput += "\n";
+          console.log(this.userInput)
+
+        }
       }
+
       setTimeout(() => {
         this.updateCursorPosition();
       }, 0);
@@ -360,8 +370,7 @@ export default {
       return result;
     },
     handleInput() {
-      this.userInput = this.$refs.textarea.innerHTML;
-      console.log(this.userInput);
+      if (!this.isPasting) this.userInput = this.$refs.textarea.innerText;
     },
   },
   mounted() {
@@ -371,8 +380,13 @@ export default {
     this.textareaRef.addEventListener("input", this.adjustTextareaHeight);
     document.addEventListener("paste", function (e) {
       e.preventDefault();
+      this.isPasting = true;
+
       var text = (e.originalEvent || e).clipboardData.getData("text/plain");
+      console.log(text);
       document.execCommand("insertText", false, text);
+
+      this.isPasting = false;
     });
 
     this.host = window.location.origin;

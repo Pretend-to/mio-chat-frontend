@@ -329,8 +329,6 @@ export default {
 
       const scrollHeight = this.getChatwindowScrollheight()
 
-      console.log(scrollHeight)
-
       this.autoScroll = scrollHeight > 300 ? false : true;
     });
 
