@@ -1,43 +1,36 @@
 name: Deploy to Mio Chat Backend
-
 on:
   push:
     branches:
-      - master  # 触发动作的分支
-
+      - master # 触发动作的分支
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'  # 设置 Node.js 版本
-
+          node-version: '20' # 设置 Node.js 版本
+      - name: Pull latest changes
+        run: git pull origin master # 确保拉取到最新的代码
       - name: Install dependencies
         run: npm install
-
       - name: Build the project
         run: npm run build
-
       - name: Clone Mio Chat Backend repository
         run: |
           git clone https://github.com/Pretend-to/mio-chat-backend.git
           rm -r ./mio-chat-backend/dist/
           cp -r ./dist/ ./mio-chat-backend/
         env:
-          GIT_TERMINAL_PROMPT: 0  # 避免交互式的输入提示
-
+          GIT_TERMINAL_PROMPT: 0 # 避免交互式的输入提示
       - name: Commit and push changes
         run: |
           cd mio-chat-backend
           git config --global user.name "GitHub Action"
-          git config --global user.email "mio@krumio.com"  # 替换为您的邮箱
+          git config --global user.email "mio@krumio.com" # 替换为您的邮箱
           git add dist/*
           git commit -m "update: 更新前端"
           git push https://x-access-token:${{ secrets.GH_SECRET }}@github.com/Pretend-to/mio-chat-backend.git HEAD:master
-
