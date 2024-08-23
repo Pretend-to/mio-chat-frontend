@@ -84,3 +84,8 @@ figure {
 #user code {
     --md-theme-code-inline-bg-color: rgba(133, 206, 255, 0.562);
 }
+
+.message-container iframe{
+    width: 60vw;
+    height: 30vw;
+}

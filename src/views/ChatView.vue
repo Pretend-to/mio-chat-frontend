@@ -134,7 +134,7 @@ export default {
         result.push({
           type: "image",
           data: {
-            file: matches[2],
+            file: matches[2].length>200?matches[2]:`/api/proxy?url=${matches[2]}`,
           },
         });
 
