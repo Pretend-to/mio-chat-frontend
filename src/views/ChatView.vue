@@ -108,7 +108,7 @@ export default {
     },
     separateTextAndImages(markdownText) {
       // 使用正则表达式匹配Markdown图片格式
-      const regex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+      const regex = /!\[([^\]]*)\]\((.*)\)/g;
       let result = [];
       let lastIndex = 0;
 
@@ -316,6 +316,14 @@ export default {
       }
       this.showMenu = false;
     },
+    scrollHandler() {
+      this.showMenu = false;
+      if (this.showemoji) this.showemoji = false;
+
+      const scrollHeight = this.getChatwindowScrollheight()
+
+      this.autoScroll = scrollHeight > 300 ? false : true;
+    }
   },
   mounted() {
     document.addEventListener("click", () => {
@@ -323,14 +331,7 @@ export default {
       // if( this.showemoji) this.showemoji = false;
     });
 
-    this.$refs.chatWindow.addEventListener("scroll", () => {
-      this.showMenu = false;
-      if (this.showemoji) this.showemoji = false;
-
-      const scrollHeight = this.getChatwindowScrollheight()
-
-      this.autoScroll = scrollHeight > 300 ? false : true;
-    });
+    this.$refs.chatWindow.addEventListener("scroll",this.scrollHandler);
 
     console.log(this.activeContactor);
     this.toButtom();
@@ -354,10 +355,7 @@ export default {
   unmounted() {
     // 移除事件监听
     this.disableContactor(this.activeContactor);
-    this.$refs.chatWindow.removeEventListener("scroll", () => {
-      this.showMenu = false;
-      if (this.showemoji) this.showemoji = false;
-    });
+    this.$refs.chatWindow.removeEventListener("scroll", this.scrollHandler);
   },
   computed: {
     getDelayStatus() {

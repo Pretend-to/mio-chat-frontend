@@ -287,8 +287,10 @@ export default class Contactor extends EventEmmiter {
             return `${basePath}/moonshot.png`
         else if(model.includes('deepseek'))
             return `${basePath}/deepseek.png`
-        else if(model.incluses('glm'))
+        else if(model.includes('glm'))
             return `${basePath}/chatglm.png}`
+        else if(model.includes('claude'))
+            return `${basePath}/claude.png`
         else return `${basePath}/openai.png`
     }
 
