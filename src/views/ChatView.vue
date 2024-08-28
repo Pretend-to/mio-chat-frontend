@@ -3,9 +3,11 @@ import { MdPreview } from "md-editor-v3";
 import ForwardMsg from "@/components/ForwardMsg.vue";
 import InputEditor from "@/components/InputEditor.vue";
 import "emoji-picker-element";
+import html2canvas from "html2canvas"
 import { client } from "@/lib/runtime.js";
 
 export default {
+
   data() {
     const currentId = parseInt(this.$route.params.id);
     const contactor = client.getContactor(currentId);
@@ -83,7 +85,28 @@ export default {
       this.activeContactor.avatar = this.activeContactor.getAvatar(name);
       client.setLocalStorage(); //持久化存储
     },
-
+    toimg() {
+      // 使用html2canvas把 this.$refs.chatWindow 渲染为图片
+      const rect = this.$refs.chatWindow.getBoundingClientRect();
+      console.log(rect)
+      console.log(this.$refs.chatWindow.scrollHeight)
+      html2canvas(this.$refs.chatWindow, {
+        scrollX: 0, // 防止因滚动而导致的偏移
+        scrollY: 0,
+        windowHeight: this.$refs.chatWindow.scrollHeight *1.5,
+        windowWidth: rect.width * 1.5,
+        // 例如: allowTaint: true, backgroundColor: null
+      }).then((canvas) => {
+        // 将canvas转换为图片
+        const img = canvas.toDataURL("image/png");
+        // 创建一个a标签，并设置下载属性和下载链接
+        const link = document.createElement("a");
+        link.download = "chat.png";
+        link.href = img;
+        // 模拟点击下载
+        link.click();
+      });
+    },
     showTime(index) {
       const thisTime = this.activeContactor.messageChain[index].time;
       if (index === 0) {
@@ -134,7 +157,7 @@ export default {
         result.push({
           type: "image",
           data: {
-            file: matches[2].length>200?matches[2]:`/api/proxy?url=${matches[2]}`,
+            file: matches[2].length > 200 ? matches[2] : `/api/proxy?url=${matches[2]}`,
           },
         });
 
@@ -188,6 +211,7 @@ export default {
       contactor.on("updateMessage", (e) => {
         this.activeContactor.updateKey();
         this.ydaKey++;
+        this.$forceUpdate();
         const rawMessage = this.activeContactor.messageChain[e.messageIndex];
         rawMessage.content[0].data.text = e.updatedMessage;
         // console.log(rawMessage.content[0].data.text)
@@ -331,7 +355,7 @@ export default {
       // if( this.showemoji) this.showemoji = false;
     });
 
-    this.$refs.chatWindow.addEventListener("scroll",this.scrollHandler);
+    this.$refs.chatWindow.addEventListener("scroll", this.scrollHandler);
 
     console.log(this.activeContactor);
     this.toButtom();
@@ -442,7 +466,8 @@ export default {
             </div>
             <div class="content" @contextmenu.self="showMessageMenu($event, index)">
               <div v-for="(element, index) of item.content" :key="index">
-                <MdPreview v-if="element.type === 'text'" :key="item?.status !== 'completed' ? ydaKey : ''"
+                <!-- <div v-if="element.type === 'text'" :key="item?.status !== 'completed' ? ydaKey : ''">{{ element.data.text }}</div> -->
+                <MdPreview v-if="element.type === 'text'" 
                   previewTheme="github" editorId="preview-only" :modelValue="element.data.text" />
                 <el-image v-else-if="element.type === 'image'"
                   style="margin: 8px 0; max-width: 20rem; border-radius: 1rem" :src="element.data.file" :zoom-rate="1.2"

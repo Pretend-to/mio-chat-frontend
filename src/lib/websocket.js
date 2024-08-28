@@ -1,13 +1,14 @@
 import EventEmitter from "./event.js";
 
 /**
- * websocket连接类
+ * WebSocket Connection Class
+ * This class handles the WebSocket connection, manages message sending and receiving, and supports heartbeats.
  */
 export default class Socket extends EventEmitter {
   /**
-   * @param {String} url websocket地址
-   * @param {String} id 机器人QQ号
-   * @param {String} code 机器人QQ登录令牌
+   * Creates an instance of Socket.
+   * @param {String} id - The QQ number of the bot.
+   * @param {String} code - The login token for the bot.
    */
   constructor(id, code) {
     super();
@@ -22,11 +23,10 @@ export default class Socket extends EventEmitter {
   }
 
   /**
-   * 在浏览器端获取当前host:port
-   * @returns {String}
+   * Retrieves the WebSocket URL based on the current host and port.
+   * @returns {String} - The WebSocket URL.
    */
   getURL() {
-    // 获取当前页面的主机名和端口号
     const url = new URL(window.location.href);
     const host = url.host;
     return url.protocol === "https:"
@@ -35,25 +35,25 @@ export default class Socket extends EventEmitter {
   }
 
   /**
-   * 连接websocket
+   * Connects to the WebSocket server.
    */
   async connect() {
     const headers = { "mio-chat-id": this.id, "mio-chat-token": this.code };
     this.socket = new WebSocket(this.url);
+    
     this.socket.onopen = async () => {
       console.log("WebSocket连接中...");
-
       this.available = true;
       console.log("WebSocket连接成功");
-
-      // 发送登录信息
+      
+      // Sending login information
       const loginPromise = this.fetch("/api/system/login", headers);
       const timeoutPromise = new Promise((resolve) => {
         setTimeout(() => {
           resolve("WebSocket连接超时");
-        }, 1000); // 1秒后超时
+        }, 1000); // Timeout after 1 second
       });
-
+      
       Promise.race([loginPromise, timeoutPromise]).then((result) => {
         if (result === "WebSocket连接超时") {
           console.log("WebSocket连接超时，不执行emit操作");
@@ -67,7 +67,7 @@ export default class Socket extends EventEmitter {
         }
       });
 
-      // 每隔3秒发送心跳包
+      // Sending heartbeat every 3 seconds
       this.heartBeat = setInterval(async () => {
         if (this.socket.readyState === WebSocket.OPEN) {
           const res = await this.fetch("/api/system/heartbeat", {
@@ -81,20 +81,26 @@ export default class Socket extends EventEmitter {
         }
       }, 3000);
     };
+
     this.socket.onclose = () => {
       this.available = false;
       this.disconnect();
       console.error("WebSocket连接断开，将在5秒后尝试重新连接...");
-      setTimeout(() => this.connect(), 5000); // 5秒后尝试重新连接
+      setTimeout(() => this.connect(), 5000); // Attempt to reconnect after 5 seconds
     };
+
     this.socket.onerror = (error) => {
       console.error("WebSocket连接出错", error);
     };
+
     this.socket.onmessage = (event) => {
       this.messageHandler(event.data);
     };
   }
 
+  /**
+   * Disconnects the WebSocket connection.
+   */
   disconnect() {
     if (this.socket) {
       this.socket.close();
@@ -106,8 +112,8 @@ export default class Socket extends EventEmitter {
   }
 
   /**
-   * 发送消息
-   * @param {String} message 消息内容
+   * Sends a message to the WebSocket server.
+   * @param {String} message - The message content to send.
    */
   send(message) {
     if (this.available) {
@@ -117,30 +123,30 @@ export default class Socket extends EventEmitter {
     }
   }
 
+  /**
+   * Handles incoming messages from the WebSocket server.
+   * @param {String} message - The message received from the server.
+   */
   messageHandler(message) {
     try {
       const e = JSON.parse(message);
       if (!(e.protocol == "system"))
         console.log("WebSocket收到事件，原始数据：", e);
-
       this.emit(e.request_id, e);
-
       if (e.protocol == "onebot") {
         this.emit("onebot_message", e);
       } else if (e.protocol == "system") {
         this.emit("system_message", e);
       }
-
-      // console.log('WebSocket触发事件', e.request_id.toString, e.data);
     } catch (error) {
       console.error("JSON解析失败:", error);
-      // 进行错误处理，例如给出默认值或者其他操作
+      // Error handling, e.g., provide default values or other operations
     }
   }
 
   /**
-   * 发送对象类型消息
-   * @param {Object} message 消息对象
+   * Sends an object type message to the WebSocket server.
+   * @param {Object} message - The message object to send.
    */
   sendObject(message) {
     if (this.available) {
@@ -150,16 +156,25 @@ export default class Socket extends EventEmitter {
     }
   }
 
-  // 使用时间戳和加密安全的随机数生成器来生成唯一的请求ID
+  /**
+   * Generates a unique request ID using a timestamp and a secure random number generator.
+   * @returns {String} - The unique request ID.
+   */
   genRequestID() {
-    const timestamp = Date.now().toString(36); // 将当前时间戳转换为36进制字符串
+    const timestamp = Date.now().toString(36); // Convert current timestamp to base 36 string
     const randomPart = crypto
       .getRandomValues(new Uint32Array(1))[0]
-      .toString(36); // 生成一个加密安全的随机数
-    const id = timestamp + randomPart.substring(0, 5); // 截取随机数的一部分以保证长度
+      .toString(36); // Generate a secure random number
+    const id = timestamp + randomPart.substring(0, 5); // Take a part of the random number to ensure length
     return id;
   }
 
+  /**
+   * Sends a request to the specified URL with the provided data and returns a promise.
+   * @param {String} url - The API endpoint.
+   * @param {Object} data - The data to be sent with the request.
+   * @returns {Promise<any>} - A promise that resolves with the response data.
+   */
   fetch(url, data) {
     return new Promise((resolve, reject) => {
       const pathArray = url.split("/").filter(Boolean);
@@ -167,7 +182,6 @@ export default class Socket extends EventEmitter {
       const type = pathArray[2];
       const id = pathArray[3];
       let request_id = this.genRequestID();
-
       const request = {
         request_id: request_id,
         protocol: protocol,
@@ -175,22 +189,18 @@ export default class Socket extends EventEmitter {
         id: id,
         data: data,
       };
-
       this.requests.push(request_id);
-
       const timeOut = new Promise((reject) => {
         setTimeout(() => {
           reject("timeout");
-        }, 60000);
+        }, 60000); // Timeout after 60 seconds
       });
-
       const response = new Promise((resolve) => {
         this.on(request_id, (res) => {
           this.requests.splice(this.requests.indexOf(request_id), 1);
           resolve(res.data);
         });
       });
-
       Promise.race([timeOut, response])
         .then((res) => {
           resolve(res);
@@ -198,12 +208,16 @@ export default class Socket extends EventEmitter {
         .catch((err) => {
           reject(err);
         });
-
       this.sendObject(request);
       if (type !== "heartbeat") console.log("WebSocket发送请求", url, request);
     });
   }
 
+  /**
+   * Streams completion data from the WebSocket server.
+   * @param {Object} data - The data to be sent with the completion request.
+   * @returns {AsyncGenerator<any>} - An async generator that yields completion data chunks.
+   */
   async *streamCompletions(data) {
     console.log("WebSocket开始流式获取补全数据");
     const request = {
@@ -212,22 +226,16 @@ export default class Socket extends EventEmitter {
       type: "completions",
       data: data,
     };
-
     this.requests.push(request.request_id);
-
     this.sendObject(request);
-
     let resolve;
     let reject;
     let promise = new Promise((r, j) => {
       resolve = r;
       reject = j;
     });
-
     this.on(request.request_id, (data) => {
-      // console.log('WebSocket收到补全数据', data);
       if (data.message === "update") {
-        // resolve(data.data.chunk);
         resolve(data);
         promise = new Promise((r, j) => {
           resolve = r;
@@ -239,7 +247,6 @@ export default class Socket extends EventEmitter {
         reject({ done: true, data: data }); // Reject the promise to stop the iteration
       }
     });
-
     try {
       while (true) {
         const chunk = await promise; // Wait for the 'on' callback to be called

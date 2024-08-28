@@ -13,6 +13,7 @@
   "dependencies": {
     "element-plus": "^2.7.1",
     "emoji-picker-element": "^1.21.3",
+    "html2canvas": "^1.4.1",
     "localforage": "^1.10.0",
     "md-editor-v3": "^4.13.3",
     "pinia": "^2.1.7",
