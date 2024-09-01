@@ -211,10 +211,9 @@ export default {
       contactor.on("updateMessage", (e) => {
         this.activeContactor.updateKey();
         this.ydaKey++;
-        this.$forceUpdate();
         const rawMessage = this.activeContactor.messageChain[e.messageIndex];
         rawMessage.content[0].data.text = e.updatedMessage;
-        // console.log(rawMessage.content[0].data.text)
+        this.$forceUpdate();
 
         this.toupdate = true;
       });
@@ -465,7 +464,7 @@ export default {
               </div>
             </div>
             <div class="content" @contextmenu.self="showMessageMenu($event, index)">
-              <div v-for="(element, index) of item.content" :key="index">
+              <div class="inner-content" v-for="(element, index) of item.content" :key="index">
                 <!-- <div v-if="element.type === 'text'" :key="item?.status !== 'completed' ? ydaKey : ''">{{ element.data.text }}</div> -->
                 <MdPreview v-if="element.type === 'text'" 
                   previewTheme="github" editorId="preview-only" :modelValue="element.data.text" />
@@ -482,6 +481,7 @@ export default {
                 <MdPreview v-else previewTheme="github" editorId="preview-only"
                   :modelValue="'未知的消息类型：\n```\n' + element + '\n```'" />
               </div>
+
             </div>
             <div v-if="showMenu && selectedMessageIndex === index" id="message-menu"
               :style="{ top: menuTop + 'px', left: menuLeft + 'px' }">

@@ -49,7 +49,7 @@ export default class Contactor extends EventEmmiter {
                 // 拼接
                 updatedMessage = rawMessage.content[0].data.text += chunk
             }
-            if(this.active) this.emit('updateMessage', {messageIndex: messageIndex, updatedMessage: updatedMessage});
+            if(this.active) this.emit('updateMessage', {messageIndex: messageIndex, updatedMessage: updatedMessage,updatedChunk:chunk});
             else this.messageChain[messageIndex].content[0].data.text = updatedMessage
         });
 
