@@ -27,7 +27,7 @@ export default class Contactor extends EventEmmiter {
         this.messageChain = config.messageChain || [];
         this.active = false;
         this.activeModel = config.activeModel ;
-        this.lastUpdate = undefined;
+        this.lastUpdate = config.lastUpdate || new Date().getTime();
 
         this.kernel = this.platform == 'onebot' ?
             new Onebot(config) :
@@ -55,18 +55,21 @@ export default class Contactor extends EventEmmiter {
 
 
         this.kernel.on('completeMessage', (e) => {
+            this.updateLastUpdate()
             const messageIndex = e.index
             const rawMessage = this.messageChain[messageIndex]
             if(rawMessage){
                 if(this.active) this.emit('completeMessage',{text:rawMessage.content[0].data.text,index:messageIndex});
             }
         })
+
         this.kernel.on('failedMessage', (e) => {
-            console.log(e)
+            console.error(e)
+            this.updateLastUpdate()
             const messageIndex = e.index
             const rawMessage = this.messageChain[messageIndex]
             if(rawMessage){
-                this.emit('completeMessage', {text:"请求发生错误！\n" + JSON.stringify(e.error.error.message) + "\n",index:messageIndex});
+                this.emit('completeMessage', {text:"请求发生错误！\n```json\n" + JSON.stringify(e,null,2) + "\n```\n",index:messageIndex});
             }
         })
     }
@@ -84,6 +87,7 @@ export default class Contactor extends EventEmmiter {
      */
     async webSend(message){
         console.log(message)
+        this.updateLastUpdate()
         this.messageChain.push(message)
         if(this.platform == 'onebot'){
             return await this.kernel.send(this.id,message.content)
@@ -133,6 +137,8 @@ export default class Contactor extends EventEmmiter {
      * @param {object} message - Message received from contactor
      */
     revMessage(message) {
+        this.updateLastUpdate()
+
         const webMessage = this.kernel.convertMessage(message)
         console.log(`收到消息，id:${this.id},激活状态:${this.active}`)
         console.log(webMessage)
@@ -274,7 +280,7 @@ export default class Contactor extends EventEmmiter {
         this.firstMessageIndex = this.messageChain.length
     }
 
-    updateKey(){
+    updateLastUpdate(){
         this.lastUpdate = new Date().getTime()
     }
 

@@ -17,10 +17,6 @@ div.github-theme p {
     user-select: text;
 }
 
-.content img {
-    max-width: 20rem;
-    border-radius: 1rem;
-}
 
 .message-body#user .md-editor h1,
 .message-body#user .md-editor h2,
@@ -88,4 +84,8 @@ figure {
 .message-container iframe{
     width: 60vw;
     height: 30vw;
+}
+
+.message-body#user a{
+    color: #ffffff;
 }

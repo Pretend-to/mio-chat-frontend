@@ -86,15 +86,21 @@ export default {
       client.setLocalStorage(); //持久化存储
     },
     toimg() {
+    console.log(
+      this.$refs.chatWindow
+    )
       // 使用html2canvas把 this.$refs.chatWindow 渲染为图片
       const rect = this.$refs.chatWindow.getBoundingClientRect();
+      rect.height = this.$refs.chatWindow.scrollHeight
+
       console.log(rect)
-      console.log(this.$refs.chatWindow.scrollHeight)
+      
+      // 获取当前浏览器真实缩放比例
+
+
       html2canvas(this.$refs.chatWindow, {
-        scrollX: 0, // 防止因滚动而导致的偏移
-        scrollY: 0,
-        windowHeight: this.$refs.chatWindow.scrollHeight *1.5,
-        windowWidth: rect.width * 1.5,
+        windowHeight: rect.height * 1.5,
+        width: rect.width,
         // 例如: allowTaint: true, backgroundColor: null
       }).then((canvas) => {
         // 将canvas转换为图片
@@ -157,7 +163,8 @@ export default {
         result.push({
           type: "image",
           data: {
-            file: matches[2].length > 200 ? matches[2] : `/api/proxy?url=${matches[2]}`,
+            // file: matches[2].length > 200 ? matches[2] : `/api/proxy?url=${matches[2]}`,
+            file: matches[2],
           },
         });
 
@@ -209,7 +216,6 @@ export default {
       });
 
       contactor.on("updateMessage", (e) => {
-        this.activeContactor.updateKey();
         this.ydaKey++;
         const rawMessage = this.activeContactor.messageChain[e.messageIndex];
         rawMessage.content[0].data.text = e.updatedMessage;
@@ -226,7 +232,7 @@ export default {
         const formatedMessage = this.separateTextAndImages(e.text);
 
         rawMessage.content = formatedMessage;
-
+        this.$forceUpdate();
         this.toupdate = true;
         client.setLocalStorage(); //持久化存储
       });

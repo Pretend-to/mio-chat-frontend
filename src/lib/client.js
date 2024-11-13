@@ -72,7 +72,8 @@ export default class Client extends EventEmitter {
       avatar: `/api/qava?q=${this.botqq}`,
       title: '云崽',
       priority: 0,
-      options: onebotOptionsJson.data.options
+      options: onebotOptionsJson.data.options,
+      lastUpdate: -Infinity
     }
     
     this.addConcator('onebot', onebotDefaultConfig)
@@ -99,6 +100,7 @@ export default class Client extends EventEmitter {
       avatar: '/api/avatar/openai.png',
       title: 'gpt',
       priority: 1,
+      lastUpdate: -Infinity,
       options: {
         models: this.models,
         modelsOptions: options,
