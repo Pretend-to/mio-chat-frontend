@@ -7,6 +7,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { client } from '@/lib/runtime.js'
 import { ElMessage } from 'element-plus'
+import ChatView from '../views/ChatView.vue'
 
 
 const router = createRouter({
@@ -40,7 +41,7 @@ const router = createRouter({
         {
           path: 'chat/:id',
           name: 'privateChat',
-          component: () => import('../views/ChatView.vue')
+          component: ChatView
         },
         {
           path: 'profile/:id',

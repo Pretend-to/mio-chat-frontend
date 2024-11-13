@@ -27,7 +27,15 @@ export default {
     this.fullScreen = client.fullScreen;
     this.beian = client.beian;
     document.title = client.webTitle;
-    this.$refs.sidebar.loadAvatar(client.admin_qq);
+
+    if (window.innerWidth < 600) {
+      this.onPhone = client.onPhone = true;
+      this.$router.push("/home");
+    }
+    else if (window.innerWidth >= 600) {
+      this.onPhone = client.onPhone = false;
+      this.$refs.sidebar.loadAvatar(client.admin_qq);
+    }
 
     await config.init();
 
@@ -39,14 +47,16 @@ export default {
 
   },
   mounted() {
-    if (window.innerWidth < 600) this.onPhone = client.onPhone = true;
-    else if (window.innerWidth >= 600) this.onPhone = client.onPhone = false;
+
     // 监听窗口宽度变化
     window.addEventListener("resize", () => {
       if (window.innerWidth < 600) {
         this.onPhone = client.onPhone = true;
+        if (this.$route.name === "root") this.$router.push("/home");
+
       } else if (window.innerWidth >= 600) {
         this.onPhone = client.onPhone = false;
+        this.$refs.sidebar.loadAvatar(client.admin_qq);
       }
     });
 

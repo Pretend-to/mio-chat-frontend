@@ -381,7 +381,7 @@ export default {
       this.toupdate = false;
     }
   },
-  unmounted() {
+  beforeUnmount() {
     // 移除事件监听
     this.disableContactor(this.activeContactor);
     this.$refs.chatWindow.removeEventListener("scroll", this.scrollHandler);
