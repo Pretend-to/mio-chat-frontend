@@ -47,8 +47,6 @@ body
     padding: 0.625rem 0.625rem
     display: flex
     align-items: flex-start
-    /* border: .0625rem solid black; */
-    overflow: hidden
 
     &#user
         flex-direction: row-reverse
@@ -121,6 +119,9 @@ body
     padding: 0.25rem 0.75rem
     border-radius: 0.5rem
     margin: 0.5rem
+
+.content:has(.blank-message)
+    overflow: hidden
 
 .system-message
     width: 100%

@@ -2,6 +2,7 @@
 import { MdPreview } from "md-editor-v3";
 import ForwardMsg from "@/components/ForwardMsg.vue";
 import InputEditor from "@/components/InputEditor.vue";
+import ToolCallBar from "@/components/ToolCallBar.vue";
 import "emoji-picker-element";
 import html2canvas from "html2canvas"
 import { client } from "@/lib/runtime.js";
@@ -215,12 +216,8 @@ export default {
         this.toupdate = true;
       });
 
-      contactor.on("updateMessage", (e) => {
-        this.ydaKey++;
-        const rawMessage = this.activeContactor.messageChain[e.messageIndex];
-        rawMessage.content[0].data.text = e.updatedMessage;
+      contactor.on("updateMessage", () => {
         this.$forceUpdate();
-
         this.toupdate = true;
       });
 
@@ -229,9 +226,16 @@ export default {
         const rawMessage = this.activeContactor.messageChain[messageIndex];
         rawMessage.status = "completed";
 
-        const formatedMessage = this.separateTextAndImages(e.text);
+        console.log("操作前的最终" + JSON.stringify(rawMessage,null,2))
 
-        rawMessage.content = formatedMessage;
+        rawMessage.content.forEach((element,index) => {
+          if (element.type === "text") {
+            const formatedMessage = this.separateTextAndImages(element.data.text);
+            // 把 formatedMessage 里的元素展开到 index 这个位置
+            rawMessage.content.splice(index, 1,...formatedMessage);
+          }
+        });
+
         this.$forceUpdate();
         this.toupdate = true;
         client.setLocalStorage(); //持久化存储
@@ -401,6 +405,7 @@ export default {
     MdPreview,
     ForwardMsg,
     InputEditor,
+    ToolCallBar
   },
   watch: {
     "$route.params.id"(newVal, oldVal) {
@@ -456,11 +461,11 @@ export default {
           {{ showTime(index).time }}
         </div>
         <div class="message-body" :id="item.role">
-          <div class="avatar" v-if="item.role !== 'system'">
+          <div class="avatar" v-if="item.role !== 'mio_system'">
             <img v-if="item.role === 'other'" :src="activeContactor.avatar" :alt="activeContactor.name" />
             <img v-else :src="client.avatar" :alt="client.name" />
           </div>
-          <div class="msg" v-if="item.role !== 'system'">
+          <div class="msg" v-if="item.role !== 'mio_system'">
             <div class="wholename">
               <div class="title">
                 {{ item.role === "other" ? activeContactor.title : client.title }}
@@ -471,23 +476,24 @@ export default {
             </div>
             <div class="content" @contextmenu.self="showMessageMenu($event, index)">
               <div class="inner-content" v-for="(element, index) of item.content" :key="index">
-                <!-- <div v-if="element.type === 'text'" :key="item?.status !== 'completed' ? ydaKey : ''">{{ element.data.text }}</div> -->
-                <MdPreview v-if="element.type === 'text'" 
-                  previewTheme="github" editorId="preview-only" :modelValue="element.data.text" />
-                <el-image v-else-if="element.type === 'image'"
-                  style="margin: 8px 0; max-width: 20rem; border-radius: 1rem" :src="element.data.file" :zoom-rate="1.2"
-                  :max-scale="7" :min-scale="0.2" :preview-src-list="[element.data.file]" :initial-index="4"
-                  :key="index" fit="cover" />
+                <MdPreview v-if="element.type === 'text'" previewTheme="github" editorId="preview-only"
+                  :modelValue="element.data.text" />
+                <el-image v-else-if="element.type === 'image'" style="max-width: 20rem;" :src="element.data.file"
+                  :zoom-rate="1.2" :max-scale="7" :min-scale="0.2" :preview-src-list="[element.data.file]"
+                  :initial-index="4" :key="index" fit="cover" />
                 <MdPreview v-else-if="element.type === 'reply'" previewTheme="github" editorId="preview-only"
                   :modelValue="getReplyText(element.data.id)" />
                 <ForwardMsg v-else-if="element.type === 'nodes'" :contactor="activeContactor"
                   :messages="element.data.messages" />
                 <MdPreview v-else-if="element.type === 'file'" previewTheme="github" editorId="preview-only"
                   :modelValue="'> ' + element.data.file" />
+                <div v-else-if="element.type === 'blank'" class="blank-message" style="width: 10rem; height: 28.8px; position: relative;">
+                  <span class="blank_loader" ></span>
+                </div>
+                <ToolCallBar v-else-if="element.type === 'tool_call'" :tool_call="element.data" />
                 <MdPreview v-else previewTheme="github" editorId="preview-only"
                   :modelValue="'未知的消息类型：\n```\n' + element + '\n```'" />
-              </div>
-
+                </div>
             </div>
             <div v-if="showMenu && selectedMessageIndex === index" id="message-menu"
               :style="{ top: menuTop + 'px', left: menuLeft + 'px' }">
@@ -756,4 +762,26 @@ $icon-hover: #09f
 
     .inputbar
         flex-basis: 4rem
+
+</style>
+<style scoped>
+@keyframes move {
+    0% {
+        left: -20%; /* 开始位置 */
+    }
+    100% {
+        left: 120%; /* 结束位置 */
+    }
+}
+
+.blank_loader {
+    width: 10%;
+    height: 200%;
+    position: absolute;
+    background: linear-gradient(to right, rgb(255, 255, 255), rgb(0, 0, 0) 50%, transparent 50%, transparent);
+    top: -50%;
+    transform: rotate(30deg);
+    filter: blur(5px);
+    animation: move 1s linear infinite; /* 每1s循环 */
+}
 </style>

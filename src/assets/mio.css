@@ -82,8 +82,9 @@ figure {
 }
 
 .message-container iframe{
-    width: 60vw;
-    height: 30vw;
+    width: 100%;
+    height: 36rem;
+    resize: both;
 }
 
 .message-body#user a{

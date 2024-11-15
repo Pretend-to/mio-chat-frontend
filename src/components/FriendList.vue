@@ -91,7 +91,7 @@ export default {
             : newWidth < minWidth
               ? minWidth
               : newWidth;
-        this.$refs.friendlists.style.width = newWidth + "px";
+        this.$refs.friendlists.style.flexBasis = newWidth + "px";
       }
     },
     stopResize() {
@@ -125,6 +125,13 @@ export default {
         (a, b) => (b.priority - a.priority) == -1 ? 1 : (b.lastUpdate - a.lastUpdate)
       );
     },
+  },
+  mounted() {
+    this.contactorList.map(item => {
+      item.on('updateMessage',()=>{
+        this.$forceUpdate();
+      })
+    })
   },
 };
 </script>
@@ -166,8 +173,8 @@ export default {
 #friendlists {
   height: 100%;
   display: flex;
-  width: 13rem;
-
+  min-width: 14rem;
+  max-width: 14rem;
   flex-direction: column;
   border-left: 0.0625rem solid rgba(161, 154, 154, 0.626);
   border-right: 0.0625rem solid rgba(161, 154, 154, 0.626);

@@ -102,9 +102,13 @@ export default {
       for (const format of avaliableImageFromats) {
         fileInput.accept += `.${format},`;
       }
-      for (const format of avaliableDocFormats) {
-        fileInput.accept += `.${format},`;
+
+      if (this.activeContactor.activeModel == "gpt-4-all" || this.activeContactor.activeModel == "gpt-4o-all"){
+        for (const format of avaliableDocFormats) {
+          fileInput.accept += `.${format},`;
+        }
       }
+
 
       fileInput.click();
 
@@ -122,9 +126,8 @@ export default {
               const reader = new FileReader();
               reader.onload = async (e) => {
                 const base64 = e.target.result;
-                // const upload = await client.uploadImage(base64);
-                // this.uploaded.images.push(upload.data.url);
-                this.uploaded.images.push(base64);
+                const upload = await client.uploadImage(base64);
+                this.uploaded.images.push(upload.data.url);
               };
               reader.readAsDataURL(file);
             } else {
@@ -195,9 +198,7 @@ export default {
         const name = preset.replace("#", "").replace("{xxx}", "");
         return name;
       } else {
-        return this.selectedWraper
-          ? this.selectedWraper[this.selectedWraper.length - 1]
-          : "";
+        return  "";
       }
     },
     waiting() {

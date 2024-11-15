@@ -124,14 +124,14 @@ export default class Socket extends EventEmitter {
   }
 
   /**
-   * Handles incoming messages from the WebSocket server.
+   * Handles incoming messages from the WebSocket server.W
    * @param {String} message - The message received from the server.
    */
   messageHandler(message) {
     try {
       const e = JSON.parse(message);
-      if (!(e.protocol == "system"))
-        console.log("WebSocket收到事件，原始数据：", e);
+      // if (!(e.protocol == "system"))
+      //   console.log("WebSocket收到事件，原始数据：", e);
       this.emit(e.request_id, e);
       if (e.protocol == "onebot") {
         this.emit("onebot_message", e);
