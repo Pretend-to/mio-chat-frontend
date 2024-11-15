@@ -219,7 +219,7 @@ export default class Contactor extends EventEmmiter {
                     }
                 }),...imageElm.map((elm) => {
                     return {
-                        type: "image",
+                        type: "image_url",
                         image_url: {
                             url: elm.content
                         }
