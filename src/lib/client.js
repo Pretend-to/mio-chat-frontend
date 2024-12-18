@@ -133,14 +133,12 @@ export default class Client extends EventEmitter {
     // 刷新页面
     window.location.reload()
   }
-
   async init() {
     if (this.everLogin) {
       console.log('检测到缓存，尝试自动重连')
       this.isLogin = false
       this.isConnected = false
-      const connected = await this.login(this.code)
-      return connected
+      await this.login(this.code)
     } else {
       console.log('没登陆过，请先登录')
     }
@@ -213,16 +211,11 @@ export default class Client extends EventEmitter {
    */
   async login(code) {
     this.code = code
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const socket = new Socket(this.id, this.code)
-      // 3秒内没有成功建立链接，则认为登录失败
-      const timer = setTimeout(() => {
-        reject('登录超时，网络链接错误或存在已连接的标签页')
-      }, 3000)
       socket.on('connect', async (info) => {
         console.log('登录成功')
         console.log(info)
-        clearTimeout(timer)
         this.qq = info.admin_qq
         this.avatar = `/api/qava?q=${this.qq}`
         this.botqq = info.bot_qq
@@ -232,13 +225,11 @@ export default class Client extends EventEmitter {
         this.isConnected = true
         this.socket = socket
         this.models = info.models
-        this.setLocalStorage()
         this.addMsgListener()
         if(this.contactList.length == 0) await this.genDefaultConctor()
         this.setLocalStorage()
         resolve(info)
       })
-
       socket.connect()
     })
   }

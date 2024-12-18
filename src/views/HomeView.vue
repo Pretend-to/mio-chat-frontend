@@ -1,9 +1,9 @@
 <template>
-    <div id="main" v-if="!client.onPhone">
+    <div id="main" v-if="!onPhone">
         <friendlist></friendlist>
         <router-view></router-view>
     </div>
-    <div id="main-mobile" v-else-if="onList || this.$route.name === 'home'">
+    <div id="main-mobile" v-else-if="pagePath === '/'">
         <friendlist></friendlist>
     </div>
     <div id="main-mobile" class="mobile-chat" v-else>
@@ -17,10 +17,11 @@ import { client } from '@/lib/runtime.js'
 
 export default {
     data() {
-
+        console.log(client.onPhone)
         return {
+            onPhone: client.onPhone,
             client: client,
-            onList: null
+            pagePath: this.$route.path
         }
     },
     components: {
@@ -28,21 +29,12 @@ export default {
     },
     methods: {
     },mounted(){
-        const to = this.$route
-        if (to.name === 'toChat' || to.name === 'toProfile') {
-                this.onList = true
-            }else if(to.name === 'privateChat'){
-                this.onList = false
-            }
+
     },computed:{
     },
     watch: {
         '$route': function (newVal) {
-            if (newVal.name === 'toChat' || newVal.name === 'toProfile') {
-                this.onList = true
-            }else if(newVal.name === 'privateChat'){
-                this.onList = false
-            }
+            this.pagePath = newVal.path
         }
     }
 }

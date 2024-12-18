@@ -14,38 +14,28 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/home',
+      path: '/',
       name: 'home',
       component: () => import('../views/HomeView.vue'),
       children: [
         {
           path: '/',
-          name: 'root',
+          name: 'blank',
           component: () => import('../views/BlankView.vue')
         },
         {
-          path: '/home',
-          name: 'home',
+          path: '/contactors',
+          name: 'contactors',
           component: () => import('../views/BlankView.vue')
         },
         {
-          path: 'chat',
-          name: 'toChat',
-          component: () => import('../views/BlankView.vue')
-        },
-        {
-          path: 'profile',
-          name: 'toProfile',
-          component: () => import('../views/BlankView.vue')
-        },
-        {
-          path: 'chat/:id',
-          name: 'privateChat',
+          path: '/chat/:id',
+          name: 'chat_view',
           component: ChatView
         },
         {
-          path: 'profile/:id',
-          name: 'privateProfile',
+          path: '/profile/:id',
+          name: 'profile_view',
           component: () => import('../views/ProfileView.vue')
         }
       ]

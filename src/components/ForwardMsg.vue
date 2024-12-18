@@ -5,7 +5,7 @@
         </div>
         <div id="forward-msg-body">
             <div id="forward-msg-summary" v-for="(message, index) in messages" :key="index">
-                {{ contactor.name }}: {{ contactor.getMessageSummary([message]) }}
+                {{ contactor.name }}: {{ contactor.getMessageSummary(message) }}
             </div>
         </div>
         <div id="forward-msg-foot">
@@ -131,6 +131,18 @@ export default {
     background-color: rgb(241, 241, 241);
     border-radius: 0.25rem;
     overflow: hidden;
+}
+
+.message-body > .avatar {
+  flex-basis: 2.65rem;
+  min-width: 2.65rem;
+  height: 2.65rem;
+}
+
+.avatar > img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
 }
 
 #forward-msg-box.on-phone {

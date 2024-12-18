@@ -20,7 +20,6 @@ export default {
         }
     },
     methods: {
-
         processImage(imageUrl) {
             console.log(imageUrl);
 
@@ -59,48 +58,30 @@ export default {
         tochat() {
             this.onProfile = false;
             this.onChat = true;
-            this.$router.push('/home');
+            this.$router.push('/');
         },
         toprofile() {
             this.onProfile = true;
             this.onChat = false;
-            this.$router.push('/home/profile');
+            this.$router.push('/contactors');
         },
         toconfig() {
             this.onChat = this.onProfile = false;
             this.$router.push('/settings');
-        }
-        ,loadAvatar(adminId) {
+        },
+        loadAvatar(adminId) {
             this.adminAvatar = `/api/qava?q=${adminId}`;
             this.processImage(this.adminAvatar);
         }
 
     },
-    components: {
-    },
-    created() {
-        // this.processImage(this.defaultAvatar);
-    },
     mounted() {
         this.currentPage = this.$route.path;
-        // 获取当前路径
-
-        if (this.currentPage.includes('/home/profile')) {
-            this.onProfile = true;
-        } else if (this.currentPage.includes('/home/chat')) {
-            this.onChat = true;
-        }
     },
     watch: {
         currentPage(newVal) {
-            // 监听当前路径变化
-            if (newVal.includes('/home/profile')) {
-                this.onProfile = true;
-                this.onChat = false;
-            } else if (newVal.includes('/home/chat')) {
-                this.onProfile = false;
-                this.onChat = true;
-            }
+            this.onChat = newVal == '/' || newVal.includes('/chat/')? true : false;
+            this.onProfile = newVal == '/contactors' || newVal.includes('/profile/')? true : false;
         }
     }
 }

@@ -12,7 +12,6 @@ export default {
   data() {
     const currentId = parseInt(this.$route.params.id);
     const contactor = client.getContactor(currentId);
-    console.log(contactor);
 
     return {
       activeContactor: contactor,
@@ -636,6 +635,18 @@ $icon-hover: #09f
     top: 50%
     left: 50%
     transform: translate(-50%, -50%)
+
+.message-body > .avatar 
+  flex-basis: 2.65rem
+  min-width: 2.65rem
+  height: 2.65rem
+
+
+.avatar > img 
+  width: 100%
+  height: 100%
+  border-radius: 50%
+
 
 .window-controls
     display: flex

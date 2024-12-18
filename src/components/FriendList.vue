@@ -15,8 +15,15 @@ export default {
   },
   methods: {
     showChat(id) {
-      // 如果当前路径是 /home 或 /home/chat 或 /home/chat/:id ,跳转到 /home/chat/:id
-      this.$router.push({ path: "/home/chat/" + id });
+      // 如果当前路径 name 是 blank 或者 chat_view ，跳转到 /chat/:id
+      if (this.$route.name == "blank" || this.$route.name == "chat_view") {
+        this.$router.push({ name: "chat_view", params: { id: id } });
+      } else if (this.$route.name == "contactors" || this.$route.name == "profile_view") {
+        this.$router.push({ name: "profile_view", params: { id: id } });
+      } else {
+        // 否则，直接跳转到 /chat/:id
+        this.$router.replace({ name: "chat_view", params: { id: id } });
+      }
     },
     getId(item) {
       // 获取当前页面的id
@@ -31,19 +38,6 @@ export default {
       }
     },
     genOpenaiContactor() {
-      const models = client.models;
-      const options = models.map((modelGroup) => {
-        return {
-          value: modelGroup.owner,
-          label: modelGroup.owner,
-          children: modelGroup.models.map((model) => {
-            return {
-              value: model,
-              label: model,
-            };
-          }),
-        };
-      });
 
       const openaiDefaultConfig = {
         id: this.genFakeId(),
@@ -52,16 +46,7 @@ export default {
         avatar: "/api/avatar/openai.png",
         title: "gpt",
         priority: 1,
-        options: {
-          models: client.models,
-          modelsOptions: options,
-          textWraper: {
-            options: options,
-            presets: {
-              default: "",
-            },
-          },
-        },
+        options: {},
       };
 
       this.addConcator("openai", openaiDefaultConfig);
@@ -195,6 +180,7 @@ export default {
   display: flex;
   flex-direction: column;
   width: 100%;
+  max-width: none;
 }
 
 .upsidebar {
@@ -289,8 +275,9 @@ button#addcont {
 }
 
 .lists > .avatar {
-  width: 2.75rem;
-  height: 2.75rem;
+  flex-basis: 2.65rem;
+  min-width: 2.65rem;
+  height: 2.65rem;
 }
 
 .avatar > img {
@@ -304,10 +291,9 @@ button#addcont {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  flex: 0 0 calc(100% - 2.625rem);
+  flex: 0 0 calc(100% - 2.65rem);
+  max-width: calc(100% - 2.65rem);
   flex-wrap: wrap;
-  width: calc(100% - 2.625rem);
-  min-width: calc(100% - 2.625rem);
 }
 
 .lists#active * {

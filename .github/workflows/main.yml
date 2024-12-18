@@ -30,7 +30,7 @@ jobs:
         run: |
           cd mio-chat-backend
           git config --global user.name "GitHub Action"
-          git config --global user.email "mio@krumio.com" # 替换为您的邮箱
+          git config --global user.email "mio@krumio.com" 
           git add dist/*
           git commit -m "update: 更新前端"
           git push https://x-access-token:${{ secrets.GH_SECRET }}@github.com/Pretend-to/mio-chat-backend.git HEAD:master

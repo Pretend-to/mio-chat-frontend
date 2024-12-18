@@ -128,7 +128,7 @@ const login = async (code) => {
             const result = await client.login(code)
             if (result) {
                 ElMessage.success(`成功以${result.is_admin ? '管理员身份' : '游客身份'}登录，欢迎使用!`)
-                await router.push('/home')
+                await router.push('/')
                 // 删除回车触发login的监听
             }
         } catch (error) {
@@ -154,18 +154,6 @@ onUnmounted(() => {
 
 onMounted(() => {
     addEventListener('keydown',handleEnter)
-})
-
-
-// 在unmounted时移除监听
-onUnmounted(() => {
-    console.log('unmounted')
-
-    removeEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            login(accessCode.value)
-        }
-    })
 })
 
 </script>

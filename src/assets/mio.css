@@ -84,6 +84,7 @@ figure {
 .message-container iframe{
     width: 100%;
     height: 36rem;
+    border: 0px;
     resize: both;
 }
 

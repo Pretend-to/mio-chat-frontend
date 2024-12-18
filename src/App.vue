@@ -5,8 +5,7 @@ import sideBar from "@/components/SideBar.vue";
 export default {
   data() {
     return {
-      onPhone: window.innerWidth >= 600 ? false : true,
-      onPrivate: this.checkPrivate(),
+      windowWidth: window.innerWidth, // 存储窗口宽度
       client: client,
       fullScreen: true,
       beian: "",
@@ -15,25 +14,29 @@ export default {
   components: {
     sideBar,
   },
-  computed: {},
+  computed: {
+    onPhone() {
+      return this.windowWidth >= 600 ? false : true;
+    },
+    onPrivate() {
+      return this.$route.path.includes("/profile") || this.$route.path.includes("/chat");
+    }
+
+  },
   async created() {
     await client.beforeInit();
-    const conncted = await client.init();
-
-    if (conncted) {
-      console.log("已经链接成功");
-    }
+    await client.init();
 
     this.fullScreen = client.fullScreen;
     this.beian = client.beian;
     document.title = client.webTitle;
 
-    if (window.innerWidth < 600) {
-      this.onPhone = client.onPhone = true;
-      this.$router.push("/home");
+    if (this.onPhone) {
+      client.onPhone = true;
+      this.$router.push("/");
     }
-    else if (window.innerWidth >= 600) {
-      this.onPhone = client.onPhone = false;
+    else {
+      client.onPhone = false;
       this.$refs.sidebar.loadAvatar(client.admin_qq);
     }
 
@@ -46,35 +49,31 @@ export default {
     });
 
   },
-  mounted() {
-
-    // 监听窗口宽度变化
-    window.addEventListener("resize", () => {
-      if (window.innerWidth < 600) {
-        this.onPhone = client.onPhone = true;
-        if (this.$route.name === "root") this.$router.push("/home");
-
-      } else if (window.innerWidth >= 600) {
-        this.onPhone = client.onPhone = false;
-        this.$refs.sidebar.loadAvatar(client.admin_qq);
-      }
-    });
-
-  },
   methods: {
-    checkPrivate() {  
-      const onPrivate =
-        this.$route.name === "privateChat" ||
-        this.$route.name === "privateProfile";
-      return onPrivate;
-    },
+    handleResize() {
+      this.windowWidth = window.innerWidth; // 更新窗口宽度
+    }
+  },
+  mounted() {
+    // 监听窗口宽度变化
+    window.addEventListener("resize", this.handleResize);
+  },
+  beforeUnmounted() {
+    // 在组件销毁前移除事件监听
+    window.removeEventListener("resize", this.handleResize);
   },
   watch: {
-    async onPhone() {
+    async onPhone(newValue) {
+      console.log("onPhone changed:", newValue);
+      client.onPhone = newValue;
       await client.setLocalStorage();
-    },
-    $route() {
-      this.onPrivate = this.checkPrivate();
+
+      if (newValue) {
+        this.$router.push("/");
+      } else {
+        this.$refs.sidebar.loadAvatar(client.admin_qq);
+      }
+
     },
   },
 };
@@ -82,22 +81,17 @@ export default {
 
 <template>
   <div id="app">
-    <div class="mio-chat" :id="fullScreen ? 'fullscreen' : ''" v-if="!onPhone">
-      <sideBar ref="sidebar"></sideBar>
-      <router-view></router-view>
-    </div>
-    <div class="mio-chat-mobile" v-else>
+    <div v-if="onPhone" class="mio-chat-mobile">
       <router-view></router-view>
       <sideBar v-if="!onPrivate"></sideBar>
     </div>
+    <div v-else class="mio-chat" :id="fullScreen ? 'fullscreen' : ''">
+      <sideBar ref="sidebar"></sideBar>
+      <router-view></router-view>
+    </div>
+
   </div>
-  <a
-    v-if="beian"
-    id="beian"
-    href="https://beian.miit.gov.cn/"
-    target="_blank"
-    >{{ beian }}</a
-  >
+  <a v-if="beian" id="beian" href="https://beian.miit.gov.cn/" target="_blank">{{ beian }}</a>
 </template>
 
 <style scoped>
@@ -161,6 +155,5 @@ a#beian {
   text-decoration: none;
 }
 
-@media (min-width: 1024px) {
-}
+@media (min-width: 1024px) {}
 </style>

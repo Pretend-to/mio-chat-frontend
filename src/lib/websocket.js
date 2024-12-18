@@ -38,34 +38,15 @@ export default class Socket extends EventEmitter {
    * Connects to the WebSocket server.
    */
   async connect() {
-    const headers = { "mio-chat-id": this.id, "mio-chat-token": this.code };
-    this.socket = new WebSocket(this.url);
+    const params = { "mio-chat-id": this.id, "mio-chat-token": this.code };
+    const fullUrl = `${this.url}?${new URLSearchParams(params).toString()}`;
+    this.socket = new WebSocket(fullUrl);
+    console.log("WebSocket连接中...");
+
     
-    this.socket.onopen = async () => {
-      console.log("WebSocket连接中...");
+    this.socket.onopen = () => {
       this.available = true;
       console.log("WebSocket连接成功");
-      
-      // Sending login information
-      const loginPromise = this.fetch("/api/system/login", headers);
-      const timeoutPromise = new Promise((resolve) => {
-        setTimeout(() => {
-          resolve("WebSocket连接超时");
-        }, 1000); // Timeout after 1 second
-      });
-      
-      Promise.race([loginPromise, timeoutPromise]).then((result) => {
-        if (result === "WebSocket连接超时") {
-          console.log("WebSocket连接超时，不执行emit操作");
-        } else {
-          if (this.socket.readyState === WebSocket.OPEN) {
-            console.log("WebSocket登录成功", result);
-            this.emit("connect", result);
-          } else {
-            console.log("WebSocket连接已断开，不执行emit操作");
-          }
-        }
-      });
 
       // Sending heartbeat every 3 seconds
       this.heartBeat = setInterval(async () => {
@@ -80,6 +61,8 @@ export default class Socket extends EventEmitter {
           this.delay = delayTo + delayBack;
         }
       }, 3000);
+
+
     };
 
     this.socket.onclose = () => {
@@ -136,6 +119,7 @@ export default class Socket extends EventEmitter {
       if (e.protocol == "onebot") {
         this.emit("onebot_message", e);
       } else if (e.protocol == "system") {
+        if(e.type == "login") this.emit("connect", e.data)
         this.emit("system_message", e);
       }
     } catch (error) {

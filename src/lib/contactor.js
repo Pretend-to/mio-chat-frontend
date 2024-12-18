@@ -137,27 +137,6 @@ export default class Contactor extends EventEmmiter {
         (msg) => msg.role != "mio_system"
       );
 
-    //   for (const msg of validMessageList) {
-    //     messages.push({
-    //       role: msg.role == "user" ? "user" : "assistant",
-    //       content:
-    //         msg.content.length == 1 || msg.role == "other"
-    //           ? msg.content[0].data.text
-    //           : msg.content[1]?.type == "image"
-    //             ? msg.content.map((item) => {
-    //                 const obj = {};
-    //                 (obj.type = item.type == "text" ? "text" : "image_url"),
-    //                   (obj[
-    //                     item.type == "text" || item.type == "file"
-    //                       ? "text"
-    //                       : "image_url"
-    //                   ] = item.data?.text || { url: item.data.file });
-    //                 return obj;
-    //               })
-    //             : msg.content[0].data.text + msg.content[1].data.file,
-    //     });
-    //   }
-
       const mergedMessages = validMessageList.map(message => {
         const subArray = []   
         message.content.forEach((elm)=>{
@@ -405,7 +384,7 @@ export default class Contactor extends EventEmmiter {
     const msg = message || this.messageChain[this.messageChain.length - 1];
     if (!msg) return "";
     
-    return getMessageText(msg.content[0] || msg);
+    return getMessageText(msg.content ? msg.content[0] : msg);
   }
 
   updateFirstMessage() {
@@ -423,6 +402,7 @@ export default class Contactor extends EventEmmiter {
     else if (model.includes("moon")) return `${basePath}/moonshot.png`;
     else if (model.includes("deepseek")) return `${basePath}/deepseek.png`;
     else if (model.includes("glm")) return `${basePath}/chatglm.png}`;
+    else if (model.includes("gemini")) return `${basePath}/gemini.png`;
     else if (model.includes("claude")) return `${basePath}/claude.png`;
     else return `${basePath}/openai.png`;
   }

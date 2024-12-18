@@ -62,7 +62,7 @@ export default {
             return this.tool_call.action === 'finished' && this.tool_call?.result?.error === null
         },
         tool_call_fail() {
-            return this.tool_call.action === 'finished' && !this.tool_call?.result?.error === null
+            return this.tool_call.action === 'finished' && !this.tool_call?.result?.error !== null
         },
         call_status() {
             if (this.tool_call.action == 'started') return '开始运行'
@@ -128,6 +128,7 @@ export default {
 }
 
 .extra-info-bar{
+    position: absolute;
     overflow: hidden;
     z-index: 2;
     max-height: 0px;
