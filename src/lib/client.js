@@ -2,6 +2,7 @@ import Socket from './websocket.js'
 import Contactor from './contactor.js'
 import localforage from 'localforage'
 import EventEmitter from './event.js'
+import { reactive } from 'vue'
 
 localforage.config({
   name: 'mio-chat'
@@ -97,9 +98,9 @@ export default class Client extends EventEmitter {
       id: this.genFakeId(),
       name: 'MioBot',
       activeModel: this.default_model,
-      avatar: '/api/static/miobot.png',
+      avatar: '/static/avatar/miobot.png',
       title: 'chat',
-      priority: 1,
+      priority: 0,
       lastUpdate: -Infinity,
       options: {}
     }
@@ -110,7 +111,8 @@ export default class Client extends EventEmitter {
 
   async addConcator(platform, config) {
     const bot = new Contactor(platform, config)
-    this.contactList.push(bot)
+    const list = reactive(this.contactList)
+    list.push(bot)
     await this.setLocalStorage();
   }
 

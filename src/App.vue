@@ -96,7 +96,7 @@ export default {
 
 <style scoped>
 #app {
-  background-image: url(/api/static/default.jpg);
+  background-image: url(/static/avatar/default.jpg);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

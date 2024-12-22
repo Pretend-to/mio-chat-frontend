@@ -104,9 +104,10 @@ export default class Contactor extends EventEmmiter {
         this.emit("completeMessage", {
           text:
             "请求发生错误！\n```json\n" +
-            JSON.stringify(e, null, 2) +
+            JSON.stringify(e.error, null, 2) +
             "\n```\n",
           index: messageIndex,
+          error: true,
         });
       }
     });
@@ -397,7 +398,7 @@ export default class Contactor extends EventEmmiter {
 
   getAvatar(model) {
     console.log(model);
-    const basePath = "/api/static";
+    const basePath = "/static/avatar";
     if (model.includes("gpt")) return `${basePath}/openai.png`;
     else if (model.includes("moon")) return `${basePath}/moonshot.png`;
     else if (model.includes("deepseek")) return `${basePath}/deepseek.png`;

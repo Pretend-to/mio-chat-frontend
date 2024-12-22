@@ -1,18 +1,24 @@
 <script>
 import { client } from "@/lib/runtime.js";
+import { reactive } from "vue";
 // import addcontactor from '@/components/AddContactor.vue';
 
 export default {
   data() {
-    const contactorList = client.contactList;
+    const contactorList = reactive(client.contactList);
     const onPhone = client.onPhone;
 
     return {
       onPhone: onPhone,
       contactorList: contactorList,
+      showAddOptions: false,
     };
   },
   methods: {
+    genBotByPreset() {
+      this.showAddOptions = false;
+      this.$router.push({ name: "bot_preset" });
+    },
     showChat(id) {
       // 如果当前路径 name 是 blank 或者 chat_view ，跳转到 /chat/:id
       if (this.$route.name == "blank" || this.$route.name == "chat_view") {
@@ -36,18 +42,19 @@ export default {
         return item.priority == 0 ? "important" : "";
       }
     },
-    genOpenaiContactor() {
+    genBlankBot() {
 
       const openaiDefaultConfig = {
         id: this.genFakeId(),
         name: client.default_model,
         activeModel: client.default_model,
-        avatar: "/api/static/openai.png",
+        avatar: "/static/avatar/openai.png",
         title: "gpt",
         priority: 1,
         options: {},
       };
 
+      this.showAddOptions = false;
       client.addConcator("openai", openaiDefaultConfig);
     },
     startResize(event) {
@@ -121,7 +128,17 @@ export default {
         <input type="text" id="tosearch" placeholder="搜索" />
       </div>
       <div class="bu-add">
-        <button id="addcont" @click="genOpenaiContactor">+</button>
+        <button id="addcont" @click="showAddOptions = !showAddOptions">+</button>
+        <div v-show="showAddOptions" id="add-options">
+          <ul>
+            <li>
+              <button @click="genBlankBot">新建空白Bot</button>
+            </li>
+            <li>
+              <button @click="genBotByPreset">从预设新建Bot</button>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
     <div class="people">
@@ -147,6 +164,32 @@ export default {
 </template>
 
 <style scoped>
+#add-options {
+  position: absolute;
+  top: 2.5rem;
+  background-color: white;
+  width: 8rem;
+  height: 3rem;
+  border: 0.0625rem solid rgba(161, 154, 154, 0.626);
+  border-radius: 0.3125rem;
+  z-index: 2;
+}
+#add-options li{
+  display: flex;
+  flex-direction: row-reverse;
+  margin-left: .5rem;
+  margin-right: .5rem;
+}
+#add-options ul{
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  height: 100%;
+  box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.1);
+}
+#add-options button{
+  background-color: transparent;
+}
 #friendlists {
   height: 100%;
   display: flex;
@@ -222,6 +265,7 @@ button#searchButton {
   width: 1.8125rem;
   height: 1.8125rem;
   margin-left: 0.5rem;
+  position: relative;
 }
 
 .listicon {
