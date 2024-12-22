@@ -97,7 +97,7 @@ export default class Client extends EventEmitter {
       id: this.genFakeId(),
       name: 'MioBot',
       activeModel: this.default_model,
-      avatar: '/api/avatar/miobot.png',
+      avatar: '/api/static/miobot.png',
       title: 'chat',
       priority: 1,
       lastUpdate: -Infinity,

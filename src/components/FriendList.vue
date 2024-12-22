@@ -42,7 +42,7 @@ export default {
         id: this.genFakeId(),
         name: client.default_model,
         activeModel: client.default_model,
-        avatar: "/api/avatar/openai.png",
+        avatar: "/api/static/openai.png",
         title: "gpt",
         priority: 1,
         options: {},

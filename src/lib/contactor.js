@@ -397,7 +397,7 @@ export default class Contactor extends EventEmmiter {
 
   getAvatar(model) {
     console.log(model);
-    const basePath = "/api/avatar";
+    const basePath = "/api/static";
     if (model.includes("gpt")) return `${basePath}/openai.png`;
     else if (model.includes("moon")) return `${basePath}/moonshot.png`;
     else if (model.includes("deepseek")) return `${basePath}/deepseek.png`;
