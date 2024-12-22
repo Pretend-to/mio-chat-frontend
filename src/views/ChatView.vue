@@ -76,7 +76,7 @@ export default {
     },
 
     tolist() {
-      this.$router.push({ name: "toChat" });
+      this.$router.push({ name: "home" });
     },
 
     setModel(name) {

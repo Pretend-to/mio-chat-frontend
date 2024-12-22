@@ -10,18 +10,4 @@ import Config from "./config.js";
 const config = new Config();
 const client = new Client();
 
-if ("serviceWorker" in navigator) {
-    navigator.serviceWorker
-      .register("/sw.js")
-      .then((registration) => {
-        console.log("Service Worker registered with scope:", registration.scope);
-      })
-      .catch((error) => {
-        console.log("Service Worker registration failed:", error);
-      });
-  }
-
-// 延时10s
-// await new Promise(resolve => setTimeout(resolve, 10000));
-
 export { config, client };

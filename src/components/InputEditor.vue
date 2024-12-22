@@ -156,12 +156,22 @@ export default {
       this.wraperOptions = wraper.options;
     },
     getBotModels() {
-      console.log(this.activeContactor.activeModel);
-      this.selectedWraper = this.activeContactor.activeModel
-        ? [this.activeContactor.activeModel]
-        : ["gpt-4o-mini"];
-      this.wraperOptions = this.activeContactor.options.modelsOptions;
+    
+      this.wraperOptions = client.models.map((modelGroup) => {
+        return {
+          value: modelGroup.owner,
+          label: modelGroup.owner,
+          children: modelGroup.models.map((model) => {
+            return {
+              value: model,
+              label: model,
+            };
+          }),
+        };
+      });
+      this.selectedWraper = [this.activeContactor.activeModel]
       this.setModel(this.selectedWraper[0]);
+
     },
     wrapText(rawText) {
       if (!this.selectedWraper) return rawText;

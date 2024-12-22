@@ -95,33 +95,23 @@ export default class Client extends EventEmitter {
 
     const openaiDefaultConfig = {
       id: this.genFakeId(),
-      name: this.default_model,
+      name: 'MioBot',
       activeModel: this.default_model,
-      avatar: '/api/avatar/openai.png',
-      title: 'gpt',
+      avatar: '/api/avatar/miobot.png',
+      title: 'chat',
       priority: 1,
       lastUpdate: -Infinity,
-      options: {
-        models: this.models,
-        modelsOptions: options,
-        textWraper: {
-          options: options,
-          presets: {
-            "default": ""
-          }
-        }
-      }
+      options: {}
     }
     console.log(openaiDefaultConfig)
     this.addConcator('openai', openaiDefaultConfig)
 
   }
 
-  addConcator(platform, config) {
+  async addConcator(platform, config) {
     const bot = new Contactor(platform, config)
-    if (platform == 'openai')
-      bot.avatar = bot.getAvatar(bot.activeModel)
     this.contactList.push(bot)
+    await this.setLocalStorage();
   }
 
   rmConcator() {

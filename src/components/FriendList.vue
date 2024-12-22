@@ -1,6 +1,5 @@
 <script>
 import { client } from "@/lib/runtime.js";
-import Contactor from "@/lib/contactor.js";
 // import addcontactor from '@/components/AddContactor.vue';
 
 export default {
@@ -49,14 +48,7 @@ export default {
         options: {},
       };
 
-      this.addConcator("openai", openaiDefaultConfig);
-    },
-    async addConcator(platform, config) {
-      const bot = new Contactor(platform, config);
-      bot.avatar = bot.getAvatar(bot.activeModel);
-
-      this.contactorList.push(bot);
-      await client.setLocalStorage();
+      client.addConcator("openai", openaiDefaultConfig);
     },
     startResize(event) {
       this.isResizing = true;
