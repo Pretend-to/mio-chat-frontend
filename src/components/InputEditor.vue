@@ -156,7 +156,6 @@ export default {
       this.wraperOptions = wraper.options;
     },
     getBotModels() {
-    
       this.wraperOptions = client.models.map((modelGroup) => {
         return {
           value: modelGroup.owner,

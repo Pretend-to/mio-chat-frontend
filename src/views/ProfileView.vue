@@ -18,7 +18,23 @@
 
             </div>
             <div class="extra-info"></div>
-            <div class="action-bar"></div>
+            <div class="action-bar">
+                <el-button @click="$router.push(`/chat/${activeContactor.id}`)" type="primary">发送消息</el-button>
+                <el-button @click="centerDialogVisible = true" type="danger">删除好友</el-button>
+                <el-dialog v-model="centerDialogVisible" title="警告" width="300" center>
+                    <span>
+                        确认要删除此好友吗？该操作不可逆。
+                    </span>
+                    <template #footer>
+                        <div class="dialog-footer">
+                            <el-button @click="centerDialogVisible = false">取消</el-button>
+                            <el-button type="primary" @click="delContactor">
+                                确认
+                            </el-button>
+                        </div>
+                    </template>
+                </el-dialog>
+            </div>
         </div>
     </div>
 </template>
@@ -30,10 +46,12 @@ export default {
         const currentId = parseInt(this.$route.params.id);
         const contactor = client.getContactor(currentId);
 
+        
         return {
             activeContactor: contactor,
             currentDelay: 0,
-        }
+            centerDialogVisible: false
+   }
     },
     mounted() {
         setInterval(() => {
@@ -56,12 +74,20 @@ export default {
         "$route.params.id"(newVal) {
             this.activeContactor = client.getContactor(newVal);
         }
+    },
+    methods: {
+        delContactor() {
+            this.centerDialogVisible = false;
+            client.rmContactor(this.activeContactor.id);
+            this.$router.push("/contactors");
+        }
     }
 }
 </script>
 
 <style scoped>
 #profile {
+    background-color: #F2F2F2;
     flex-grow: 1;
     display: flex;
     flex-direction: column;
@@ -133,7 +159,9 @@ export default {
 }
 
 .action-bar {
-    border: 1px solid #000000;
+    display: flex;
+    justify-content: space-around;
+    margin-top: 1rem;
 }
 </style>
 <style lang="sass">

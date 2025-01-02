@@ -19,14 +19,14 @@ export default class Contactor extends EventEmmiter {
     this.platform = platform;
     this.id = config.id;
     this.name = config.name;
-    this.avatar = config.avatar;
+    this.activeModel = config.activeModel || "gpt-4o-mini";
+    this.avatar = config.avatar || this.getAvatar(config.activeModel);
     this.title = config.title;
     this.options = config.options;
     this.priority = config.priority;
     this.firstMessageIndex = 0;
     this.messageChain = config.messageChain || [];
     this.active = false;
-    this.activeModel = config.activeModel;
     this.lastUpdate = config.lastUpdate || new Date().getTime();
 
     this.kernel =

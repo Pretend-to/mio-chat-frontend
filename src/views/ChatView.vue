@@ -437,7 +437,7 @@ export default {
       <div class="return" @click="tolist()">
         <i class="iconfont icon-return"></i>
       </div>
-      <div class="somebody">
+      <div @click="$router.push(`/profile/${activeContactor.id}`)" class="somebody">
         {{ activeContactor.name }}
         <span :class="'delay-status ' + getDelayStatus"></span>
         <span class="delay-num">当前延迟: {{ currentDelay }} ms</span>
@@ -469,7 +469,7 @@ export default {
         </div>
         <div class="message-body" :id="item.role">
           <div class="avatar" v-if="item.role !== 'mio_system'">
-            <img v-if="item.role === 'other'" :src="activeContactor.avatar" :alt="activeContactor.name" />
+            <img v-if="item.role === 'other'"  @click="$router.push(`/profile/${activeContactor.id}`)"  :src="activeContactor.avatar" :alt="activeContactor.name" />
             <img v-else :src="client.avatar" :alt="client.name" />
           </div>
           <div class="msg" v-if="item.role !== 'mio_system'">
@@ -570,6 +570,7 @@ $icon-hover: #09f
             margin-bottom: .8rem
 
     .somebody
+        cursor: pointer
         position: relative
         margin-left: 1.5rem
         margin-bottom: 0.5rem
@@ -645,6 +646,7 @@ $icon-hover: #09f
     transform: translate(-50%, -50%)
 
 .message-body > .avatar 
+  cursor: pointer
   flex-basis: 2.65rem
   min-width: 2.65rem
   height: 2.65rem

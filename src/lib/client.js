@@ -116,8 +116,13 @@ export default class Client extends EventEmitter {
     await this.setLocalStorage();
   }
 
-  rmConcator() {
-
+  rmContactor(id) {
+    const list = reactive(this.contactList)
+    const index = list.findIndex((item) => item.id == id)
+    if (index != -1) {
+      list.splice(index, 1)
+      this.setLocalStorage()
+    }
   }
 
   reset(){

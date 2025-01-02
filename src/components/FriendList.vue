@@ -1,7 +1,7 @@
 <script>
 import { client } from "@/lib/runtime.js";
 import { reactive } from "vue";
-// import addcontactor from '@/components/AddContactor.vue';
+import AddContactor from '@/components/AddContactor.vue';
 
 export default {
   data() {
@@ -12,12 +12,13 @@ export default {
       onPhone: onPhone,
       contactorList: contactorList,
       showAddOptions: false,
+      showAddWindow: false,
     };
   },
   methods: {
     genBotByPreset() {
       this.showAddOptions = false;
-      this.$router.push({ name: "bot_preset" });
+      this.showAddWindow = true;
     },
     showChat(id) {
       // 如果当前路径 name 是 blank 或者 chat_view ，跳转到 /chat/:id
@@ -99,9 +100,27 @@ export default {
         return parseInt(randomNumStr);
       }
     },
+    addPresetContactor(preset) {
+      console.log(preset);
+      this.showAddWindow = false;
+      const contactor = {
+        id: this.genFakeId(),
+        name: preset.name,
+        title: preset.title,
+        activeModel: client.default_model,
+        priority: 1,
+        options: {
+          opening: preset.opening,
+          history:preset.history,
+          textWrapper: preset.textWrapper,
+          tools: preset.tools,
+        },
+      };
+      client.addConcator("openai", contactor);
+    }, 
   },
   components: {
-    // addcontactor
+    AddContactor,
   },
   computed: {
     sortedList() {
@@ -135,7 +154,7 @@ export default {
               <button @click="genBlankBot">新建空白Bot</button>
             </li>
             <li>
-              <button @click="genBotByPreset">从预设新建Bot</button>
+              <button @click="genBotByPreset" >从预设新建Bot</button>
             </li>
           </ul>
         </div>
@@ -159,7 +178,9 @@ export default {
         </div>
       </div>
     </div>
-    <div class="resizer" @mousedown="startResize"></div>
+    <div class="resizer" @mousedown="startResize">
+    </div>
+    <AddContactor v-if="showAddWindow" @close="showAddWindow = false" @addBot="addPresetContactor" ></AddContactor>
   </div>
 </template>
 
