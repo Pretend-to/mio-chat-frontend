@@ -102,7 +102,6 @@ export default {
     },
     addPresetContactor(preset) {
       console.log(preset);
-      this.showAddWindow = false;
       const contactor = {
         id: this.genFakeId(),
         name: preset.name,
@@ -130,11 +129,6 @@ export default {
     },
   },
   mounted() {
-    this.contactorList.map(item => {
-      item.on('updateMessage',()=>{
-        this.$forceUpdate();
-      })
-    })
   },
 };
 </script>

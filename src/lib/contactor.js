@@ -28,6 +28,7 @@ export default class Contactor extends EventEmmiter {
     this.messageChain = config.messageChain || [];
     this.active = false;
     this.lastUpdate = config.lastUpdate || new Date().getTime();
+    this.createTime = config.createTime || new Date().getTime();
 
     this.kernel =
       this.platform == "onebot" ? new Onebot(config) : new Openai(config);
@@ -183,7 +184,7 @@ export default class Contactor extends EventEmmiter {
         })
         return subArray
       })
-      const finalMessages = []
+      let finalMessages = []
 
       mergedMessages.forEach((subArray)=>{
         const textElm = subArray.filter(elm => elm._content_type == "text")
@@ -195,7 +196,7 @@ export default class Contactor extends EventEmmiter {
                 content: [...textElm.map((elm) => {
                     return {
                         type: "text",
-                        text: elm.content
+                        text: elm.content.replace(/&lt;/g, "<").replace(/&gt;/g, ">")
                     }
                 }),...imageElm.map((elm) => {
                     return {
@@ -221,8 +222,13 @@ export default class Contactor extends EventEmmiter {
       // 立即发生回复消息
       this.revMessage({ content: [] });
 
+      if(this.options.history){
+        finalMessages = this.options.history.concat(finalMessages)
+      }
+
       const settings = {
         model: this.activeModel,
+        tools: this.options.tools,
       };
 
       const replyIndex = this.messageChain.length - 1;

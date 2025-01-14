@@ -114,14 +114,26 @@ export default {
       });
     },
     showTime(index) {
-      const thisTime = this.activeContactor.messageChain[index].time;
+      const list = this.activeContactor.options.opening ? 
+        [{
+          role: "other",
+          content: [{
+            type: "text",
+            data: {
+              text: this.activeContactor.options.opening
+            }
+          }],
+          time: this.activeContactor.createTime
+        },...this.activeContactor.messageChain] :
+        this.activeContactor.messageChain
+      const thisTime = list[index].time;
       if (index === 0) {
         return {
           show: true,
           time: this.activeContactor.getShownTime(thisTime),
         };
       } else {
-        const earlyTime = this.activeContactor.messageChain[index - 1].time;
+        const earlyTime = list[index - 1].time;
         if (thisTime - earlyTime > 600000) {
           return {
             show: true,
@@ -407,6 +419,20 @@ export default {
             ? "low"
             : "ultra";
     },
+    activeMessageChain() {
+      return this.activeContactor.options.opening ? 
+        [{
+          role: "other",
+          content: [{
+            type: "text",
+            data: {
+              text: this.activeContactor.options.opening
+            }
+          }],
+          time: this.activeContactor.createTime
+        },...this.activeContactor.messageChain] :
+        this.activeContactor.messageChain
+    },
   },
   components: {
     MdPreview,
@@ -463,7 +489,7 @@ export default {
       </div>
     </div>
     <div class="message-window" ref="chatWindow">
-      <div v-for="(item, index) of activeContactor.messageChain" :key="index" class="message-container" ref="message">
+      <div v-for="(item, index) of activeMessageChain" :key="index" class="message-container" ref="message">
         <div class="message-time" v-if="showTime(index).show">
           {{ showTime(index).time }}
         </div>

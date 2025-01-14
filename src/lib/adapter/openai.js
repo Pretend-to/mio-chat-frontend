@@ -42,7 +42,7 @@ export default class Openai extends Adapter {
         const data = {
             // model: this.models[this.activeModelIndex],
             ...settings,
-            messages:messages
+            messages
         }
         console.log(data)
         for await (const chunk of client.socket.streamCompletions(data)) {

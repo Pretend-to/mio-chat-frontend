@@ -14,8 +14,30 @@
                     </div>
                 </div>
             </div>
-            <div class="more-info">
-
+            <div class="info-blocks">
+                <div class="openai-settings" v-if="activeContactor.platform == 'openai'">
+                    <div class="block-title">OpenAI 协议配置</div>
+                    <div class="block-content">
+                        <div class="block-content-item">
+                            <div class="item-title">模型</div>
+                            <div class="item-content">
+                                <el-input v-model="activeContactor.activeModel"></el-input>
+                            </div>
+                        </div>
+                        <div class="block-content-item">
+                            <div class="item-title">最长历史条数</div>
+                            <div class="item-content">
+                                <el-input v-model="activeContactor.activeModel"></el-input>
+                            </div>
+                        </div>
+                        <div class="block-content-item">
+                            <div class="item-title">流式响应</div>
+                            <div class="item-content">
+                                <el-input v-model="activeContactor.activeModel"></el-input>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="extra-info"></div>
             <div class="action-bar">
@@ -54,6 +76,7 @@ export default {
    }
     },
     mounted() {
+        console.log(this.activeContactor);
         setInterval(() => {
             this.currentDelay = client.socket.delay;
         }, 3000);
@@ -111,14 +134,18 @@ export default {
 
 .base-info {
     /* border: 1px solid #000000; */
+    background-color: #fff;
+    border-radius: .5rem;
     display: flex;
     padding-bottom: 1rem;
     border-bottom: 1px solid #88888888;
 }
 
 .base-info-avatar {
-    flex-basis: 6rem;
-    height: 6rem;
+    margin-top: 1rem;
+    margin-left: 1rem;
+    flex-basis: 5.5rem;
+    height: 5.5rem;
 }
 
 .base-info-avatar img {
@@ -127,9 +154,59 @@ export default {
     border-radius: 50%;
 }
 
-.base-info-content {
-    margin-left: 1rem;
+.block-title {
+    font-size: .8rem;
+}
+
+.block-content {
     margin-top: .5rem;
+    width: 100%;
+    display: flex;
+    background-color: #fff;
+    min-height: 1rem;
+    border-radius: .5rem;
+    flex-direction: column;
+}
+
+.block-content-item {
+    position: relative;
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    flex-basis: 2.5rem;
+}
+
+.block-content-item::after {
+    content: ""; /* 必须要有 content 属性 */
+    position: absolute;
+    bottom: 0; /* 定位到元素底部 */
+    left: 5%; /* 距离左边的长度，可以根据需要调整 */
+    width: 90%; /* 短一些的边框长度 */
+    height: 1px; /* 边框的高度 */
+    background-color: rgba(145, 145, 145, 0.155); /* 边框的颜色 */
+}
+
+.item-title {
+    font-size:.8rem;
+    margin-left: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.item-content{
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.item-content > .el-input {
+    transform: scale(.9);
+}
+
+.base-info-content {
+    margin-left: 1.5rem;
+    margin-top: 1rem;
     display: flex;
     flex-direction: column;
 }
@@ -148,7 +225,11 @@ export default {
     margin-top: .25rem;
 }
 
-.more-info {
+.info-blocks > * {
+    margin-top: 1rem;
+}
+
+.info-blocks {
     display:flex;
     flex-direction: column;
     justify-content: space-between;

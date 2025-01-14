@@ -2,11 +2,7 @@
   <div class="input-bar">
     <div class="options">
       <div class="bu-emoji">
-        <emoji-picker
-          v-show="showemoji"
-          ref="emojiPicker"
-          @emoji-click="getemoji"
-        ></emoji-picker>
+        <emoji-picker v-show="showemoji" ref="emojiPicker" @emoji-click="getemoji"></emoji-picker>
         <p id="ho-emoji">表情</p>
         <i @click.prevent="ctrlEmojiPanel" class="iconfont smile"></i>
       </div>
@@ -30,33 +26,16 @@
         <p id="ho-emoji">
           {{ activeContactor.platform == "openai" ? "模型选择" : "工具选择" }}
         </p>
-        <el-cascader
-          v-model="selectedWraper"
-          :options="wraperOptions"
-          id="wraper-selector"
-          @change="activeBotTools"
-        />
+        <el-cascader v-model="selectedWraper" :options="wraperOptions" id="wraper-selector" @change="activeBotTools" />
         <i class="iconfont robot"></i>
       </div>
     </div>
     <div class="input-box">
       <div class="input-content">
-        <div
-          @keydown="handleKeyDown"
-          @input="handleInput"
-          class="input-area"
-          ref="textarea"
-          :v-html="userInput"
-          contenteditable="true"
-          placeholder="按 Ctrl + Enter 以发送消息"
-          @click="updateCursorPosition"
-        ></div>
+        <div @keydown="handleKeyDown" @input="handleInput" class="input-area" ref="textarea" :v-html="userInput"
+          contenteditable="true" placeholder="按 Ctrl + Enter 以发送消息" @click="updateCursorPosition"></div>
       </div>
-      <button
-        @click.prevent="send"
-        :disabled="!userInput || !isValidInput(userInput)"
-        id="sendButton"
-      >
+      <button @click.prevent="send" :disabled="!userInput || !isValidInput(userInput)" id="sendButton">
         发送{{ getWraperName() ? ` | ${getWraperName()}` : "" }}
       </button>
     </div>
@@ -94,7 +73,7 @@ export default {
     },
     uploadFile() {
       const avaliableImageFromats = ["png", "jpg", "jpeg"];
-      const avaliableDocFormats = ["docx", "pdf", "pptx", "xlsx"];
+      // const avaliableDocFormats = ["docx", "pdf", "pptx", "xlsx"];
       const fileInput = document.createElement("input");
       fileInput.type = "file";
       fileInput.accept = ``;
@@ -103,11 +82,11 @@ export default {
         fileInput.accept += `.${format},`;
       }
 
-      if (this.activeContactor.activeModel == "gpt-4-all" || this.activeContactor.activeModel == "gpt-4o-all"){
-        for (const format of avaliableDocFormats) {
-          fileInput.accept += `.${format},`;
-        }
-      }
+      // if (this.activeContactor.activeModel == "gpt-4-all" || this.activeContactor.activeModel == "gpt-4o-all"){
+      //   for (const format of avaliableDocFormats) {
+      //     fileInput.accept += `.${format},`;
+      //   }
+      // }
 
 
       fileInput.click();
@@ -123,21 +102,11 @@ export default {
             });
 
             if (file.type.startsWith("image/")) {
-              const reader = new FileReader();
-              reader.onload = async (e) => {
-                const base64 = e.target.result;
-                const upload = await client.uploadImage(base64);
-                this.uploaded.images.push(upload.data.url);
-              };
-              reader.readAsDataURL(file);
+              this.handelUploadImage(file);
             } else {
               const upload = await client.uploadFile(file);
               this.uploaded.files.push(upload.data.url);
             }
-            this.$message({
-              message: "文件上传成功",
-              type: "success",
-            });
           } else {
             this.$message({
               message: "文件大小超过10MB，无法上传",
@@ -146,6 +115,42 @@ export default {
           }
         }
       };
+    },
+    handelUploadImage(file) {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target.result;
+        const upload = await client.uploadImage(base64);
+        const imageUrl = upload.data.url;
+        this.uploaded.images.push(imageUrl);
+        this.$message({
+          message: "文件上传成功",
+          type: "success",
+        });
+        // 将图片以image元素展示在输入框
+        const imageElement = document.createElement("img");
+        imageElement.src = imageUrl;
+        imageElement.alt = file.name;
+        imageElement.style.maxWidth = "10rem";
+        const range = document.createRange();
+        range.selectNodeContents(this.$refs.textarea);
+        range.collapse(false);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        const fragment = range.createContextualFragment(
+          `<span>${imageElement.outerHTML}</span>`
+        );
+        range.insertNode(fragment);
+        // 将光标移到图片后面
+        const newRange = document.createRange();
+        newRange.selectNodeContents(imageElement);
+        newRange.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+
+      };
+      reader.readAsDataURL(file);
     },
     setModel(name) {
       this.$emit("setModel", name);
@@ -207,7 +212,7 @@ export default {
         const name = preset.replace("#", "").replace("{xxx}", "");
         return name;
       } else {
-        return  "";
+        return "";
       }
     },
     waiting() {
@@ -254,6 +259,15 @@ export default {
       // console.log(this.userInput)
       this.$refs.textarea.focus();
 
+      // 获取textarea中的所有img元素
+      const images = this.$refs.textarea.querySelectorAll('img');
+
+      // 提取每个img元素的src属性
+      const ImageSrcs = Array.from(images).map(img => img.src);
+
+      // 现在srcs数组中包含了所有img元素的src属性
+      console.log(ImageSrcs);
+
       let msg = this.getSafeText(this.userInput);
 
       const wrappedMessage =
@@ -277,11 +291,11 @@ export default {
         ],
       };
 
-      this.uploaded.images.forEach((file) => {
+      ImageSrcs.forEach((imgUrl) => {
         container.content.push({
           type: "image",
           data: {
-            file: file.startsWith("/") ? this.host + file : file,
+            file: imgUrl,
           },
         });
       });
@@ -318,11 +332,7 @@ export default {
       this.uploaded.files = [];
     },
     getSafeText(text) {
-      return text
-        .replace(/<script>/g, "&lt;script&gt;")
-        .replace(/<\/script>/g, "&lt;/script&gt;")
-        .replace(/<style>/g, "&lt;style&gt;")
-        .replace(/<\/style>/g, "&lt;/style&gt;");
+      return text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
     },
     cleanScreen() {
       this.$emit("cleanScreen");
@@ -386,25 +396,42 @@ export default {
   mounted() {
     if (this.activeContactor.platform === "onebot") this.getBotTools();
     else this.getBotModels();
+
     this.textareaRef = this.$refs.textarea;
     this.textareaRef.addEventListener("input", this.adjustTextareaHeight);
-    document.addEventListener("paste", function (e) {
+
+    // 将paste事件的处理函数定义为一个方法
+    this.handlePaste = (e) => {
       e.preventDefault();
       this.isPasting = true;
-
-      var text = (e.originalEvent || e).clipboardData.getData("text/plain");
-      console.log(text);
-      document.execCommand("insertText", false, text);
-
+      // 获取剪贴板的数据
+      var items = (e.clipboardData || window.clipboardData).items;
+      for (var i = 0; i < items.length; i++) {
+        // 检查是否为文件类型
+        if (items[i].type.indexOf("image") !== -1) {
+          var blob = items[i].getAsFile();
+          this.handelUploadImage(blob);
+        } else if (items[i].type === "text/plain") {
+          var text = (e.originalEvent || e).clipboardData.getData("text/plain");
+          console.log(text);
+          document.execCommand("insertText", false, text);
+        }
+      }
       this.isPasting = false;
-    });
+    };
+
+    // 添加paste事件监听器
+    document.addEventListener("paste", this.handlePaste);
 
     this.host = window.location.origin;
   },
+
   unmounted() {
     this.textareaRef.removeEventListener("input", this.adjustTextareaHeight);
     this.textareaRef = null;
-    document.removeEventListener("paste", this.adjustTextareaHeight);
+
+    // 移除paste事件监听器
+    document.removeEventListener("paste", this.handlePaste);
   },
   watch: {
     "$route.params.id"() {
