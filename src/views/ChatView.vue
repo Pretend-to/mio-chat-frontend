@@ -236,16 +236,15 @@ export default {
         const messageIndex = e.index;
         const rawMessage = this.activeContactor.messageChain[messageIndex];
         rawMessage.status = "completed";
-
         console.log("操作前的最终" + JSON.stringify(rawMessage, null, 2))
         if (!e.error) {
-          rawMessage.content.forEach((element, index) => {
-            if (element.type === "text") {
-              const formatedMessage = this.separateTextAndImages(element.data.text);
-              // 把 formatedMessage 里的元素展开到 index 这个位置
-              rawMessage.content.splice(index, 1, ...formatedMessage);
-            }
-          });
+          // rawMessage.content.forEach((element, index) => {
+          //   if (element.type === "text") {
+          //     const formatedMessage = this.separateTextAndImages(element.data.text);
+          //     // 把 formatedMessage 里的元素展开到 index 这个位置
+          //     rawMessage.content.splice(index, 1, ...formatedMessage);
+          //   }
+          // });
         } else {
           rawMessage.content = [{
             type: "text",
