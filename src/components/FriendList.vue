@@ -106,7 +106,7 @@ export default {
         id: this.genFakeId(),
         name: preset.name,
         title: preset.title,
-        activeModel: client.default_model,
+        activeModel: preset.recommendedModel ?? client.default_model,
         priority: 1,
         options: {
           opening: preset.opening,

@@ -122,7 +122,6 @@ export default {
         const base64 = e.target.result;
         const upload = await client.uploadImage(base64);
         const imageUrl = upload.data.url;
-        this.uploaded.images.push(imageUrl);
         this.$message({
           message: "文件上传成功",
           type: "success",
@@ -142,14 +141,21 @@ export default {
           `<span>${imageElement.outerHTML}</span>`
         );
         range.insertNode(fragment);
-        // 将光标移到图片后面
-        const newRange = document.createRange();
-        newRange.selectNodeContents(imageElement);
-        newRange.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
+        // 将光标移到span元素后面
+        setTimeout(() => {
+          const newRange = document.createRange();
+          newRange.selectNodeContents(this.$refs.textarea);
+          newRange.collapse(false);
+          const newSelection = window.getSelection();
+          newSelection.removeAllRanges();
+          newSelection.addRange(newRange);
+        }, 0);
 
       };
+      this.$message({
+        message: "图片上传中...",
+        type: "info",
+      });
       reader.readAsDataURL(file);
     },
     setModel(name) {
@@ -361,7 +367,6 @@ export default {
     handleKeyDown(event) {
       if (event.key === "Enter") {
         if (event.ctrlKey) {
-          // this.userInput = this.replaceDivTags(this.userInput);
           if (this.userInput && this.isValidInput(this.userInput)) this.send();
           else this.$message({ message: "不能发送空消息", type: "warning" });
           // 处理按下 Ctrl+Enter 键的逻辑
@@ -375,19 +380,6 @@ export default {
       setTimeout(() => {
         this.updateCursorPosition();
       }, 0);
-    },
-    replaceDivTags(inputText) {
-      // 使用正则表达式匹配并替换指定的div标签
-      // 第一个div标签
-      let result = inputText.replace(/<div>/, "\n");
-
-      // 所有的成对div标签
-      result = result.replace(/<div><\/div>/g, "\n");
-
-      // 末尾的div标签
-      result = result.replace(/<\/div>$/, "\n");
-
-      return result;
     },
     handleInput() {
       if (!this.isPasting) this.userInput = this.$refs.textarea.innerText;
@@ -415,6 +407,7 @@ export default {
           var text = (e.originalEvent || e).clipboardData.getData("text/plain");
           console.log(text);
           document.execCommand("insertText", false, text);
+          this.userInput = this.$refs.textarea.innerText;
         }
       }
       this.isPasting = false;
