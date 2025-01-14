@@ -99,7 +99,7 @@ export default {
 
 
       html2canvas(this.$refs.chatWindow, {
-        windowHeight: rect.height * 1.5,
+        windowHeight: rect.height * 1.2,
         width: rect.width,
         // 例如: allowTaint: true, backgroundColor: null
       }).then((canvas) => {
@@ -113,8 +113,8 @@ export default {
         link.click();
       });
     },
-    showTime(index) {
-      const list = this.activeContactor.options.opening ? 
+    getFullMessages() {
+      return this.activeContactor.options.opening?
         [{
           role: "other",
           content: [{
@@ -126,6 +126,9 @@ export default {
           time: this.activeContactor.createTime
         },...this.activeContactor.messageChain] :
         this.activeContactor.messageChain
+    },
+    showTime(index) {
+      const list = this.getFullMessages();
       const thisTime = list[index].time;
       if (index === 0) {
         return {
@@ -238,14 +241,13 @@ export default {
         rawMessage.status = "completed";
         console.log("操作前的最终" + JSON.stringify(rawMessage, null, 2))
         if (!e.error) {
-          // rawMessage.content.forEach((element, index) => {
-          //   if (element.type === "text") {
-          //     const formatedMessage = this.separateTextAndImages(element.data.text);
-          //     // 把 formatedMessage 里的元素展开到 index 这个位置
-          //     rawMessage.content.splice(index, 1, ...formatedMessage);
-          //   }
-          // });
-          console.log("这里没有任何操作")
+          rawMessage.content.forEach((element, index) => {
+            if (element.type === "text" && this.activeContactor.platform === "onebot") {
+              const formatedMessage = this.separateTextAndImages(element.data.text);
+              // 把 formatedMessage 里的元素展开到 index 这个位置
+              rawMessage.content.splice(index, 1, ...formatedMessage);
+            }
+          });
         } else {
           rawMessage.content = [{
             type: "text",
@@ -299,7 +301,8 @@ export default {
         case "copy": {
           // Construct the text to copy
           let text = "";
-          const message = this.activeContactor.messageChain[this.selectedMessageIndex]; // Corrected typo
+          const messageChain = this.getFullMessages();
+          const message = messageChain[this.selectedMessageIndex]; // Corrected typo
           console.log(this.selectedMessageIndex);
           message.content.forEach((element) => {
             if (element.type === "text") {

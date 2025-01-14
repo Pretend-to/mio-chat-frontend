@@ -5,7 +5,7 @@ import AddContactor from '@/components/AddContactor.vue';
 
 export default {
   data() {
-    const contactorList = reactive(client.contactList);
+    const contactorList = client.contactList.map((contactor) => reactive(contactor));
     const onPhone = client.onPhone;
 
     return {
@@ -56,6 +56,7 @@ export default {
       };
 
       this.showAddOptions = false;
+      this.addReactiveListener()
       client.addConcator("openai", openaiDefaultConfig);
     },
     startResize(event) {
@@ -115,8 +116,16 @@ export default {
           tools: preset.tools,
         },
       };
+      this.addReactiveListener()
       client.addConcator("openai", contactor);
     }, 
+    addReactiveListener() {
+      this.contactorList.map((contactor) => {
+        contactor.on("updateMessageSummary", () => {
+          contactor.lastMessageSummary = contactor.getMessageSummary();
+        })
+      });
+    }
   },
   components: {
     AddContactor,
@@ -129,6 +138,7 @@ export default {
     },
   },
   mounted() {
+    this.addReactiveListener()
   },
 };
 </script>
@@ -168,7 +178,7 @@ export default {
         <div class="info">
           <div class="name">{{ item.name }}</div>
           <div class="msginfo" id="time">{{ item.getLastTime() }}</div>
-          <div class="msginfo" id="msgctt">{{ item.getMessageSummary() }}</div>
+          <div class="msginfo" id="msgctt">{{ item.lastMessageSummary }}</div>
         </div>
       </div>
     </div>

@@ -29,6 +29,7 @@ export default class Contactor extends EventEmmiter {
     this.active = false;
     this.lastUpdate = config.lastUpdate || new Date().getTime();
     this.createTime = config.createTime || new Date().getTime();
+    this.lastMessageSummary = this.getMessageSummary();
 
     this.kernel =
       this.platform == "onebot" ? new Onebot(config) : new Openai(config);
@@ -38,7 +39,7 @@ export default class Contactor extends EventEmmiter {
 
   enableOpenaiListener() {
     this.kernel.on("updateMessage", (e) => {
-      const { chunk,index } = e;
+      const { chunk, index } = e;
       const rawMessage = this.messageChain[index];
       if (!rawMessage) return;
 
@@ -54,10 +55,11 @@ export default class Contactor extends EventEmmiter {
         },
       };
 
-      if(isFirstElement) rawMessage.content[rawMessage.content.length - 1] = msgElm;
+      if (isFirstElement) rawMessage.content[rawMessage.content.length - 1] = msgElm;
       else rawMessage.content.push(msgElm);
 
-      if (this.active) this.emit("updateMessage"); // 更新响应式数据
+      this.emit("updateMessage"); // 更新响应式数据
+      this.emit("updateMessageSummary")
     });
 
     this.kernel.on("updateToolCall", (e) => {
@@ -78,10 +80,12 @@ export default class Contactor extends EventEmmiter {
       };
 
 
-      if(isFirstElement && !continuousCall) rawMessage.content[rawMessage.content.length - 1] = msgElm;
+      if (isFirstElement && !continuousCall) rawMessage.content[rawMessage.content.length - 1] = msgElm;
       else rawMessage.content.push(msgElm);
 
-      if (this.active) this.emit("updateMessage"); // 更新响应式数据
+      this.emit("updateMessage"); // 更新响应式数据
+      this.emit("updateMessageSummary")
+
     });
 
     this.kernel.on("completeMessage", (e) => {
@@ -89,10 +93,11 @@ export default class Contactor extends EventEmmiter {
       const messageIndex = e.index;
       const rawMessage = this.messageChain[messageIndex];
       if (rawMessage) {
-        if (this.active)
-          this.emit("completeMessage", {
-            index: messageIndex,
-          });
+        this.emit("updateMessageSummary")
+
+        this.emit("completeMessage", {
+          index: messageIndex,
+        });
       }
     });
 
@@ -102,6 +107,8 @@ export default class Contactor extends EventEmmiter {
       const messageIndex = e.index;
       const rawMessage = this.messageChain[messageIndex];
       if (rawMessage) {
+        this.emit("updateMessageSummary")
+
         this.emit("completeMessage", {
           text:
             "请求发生错误！\n```json\n" +
@@ -130,6 +137,7 @@ export default class Contactor extends EventEmmiter {
     this.updateLastUpdate();
     this.messageChain.push(message);
     if (this.platform == "onebot") {
+      console.log(message.content);
       return await this.kernel.send(this.id, message.content);
     } else {
 
@@ -140,81 +148,81 @@ export default class Contactor extends EventEmmiter {
       );
 
       const mergedMessages = validMessageList.map(message => {
-        const subArray = []   
-        message.content.forEach((elm)=>{
-            const role = elm.type == "tool_call" ? "tool" : message.role == "user" ? "user" : "assistant";
-            const formatedMsg = {
-                role: role,
-                content: undefined,
-                _content_type:undefined
+        const subArray = []
+        message.content.forEach((elm) => {
+          const role = elm.type == "tool_call" ? "tool" : message.role == "user" ? "user" : "assistant";
+          const formatedMsg = {
+            role: role,
+            content: undefined,
+            _content_type: undefined
+          }
+          if (role == "tool") {
+            formatedMsg.role = "assistant"
+            formatedMsg.content = null
+            formatedMsg.tool_calls = [{
+              id: elm.data.id,
+              function: {
+                name: elm.data.name,
+                arguments: JSON.stringify(elm.data.params)
+              },
+              type: "function"
+            }]
+            subArray.push({ ...formatedMsg })
+
+            delete formatedMsg.tool_calls
+            formatedMsg.role = "tool"
+            formatedMsg.content = JSON.stringify(elm.data.result)
+            formatedMsg.tool_call_id = elm.data.id
+            subArray.push({ ...formatedMsg })
+
+            formatedMsg.role = role
+
+          } else if (role == "user" || role == "assistant") {
+            if (elm.type == "text") {
+              formatedMsg.content = elm.data.text
+              formatedMsg._content_type = "text"
+              subArray.push(formatedMsg)
+            } else if (elm.type == "image") {
+              formatedMsg.content = elm.data.file
+              formatedMsg._content_type = "image"
+              subArray.push(formatedMsg)
             }
-            if(role == "tool"){
-                formatedMsg.role = "assistant"
-                formatedMsg.content = null
-                formatedMsg.tool_calls = [{
-                    id: elm.data.id,
-                    function: {
-                        name: elm.data.name,
-                        arguments: JSON.stringify(elm.data.params)
-                    },
-                    type: "function"
-                }]
-                subArray.push({...formatedMsg})
-
-                delete formatedMsg.tool_calls
-                formatedMsg.role = "tool"
-                formatedMsg.content = JSON.stringify(elm.data.result)
-                formatedMsg.tool_call_id = elm.data.id
-                subArray.push({...formatedMsg})
-
-                formatedMsg.role = role
-
-            }else if(role == "user" || role == "assistant"){
-                if (elm.type == "text") {
-                    formatedMsg.content = elm.data.text
-                    formatedMsg._content_type = "text"
-                    subArray.push(formatedMsg)
-                } else if (elm.type == "image") {
-                    formatedMsg.content = elm.data.file
-                    formatedMsg._content_type = "image"
-                    subArray.push(formatedMsg)
-                }
-                // TODO: 文件上传
-            }
+            // TODO: 文件上传
+          }
         })
         return subArray
       })
       let finalMessages = []
 
-      mergedMessages.forEach((subArray)=>{
+      mergedMessages.forEach((subArray) => {
         const textElm = subArray.filter(elm => elm._content_type == "text")
         const imageElm = subArray.filter(elm => elm._content_type == "image")
         let message = null
-        if(textElm.length > 0 && imageElm.length > 0 && imageElm[0].role == "user"){
-            message = {
-                role: "user",
-                content: [...textElm.map((elm) => {
-                    return {
-                        type: "text",
-                        text: elm.content.replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-                    }
-                }),...imageElm.map((elm) => {
-                    return {
-                        type: "image_url",
-                        image_url: {
-                            url: elm.content
-                        }
-                    }
-                })]
-            }
+        if (textElm.length > 0 && imageElm.length > 0 && imageElm[0].role == "user") {
+          message = {
+            role: "user",
+            content: [...textElm.map((elm) => {
+              return {
+                type: "text",
+                text: elm.content.replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+              }
+            }), ...imageElm.map((elm) => {
+              return {
+                type: "image_url",
+                image_url: {
+                  url: elm.content
+                }
+              }
+            })]
+          }
         }
         if (message?.content.length == subArray.length) {
-            finalMessages.push(message)
+          finalMessages.push(message)
         } else {
-            subArray.forEach(elm => {
-                delete elm._content_type
-            });
-            finalMessages.push(...subArray)
+          subArray.forEach(elm => {
+            delete elm._content_type
+          });
+          finalMessages.push(...subArray)
         }
       })
 
@@ -222,7 +230,7 @@ export default class Contactor extends EventEmmiter {
       // 立即发生回复消息
       this.revMessage({ content: [] });
 
-      if(this.options.history){
+      if (this.options.history) {
         finalMessages = this.options.history.concat(finalMessages)
       }
 
@@ -374,23 +382,24 @@ export default class Contactor extends EventEmmiter {
   }
 
   getMessageSummary(message) {
+    console.log('获取消息摘要');
     const getMessageText = (element) => {
-        switch (element.type) {
-          case "text": return element.data.text;
-          case "image": return "[图片]";
-          case "record": return "[语音]";
-          case "video": return "[视频]";
-          case "file": return "[文件]";
-          case "tool_call": return `[调用工具] ${element.data.name}`;
-          case "blank": return "正在思考中...";
-          case "reply": return ""; // 空字符串处理
-          default: return "[未知消息类型] " + element.type;
-        }
+      switch (element.type) {
+        case "text": return element.data.text;
+        case "image": return "[图片]";
+        case "record": return "[语音]";
+        case "video": return "[视频]";
+        case "file": return "[文件]";
+        case "tool_call": return `[调用工具] ${element.data.name}`;
+        case "blank": return "正在思考中...";
+        case "reply": return ""; // 空字符串处理
+        default: return "[未知消息类型] " + element.type;
+      }
     };
-  
+
     const msg = message || this.messageChain[this.messageChain.length - 1];
     if (!msg) return "";
-    
+
     return getMessageText(msg.content ? msg.content[0] : msg);
   }
 
