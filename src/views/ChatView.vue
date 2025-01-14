@@ -245,6 +245,7 @@ export default {
           //     rawMessage.content.splice(index, 1, ...formatedMessage);
           //   }
           // });
+          console.log("这里没有任何操作")
         } else {
           rawMessage.content = [{
             type: "text",
