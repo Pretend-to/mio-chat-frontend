@@ -19,8 +19,7 @@ export default class Contactor extends EventEmmiter {
     this.platform = platform;
     this.id = config.id;
     this.name = config.name;
-    this.activeModel = config.activeModel || "gpt-4o-mini";
-    this.avatar = config.avatar || this.getAvatar(config.activeModel);
+    this.avatar = config.avatar || this.getAvatar(config.options.model);
     this.title = config.title;
     this.options = config.options;
     this.priority = config.priority;
@@ -140,7 +139,6 @@ export default class Contactor extends EventEmmiter {
       console.log(message.content);
       return await this.kernel.send(this.id, message.content);
     } else {
-
       // 截取从this.firstMessageIndex到结尾的消息
       const cuttedMessageList = this.messageChain.slice(this.firstMessageIndex);
       const validMessageList = cuttedMessageList.filter(
@@ -234,13 +232,15 @@ export default class Contactor extends EventEmmiter {
         finalMessages = this.options.history.concat(finalMessages)
       }
 
-      const settings = {
-        model: this.activeModel,
-        tools: this.options.tools,
-      };
+      const max_messages = this.options.max_messages_num;
+      if (finalMessages.length > max_messages) {
+        finalMessages = finalMessages.slice(-max_messages);
+      }
+
+      console.log(this.options)
 
       const replyIndex = this.messageChain.length - 1;
-      this.kernel.send(finalMessages, replyIndex, settings);
+      this.kernel.send(finalMessages, replyIndex, this.options);
 
       return Math.floor(Math.random() * 100000000)
         .toString()
@@ -263,7 +263,7 @@ export default class Contactor extends EventEmmiter {
     if (!this.active) this.messageChain.push(webMessage);
     else this.emit("revMessage", webMessage);
 
-    console.log(this.messageChain);
+    this.emit("updateMessageSummary");
     return webMessage;
   }
 

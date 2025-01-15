@@ -80,15 +80,12 @@ export default {
     },
 
     setModel(name) {
-      this.activeContactor.activeModel = name;
+      this.activeContactor.options.model = name;
       this.activeContactor.title = name;
       // this.activeContactor.avatar = this.activeContactor.getAvatar(name);
       client.setLocalStorage(); //持久化存储
     },
     toimg() {
-    console.log(
-      this.$refs.chatWindow
-    )
       // 使用html2canvas把 this.$refs.chatWindow 渲染为图片
       const rect = this.$refs.chatWindow.getBoundingClientRect();
       rect.height = this.$refs.chatWindow.scrollHeight
@@ -400,6 +397,8 @@ export default {
     setInterval(() => {
       this.currentDelay = this.client.socket.delay;
     }, 3000);
+
+    console.log(contactor.options);
   },
   updated() {
     if (this.toupdate && this.autoScroll) {

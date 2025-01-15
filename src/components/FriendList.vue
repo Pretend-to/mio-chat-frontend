@@ -1,5 +1,5 @@
 <script>
-import { client } from "@/lib/runtime.js";
+import { client,config } from "@/lib/runtime.js";
 import AddContactor from '@/components/AddContactor.vue';
 
 export default {
@@ -47,16 +47,16 @@ export default {
       const openaiDefaultConfig = {
         id: this.genFakeId(),
         name: client.default_model,
-        activeModel: client.default_model,
         avatar: "/static/avatar/openai.png",
         title: "gpt",
         priority: 1,
-        options: {},
+        options: config.openaiDefaultConfig,
       };
 
       this.showAddOptions = false;
-      this.addReactiveListener()
       client.addConcator("openai", openaiDefaultConfig);
+      this.addReactiveListener()
+
     },
     startResize(event) {
       this.isResizing = true;
@@ -106,17 +106,19 @@ export default {
         id: this.genFakeId(),
         name: preset.name,
         title: preset.title,
-        activeModel: preset.recommendedModel ?? client.default_model,
         priority: 1,
         options: {
+          ...config.openaiDefaultConfig,
+          model: preset.recommendedModel ?? client.default_model,
           opening: preset.opening,
           history:preset.history,
           textWrapper: preset.textWrapper,
           tools: preset.tools,
         },
       };
-      this.addReactiveListener()
       client.addConcator("openai", contactor);
+      this.addReactiveListener()
+
     }, 
     addReactiveListener() {
       this.contactorList.map((contactor) => {

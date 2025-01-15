@@ -9,7 +9,7 @@ localforage.config({
 })
 
 export default class Client extends EventEmitter {
-  constructor() {
+  constructor(config) {
     super()
     this.everLogin = false
     this.id = null
@@ -29,6 +29,7 @@ export default class Client extends EventEmitter {
     this.title = "用户"
     this.name = "user"
     this.webTitle = ""
+    this.config = config
   }
 
   /**
@@ -94,16 +95,20 @@ export default class Client extends EventEmitter {
     })
     console.log(options)
 
+    this.config.updateOpenaiDefaultConfig({
+      model: this.default_model
+    })
+
     const openaiDefaultConfig = {
       id: this.genFakeId(),
       name: 'MioBot',
-      activeModel: this.default_model,
       avatar: '/static/avatar/miobot.png',
       title: 'chat',
       priority: 0,
       lastUpdate: -Infinity,
-      options: {}
+      options: this.config.openaiDefaultConfig
     }
+    
     console.log(openaiDefaultConfig)
     this.addConcator('openai', openaiDefaultConfig)
 
@@ -127,6 +132,7 @@ export default class Client extends EventEmitter {
 
   reset(){
     localforage.clear()
+    localStorage.clear()
     // 刷新页面
     window.location.reload()
   }

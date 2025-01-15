@@ -82,13 +82,6 @@ export default {
         fileInput.accept += `.${format},`;
       }
 
-      // if (this.activeContactor.activeModel == "gpt-4-all" || this.activeContactor.activeModel == "gpt-4o-all"){
-      //   for (const format of avaliableDocFormats) {
-      //     fileInput.accept += `.${format},`;
-      //   }
-      // }
-
-
       fileInput.click();
 
       fileInput.onchange = async (e) => {
@@ -179,7 +172,7 @@ export default {
           }),
         };
       });
-      this.selectedWraper = [this.activeContactor.activeModel]
+      this.selectedWraper = [this.activeContactor.options.model]
       this.setModel(this.selectedWraper[0]);
 
     },
@@ -356,7 +349,7 @@ export default {
       } else {
         this.setModel(this.selectedWraper[this.selectedWraper.length - 1]);
         this.$message({
-          message: "已切换到" + this.activeContactor.activeModel + "模型",
+          message: "已切换到" + this.activeContactor.options.model + "模型",
           type: "success",
         });
       }

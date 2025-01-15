@@ -1,5 +1,5 @@
 <script>
-import { client, config } from "@/lib/runtime.js";
+import { client } from "@/lib/runtime.js";
 import sideBar from "@/components/SideBar.vue";
 
 export default {
@@ -39,8 +39,6 @@ export default {
       client.onPhone = false;
       this.$refs.sidebar.loadAvatar(client.admin_qq);
     }
-
-    await config.init();
 
     client.on("screenChange", async (status) => {
       this.fullScreen = status

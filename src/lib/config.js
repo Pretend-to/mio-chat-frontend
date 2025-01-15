@@ -1,56 +1,38 @@
-import localforage from 'localforage'
-
 export default class Config {
     constructor() {
-    }
-
-    load(config) {
-        Object.assign(this, config);
-    }
-
-    async init() {
-        const config = await localforage.getItem('config');
-        if (!config) {
-            const platform = this.getPlatform();
-
-            const system = {
-                platform: platform,
-                maxScreen: this.plaform == 'phone' ? true : false,
-            };
-            const openai = {
-                modelList: []
-            };
-            const onebot = {
-    
-            };
-    
-            const config = {
-                system: system,
-                openai: openai,
-                onebot: onebot,
-            }
-            
-            this.load(config);
-        }else {
-            this.load(config);
+        this.localPresets = []
+        this.openaiDefaultConfig = {
+            model: 'gpt-4o-mini',
+            stream: true,
+            temperature: 1,
+            top_p: 1,
+            frequency_penalty: 0,
+            presence_penalty: 0,
+            history: [],
+            opening: '',
+            max_messages_num: 10,
         }
-
-
-        
+        this._loadStrogeConfig()
     }
-    
-    /**
-     * 获取当前终端
-     * @returns {string} 终端类型
-     */
-    getPlatform() {
-        // 通过宽度来判断phone或computer
-        const width = window.innerWidth;
-        if (width < 768) {
-            return 'phone';
-        } else {
-            return 'computer';
+
+    updateOpenaiDefaultConfig(patch) {
+        this.openaiDefaultConfig = {
+            ...this.openaiDefaultConfig,
+            ...patch
+        }
+        this._saveStrogeConfig()
+    }
+
+    _loadStrogeConfig() {
+        const config = localStorage.getItem('config')
+        if (config) {
+            Object.assign(this, JSON.parse(config))
+        }else{
+            this._saveStrogeConfig() 
         }
     }
-    
+
+    _saveStrogeConfig() {
+        localStorage.setItem('config', JSON.stringify(this))
+    }
 }

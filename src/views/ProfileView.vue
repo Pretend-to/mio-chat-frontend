@@ -18,22 +18,13 @@
                 <div class="openai-settings" v-if="activeContactor.platform == 'openai'">
                     <div class="block-title">OpenAI 协议配置</div>
                     <div class="block-content">
-                        <div class="block-content-item">
-                            <div class="item-title">模型</div>
+                        <div v-for="(value,key) in openaiSettings" :key="key" class="block-content-item">
+                            <div class="item-title">{{ getShownKey(key) }}</div>
                             <div class="item-content">
-                                <el-input v-model="activeContactor.activeModel"></el-input>
-                            </div>
-                        </div>
-                        <div class="block-content-item">
-                            <div class="item-title">最长历史条数</div>
-                            <div class="item-content">
-                                <el-input v-model="activeContactor.activeModel"></el-input>
-                            </div>
-                        </div>
-                        <div class="block-content-item">
-                            <div class="item-title">流式响应</div>
-                            <div class="item-content">
-                                <el-input v-model="activeContactor.activeModel"></el-input>
+                                <el-input v-if="['model','max_messages_num'].includes(key)" v-model="openaiSettings[key]"></el-input>
+                                <el-switch v-else-if="key=='stream'" v-model="openaiSettings[key]"></el-switch>
+                                <el-slider v-else-if="['top_p','temperature'].includes(key)" v-model="openaiSettings[key]" :step="sliderTypeARange[2]" :min="sliderTypeARange[0]" :max="sliderTypeARange[1]" />
+                                <el-slider v-else-if="['frequency_penalty','presence_penalty'].includes(key)" v-model="openaiSettings[key]" :step="sliderTypeBRange[2]" :min="sliderTypeBRange[0]" :max="sliderTypeBRange[1]" />
                             </div>
                         </div>
                     </div>
@@ -71,9 +62,12 @@ export default {
         
         return {
             activeContactor: contactor,
+            openaiSettings: this.getShownOpenAISettings(contactor.options),
             currentDelay: 0,
-            centerDialogVisible: false
-   }
+            centerDialogVisible: false,
+            sliderTypeARange:[0,1,0.1],
+            sliderTypeBRange:[-2,2,0.2],
+        }
     },
     mounted() {
         console.log(this.activeContactor);
@@ -99,6 +93,27 @@ export default {
         }
     },
     methods: {
+        getShownOpenAISettings(options) {
+            const shownKeys = ["model","max_messages_num","stream","temperature","top_p","frequency_penalty","presence_penalty"];
+            const shownSettings = {};
+            shownKeys.map((key) => {
+                shownSettings[key] = options[key];
+            });
+            console.log(shownSettings);
+            return shownSettings;
+        },
+        getShownKey(key) {
+            const shownNameMap = {
+                "model":"模型",
+                "max_messages_num":"最大历史消息数",
+                "stream":"流式响应",
+                "temperature":"温度 (temperature)",
+                "top_p":"核采样 (top_p)",
+                "frequency_penalty":"频率惩罚度 (frequency_penalty)",
+                "presence_penalty":"话题新鲜度 (presence_penalty)",
+            }
+            return shownNameMap[key]
+        },
         delContactor() {
             this.centerDialogVisible = false;
             client.rmContactor(this.activeContactor.id);
@@ -195,13 +210,12 @@ export default {
 }
 
 .item-content{
+    transform: scale(.9);
+    flex-basis: 10rem;
     display: flex;
     align-items: center;
     justify-content: flex-end;
-}
-
-.item-content > .el-input {
-    transform: scale(.9);
+    margin-right: 1.5rem;
 }
 
 .base-info-content {
@@ -233,10 +247,6 @@ export default {
     display:flex;
     flex-direction: column;
     justify-content: space-between;
-}
-
-.extra-info {
-    border: 1px solid #000000;
 }
 
 .action-bar {
