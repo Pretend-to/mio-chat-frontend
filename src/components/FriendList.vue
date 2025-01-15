@@ -1,11 +1,10 @@
 <script>
 import { client } from "@/lib/runtime.js";
-import { reactive } from "vue";
 import AddContactor from '@/components/AddContactor.vue';
 
 export default {
   data() {
-    const contactorList = client.contactList.map((contactor) => reactive(contactor));
+    const contactorList = client.contactList
     const onPhone = client.onPhone;
 
     return {

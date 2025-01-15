@@ -17,8 +17,8 @@
                     </nav>
                 </header>
                 <div :style="{ left: buttonTranslate }" class="slide-button"></div>
-                <div class="presets-list">
-                    <div class="presets-item" v-for="(preset, index) in shownPrestsList" :key="index">
+                <div v-if="shownPrestsList.length>0" class="presets-list">
+                    <div class="presets-item"  v-for="(preset, index) in shownPrestsList" :key="index">
                         <div class="preset-avatar">{{ preset.name.slice(0, 2) }}</div>
                         <div class="preset-info">
                             <div class="preset-name">{{ preset.name }}</div>
@@ -33,6 +33,9 @@
                         <div></div>
                         <div></div>
                     </div>
+                </div>
+                <div class="empty-list" v-else >
+                    <el-empty :image-size="200" />
                 </div>
             </div>
             <div class="options"></div>
@@ -194,6 +197,12 @@ export default {
 };
 </script>
 <style scoped>
+.empty-list {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
 .presets-list {
     position: relative;
     width: 100%;
