@@ -17,7 +17,7 @@
                     </nav>
                 </header>
                 <div :style="{ left: buttonTranslate }" class="slide-button"></div>
-                <div v-if="shownPrestsList.length>0" class="presets-list">
+                <div v-if="shownPrestsList.length>0 || [0,3].includes(activeTypeIndex)" class="presets-list">
                     <div class="presets-item"  v-for="(preset, index) in shownPrestsList" :key="index">
                         <div class="preset-avatar">{{ preset.name.slice(0, 2) }}</div>
                         <div class="preset-info">
