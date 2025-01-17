@@ -2,35 +2,78 @@ name: Deploy to Mio Chat Backend
 on:
   push:
     branches:
-      - master # 触发动作的分支
+      - master
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20' # 设置 Node.js 版本
+          node-version: '20'
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            **/node_modules
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+
       - name: Install pnpm
         run: npm install -g pnpm
+
       - name: Install dependencies
-        run: pnpm install
+        run: |
+          pnpm install
+          if [ $? -ne 0 ]; then
+            echo "Dependencies installation failed"
+            exit 1
+          fi
+
       - name: Build the project
-        run: pnpm run build
+        run: |
+          pnpm run build
+          if [ $? -ne 0 ]; then
+            echo "Build failed"
+            exit 1
+          fi
+          
       - name: Clone Mio Chat Backend repository
         run: |
-          git clone https://github.com/Pretend-to/mio-chat-backend.git
-          rm -r ./mio-chat-backend/dist/
-          cp -r ./dist/ ./mio-chat-backend/
-        env:
-          GIT_TERMINAL_PROMPT: 0 # 避免交互式的输入提示
+          git clone https://x-access-token:${{ secrets.GH_SECRET }}@github.com/Pretend-to/mio-chat-backend.git
+          if [ $? -ne 0 ]; then
+            echo "Clone failed"
+            exit 1
+          fi
+
+      - name: Copy dist files
+        run: |
+          if [ -d "./dist" ]; then
+            rm -rf ./mio-chat-backend/dist/
+            cp -r ./dist/ ./mio-chat-backend/
+            echo "Files copied successfully"
+            ls -la ./mio-chat-backend/dist/
+          else
+            echo "Error: dist directory not found"
+            exit 1
+          fi
+
       - name: Commit and push changes
         run: |
           cd mio-chat-backend
           git config --global user.name "GitHub Action"
           git config --global user.email "mio@krumio.com"
-          git add .
-          git commit -m "update: 更新前端"
-          git push https://x-access-token:${{ secrets.GH_SECRET }}@github.com/Pretend-to/mio-chat-backend.git HEAD:master
+          git status
+          if git diff-index --quiet HEAD --; then
+            echo "No changes to commit"
+            exit 0
+          else
+            git add .
+            git commit -m "update: 更新前端"
+            git push https://x-access-token:${{ secrets.GH_SECRET }}@github.com/Pretend-to/mio-chat-backend.git HEAD:master
+            echo "Changes pushed successfully"
+          fi
