@@ -12,6 +12,7 @@ export default class Config {
             opening: '',
             max_messages_num: 10,
         }
+        this.onebotDefaultConfig = null
         this._loadStrogeConfig()
     }
 
@@ -20,6 +21,13 @@ export default class Config {
             ...this.openaiDefaultConfig,
             ...patch
         }
+        this._saveStrogeConfig()
+    }
+
+    async loadOnebotDefaultConfig() {
+        const onebotOptionsData = await fetch(`/api/onebot/plugins`)
+        const onebotOptionsJson = await onebotOptionsData.json()
+        this.onebotDefaultConfig = onebotOptionsJson.data.options
         this._saveStrogeConfig()
     }
 

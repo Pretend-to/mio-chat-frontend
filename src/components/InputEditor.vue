@@ -26,7 +26,7 @@
         <p id="ho-emoji">
           {{ activeContactor.platform == "openai" ? "模型选择" : "工具选择" }}
         </p>
-        <el-cascader v-model="selectedWraper" :options="wraperOptions" id="wraper-selector" @change="activeBotTools" />
+        <el-cascader v-model="selectedOptions" :options="extraOptions" id="wraper-selector" @change="activeBotTools" />
         <i class="iconfont robot"></i>
       </div>
     </div>
@@ -43,16 +43,19 @@
 </template>
 
 <script>
-import { client } from "@/lib/runtime.js";
+import { client,config } from "@/lib/runtime.js";
 
 export default {
   data() {
     return {
       userInput: "",
       selectedWraper: null,
-      wraperOptions: [],
+      selectedModel: null,
+      selectedOptions: null,
       cursorPosition: [],
       showemoji: false,
+      openaiModels:null,
+      onebotPresets:null,
       host: "",
       uploaded: { files: [], images: [] },
       isPasting: false,
@@ -62,6 +65,15 @@ export default {
     activeContactor: {
       type: Object,
       required: true,
+    },
+  },
+  computed: {
+    extraOptions() {
+      if (this.activeContactor.platform == "openai") {
+        return this.openaiModels;
+      } else {
+        return this.onebotPresets;
+      }
     },
   },
   methods: {
@@ -151,16 +163,12 @@ export default {
       });
       reader.readAsDataURL(file);
     },
-    setModel(name) {
-      this.$emit("setModel", name);
+    setModel() {
+      this.selectedModel = [...this.selectedOptions];
+      this.$emit("setModel", this.selectedModel[1]);
     },
-    getBotTools() {
-      this.selectedWraper = [""];
-      const wraper = this.activeContactor.options.textwraper;
-      this.wraperOptions = wraper.options;
-    },
-    getBotModels() {
-      this.wraperOptions = client.models.map((modelGroup) => {
+    initExtraOptions() {
+      this.openaiModels = client.models.map((modelGroup) => {
         return {
           value: modelGroup.owner,
           label: modelGroup.owner,
@@ -172,9 +180,21 @@ export default {
           }),
         };
       });
-      this.selectedWraper = [this.activeContactor.options.model]
-      this.setModel(this.selectedWraper[0]);
-
+      this.onebotPresets = config.onebotDefaultConfig.textwraper.options;
+      this.loadSelectedArray();
+    },
+    loadSelectedArray() {
+      if (this.activeContactor.platform == "openai") {
+        this.selectedModel = this.getOpenaiModelArray(this.activeContactor.options.model)
+        this.selectedOptions = [...this.selectedModel];
+      } else {
+        this.selectedWraper = [""]
+        this.selectedOptions = [...this.selectedWraper];
+      }
+    },
+    getOpenaiModelArray(model){
+      const activeArray = client.models.find( (modelGroup)=> modelGroup.models.includes(model) )
+      return [activeArray.owner,model]
     },
     wrapText(rawText) {
       if (!this.selectedWraper) return rawText;
@@ -182,7 +202,7 @@ export default {
       if (!wraper) return rawText;
       const testText = "{xxx}";
 
-      const childrens = this.wraperOptions.find(
+      const childrens = this.onebotPresets.find(
         (item) => item.value == this.selectedWraper[0]
       ).children;
       const preset = childrens.find(
@@ -202,7 +222,7 @@ export default {
         if (!this.selectedWraper) return "";
         const wraper = this.selectedWraper[this.selectedWraper.length - 1];
         if (!wraper) return "";
-        const childrens = this.wraperOptions.find(
+        const childrens = this.onebotPresets.find(
           (item) => item.value == this.selectedWraper[0]
         ).children;
         const preset = childrens.find(
@@ -325,6 +345,7 @@ export default {
       const container = this.presend();
       this.userInput = "";
       const message_id = await this.activeContactor.webSend(container); //发送消息
+      this.activeContactor.emit("updateMessageSummary")
       container.id = message_id;
       this.$emit("stroge");
       this.uploaded.images = [];
@@ -337,6 +358,7 @@ export default {
       this.$emit("cleanScreen");
     },
     async activeBotTools() {
+      this.selectedWraper = [...this.selectedOptions];
       if (this.activeContactor.platform === "onebot") {
         const testMessage = "text";
         const testMessage2 = "test";
@@ -347,9 +369,9 @@ export default {
           await this.send();
         }
       } else {
-        this.setModel(this.selectedWraper[this.selectedWraper.length - 1]);
+        this.setModel();
         this.$message({
-          message: "已切换到" + this.activeContactor.options.model + "模型",
+          message: "已切换到 " + this.selectedModel[1] + " 模型",
           type: "success",
         });
       }
@@ -378,10 +400,10 @@ export default {
       if (!this.isPasting) this.userInput = this.$refs.textarea.innerText;
     },
   },
+  created() {
+    this.initExtraOptions();
+  },
   mounted() {
-    if (this.activeContactor.platform === "onebot") this.getBotTools();
-    else this.getBotModels();
-
     this.textareaRef = this.$refs.textarea;
     this.textareaRef.addEventListener("input", this.adjustTextareaHeight);
 
@@ -421,8 +443,7 @@ export default {
   },
   watch: {
     "$route.params.id"() {
-      if (this.activeContactor.platform === "onebot") this.getBotTools();
-      else this.getBotModels();
+      this.loadSelectedArray();
     },
   },
 };

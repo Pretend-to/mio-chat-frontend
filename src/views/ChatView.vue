@@ -20,7 +20,7 @@ export default {
       userInput: "",
       todld: false,
       client: client,
-      wraperOptions: [],
+      extraOptions: [],
       wraperPresets: {},
       cursorPosition: [],
       selectedWraper: null,
@@ -54,6 +54,8 @@ export default {
       this.activeContactor.messageChain = [];
       this.activeContactor.updateFirstMessage();
       client.setLocalStorage(); //持久化存储
+      this.activeContactor.emit("updateMessageSummary")
+
       this.toupdate = true;
       this.$message({ message: "已清除会话记录", type: "success" });
     },
@@ -236,7 +238,6 @@ export default {
         const messageIndex = e.index;
         const rawMessage = this.activeContactor.messageChain[messageIndex];
         rawMessage.status = "completed";
-        console.log("操作前的最终" + JSON.stringify(rawMessage, null, 2))
         if (!e.error) {
           rawMessage.content.forEach((element, index) => {
             if (element.type === "text" && this.activeContactor.platform === "onebot") {

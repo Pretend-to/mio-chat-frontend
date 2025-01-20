@@ -65,8 +65,8 @@ export default class Client extends EventEmitter {
   }
 
   async genDefaultConctor() {
-    const onebotOptionsData = await fetch(`/api/onebot/plugins`)
-    const onebotOptionsJson = await onebotOptionsData.json()
+
+    await this.config.loadOnebotDefaultConfig()
 
     const onebotDefaultConfig = {
       id: this.genFakeId(),
@@ -74,7 +74,7 @@ export default class Client extends EventEmitter {
       avatar: `/api/qava?q=${this.botqq}`,
       title: '云崽',
       priority: 0,
-      options: onebotOptionsJson.data.options,
+      options: this.config.onebotDefaultConfig,
       lastUpdate: -Infinity
     }
     
