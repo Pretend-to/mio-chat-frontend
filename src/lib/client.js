@@ -39,6 +39,7 @@ export default class Client extends EventEmitter {
   async beforeInit() {
 
     const localConfig = await this.getLocalStorage()
+    await this.config.loadOnebotDefaultConfig()
     console.log(localConfig)
 
     if (localConfig) {
@@ -65,8 +66,6 @@ export default class Client extends EventEmitter {
   }
 
   async genDefaultConctor() {
-
-    await this.config.loadOnebotDefaultConfig()
 
     const onebotDefaultConfig = {
       id: this.genFakeId(),
