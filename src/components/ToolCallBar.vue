@@ -179,7 +179,8 @@ button.extra-info-button:hover svg {
 }
 
 .tool-call-bar {
-    margin: .5rem;
+    margin-top: .5rem;
+    margin-bottom: .5rem;
     width: 15rem;
     height: 4rem;
     background-color: #f5f5f5;
