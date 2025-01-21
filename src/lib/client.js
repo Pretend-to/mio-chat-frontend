@@ -185,9 +185,10 @@ export default class Client extends EventEmitter {
    * @param {object} client 用户信息
    */
   loadLocalStorage(client) {
+    const config = this.config
     // 把client对象的所有属性附加到this上
     Object.assign(this, client)
-    console.log(this)
+    this.config = config
     // 如果联系人列表存在，那么实例化为联系人对象
     if (this.contactList.length != 0) {
       console.log('从缓存加载联系人列表')
