@@ -32,10 +32,6 @@ export default class Openai extends Adapter {
     }
 
 
-    changeModel(index) {
-        this.activeModelIndex = index
-    }
-
     async send(messages,index,settings){
         console.log("send message to openai")
         // wrap the message with prompt

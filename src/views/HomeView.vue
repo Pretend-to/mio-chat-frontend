@@ -17,7 +17,6 @@ import { client } from '@/lib/runtime.js'
 
 export default {
     data() {
-        console.log(client.onPhone)
         return {
             onPhone: client.onPhone,
             client: client,

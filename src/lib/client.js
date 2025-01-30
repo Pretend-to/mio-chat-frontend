@@ -40,13 +40,10 @@ export default class Client extends EventEmitter {
 
     const localConfig = await this.getLocalStorage()
     await this.config.loadOnebotDefaultConfig()
-    console.log(localConfig)
 
     if (localConfig) {
       localConfig.isConnected = false
       this.loadLocalStorage(localConfig)
-      console.log('从缓存加载客户端信息')
-      console.log(this)
 
     } else {
       // 使用者初次使用
@@ -118,6 +115,7 @@ export default class Client extends EventEmitter {
     const list = reactive(this.contactList)
     list.push(bot)
     await this.setLocalStorage();
+    return bot
   }
 
   rmContactor(id) {
@@ -191,12 +189,8 @@ export default class Client extends EventEmitter {
     this.config = config
     // 如果联系人列表存在，那么实例化为联系人对象
     if (this.contactList.length != 0) {
-      console.log('从缓存加载联系人列表')
-      console.log(client.contactList)
       this.contactList = []
       this.contactList = client.contactList.map((item) => new Contactor(item.platform, item))
-    }else{
-      console.log(client.contactList)
     }
   }
 
@@ -218,7 +212,6 @@ export default class Client extends EventEmitter {
       const socket = new Socket(this.id, this.code)
       socket.on('connect', async (info) => {
         console.log('登录成功')
-        console.log(info)
         this.qq = info.admin_qq
         this.avatar = `/api/qava?q=${this.qq}`
         this.botqq = info.bot_qq
@@ -263,9 +256,9 @@ export default class Client extends EventEmitter {
         }
       } 
     })
-    this.socket.on('system_message', (e) => {
-      if(e.type != 'heartbeat') console.log(e)
-    })
+    // this.socket.on('system_message', (e) => {
+    //   if(e.type != 'heartbeat') console.log(e)
+    // })
 
   }
 

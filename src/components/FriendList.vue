@@ -42,7 +42,7 @@ export default {
         return item.priority == 0 ? "important" : "";
       }
     },
-    genBlankBot() {
+    async genBlankBot() {
 
       const openaiDefaultConfig = {
         id: this.genFakeId(),
@@ -50,11 +50,13 @@ export default {
         avatar: "/static/avatar/openai.png",
         title: "gpt",
         priority: 1,
-        options: config.openaiDefaultConfig,
+        options: {...config.openaiDefaultConfig},
       };
 
+      console.log(openaiDefaultConfig);
+
       this.showAddOptions = false;
-      client.addConcator("openai", openaiDefaultConfig);
+      await client.addConcator("openai", openaiDefaultConfig)
       this.addReactiveListener()
 
     },
@@ -153,7 +155,7 @@ export default {
       </div>
       <div class="bu-add">
         <button id="addcont" @click="showAddOptions = !showAddOptions">+</button>
-        <div v-show="showAddOptions" id="add-options">
+        <div v-show="showAddOptions" :style="{ left: onPhone ? '-6rem' : '0px'}" id="add-options">
           <ul>
             <li>
               <button @click="genBlankBot">新建空白Bot</button>

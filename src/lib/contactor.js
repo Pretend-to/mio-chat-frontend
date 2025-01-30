@@ -161,7 +161,7 @@ export default class Contactor extends EventEmmiter {
               id: elm.data.id,
               function: {
                 name: elm.data.name,
-                arguments: JSON.stringify(elm.data.params)
+                arguments: elm.data.params
               },
               type: "function"
             }]
@@ -381,8 +381,11 @@ export default class Contactor extends EventEmmiter {
     }
   }
 
+  setOpenaiPresets(presets) {
+    this.options.history = presets;
+  }
+
   getMessageSummary(message) {
-    console.log('获取消息摘要');
     const getMessageText = (element) => {
       switch (element.type) {
         case "text": return element.data.text;

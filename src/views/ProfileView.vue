@@ -51,7 +51,7 @@
                             </div>
                         </div>
                         <div  :class="{  hidden: !showPresetsDetail,'block-content-item':true }">
-                            <PresetsList @updatePresetsHistory="updateOpenaiPresets" :presetsHistory="activeContactor.options.history" />
+                            <PresetsList @updatePresetsHistory="updateOpenaiPresets" :presetsHistory="presetHistory" />
                         </div>
                     </div>
                 </div>
@@ -95,13 +95,13 @@ export default {
             sliderTypeARange: [0, 1, 0.1],
             sliderTypeBRange: [-2, 2, 0.2],
             showPresetsDetail: false,
+            presetHistory: contactor.options.history,
         }
     },
     components: {
         PresetsList,
     },
     mounted() {
-        console.log(this.activeContactor);
         setInterval(() => {
             this.currentDelay = client.socket.delay;
         }, 3000);
@@ -121,13 +121,15 @@ export default {
     watch: {
         "$route.params.id"(newVal) {
             this.activeContactor = client.getContactor(newVal);
+            console.log(this.activeContactor);
             this.openaiSettings = this.getShownOpenAISettings(this.activeContactor.options);
+            this.presetHistory = [...this.activeContactor.options.history];
+            console.log(this.activeContactor.options);
         }
     },
     methods: {
         updateOpenaiPresets(presets) {
-            console.log(presets);
-            this.activeContactor.options.history = presets;
+            this.activeContactor.setOpenaiPresets(presets);
             client.setLocalStorage(); //持久化存储
         },
         updateOpenaiOptions() {
@@ -143,7 +145,6 @@ export default {
             shownKeys.map((key) => {
                 shownSettings[key] = options[key];
             });
-            console.log(shownSettings);
             return shownSettings;
         },
         getShownKey(key) {
@@ -176,6 +177,7 @@ export default {
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
+    overflow-x: hidden;
 }
 
 .item-extra-content {

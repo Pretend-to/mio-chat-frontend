@@ -1,9 +1,3 @@
-/**
- * @author Mio-FCIP <1099834705@qq.com>
- * @lastEditor 彭志勇 <2457305628@qq.com>
- * @lastEditTime 2024-04-25 06:25:30
- */
-
 import { createRouter, createWebHistory } from 'vue-router'
 import { client } from '@/lib/runtime.js'
 import { ElMessage } from 'element-plus'
@@ -53,9 +47,8 @@ const router = createRouter({
   ]
 })
 
-router.beforeEach(async (to,from) => {
-  console.log(`router.beforeEach to: ${to.path} from: ${from.path}`)
-  console.log(client.everLogin)
+router.beforeEach(async (to) => {
+
   let everLogin = client.everLogin
 
   if (!everLogin) everLogin = await client.getLoginHistory()

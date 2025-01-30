@@ -374,6 +374,16 @@ export default {
     color: aliceblue;
     background-color: rgb(196, 43, 28);
 }
+@media (max-width: 600px) {
+    .add-contactor {
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        transform: none;
+        border-radius: 0;
+    }
+}
 </style>
 <style>
 .loading,

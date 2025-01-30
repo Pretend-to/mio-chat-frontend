@@ -31,7 +31,7 @@ export default {
       menuTop: 0,
       menuLeft: 0,
       longPressTimer: null,
-      selectedMessageIndex: -1,
+      validMessageIndex: -1,
       repliedMessage: null,
       autoScroll: false,
       fullScreen: false,
@@ -112,8 +112,11 @@ export default {
         link.click();
       });
     },
+    hasOpening() {
+      return this.activeContactor.options.opening? true : false;
+    },
     getFullMessages() {
-      return this.activeContactor.options.opening?
+      return this.hasOpening() ?
         [{
           role: "other",
           content: [{
@@ -287,7 +290,7 @@ export default {
     },
     showMessageMenu(event, messageIndex) {
       console.log(messageIndex);
-      this.selectedMessageIndex = messageIndex;
+      this.validMessageIndex = this.activeContactor.platform === "openai" && this.hasOpening()? messageIndex - 1 : messageIndex;
       event.preventDefault();
       this.showMenu = true;
       this.menuTop = event.clientY;
@@ -299,9 +302,8 @@ export default {
         case "copy": {
           // Construct the text to copy
           let text = "";
-          const messageChain = this.getFullMessages();
-          const message = messageChain[this.selectedMessageIndex]; // Corrected typo
-          console.log(this.selectedMessageIndex);
+          const message = this.activeContactor.messageChain[this.validMessageIndex]; // Corrected typo
+          console.log(this.validMessageIndex);
           message.content.forEach((element) => {
             if (element.type === "text") {
               text += element.data.text;
@@ -333,34 +335,21 @@ export default {
         case "reply":
           if (this.activeContactor.platform === "onebot") {
             this.repliedMessage =
-              this.activeContactor.messageChain[this.selectedMessageIndex];
+              this.activeContactor.messageChain[this.validMessageIndex];
             this.$message({ message: "已引用该消息", type: "success" });
           } else {
             this.userInput +=
               this.getReplyText(
-                this.activeContactor.messageChain[this.selectedMessageIndex].id
+                this.activeContactor.messageChain[this.validMessageIndex].id
               ) + "\n\n";
           }
 
           break;
         case "delete":
           if (this.activeContactor.platform === "onebot")
-            this.activeContactor.messageChain.splice(this.selectedMessageIndex, 1);
+            this.activeContactor.messageChain.splice(this.validMessageIndex, 1);
           else {
-            if (
-              this.activeContactor.messageChain[this.selectedMessageIndex].status === "completed" ||
-              this.activeContactor.messageChain.filter(
-                (item) => item.status === "pending"
-              ).length === 1
-            ) {
-              this.activeContactor.messageChain.splice(this.selectedMessageIndex, 1);
-            }
-            else {
-              this.$message({
-                message: "当前有消息在更新，等等再删叭",
-                type: "warning",
-              });
-            }
+            this.activeContactor.messageChain.splice(this.validMessageIndex, 1);
           }
           this.showMenu = false;
           break;
@@ -466,7 +455,7 @@ export default {
       <div class="return" @click="tolist()">
         <i class="iconfont icon-return"></i>
       </div>
-      <div @click="$router.push(`/profile/${activeContactor.id}`)" class="somebody">
+      <div @click="$router.push(`/profile/${activeContactor.id}`)" class="name-area">
         {{ activeContactor.name }}
         <span :class="'delay-status ' + getDelayStatus"></span>
         <span class="delay-num">当前延迟: {{ currentDelay }} ms</span>
@@ -531,7 +520,7 @@ export default {
                   :modelValue="'未知的消息类型：\n```\n' + element + '\n```'" />
                 </div>
             </div>
-            <div v-if="showMenu && selectedMessageIndex === index" id="message-menu"
+            <div v-if="showMenu && validMessageIndex === index" id="message-menu"
               :style="{ top: menuTop + 'px', left: menuLeft + 'px' }">
               <div @click="messageMenuClick('copy')">
                 <i class="iconfont fuzhi"></i><span>复制</span>
@@ -598,12 +587,14 @@ $icon-hover: #09f
             margin-left: 1rem
             margin-bottom: .8rem
 
-    .somebody
+    .name-area
         cursor: pointer
         position: relative
         margin-left: 1.5rem
         margin-bottom: 0.5rem
         font-size: 1rem
+        display: flex
+        align-items: center
 
     .options
         flex-basis: 6rem
@@ -751,10 +742,10 @@ $icon-hover: #09f
     position: absolute
 
 .delay-status
-    display: inline-block
     width: 0.5rem
     height: 0.5rem
     border-radius: 50%
+    margin-left: .3rem
 
     &:hover + .delay-num
         display: inline-block
@@ -804,7 +795,7 @@ $icon-hover: #09f
     .window-controls
         display: none
 
-    .somebody
+    .name-area
         padding-bottom: 0.25rem
 
     .input-area
@@ -812,6 +803,10 @@ $icon-hover: #09f
 
     .inputbar
         flex-basis: 4rem
+
+    .delay-status
+        position: relative
+        top: -.2rem
 
 </style>
 <style scoped>
