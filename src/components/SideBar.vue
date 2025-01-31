@@ -265,6 +265,7 @@ export default {
     width: 100%;
     flex-direction: row;
     flex-basis: 4rem;
+    background-color: #F5F4F9;
   }
   .admin-avatar {
     display: none;
