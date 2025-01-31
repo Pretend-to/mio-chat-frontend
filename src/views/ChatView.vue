@@ -487,12 +487,13 @@ export default {
         </div>
         <div class="message-body" :id="item.role">
           <div class="avatar" v-if="item.role !== 'mio_system'">
-            <img v-if="item.role === 'other'"  @click="$router.push(`/profile/${activeContactor.id}`)"  :src="activeContactor.avatar" :alt="activeContactor.name" />
+            <img v-if="item.role === 'other'" @click="$router.push(`/profile/${activeContactor.id}`)"
+              :src="activeContactor.avatar" :alt="activeContactor.name" />
             <img v-else :src="client.avatar" :alt="client.name" />
           </div>
           <div class="msg" v-if="item.role !== 'mio_system'">
             <div class="wholename">
-              <div class="title">
+              <div class="title" v-if="item.role === 'other' ? activeContactor.title : client.title">
                 {{ item.role === "other" ? activeContactor.title : client.title }}
               </div>
               <div class="name">
@@ -501,8 +502,8 @@ export default {
             </div>
             <div class="content" @contextmenu.self="showMessageMenu($event, index)">
               <div class="inner-content" v-for="(element, index) of item.content" :key="index">
-                <MdPreview v-if="element.type === 'text'" :noImgZoomIn="false" previewTheme="github" :editorId="`previewer-${index}`"
-                  :modelValue="element.data.text" />
+                <MdPreview v-if="element.type === 'text'" :noImgZoomIn="false" previewTheme="github"
+                  :editorId="`previewer-${index}`" :modelValue="element.data.text" />
                 <el-image v-else-if="element.type === 'image'" style="max-width: 20rem;" :src="element.data.file"
                   :zoom-rate="1.2" :max-scale="7" :min-scale="0.2" :preview-src-list="[element.data.file]"
                   :initial-index="4" :key="index" fit="cover" />
@@ -512,13 +513,14 @@ export default {
                   :messages="element.data.messages" />
                 <MdPreview v-else-if="element.type === 'file'" previewTheme="github" :editorId="`previewer-${index}`"
                   :modelValue="'> ' + element.data.file" />
-                <div v-else-if="element.type === 'blank'" class="blank-message" style="width: 10rem; height: 28.8px; position: relative;">
-                  <span class="blank_loader" ></span>
+                <div v-else-if="element.type === 'blank'" class="blank-message"
+                  style="width: 10rem; height: 28.8px; position: relative;">
+                  <span class="blank_loader"></span>
                 </div>
                 <ToolCallBar v-else-if="element.type === 'tool_call'" :tool_call="element.data" />
                 <MdPreview v-else previewTheme="github" :editorId="`previewer-${index}`"
                   :modelValue="'未知的消息类型：\n```\n' + element + '\n```'" />
-                </div>
+              </div>
             </div>
             <div v-if="showMenu && validMessageIndex === index" id="message-menu"
               :style="{ top: menuTop + 'px', left: menuLeft + 'px' }">

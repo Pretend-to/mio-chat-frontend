@@ -7,7 +7,7 @@
         <div class="body">
             <div class="search">
                 <i class="iconfont sousuo listicon" />
-                <input type="text" placeholder="输入搜索关键词" v-model="keyWord" />
+                <input type="text" placeholder="输入搜索关键词" @input="loadSerachPresets" v-model="keyWord" />
             </div>
             <div class="info">
                 <header class="presets-types">
@@ -17,8 +17,8 @@
                     </nav>
                 </header>
                 <div :style="{ left: buttonTranslate }" class="slide-button"></div>
-                <div v-if="shownPrestsList.length>0 || [0,3].includes(activeTypeIndex)" class="presets-list">
-                    <div class="presets-item"  v-for="(preset, index) in shownPrestsList" :key="index">
+                <div v-if="shownPrestsList.length > 0 || [0, 3].includes(activeTypeIndex)" class="presets-list">
+                    <div class="presets-item" v-for="(preset, index) in shownPrestsList" :key="index">
                         <div class="preset-avatar">{{ preset.name.slice(0, 2) }}</div>
                         <div class="preset-info">
                             <div class="preset-name">{{ preset.name }}</div>
@@ -34,7 +34,7 @@
                         <div></div>
                     </div>
                 </div>
-                <div class="empty-list" v-else >
+                <div class="empty-list" v-else>
                     <el-empty :image-size="200" />
                 </div>
             </div>
@@ -73,6 +73,10 @@ export default {
                     : false;
         },
         shownPrestsList() {
+            // 如果 keyWord 不为空，返回 searchPresets
+            if (this.keyWord) {
+                return this.searchPresets;
+            }
             return this.activeTypeIndex === 2
                 ? this.localPresets
                 : this.activeTypeIndex === 1
@@ -170,6 +174,22 @@ export default {
 
             return this.systemPresets;
         },
+        async loadSerachPresets() {
+            const load = async () => {
+                const res = await fetch(
+                    `/api/openai/presets?type=search&keyword=${this.keyWord}`
+                ).then((res) => res.json());
+                this.searchPresets = res.data;
+            }
+
+            // 添加节流逻辑
+            if (this.searchTimer) {
+                clearTimeout(this.searchTimer);
+            }
+            this.searchTimer = setTimeout(() => {
+                load();
+            }, 500);
+        },
     },
     mounted() {
         const callback = (entries) => {
@@ -203,6 +223,7 @@ export default {
     justify-content: center;
     width: 100%;
 }
+
 .presets-list {
     position: relative;
     width: 100%;
@@ -246,7 +267,7 @@ export default {
 }
 
 .preset-avatar {
-    min-width:  2.8rem;
+    min-width: 2.8rem;
     height: 2.8rem;
     background-color: #0099ff;
     color: #fff;
@@ -383,6 +404,7 @@ export default {
     color: aliceblue;
     background-color: rgb(196, 43, 28);
 }
+
 @media (max-width: 600px) {
     .add-contactor {
         width: 100%;
