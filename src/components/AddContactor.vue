@@ -210,7 +210,7 @@ export default {
     flex-direction: column;
     align-items: center;
     margin-top: 1rem;
-    height: 22rem;
+    height: calc(100% - 3rem);
     overflow-y: auto;
 }
 
@@ -223,7 +223,11 @@ export default {
     /* 使用省略号 */
     font-size: 0.8rem;
     color: #888;
-    width: 18em;
+    width: 100%;
+}
+
+.presets-item button {
+    flex-basis: 60px;
 }
 
 .presets-loader {
@@ -235,13 +239,14 @@ export default {
     position: relative;
     margin-top: 0.5rem;
     width: 100%;
+    max-width: 100%;
     display: flex;
     flex-basis: 3rem;
     justify-content: space-around;
 }
 
 .preset-avatar {
-    flex-basis: 2.8rem;
+    min-width:  2.8rem;
     height: 2.8rem;
     background-color: #0099ff;
     color: #fff;
@@ -254,6 +259,7 @@ export default {
 .preset-info {
     position: relative;
     margin-left: 0.5rem;
+    width: calc(100% - 7.5rem);
 }
 
 .slide-button {
@@ -274,6 +280,7 @@ export default {
     padding-right: 1rem;
     overflow: hidden;
     position: relative;
+    height: calc(100% - 2.5rem);
 }
 
 .info {
@@ -282,6 +289,7 @@ export default {
     flex-direction: column;
     align-items: flex-start;
     position: relative;
+    height: calc(100% - 2.5rem);
 }
 
 .presets-types {
@@ -353,6 +361,7 @@ export default {
 }
 
 .head {
+    height: 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;

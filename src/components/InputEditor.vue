@@ -463,6 +463,9 @@ i:hover
     border: 0 solid rgba(161, 154, 154, 0.626)
     flex-basis: 11rem
 
+    @media (max-width: $mobile)
+        flex-basis: 7rem
+
     .options
         display: flex
         border-top: 0.0625rem solid rgba(128, 128, 128, 0.502)

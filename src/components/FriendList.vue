@@ -224,8 +224,6 @@ export default {
   min-width: 14rem;
   max-width: 14rem;
   flex-direction: column;
-  border-left: 0.0625rem solid rgba(161, 154, 154, 0.626);
-  border-right: 0.0625rem solid rgba(161, 154, 154, 0.626);
   position: relative;
 }
 
@@ -251,10 +249,9 @@ export default {
   display: flex;
   flex-direction: row;
   background-color: rgb(255, 255, 255);
-  flex: 0 0 48px;
+  flex: 0 0 3rem;
   padding: 0.375rem 0.5em 0.5rem 0.5rem;
   align-items: flex-end;
-  border-bottom: 0.0625rem solid rgba(161, 154, 154, 0.626);
 }
 
 input#tosearch {

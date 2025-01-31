@@ -554,7 +554,7 @@ $icon-hover: #09f
     position: relative
     display: flex
     flex-grow: 1
-    background-color: #f1f1f1
+    background-color: #f2f2f2
     flex-direction: column
 
     @media (max-width: $mobile)
@@ -567,7 +567,7 @@ $icon-hover: #09f
     display: flex
     align-items: flex-end
     justify-content: space-between
-    border-bottom: 0.0625rem solid rgba(161, 154, 154, 0.626)
+    border-bottom: 0.0625rem solid #ebebeb
 
     @media (max-width: 600px)
         background: #00a8ff linear-gradient(to right, #00d2f8, #00a8ff)

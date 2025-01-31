@@ -52,7 +52,7 @@ export default {
 </script>
 <style lang="sass" scoped>
 .blank-view 
-  background-color: #f1f1f1
+  background-color: #f2f2f2
   flex-grow: 1
 
 .upside-bar

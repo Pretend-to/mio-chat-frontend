@@ -29,7 +29,7 @@ export default {
 
 <style scoped>
 #settings-view {
-    width: 100%;
+    flex-grow: 1;
     height: 100%;
     background-color: #f2f2f2;
     display: flex;
