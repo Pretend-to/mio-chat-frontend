@@ -46,6 +46,7 @@ export default class Client extends EventEmitter {
     if (this.events[eventName]) {
       this.events[eventName].forEach(listener => {
         listener(data);
+        console.log(`emit ${eventName} end`)
       });
     }
   }
