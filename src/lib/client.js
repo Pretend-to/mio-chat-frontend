@@ -32,6 +32,24 @@ export default class Client extends EventEmitter {
     this.config = config
   }
 
+
+  on(eventName, listener) {
+    console.log(`register ${eventName}`)
+    // 移除之前的回调函数
+    this.off(eventName);
+    // 添加新的回调函数
+    this.events[eventName] = [listener];
+  }
+
+  emit(eventName, data) {
+    console.log(`emit ${eventName}`)
+    if (this.events[eventName]) {
+      this.events[eventName].forEach(listener => {
+        listener(data);
+      });
+    }
+  }
+
   /**
    * 预初始化
    * @returns {object} 初始化信息
@@ -197,7 +215,6 @@ export default class Client extends EventEmitter {
       this.contactList = client.contactList.map((item) => new Contactor(item.platform, item))
     }
     this.emit('loaded')
-    console.log(`emited at ${new Date()}`)
   }
 
   /**

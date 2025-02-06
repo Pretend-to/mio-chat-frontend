@@ -6,7 +6,6 @@ export default class EventEmitter {
     on(eventName, listener) {
         // 移除之前的回调函数
         this.off(eventName);
-
         // 添加新的回调函数
         this.events[eventName] = [listener];
     }
