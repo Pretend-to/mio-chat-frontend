@@ -111,7 +111,7 @@ export default class Contactor extends EventEmmiter {
         this.emit("completeMessage", {
           text:
             "请求发生错误！\n```json\n" +
-            JSON.stringify(e.error, null, 2) +
+            e.error +
             "\n```\n",
           index: messageIndex,
           error: true,
