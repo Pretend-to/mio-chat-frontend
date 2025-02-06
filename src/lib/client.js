@@ -144,6 +144,10 @@ export default class Client extends EventEmitter {
     }
   }
 
+  getContactors() {
+    return this.contactList
+  }
+
   /**
    * 生成一个以1开头的5位随机ID
    * @returns {number} 1开头的5位随机ID

@@ -4,12 +4,14 @@ import AddContactor from '@/components/AddContactor.vue';
 
 export default {
   data() {
-    const contactorList = client.contactList
-    const onPhone = client.onPhone;
+    let list = client.getContactors();
+    while (list.length == 0) {
+      list = client.getContactors();
+    }
 
     return {
-      onPhone: onPhone,
-      contactorList: contactorList,
+      onPhone: client.onPhone,
+      contactorList: list,
       showAddOptions: false,
       showAddWindow: false,
     };
