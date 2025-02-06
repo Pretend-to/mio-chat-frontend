@@ -5,9 +5,6 @@ import AddContactor from '@/components/AddContactor.vue';
 export default {
   data() {
     let list = client.getContactors();
-    while (list.length == 0) {
-      list = client.getContactors();
-    }
 
     return {
       onPhone: client.onPhone,
@@ -144,6 +141,16 @@ export default {
   },
   mounted() {
     this.addReactiveListener()
+  },
+  async beforeCreate() {
+    if (client.getContactors().length == 0) {
+      return new Promise((resolve) => {
+        client.on("updateContactors", () => {
+          this.contactorList = client.getContactors();
+          resolve();
+        });
+      });
+    }
   },
 };
 </script>

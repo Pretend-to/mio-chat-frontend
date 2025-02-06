@@ -196,6 +196,7 @@ export default class Client extends EventEmitter {
       this.contactList = []
       this.contactList = client.contactList.map((item) => new Contactor(item.platform, item))
     }
+    this.emit('loaded')
   }
 
   /**
