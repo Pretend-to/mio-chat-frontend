@@ -1,6 +1,6 @@
 <script>
-import { client,config } from "@/lib/runtime.js";
-import AddContactor from '@/components/AddContactor.vue';
+import { client, config } from "@/lib/runtime.js";
+import AddContactor from "@/components/AddContactor.vue";
 
 export default {
   data() {
@@ -22,7 +22,10 @@ export default {
       // 如果当前路径 name 是 blank 或者 chat_view ，跳转到 /chat/:id
       if (this.$route.name == "blank" || this.$route.name == "chat_view") {
         this.$router.push({ name: "chat_view", params: { id: id } });
-      } else if (this.$route.name == "contactors" || this.$route.name == "profile_view") {
+      } else if (
+        this.$route.name == "contactors" ||
+        this.$route.name == "profile_view"
+      ) {
         this.$router.push({ name: "profile_view", params: { id: id } });
       } else {
         // 否则，直接跳转到 /chat/:id
@@ -42,22 +45,20 @@ export default {
       }
     },
     async genBlankBot() {
-
       const openaiDefaultConfig = {
         id: this.genFakeId(),
         name: client.default_model,
         avatar: "/static/avatar/openai.png",
         title: "gpt",
         priority: 1,
-        options: {...config.openaiDefaultConfig},
+        options: { ...config.openaiDefaultConfig },
       };
 
       console.log(openaiDefaultConfig);
 
       this.showAddOptions = false;
-      await client.addConcator("openai", openaiDefaultConfig)
-      this.addReactiveListener()
-
+      await client.addConcator("openai", openaiDefaultConfig);
+      this.addReactiveListener();
     },
     startResize(event) {
       this.isResizing = true;
@@ -112,42 +113,39 @@ export default {
           ...config.openaiDefaultConfig,
           model: preset.recommendedModel ?? client.default_model,
           opening: preset.opening,
-          history:preset.history,
+          history: preset.history,
           textWrapper: preset.textWrapper,
           tools: preset.tools,
         },
       };
       client.addConcator("openai", contactor);
-      this.addReactiveListener()
-
-    }, 
+      this.addReactiveListener();
+    },
     addReactiveListener() {
       this.contactorList.map((contactor) => {
         contactor.on("updateMessageSummary", () => {
           contactor.lastMessageSummary = contactor.getMessageSummary();
-        })
+        });
       });
-    }
+    },
   },
   components: {
     AddContactor,
   },
   computed: {
     sortedList() {
-      return [...this.contactorList].sort(
-        (a, b) => (b.priority - a.priority) == -1 ? 1 : (b.lastUpdate - a.lastUpdate)
+      return [...this.contactorList].sort((a, b) =>
+        b.priority - a.priority == -1 ? 1 : b.lastUpdate - a.lastUpdate
       );
     },
   },
   mounted() {
-    this.addReactiveListener()
+    this.addReactiveListener();
   },
   beforeCreate() {
     if (client.getContactors().length == 0) {
-      return new Promise((resolve) => {
-        client.on("loaded", () => {
-          resolve();
-        });
+      client.on("loaded", () => {
+        this.contactorList = client.getContactors();
       });
     }
   },
@@ -162,14 +160,20 @@ export default {
         <input type="text" id="tosearch" placeholder="搜索" />
       </div>
       <div class="bu-add">
-        <button id="addcont" @click="showAddOptions = !showAddOptions">+</button>
-        <div v-show="showAddOptions" :style="{ left: onPhone ? '-6rem' : '0px'}" id="add-options">
+        <button id="addcont" @click="showAddOptions = !showAddOptions">
+          +
+        </button>
+        <div
+          v-show="showAddOptions"
+          :style="{ left: onPhone ? '-6rem' : '0px' }"
+          id="add-options"
+        >
           <ul>
             <li>
               <button @click="genBlankBot">新建空白Bot</button>
             </li>
             <li>
-              <button @click="genBotByPreset" >从预设新建Bot</button>
+              <button @click="genBotByPreset">从预设新建Bot</button>
             </li>
           </ul>
         </div>
@@ -193,9 +197,12 @@ export default {
         </div>
       </div>
     </div>
-    <div class="resizer" @mousedown="startResize">
-    </div>
-    <AddContactor v-if="showAddWindow" @close="showAddWindow = false" @addBot="addPresetContactor" ></AddContactor>
+    <div class="resizer" @mousedown="startResize"></div>
+    <AddContactor
+      v-if="showAddWindow"
+      @close="showAddWindow = false"
+      @addBot="addPresetContactor"
+    ></AddContactor>
   </div>
 </template>
 
@@ -210,20 +217,20 @@ export default {
   border-radius: 0.3125rem;
   z-index: 2;
 }
-#add-options li{
+#add-options li {
   display: flex;
   flex-direction: row-reverse;
-  margin-left: .5rem;
-  margin-right: .5rem;
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
 }
-#add-options ul{
+#add-options ul {
   display: flex;
   flex-direction: column;
   justify-content: space-around;
   height: 100%;
   box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.1);
 }
-#add-options button{
+#add-options button {
   background-color: transparent;
 }
 #friendlists {
