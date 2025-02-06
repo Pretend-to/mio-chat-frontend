@@ -144,13 +144,9 @@ export default {
   },
   beforeCreate() {
     if (client.getContactors().length == 0) {
-      console.log('not loaded,add listener')
       client.on("loaded", () => {
         this.contactorList = client.getContactors();
-        console.log('loaded')
       });
-    }else {
-      console.log('loaded')
     }
   },
 };
