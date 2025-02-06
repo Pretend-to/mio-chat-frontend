@@ -39,10 +39,12 @@ export default class Client extends EventEmitter {
     this.off(eventName);
     // 添加新的回调函数
     this.events[eventName] = [listener];
+    console.log(this.events[eventName])
   }
 
   emit(eventName, data) {
     console.log(`emit ${eventName}`)
+    console.log(this.events[eventName])
     if (this.events[eventName]) {
       this.events[eventName].forEach(listener => {
         listener(data);
