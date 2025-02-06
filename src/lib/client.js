@@ -32,27 +32,6 @@ export default class Client extends EventEmitter {
     this.config = config
   }
 
-
-  on(eventName, listener) {
-    console.log(`register ${eventName}`)
-    // 移除之前的回调函数
-    this.off(eventName);
-    // 添加新的回调函数
-    this.events[eventName] = [listener];
-    console.log(this.events[eventName])
-  }
-
-  emit(eventName, data) {
-    console.log(`emit ${eventName}`)
-    console.log(this.events[eventName])
-    if (this.events[eventName]) {
-      this.events[eventName].forEach(listener => {
-        listener(data);
-        console.log(`emit ${eventName} end`)
-      });
-    }
-  }
-
   /**
    * 预初始化
    * @returns {object} 初始化信息
@@ -208,19 +187,18 @@ export default class Client extends EventEmitter {
    * @param {object} client 用户信息
    */
   loadLocalStorage(client) {
-    const config = this.config
+    const config = {...this.config}
+    const events = {...this.events}
     // 把client对象的所有属性附加到this上
     Object.assign(this, client)
     this.config = config
+    this.events = events
     // 如果联系人列表存在，那么实例化为联系人对象
     if (this.contactList.length != 0) {
       this.contactList = []
       this.contactList = client.contactList.map((item) => new Contactor(item.platform, item))
     }
     this.emit("loaded")
-    setTimeout(() => {
-      this.emit("second loaded")
-    }, 1000)
   }
 
   /**
