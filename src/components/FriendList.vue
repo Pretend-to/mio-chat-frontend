@@ -142,11 +142,10 @@ export default {
   mounted() {
     this.addReactiveListener()
   },
-  async beforeCreate() {
+  beforeCreate() {
     if (client.getContactors().length == 0) {
       return new Promise((resolve) => {
-        client.on("updateContactors", () => {
-          this.contactorList = client.getContactors();
+        client.on("loaded", () => {
           resolve();
         });
       });
