@@ -45,12 +45,16 @@ export default {
       }
     },
     async genBlankBot() {
+      const options = {
+        ...config.openaiDefaultConfig
+      }
       const openaiDefaultConfig = {
         id: this.genFakeId(),
-        title: "gpt",
+        title: options.default_model,
         avatarPolicy: 0,
+        namePolicy: 2,
         priority: 1,
-        options: { ...config.openaiDefaultConfig },
+        options: options,
       };
 
       console.log(openaiDefaultConfig);

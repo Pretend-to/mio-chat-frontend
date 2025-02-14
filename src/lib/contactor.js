@@ -441,23 +441,26 @@ export default class Contactor extends EventEmmiter {
     return avatar
   }
 
-  loadName() {
-    let name = '未命名 Bot'
+  async loadName() {
+    let name = this.name ?? '未命名 Bot'
     if(namePolicy[this.namePolicy] == 'MODEL') {
       const model = this.options.model;
       name =  model;
     } else if(namePolicy[this.namePolicy] == 'CUSTOM') {
       name =  this.name; 
     } else if(namePolicy[this.namePolicy] == 'SUMMARY') {
-      if(this.messageChain.length > 2) {
-        name =  this.getMessagesSummary(this.messageChain);
+      console.log(this.messageChain)
+      if(this.messageChain.length < 2) {
+       name = '新建的 Bot'
+      }else if(this.messageChain.length == 2 || this.messageChain.length % 6 == 0) {
+       name = await this.getMessagesSummary() 
       }
     }
     this.name = name
     return name
   }
 
-  loadMessagesSummary() {
+  getMessagesSummary() {
     if(this.platform == "openai") {
       return this.kernel.getMessagesSummary(this.messageChain);
     }else {

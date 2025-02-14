@@ -81,11 +81,11 @@ export default {
       this.$router.push({ name: "home" });
     },
 
-    setModel(name) {
+    async setModel(name) {
       this.activeContactor.options.model = name;
       this.activeContactor.title = name;
       // this.activeContactor.avatar = this.activeContactor.getAvatar(name);
-      client.setLocalStorage(); //持久化存储
+      await client.setLocalStorage(); //持久化存储
     },
     toimg() {
       // 使用html2canvas把 this.$refs.chatWindow 渲染为图片
@@ -237,7 +237,7 @@ export default {
         this.toupdate = true;
       });
 
-      contactor.on(`completeMessage`, (e) => {
+      contactor.on(`completeMessage`, async (e) => {
         const messageIndex = e.index;
         const rawMessage = this.activeContactor.messageChain[messageIndex];
         rawMessage.status = "completed";
@@ -260,7 +260,8 @@ export default {
 
         this.$forceUpdate();
         this.toupdate = true;
-        client.setLocalStorage(); //持久化存储
+        await this.activeContactor.loadName();
+        await client.setLocalStorage(); //持久化存储
       });
     },
     disableContactor(contactor) {
