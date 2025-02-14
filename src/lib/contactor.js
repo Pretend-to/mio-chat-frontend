@@ -437,17 +437,8 @@ export default class Contactor extends EventEmmiter {
   }
 
   loadAvatar() {
-    // console.log(this)
-    // if(avatarPolicy[this.avatarPolicy] == 'MODEL') {
-    //   const model = this.options.model;
-    //   return this.getAvatarByModel(model)
-    // }else if(avatarPolicy[this.avatarPolicy] == 'URL') {
-    //   return this.avatar 
-    // }else if(avatarPolicy[this.avatarPolicy] == 'QQ') {
-    //   return `/api/qava?q=${this.options.qq}` 
-    // }
     let avatar = '/static/avatar/miobot.png';
-    if(this.avatarPolicy == 'MODEL') {
+    if(avatarPolicy[this.avatarPolicy] == 'MODEL') {
       const model = this.options.model;
       avatar = this.getAvatarByModel(model) 
     }else if(avatarPolicy[this.avatarPolicy] == 'CUSTOM') {

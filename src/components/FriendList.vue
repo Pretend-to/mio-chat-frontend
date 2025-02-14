@@ -48,6 +48,7 @@ export default {
       const openaiDefaultConfig = {
         id: this.genFakeId(),
         title: "gpt",
+        avatarPolicy: 0,
         priority: 1,
         options: { ...config.openaiDefaultConfig },
       };
