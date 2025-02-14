@@ -1,97 +1,78 @@
 <script>
-import { client } from "@/lib/runtime.js";
+import { client,config } from "@/lib/runtime.js";
 import sideBar from "@/components/SideBar.vue";
-
+import displayButtons from "./components/DisplayButtons.vue";
 export default {
   data() {
+    const displayConfig = config.getDisplayConfig();
+
     return {
-      windowWidth: window.innerWidth, // 存储窗口宽度
+      onPhone: client.onPhone,
       client: client,
-      fullScreen: true,
-      beian: "",
+      fullScreen: displayConfig?.full_screen || false,
+      beian: displayConfig?.beian || "",
     };
+  },
+  methods: {
+    setWindowSize(fullScreen) {
+      this.fullScreen = fullScreen;
+      config.updateDisplayConfig({
+        full_screen: fullScreen, 
+      })
+    }, 
   },
   components: {
     sideBar,
+    displayButtons,
   },
   computed: {
-    onPhone() {
-      return this.windowWidth >= 600 ? false : true;
-    },
     onPrivate() {
       return this.$route.path.includes("/profile") || this.$route.path.includes("/chat");
     }
-
   },
   async created() {
+
     await client.beforeInit();
     await client.init();
+    
+    const displayConfig = config.getDisplayConfig();
 
-    this.fullScreen = client.fullScreen;
-    this.beian = client.beian;
-    document.title = client.webTitle;
-
-    if (this.onPhone) {
-      client.onPhone = true;
-      this.$router.push("/");
-    }
-    else {
-      client.onPhone = false;
-      this.$refs.sidebar.loadAvatar(client.admin_qq);
-    }
-
-    client.on("screenChange", async (status) => {
-      this.fullScreen = status
-      client.fullScreen = status
-      await client.setLocalStorage();
-    });
-
-  },
-  methods: {
-    handleResize() {
-      this.windowWidth = window.innerWidth; // 更新窗口宽度
+    if(displayConfig) {
+      this.fullScreen = displayConfig.full_screen;
+      this.beian = displayConfig.beian;
+      document.title = displayConfig.title;
     }
   },
   mounted() {
-    // 监听窗口宽度变化
-    window.addEventListener("resize", this.handleResize);
-  },
-  beforeUnmounted() {
-    // 在组件销毁前移除事件监听
-    window.removeEventListener("resize", this.handleResize);
-  },
-  watch: {
-    async onPhone(newValue) {
-      console.log("onPhone changed:", newValue);
-      client.onPhone = newValue;
-      await client.setLocalStorage();
-
-      if (newValue) {
-        this.$router.push("/");
-      } else {
-        this.$refs.sidebar.loadAvatar(client.admin_qq);
+    client.on('device-change',(type)=>{
+      if(type == "mobile") {
+        this.onPhone = true;
+      }else {
+        this.onPhone = false;
       }
-
-    },
+    })
+    client.on("screenChange", (status) => {
+      this.fullScreen = status
+      client.fullScreen = status
+      client.setLocalStorage();
+    });
   },
 };
 </script>
-
 <template>
   <div id="app">
     <div v-if="onPhone" class="mio-chat-mobile">
       <router-view></router-view>
       <sideBar v-if="!onPrivate"></sideBar>
     </div>
-    <div v-else class="mio-chat" :id="fullScreen ? 'fullscreen' : ''">
+    <div v-else class="mio-chat" :class="{ fullscreen: fullScreen }">
+      <displayButtons :fullScreen @full-screen="setWindowSize"></displayButtons>
       <sideBar ref="sidebar"></sideBar>
       <router-view></router-view>
     </div>
-
   </div>
   <a v-if="beian" id="beian" href="https://beian.miit.gov.cn/" target="_blank">{{ beian }}</a>
 </template>
-
 <style scoped>
 #app {
   background-image: url(/static/background/default.jpg);
@@ -99,7 +80,6 @@ export default {
   background-position: center;
   background-repeat: no-repeat;
 }
-
 #app::before {
   content: "";
   position: absolute;
@@ -110,8 +90,8 @@ export default {
   background-color: rgba(0, 0, 0, 0.5);
   /* 黑色蒙版，可调整透明度 */
 }
-
 .mio-chat {
+  position: relative;
   width: 60rem;
   height: 85%;
   min-height: 30rem;
@@ -123,14 +103,12 @@ export default {
   margin: 5rem 5rem;
   min-width: 35rem;
 }
-
-.mio-chat#fullscreen {
+.mio-chat.fullscreen {
   width: 100%;
   height: 100%;
   border-radius: 0rem;
   margin: 0rem;
 }
-
 .mio-chat-mobile {
   width: 100%;
   height: 100%;
@@ -142,7 +120,6 @@ export default {
   overflow: hidden;
   margin: 0;
 }
-
 a#beian {
   position: fixed;
   bottom: 1rem;
@@ -152,6 +129,5 @@ a#beian {
   color: #fff;
   text-decoration: none;
 }
-
 @media (min-width: 1024px) {}
 </style>

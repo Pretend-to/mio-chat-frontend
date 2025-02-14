@@ -11,25 +11,21 @@ localforage.config({
 export default class Client extends EventEmitter {
   constructor(config) {
     super()
-    this.everLogin = false
-    this.id = null
-    this.code = null
-    this.isLogin = false
-    this.isConnected = false
-    this.url = null
-    this.contactList = []
-    this.socket = null
-    this.qq = null
-    this.botqq = null
-    this.avatar = null
-    this.onPhone = null
-    this.models = []
-    this.beian = ""
-    this.fullScreen = false
-    this.title = "用户"
-    this.name = "user"
-    this.webTitle = ""
-    this.config = config
+    this.everLogin = false // 读取
+    this.id = null // 读取
+    this.code = null // 读取
+    this.isConnected = false // 动态
+    this.contactList = [] // 读取
+    this.socket = null // 动态
+    this.qq = null // web
+    this.botqq = null // web
+    this.avatar = null // web
+    this.onPhone = null // 动态
+    this.models = [] 
+    this.title = "Mio" // 固定
+    this.name = "user" // 固定
+    this.displaySettings = null // web
+    this.config = config //传参
   }
 
   /**
@@ -38,28 +34,20 @@ export default class Client extends EventEmitter {
    */
   async beforeInit() {
 
+    await this.setDisplayInfo()
     const localConfig = await this.getLocalStorage()
     await this.config.loadOnebotDefaultConfig()
 
     if (localConfig) {
       localConfig.isConnected = false
       this.loadLocalStorage(localConfig)
-
     } else {
       // 使用者初次使用
       this.id = this.genFakeId()
       this.code = null
-      console.log('生成默认信息')
-
-      const base_info = await this.getBaseInfo()
-      this.beian = base_info.beian
-      this.fullScreen = base_info.fullScreen
-      this.admin_qq = base_info.admin_qq
-      this.webTitle = base_info.title
-
-      this.setLocalStorage()
-
     }
+
+    this.emit('loaded')
   }
 
   async genDefaultConctor() {
@@ -67,6 +55,8 @@ export default class Client extends EventEmitter {
     const onebotDefaultConfig = {
       id: this.genFakeId(),
       name: 'OneBot',
+      namePolicy: 1,
+      avatarPolicy: 1,
       avatar: `/api/qava?q=${this.botqq}`,
       title: '云崽',
       priority: 0,
@@ -99,6 +89,8 @@ export default class Client extends EventEmitter {
       id: this.genFakeId(),
       name: 'MioBot',
       avatar: '/static/avatar/miobot.png',
+      namePolicy: 1,
+      avatarPolicy: 1,
       title: 'chat',
       priority: 0,
       lastUpdate: -Infinity,
@@ -112,6 +104,8 @@ export default class Client extends EventEmitter {
 
   async addConcator(platform, config) {
     const bot = new Contactor(platform, config)
+    bot.loadName()
+    bot.loadAvatar()
     const list = reactive(this.contactList)
     list.push(bot)
     await this.setLocalStorage();
@@ -136,7 +130,6 @@ export default class Client extends EventEmitter {
   async init() {
     if (this.everLogin) {
       console.log('检测到缓存，尝试自动重连')
-      this.isLogin = false
       this.isConnected = false
       await this.login(this.code)
     } else {
@@ -187,18 +180,16 @@ export default class Client extends EventEmitter {
    * @param {object} client 用户信息
    */
   loadLocalStorage(client) {
-    const config = {...this.config}
-    const events = {...this.events}
-    // 把client对象的所有属性附加到this上
-    Object.assign(this, client)
-    this.config = config
-    this.events = events
+    this.everLogin = client.everLogin
+    this.id = client.id
+    this.code = client.code
+    this.avatar = client.avatar
+    this.models = client.models
     // 如果联系人列表存在，那么实例化为联系人对象
-    if (this.contactList.length != 0) {
+    if (client.contactList.length != 0) {
       this.contactList = []
       this.contactList = client.contactList.map((item) => new Contactor(item.platform, item))
     }
-    this.emit("loaded")
   }
 
   /**
@@ -223,11 +214,12 @@ export default class Client extends EventEmitter {
         this.avatar = `/api/qava?q=${this.qq}`
         this.botqq = info.bot_qq
         this.default_model = info.default_model
-        this.isLogin = true
+        this.models = info.models
+
         this.everLogin = true
         this.isConnected = true
+
         this.socket = socket
-        this.models = info.models
         this.addMsgListener()
         if(this.contactList.length == 0) await this.genDefaultConctor()
         this.setLocalStorage()
@@ -263,17 +255,12 @@ export default class Client extends EventEmitter {
         }
       } 
     })
-    // this.socket.on('system_message', (e) => {
-    //   if(e.type != 'heartbeat') console.log(e)
-    // })
-
   }
 
   /**
    * 登出
    */
   async logout() {
-    this.isLogin = false
     this.isConnected = false
     this.socket.disconnect()
     this.socket = null
@@ -289,16 +276,36 @@ export default class Client extends EventEmitter {
     return this.contactList.find((item) => item.id == id) ?? this.contactList[0]
   }
 
-  async getBaseInfo() {
-    let info = await fetch('/api/base_info')
-    info = await info.json()
-    console.log(info)
-    return {
-      beian:info.data.beian || "",
-      fullScreen:info.data.full_screen || false,
-      title:info.data.title || "Mio-Chat",
-      admin_qq:info.data.admin_qq || "",
+  async setDisplayInfo() {
+    const res = await fetch('/api/base_info')
+    const { data } = await res.json()
+
+    const stroged = this.config.getDisplayConfig()
+    if (!stroged) {
+      this.config.setDisplayConfig(data)
     }
+
+    this.admin_qq = data.admin_qq
+    this.bot_qq = data.bot_qq
+
+    this.displaySettings = data
+
+    const keyWidth = 600
+    this.onPhone = window.innerWidth < keyWidth 
+    const handleResize = () => {
+       if ((window.innerWidth < keyWidth) && !this.onPhone) {
+         this.emit('device-change','mobile')
+         this.onPhone = true
+       }else if ((window.innerWidth >= keyWidth) && this.onPhone) {
+         this.emit('device-change','desktop')
+         this.onPhone = false 
+       }
+    }
+    window.addEventListener("resize", handleResize);
+  }
+
+  getDisplaySettings() {
+    return this.displaySettings
   }
 
   async getLoginHistory() {

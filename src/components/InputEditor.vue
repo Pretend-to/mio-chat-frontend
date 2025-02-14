@@ -352,7 +352,8 @@ export default {
       this.uploaded.files = [];
     },
     getSafeText(text) {
-      return text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      // return text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      return text;
     },
     cleanScreen() {
       this.$emit("cleanScreen");

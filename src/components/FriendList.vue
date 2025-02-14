@@ -47,8 +47,6 @@ export default {
     async genBlankBot() {
       const openaiDefaultConfig = {
         id: this.genFakeId(),
-        name: client.default_model,
-        avatar: "/static/avatar/openai.png",
         title: "gpt",
         priority: 1,
         options: { ...config.openaiDefaultConfig },
@@ -106,6 +104,8 @@ export default {
       console.log(preset);
       const contactor = {
         id: this.genFakeId(),
+        namePolicy: 1,
+        avatarPolicy: 0,
         name: preset.name,
         title: preset.title,
         priority: 1,
@@ -124,7 +124,7 @@ export default {
     addReactiveListener() {
       this.contactorList.map((contactor) => {
         contactor.on("updateMessageSummary", () => {
-          contactor.lastMessageSummary = contactor.getMessageSummary();
+          contactor.lastMessageSummary = contactor.getLastMessageSummary();
         });
       });
     },

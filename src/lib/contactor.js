@@ -1,6 +1,18 @@
 import Onebot from "./adapter/onebot.js";
 import Openai from "./adapter/openai.js";
 import EventEmmiter from "./event.js";
+import { client } from "./runtime.js";
+
+const avatarPolicy = [
+  "MODEL",
+  "CUSTOM",
+]
+
+const namePolicy = [
+  "MODEL",
+  "CUSTOM",
+  "SUMMARY" 
+]
 
 export default class Contactor extends EventEmmiter {
   /**
@@ -18,17 +30,19 @@ export default class Contactor extends EventEmmiter {
     super();
     this.platform = platform;
     this.id = config.id;
-    this.name = config.name;
-    this.avatar = config.avatar || this.getAvatar(config.options.model);
-    this.title = config.title;
     this.options = config.options;
+    this.namePolicy = config.namePolicy || 0;
+    this.avatarPolicy = config.avatarPolicy || 0;
+    this.title = config.title;
+    this.name = config.name;
+    this.avatar = config.avatar;
     this.priority = config.priority;
     this.firstMessageIndex = 0;
     this.messageChain = config.messageChain || [];
     this.active = false;
     this.lastUpdate = config.lastUpdate || new Date().getTime();
     this.createTime = config.createTime || new Date().getTime();
-    this.lastMessageSummary = this.getMessageSummary();
+    this.lastMessageSummary = this.getLastMessageSummary();
 
     this.kernel =
       this.platform == "onebot" ? new Onebot(config) : new Openai(config);
@@ -57,6 +71,8 @@ export default class Contactor extends EventEmmiter {
       if (isFirstElement) rawMessage.content[rawMessage.content.length - 1] = msgElm;
       else rawMessage.content.push(msgElm);
 
+      client.setLocalStorage()
+
       this.emit("updateMessage"); // 更新响应式数据
       this.emit("updateMessageSummary")
     });
@@ -81,6 +97,9 @@ export default class Contactor extends EventEmmiter {
 
       if (isFirstElement && !continuousCall) rawMessage.content[rawMessage.content.length - 1] = msgElm;
       else rawMessage.content.push(msgElm);
+
+
+      client.setLocalStorage()
 
       this.emit("updateMessage"); // 更新响应式数据
       this.emit("updateMessageSummary")
@@ -117,6 +136,9 @@ export default class Contactor extends EventEmmiter {
           error: true,
         });
       }
+
+      client.setLocalStorage()
+
     });
   }
 
@@ -385,7 +407,7 @@ export default class Contactor extends EventEmmiter {
     this.options.history = presets;
   }
 
-  getMessageSummary(message) {
+  getLastMessageSummary(message) {
     const getMessageText = (element) => {
       switch (element.type) {
         case "text": return element.data.text;
@@ -414,8 +436,52 @@ export default class Contactor extends EventEmmiter {
     this.lastUpdate = new Date().getTime();
   }
 
-  getAvatar(model) {
-    console.log(model);
+  loadAvatar() {
+    // console.log(this)
+    // if(avatarPolicy[this.avatarPolicy] == 'MODEL') {
+    //   const model = this.options.model;
+    //   return this.getAvatarByModel(model)
+    // }else if(avatarPolicy[this.avatarPolicy] == 'URL') {
+    //   return this.avatar 
+    // }else if(avatarPolicy[this.avatarPolicy] == 'QQ') {
+    //   return `/api/qava?q=${this.options.qq}` 
+    // }
+    let avatar = '/static/avatar/miobot.png';
+    if(this.avatarPolicy == 'MODEL') {
+      const model = this.options.model;
+      avatar = this.getAvatarByModel(model) 
+    }else if(avatarPolicy[this.avatarPolicy] == 'CUSTOM') {
+      avatar = this.avatar 
+    }
+    this.avatar = avatar
+    return avatar
+  }
+
+  loadName() {
+    let name = '未命名 Bot'
+    if(namePolicy[this.namePolicy] == 'MODEL') {
+      const model = this.options.model;
+      name =  model;
+    } else if(namePolicy[this.namePolicy] == 'CUSTOM') {
+      name =  this.name; 
+    } else if(namePolicy[this.namePolicy] == 'SUMMARY') {
+      if(this.messageChain.length > 2) {
+        name =  this.getMessagesSummary(this.messageChain);
+      }
+    }
+    this.name = name
+    return name
+  }
+
+  loadMessagesSummary() {
+    if(this.platform == "openai") {
+      return this.kernel.getMessagesSummary(this.messageChain);
+    }else {
+      return '仅支持 OpenAI Chat Bot'
+    }
+  }
+
+  getAvatarByModel(model) {
     const basePath = "/static/avatar";
     if (model.includes("gpt")) return `${basePath}/openai.png`;
     else if (model.includes("moon")) return `${basePath}/moonshot.png`;

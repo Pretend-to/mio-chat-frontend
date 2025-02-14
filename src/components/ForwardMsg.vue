@@ -5,7 +5,7 @@
         </div>
         <div id="forward-msg-body">
             <div id="forward-msg-summary" v-for="(message, index) in messages" :key="index">
-                {{ contactor.name }}: {{ contactor.getMessageSummary(message) }}
+                {{ contactor.name }}: {{ contactor.getLastMessageSummary(message) }}
             </div>
         </div>
         <div id="forward-msg-foot">

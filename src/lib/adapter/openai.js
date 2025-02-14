@@ -31,6 +31,17 @@ export default class Openai extends Adapter {
         return Math.random().toString(36).substr(2, 9);
     }
 
+    async getMessagesSummary(messages) {
+        const query = `请你根据以下对话的内容\n${JSON.stringify(messages)}\n，总结出一个简短的对话主题,不得超出10个字。`
+        const data = {
+            model: this.settings.model,
+            messages: [
+                { role: 'user', content: query }
+            ]
+        }
+        const response = await this.fetch(`/api/openai/completions`, data)
+        return response.data.choices[0].message.content
+    }
 
     async send(messages,index,settings){
         console.log("send message to openai")

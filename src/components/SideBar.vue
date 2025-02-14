@@ -1,4 +1,6 @@
 <script>
+import { client } from "@/lib/runtime.js";
+
 const PageStatus = {
     CHAT: 'chat',
     PROFILE: 'profile',
@@ -9,9 +11,9 @@ export default {
   data() {
     return {
       defaultAvatar: "/api/qava?q=1099834705",
-      adminAvatar: "",
       processedImage: "",
       activePage: PageStatus.NONE,
+      adminAvatar: "",
     };
   },
   computed: {
@@ -86,6 +88,15 @@ export default {
   },
   mounted() {
     this.activePage = this.getPageStatusFromRoute();
+    const adminId = client.admin_qq;
+    if (adminId) {
+      this.loadAvatar(adminId);
+    } else {
+      client.on("loaded", () => {
+        const adminId = client.admin_qq;
+        this.loadAvatar(adminId);
+      })
+    }
   },
   watch: {
     $route: {

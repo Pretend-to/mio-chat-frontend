@@ -13,7 +13,28 @@ export default class Config {
             max_messages_num: 10,
         }
         this.onebotDefaultConfig = null
+        this.displayConfig = {}
         this._loadStrogeConfig()
+    }
+
+    setDisplayConfig(config) {
+        this.displayConfig = config
+        localStorage.setItem('display_config', JSON.stringify(config))    
+    }
+
+    updateDisplayConfig(patch) {
+        this.displayConfig = {
+            ...this.displayConfig,
+            ...patch
+        } 
+        localStorage.setItem('display_config', JSON.stringify(this.displayConfig))
+    }
+
+    getDisplayConfig() {
+        const config = localStorage.getItem('display_config') 
+        if (config) {
+            return JSON.parse(config) 
+        }
     }
 
     updateOpenaiDefaultConfig(patch) {

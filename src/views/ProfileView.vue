@@ -121,10 +121,10 @@ export default {
     watch: {
         "$route.params.id"(newVal) {
             this.activeContactor = client.getContactor(newVal);
-            console.log(this.activeContactor);
-            this.openaiSettings = this.getShownOpenAISettings(this.activeContactor.options);
-            this.presetHistory = [...this.activeContactor.options.history];
-            console.log(this.activeContactor.options);
+            if (this.activeContactor.platform == "openai") {
+                this.openaiSettings = this.getShownOpenAISettings(this.activeContactor.options);
+                this.presetHistory = [...this.activeContactor.options.history];
+            }
         }
     },
     methods: {

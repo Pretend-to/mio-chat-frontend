@@ -461,20 +461,6 @@ export default {
         <span class="delay-num">当前延迟: {{ currentDelay }} ms</span>
       </div>
       <div class="options">
-        <ul class="window-controls">
-          <li class="button" @click="waiting()">
-            <span class="window-min">—</span>
-          </li>
-          <li v-if="client.fullScreen" class="button" @click="configFullScreen(false)">
-            <span class="window-inmax">⿹</span>
-          </li>
-          <li v-else class="button" @click="configFullScreen(true)">
-            <span class="window-max">▢</span>
-          </li>
-          <li class="button" @click="waiting()" id="close">
-            <span class="window-close">&times;</span>
-          </li>
-        </ul>
         <div class="share" @click="toimg()">
           <i class="iconfont icon-share"></i>
         </div>
@@ -604,30 +590,12 @@ $icon-hover: #09f
         height: 100%
         flex-wrap: wrap
         flex-direction: row-reverse
-
-        .window-controls
-            display: flex
-            flex-basis: 100%
-
-            .button
-                display: flex
-                justify-content: center
-                align-items: flex-start
-
-                .window-min
-                    font-size: .6rem
-                    margin-top: .2rem
-
-                .window-max
-                    font-size: .9rem
-
-                .window-close
-                    margin-top: -.15rem
-
-            @media (max-width: $mobile)
-                display: none
+        align-items: flex-end
+        
 
         .share
+            margin-bottom:.4rem
+
             .iconfont
                 font-size: 1.1rem
                 margin-right: 1rem
