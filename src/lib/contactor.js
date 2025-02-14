@@ -1,7 +1,6 @@
 import Onebot from "./adapter/onebot.js";
 import Openai from "./adapter/openai.js";
 import EventEmmiter from "./event.js";
-import { client } from "./runtime.js";
 
 const avatarPolicy = [
   "MODEL",
@@ -71,8 +70,6 @@ export default class Contactor extends EventEmmiter {
       if (isFirstElement) rawMessage.content[rawMessage.content.length - 1] = msgElm;
       else rawMessage.content.push(msgElm);
 
-      client.setLocalStorage()
-
       this.emit("updateMessage"); // 更新响应式数据
       this.emit("updateMessageSummary")
     });
@@ -98,8 +95,6 @@ export default class Contactor extends EventEmmiter {
       if (isFirstElement && !continuousCall) rawMessage.content[rawMessage.content.length - 1] = msgElm;
       else rawMessage.content.push(msgElm);
 
-
-      client.setLocalStorage()
 
       this.emit("updateMessage"); // 更新响应式数据
       this.emit("updateMessageSummary")
@@ -136,8 +131,6 @@ export default class Contactor extends EventEmmiter {
           error: true,
         });
       }
-
-      client.setLocalStorage()
 
     });
   }
