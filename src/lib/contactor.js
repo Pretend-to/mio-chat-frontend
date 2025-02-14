@@ -143,6 +143,102 @@ export default class Contactor extends EventEmmiter {
     await this.kernel.send(message);
   }
 
+  _getValidOpenaiMessage(){
+    const cuttedMessageList = this.messageChain.slice(this.firstMessageIndex);
+    const validMessageList = cuttedMessageList.filter(
+      (msg) => msg.role != "mio_system"
+    );
+
+    const mergedMessages = validMessageList.map(message => {
+      const subArray = []
+      message.content.forEach((elm) => {
+        const role = elm.type == "tool_call" ? "tool" : message.role == "user" ? "user" : "assistant";
+        const formatedMsg = {
+          role: role,
+          content: undefined,
+          _content_type: undefined
+        }
+        if (role == "tool") {
+          formatedMsg.role = "assistant"
+          formatedMsg.content = null
+          formatedMsg.tool_calls = [{
+            id: elm.data.id,
+            function: {
+              name: elm.data.name,
+              arguments: elm.data.params
+            },
+            type: "function"
+          }]
+          subArray.push({ ...formatedMsg })
+
+          delete formatedMsg.tool_calls
+          formatedMsg.role = "tool"
+          formatedMsg.content = JSON.stringify(elm.data.result)
+          formatedMsg.tool_call_id = elm.data.id
+          subArray.push({ ...formatedMsg })
+
+          formatedMsg.role = role
+
+        } else if (role == "user" || role == "assistant") {
+          if (elm.type == "text") {
+            formatedMsg.content = elm.data.text
+            formatedMsg._content_type = "text"
+            subArray.push(formatedMsg)
+          } else if (elm.type == "image") {
+            formatedMsg.content = elm.data.file
+            formatedMsg._content_type = "image"
+            subArray.push(formatedMsg)
+          }
+          // TODO: 文件上传
+        }
+      })
+      return subArray
+    })
+    let finalMessages = []
+
+    mergedMessages.forEach((subArray) => {
+      const textElm = subArray.filter(elm => elm._content_type == "text")
+      const imageElm = subArray.filter(elm => elm._content_type == "image")
+      let message = null
+      if (textElm.length > 0 && imageElm.length > 0 && imageElm[0].role == "user") {
+        message = {
+          role: "user",
+          content: [...textElm.map((elm) => {
+            return {
+              type: "text",
+              text: elm.content.replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+            }
+          }), ...imageElm.map((elm) => {
+            return {
+              type: "image_url",
+              image_url: {
+                url: elm.content
+              }
+            }
+          })]
+        }
+      }
+      if (message?.content.length == subArray.length) {
+        finalMessages.push(message)
+      } else {
+        subArray.forEach(elm => {
+          delete elm._content_type
+        });
+        finalMessages.push(...subArray)
+      }
+    })
+
+
+    if (this.options.history) {
+      finalMessages = this.options.history.concat(finalMessages)
+    }
+
+    const max_messages = this.options.max_messages_num;
+    if (finalMessages.length > max_messages) {
+      finalMessages = finalMessages.slice(-max_messages);
+    }
+    return finalMessages
+  }
   /**
    * 从网页前端发来的消息
    */
@@ -155,106 +251,13 @@ export default class Contactor extends EventEmmiter {
       return await this.kernel.send(this.id, message.content);
     } else {
       // 截取从this.firstMessageIndex到结尾的消息
-      const cuttedMessageList = this.messageChain.slice(this.firstMessageIndex);
-      const validMessageList = cuttedMessageList.filter(
-        (msg) => msg.role != "mio_system"
-      );
-
-      const mergedMessages = validMessageList.map(message => {
-        const subArray = []
-        message.content.forEach((elm) => {
-          const role = elm.type == "tool_call" ? "tool" : message.role == "user" ? "user" : "assistant";
-          const formatedMsg = {
-            role: role,
-            content: undefined,
-            _content_type: undefined
-          }
-          if (role == "tool") {
-            formatedMsg.role = "assistant"
-            formatedMsg.content = null
-            formatedMsg.tool_calls = [{
-              id: elm.data.id,
-              function: {
-                name: elm.data.name,
-                arguments: elm.data.params
-              },
-              type: "function"
-            }]
-            subArray.push({ ...formatedMsg })
-
-            delete formatedMsg.tool_calls
-            formatedMsg.role = "tool"
-            formatedMsg.content = JSON.stringify(elm.data.result)
-            formatedMsg.tool_call_id = elm.data.id
-            subArray.push({ ...formatedMsg })
-
-            formatedMsg.role = role
-
-          } else if (role == "user" || role == "assistant") {
-            if (elm.type == "text") {
-              formatedMsg.content = elm.data.text
-              formatedMsg._content_type = "text"
-              subArray.push(formatedMsg)
-            } else if (elm.type == "image") {
-              formatedMsg.content = elm.data.file
-              formatedMsg._content_type = "image"
-              subArray.push(formatedMsg)
-            }
-            // TODO: 文件上传
-          }
-        })
-        return subArray
-      })
-      let finalMessages = []
-
-      mergedMessages.forEach((subArray) => {
-        const textElm = subArray.filter(elm => elm._content_type == "text")
-        const imageElm = subArray.filter(elm => elm._content_type == "image")
-        let message = null
-        if (textElm.length > 0 && imageElm.length > 0 && imageElm[0].role == "user") {
-          message = {
-            role: "user",
-            content: [...textElm.map((elm) => {
-              return {
-                type: "text",
-                text: elm.content.replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-              }
-            }), ...imageElm.map((elm) => {
-              return {
-                type: "image_url",
-                image_url: {
-                  url: elm.content
-                }
-              }
-            })]
-          }
-        }
-        if (message?.content.length == subArray.length) {
-          finalMessages.push(message)
-        } else {
-          subArray.forEach(elm => {
-            delete elm._content_type
-          });
-          finalMessages.push(...subArray)
-        }
-      })
-
+      const finalMessages = this._getValidOpenaiMessage();
 
       // 立即发生回复消息
       this.revMessage({ content: [] });
-
-      if (this.options.history) {
-        finalMessages = this.options.history.concat(finalMessages)
-      }
-
-      const max_messages = this.options.max_messages_num;
-      if (finalMessages.length > max_messages) {
-        finalMessages = finalMessages.slice(-max_messages);
-      }
-
-      console.log(this.options)
-
+      
       const replyIndex = this.messageChain.length - 1;
+
       this.kernel.send(finalMessages, replyIndex, this.options);
 
       return Math.floor(Math.random() * 100000000)
@@ -462,7 +465,7 @@ export default class Contactor extends EventEmmiter {
 
   getMessagesSummary() {
     if(this.platform == "openai") {
-      return this.kernel.getMessagesSummary(this.messageChain);
+      return this.kernel.getMessagesSummary(this._getValidOpenaiMessage());
     }else {
       return '仅支持 OpenAI Chat Bot'
     }
