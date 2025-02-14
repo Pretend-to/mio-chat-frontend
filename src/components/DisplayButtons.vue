@@ -27,10 +27,9 @@ export default {
     }, 
     methods: {
         waiting() {
-            alert("功能开发中...")
+            this.$message({ message: "此功能尚未开放", type: "warning" });
         },
         configFullScreen(fullScreen) {
-
             this.$emit('full-screen', fullScreen)
         }
     }

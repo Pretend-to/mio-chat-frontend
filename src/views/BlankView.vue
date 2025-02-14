@@ -22,10 +22,6 @@ export default {
     this.fullScreen = client.fullScreen;
   },
   methods: {
-    configFullScreen(status) {
-      client.emit("screenChange", status);
-      this.fullScreen = status;
-    },
     waiting() {
       this.$message({ message: "此功能尚未开放", type: "warning" });
     },

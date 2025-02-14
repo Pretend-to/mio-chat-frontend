@@ -34,7 +34,6 @@ export default {
 
     await client.beforeInit();
     await client.init();
-    
     const displayConfig = config.getDisplayConfig();
 
     if(displayConfig) {
@@ -51,11 +50,6 @@ export default {
         this.onPhone = false;
       }
     })
-    client.on("screenChange", (status) => {
-      this.fullScreen = status
-      client.fullScreen = status
-      client.setLocalStorage();
-    });
   },
 };
 </script>
