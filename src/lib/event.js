@@ -2,7 +2,11 @@ export default class EventEmitter {
     constructor() {
         this.events = {};
     }
-    on(eventName, listener) {
+    on(eventName, listener,refresh = true) {
+        // 如果 refresh 为真，删除之前的回调函数
+        if(refresh) {
+            this.off(eventName)
+        }   
         // 如果事件名不存在，则初始化为一个空数组
         if (!this.events[eventName]) {
             this.events[eventName] = [];

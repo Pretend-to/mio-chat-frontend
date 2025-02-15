@@ -151,7 +151,7 @@ export default {
     if (client.getContactors().length == 0) {
       client.on("loaded", () => {
         this.contactorList = client.getContactors();
-      });
+      },false);
     }
   },
 };

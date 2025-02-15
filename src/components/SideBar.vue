@@ -95,7 +95,7 @@ export default {
       client.on("loaded", () => {
         const adminId = client.admin_qq;
         this.loadAvatar(adminId);
-      })
+      },false)
     }
   },
   watch: {
