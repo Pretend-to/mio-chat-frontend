@@ -1,91 +1,129 @@
 <template>
-    <div id="profile">
-        <div class="profile-container">
-            <div class="base-info">
-                <div class="base-info-avatar">
-                    <img :src="activeContactor.avatar" />
-                </div>
-                <div class="base-info-content">
-                    <div class="name">{{ activeContactor.name }}</div>
-                    <div class="id">ID {{ activeContactor.id }}</div>
-                    <div class="status">
-                        <span :class="'delay-status ' + getDelayStatus"></span>
-                        在线
+    <div class="profile-body">
+        <div id="profile">
+            <div class="profile-container">
+                <div class="base-info">
+                    <div class="base-info-avatar">
+                        <img :src="activeContactor.avatar" />
+                    </div>
+                    <div class="base-info-content">
+                        <div class="name">{{ activeContactor.name }}</div>
+                        <div class="id">ID {{ activeContactor.id }}</div>
+                        <div class="status">
+                            <span :class="'delay-status ' + getDelayStatus"></span>
+                            在线
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="info-blocks">
-                <div class="openai-settings" v-if="activeContactor.platform == 'openai'">
-                    <div class="block-title">OpenAI 协议配置</div>
-                    <div class="block-content">
-                        <div v-for="(value, key) in openaiSettings" :key="key" class="block-content-item">
-                            <div class="item-title">{{ getShownKey(key) }}</div>
-                            <div class="item-content">
-                                <el-input @change="updateOpenaiOptions" v-if="['model', 'max_messages_num'].includes(key)"
-                                    v-model="openaiSettings[key]"></el-input>
-                                <el-switch @change="updateOpenaiOptions" v-else-if="key == 'stream'" v-model="openaiSettings[key]"></el-switch>
-                                <el-slider @change="updateOpenaiOptions" v-else-if="['top_p', 'temperature'].includes(key)"
-                                    v-model="openaiSettings[key]" :step="sliderTypeARange[2]" :min="sliderTypeARange[0]"
-                                    :max="sliderTypeARange[1]" />
-                                <el-slider @change="updateOpenaiOptions" v-else-if="['frequency_penalty', 'presence_penalty'].includes(key)"
-                                    v-model="openaiSettings[key]" :step="sliderTypeBRange[2]" :min="sliderTypeBRange[0]"
-                                    :max="sliderTypeBRange[1]" />
+                <div class="info-blocks">
+                    <div class="openai-settings" v-if="activeContactor.platform == 'openai'">
+                        <div class="block-title">OpenAI 基本配置</div>
+                        <div class="block-content">
+                            <div v-for="(value, key) in openaiSettings" :key="key" class="block-content-item">
+                                <div class="item-title">{{ getShownKey(key) }}</div>
+                                <div class="item-content">
+                                    <el-input @change="updateOpenaiOptions"
+                                        v-if="['model', 'max_messages_num'].includes(key)"
+                                        v-model="openaiSettings[key]"></el-input>
+                                    <el-switch @change="updateOpenaiOptions"
+                                        v-else-if="['stream', 'enable_tool_call'].includes(key)"
+                                        v-model="openaiSettings[key]"></el-switch>
+                                    <el-slider @change="updateOpenaiOptions"
+                                        v-else-if="['top_p', 'temperature'].includes(key)" v-model="openaiSettings[key]"
+                                        :step="sliderTypeARange[2]" :min="sliderTypeARange[0]"
+                                        :max="sliderTypeARange[1]" />
+                                    <el-slider @change="updateOpenaiOptions"
+                                        v-else-if="['frequency_penalty', 'presence_penalty'].includes(key)"
+                                        v-model="openaiSettings[key]" :step="sliderTypeBRange[2]"
+                                        :min="sliderTypeBRange[0]" :max="sliderTypeBRange[1]" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="block-title">OpenAI 预设配置</div>
+                        <div class="block-content">
+                            <div class="block-content-item">
+                                <div class="item-title">预设历史记录</div>
+                                <div class="item-content">
+                                    <button :class="{ active: showPresetsDetail, 'extra-info-button': true }"
+                                        @click="showPresetsDetail = !showPresetsDetail">
+                                        <svg t="1731677922196" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                                            xmlns="http://www.w3.org/2000/svg" p-id="5948" width="16" height="16">
+                                            <path
+                                                d="M778.965749 128.759549l-383.064442 383.063419 388.097062 388.096039-0.070608 0.033769c12.709463 13.137205 20.529569 31.024597 20.529569 50.731428 0 40.376593-32.736589 73.112158-73.115228 73.112158-19.705807 0-37.591153-7.819083-50.730405-20.528546l-0.034792 0.035816L241.890654 564.622498l0.035816-0.035816c-13.779841-13.281491-22.3838-31.915897-22.3838-52.585659 0-0.071631 0-0.106424 0-0.178055 0-0.072655 0-0.10847 0-0.144286 0-20.669762 8.603959-39.341007 22.3838-52.622498l-0.035816-0.034792L680.573835 20.337187l0.180102 0.179079c13.139252-12.5662 30.950919-20.313651 50.587142-20.313651 40.378639 0 73.115228 32.736589 73.115228 73.114205C804.455283 95.485725 794.567076 115.334795 778.965749 128.759549z"
+                                                p-id="5949">
+                                            </path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div :class="{ hidden: !showPresetsDetail, 'block-content-item': true }">
+                                <PresetsList @updatePresetsHistory="updateOpenaiPresets"
+                                    :presetsHistory="presetHistory" />
+                            </div>
+                        </div>
+                        <div class="block-title">OpenAI 工具配置</div>
+                        <div class="block-content">
+                            <div class="block-content-item">
+                                <div class="item-title">工具函数列表</div>
+                                <div class="item-content">
+                                    <button :class="{ active: showToolsDetail, 'extra-info-button': true }"
+                                        @click="showToolsDetail = !showToolsDetail">
+                                        <svg t="1731677922196" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                                            xmlns="http://www.w3.org/2000/svg" p-id="5948" width="16" height="16">
+                                            <path
+                                                d="M778.965749 128.759549l-383.064442 383.063419 388.097062 388.096039-0.070608 0.033769c12.709463 13.137205 20.529569 31.024597 20.529569 50.731428 0 40.376593-32.736589 73.112158-73.115228 73.112158-19.705807 0-37.591153-7.819083-50.730405-20.528546l-0.034792 0.035816L241.890654 564.622498l0.035816-0.035816c-13.779841-13.281491-22.3838-31.915897-22.3838-52.585659 0-0.071631 0-0.106424 0-0.178055 0-0.072655 0-0.10847 0-0.144286 0-20.669762 8.603959-39.341007 22.3838-52.622498l-0.035816-0.034792L680.573835 20.337187l0.180102 0.179079c13.139252-12.5662 30.950919-20.313651 50.587142-20.313651 40.378639 0 73.115228 32.736589 73.115228 73.114205C804.455283 95.485725 794.567076 115.334795 778.965749 128.759549z"
+                                                p-id="5949">
+                                            </path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div :class="{ hidden: !showToolsDetail, 'block-content-item': true }">
+                                <ul id="tools-list">
+                                    <li class="block-content-item" :title="tool.description" v-for="(tool, index) in toolsList" :key="index">
+                                        <div class="item-title">{{ tool.name }}</div>
+                                        <div class="item-content">
+                                            <el-switch @change="handleToolConfig" v-model="tool.enabled"></el-switch>
+                                        </div>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                     </div>
-                    <div class="block-title">OpenAI 预设配置</div>
-                    <div class="block-content">
-                        <div class="block-content-item">
-                            <div class="item-title">预设历史记录</div>
-                            <div class="item-content">
-                                <button :class="{ active: showPresetsDetail, 'extra-info-button': true }"
-                                    @click="showPresetsDetail = !showPresetsDetail" >
-                                    <svg t="1731677922196" class="icon" viewBox="0 0 1024 1024" version="1.1"
-                                        xmlns="http://www.w3.org/2000/svg" p-id="5948" width="16" height="16">
-                                        <path
-                                            d="M778.965749 128.759549l-383.064442 383.063419 388.097062 388.096039-0.070608 0.033769c12.709463 13.137205 20.529569 31.024597 20.529569 50.731428 0 40.376593-32.736589 73.112158-73.115228 73.112158-19.705807 0-37.591153-7.819083-50.730405-20.528546l-0.034792 0.035816L241.890654 564.622498l0.035816-0.035816c-13.779841-13.281491-22.3838-31.915897-22.3838-52.585659 0-0.071631 0-0.106424 0-0.178055 0-0.072655 0-0.10847 0-0.144286 0-20.669762 8.603959-39.341007 22.3838-52.622498l-0.035816-0.034792L680.573835 20.337187l0.180102 0.179079c13.139252-12.5662 30.950919-20.313651 50.587142-20.313651 40.378639 0 73.115228 32.736589 73.115228 73.114205C804.455283 95.485725 794.567076 115.334795 778.965749 128.759549z"
-                                            p-id="5949">
-                                        </path>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                        <div  :class="{  hidden: !showPresetsDetail,'block-content-item':true }">
-                            <PresetsList @updatePresetsHistory="updateOpenaiPresets" :presetsHistory="presetHistory" />
-                        </div>
-                    </div>
                 </div>
+                <div class="extra-info"></div>
+
             </div>
-            <div class="extra-info"></div>
-            <div class="action-bar">
-                <el-button @click="$router.push(`/chat/${activeContactor.id}`)" type="primary">发送消息</el-button>
-                <el-button @click="centerDialogVisible = true" type="danger">删除好友</el-button>
-                <el-dialog v-model="centerDialogVisible" title="警告" width="300" center>
-                    <span>
-                        确认要删除此好友吗？该操作不可逆。
-                    </span>
-                    <template #footer>
-                        <div class="dialog-footer">
-                            <el-button @click="centerDialogVisible = false">取消</el-button>
-                            <el-button type="primary" @click="delContactor">
-                                确认
-                            </el-button>
-                        </div>
-                    </template>
-                </el-dialog>
-            </div>
+
+        </div>
+        <div class="action-bar">
+            <el-button @click="$router.push(`/chat/${activeContactor.id}`)" type="primary">发送消息</el-button>
+            <el-button @click="centerDialogVisible = true" type="danger">删除好友</el-button>
+            <el-dialog v-model="centerDialogVisible" title="警告" width="300" center>
+                <span>
+                    确认要删除此好友吗？该操作不可逆。
+                </span>
+                <template #footer>
+                    <div class="dialog-footer">
+                        <el-button @click="centerDialogVisible = false">取消</el-button>
+                        <el-button type="primary" @click="delContactor">
+                            确认
+                        </el-button>
+                    </div>
+                </template>
+            </el-dialog>
         </div>
     </div>
+
 </template>
 <script>
-import { client } from "@/lib/runtime.js";
+import { client, config } from "@/lib/runtime.js";
 import PresetsList from "@/components/PresetsList.vue";
 
 export default {
     data() {
         const currentId = parseInt(this.$route.params.id);
         const contactor = client.getContactor(currentId);
-
 
         return {
             activeContactor: contactor,
@@ -95,13 +133,18 @@ export default {
             sliderTypeARange: [0, 1, 0.1],
             sliderTypeBRange: [-2, 2, 0.2],
             showPresetsDetail: false,
+            showToolsDetail: false,
             presetHistory: contactor.options.history,
+            openaiTools: config.openaiTools,
+            toolsList:[]
         }
     },
     components: {
         PresetsList,
     },
     mounted() {
+        this.initContactor();
+
         setInterval(() => {
             this.currentDelay = client.socket.delay;
         }, 3000);
@@ -121,13 +164,33 @@ export default {
     watch: {
         "$route.params.id"(newVal) {
             this.activeContactor = client.getContactor(newVal);
-            if (this.activeContactor.platform == "openai") {
-                this.openaiSettings = this.getShownOpenAISettings(this.activeContactor.options);
-                this.presetHistory = [...this.activeContactor.options.history];
-            }
+            this.initContactor();
         }
     },
     methods: {
+        handleToolConfig() {
+            this.activeContactor.options.tools = this.toolsList.map((tool) => {
+                return tool.enabled ? tool.name : undefined; 
+            })
+            client.setLocalStorage(); //持久化存储
+        },
+        initContactor(){
+            if (this.activeContactor.platform == "openai") {
+                this.openaiSettings = this.getShownOpenAISettings(this.activeContactor.options);
+                this.presetHistory = [...this.activeContactor.options.history];
+                this.loadToolsList();
+            }
+        },
+        loadToolsList() {
+            const enabledTools = this.activeContactor.options.tools;
+            this.toolsList = this.openaiTools.map((tool) => {
+                return {
+                    name: tool.name,
+                    description: tool.description,
+                    enabled: enabledTools.includes(tool.name), 
+                }
+            })
+        },
         updateOpenaiPresets(presets) {
             this.activeContactor.setOpenaiPresets(presets);
             client.setLocalStorage(); //持久化存储
@@ -140,7 +203,7 @@ export default {
             client.setLocalStorage(); //持久化存储
         },
         getShownOpenAISettings(options) {
-            const shownKeys = ["model", "max_messages_num", "stream", "temperature", "top_p", "frequency_penalty", "presence_penalty"];
+            const shownKeys = ["model", "max_messages_num", "stream", "enable_tool_call", "temperature", "top_p", "frequency_penalty", "presence_penalty"];
             const shownSettings = {};
             shownKeys.map((key) => {
                 shownSettings[key] = options[key];
@@ -149,6 +212,7 @@ export default {
         },
         getShownKey(key) {
             const shownNameMap = {
+                "enable_tool_call": "工具调用",
                 "model": "模型",
                 "max_messages_num": "最大历史消息数",
                 "stream": "流式响应",
@@ -170,19 +234,25 @@ export default {
 
 <style scoped>
 #profile {
-    background-color: #F2F2F2;
+    position: relative;
     flex-grow: 1;
     display: flex;
     overflow-y: auto;
+    max-height: 100vh;
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
-    overflow-x: hidden;
+}
+
+#tools-list {
+   width: 100%;
+   display: flex;
+   flex-direction: column; 
 }
 
 .item-extra-content {
-   width: 100%;
-   max-height: 0px;
+    width: 100%;
+    max-height: 0px;
 }
 
 .block-content-item.hidden {
@@ -200,7 +270,7 @@ export default {
 }
 
 .profile-container {
-    margin: 4rem;
+    margin: 2rem 4rem 6rem 4rem;
     width: calc(100% - 8rem);
     min-width: 20rem;
     max-width: 30rem;
@@ -241,13 +311,17 @@ export default {
 
 .block-content {
     margin-top: .5rem;
-    margin-bottom: .5rem;
+    margin-bottom: 1rem;
     width: 100%;
     display: flex;
     background-color: #fff;
     min-height: 1rem;
     border-radius: .5rem;
     flex-direction: column;
+}
+
+.block-content:last-child {
+    margin-bottom: 3rem;
 }
 
 .block-content-item {
@@ -327,9 +401,22 @@ export default {
 }
 
 .action-bar {
+    position: absolute;
+    background-color: #F2F2F2;
+    bottom: 0px;
+    left: 0px;
     display: flex;
     justify-content: space-around;
-    margin-top: 1rem;
+    align-items: center;
+    height: 6rem;
+    width: 100%;
+    z-index: 2;
+}
+.profile-body {
+    position: relative;
+    flex-grow: 1;
+    padding-top: 4rem;
+    background-color: #F2F2F2;
 }
 </style>
 <style lang="sass">

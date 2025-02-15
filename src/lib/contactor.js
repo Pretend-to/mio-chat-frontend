@@ -465,7 +465,7 @@ export default class Contactor extends EventEmmiter {
 
   getMessagesSummary() {
     if(this.platform == "openai") {
-      return this.kernel.getMessagesSummary(this._getValidOpenaiMessage());
+      return this.kernel.getMessagesSummary(this._getValidOpenaiMessage().slice(-4));
     }else {
       return '仅支持 OpenAI Chat Bot'
     }

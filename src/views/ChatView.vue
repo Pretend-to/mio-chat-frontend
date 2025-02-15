@@ -38,10 +38,6 @@ export default {
     };
   },
   methods: {
-    configFullScreen(status) {
-      client.emit("screenChange", status)
-      this.fullScreen = status;
-    },
     toButtom(clicked) {
       if (clicked) this.$message("已滑至底部");
       const chatWindow = this.$refs.chatWindow;

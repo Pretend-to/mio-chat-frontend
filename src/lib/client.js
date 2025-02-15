@@ -94,10 +94,12 @@ export default class Client extends EventEmitter {
       title: 'chat',
       priority: 0,
       lastUpdate: -Infinity,
-      options: this.config.openaiDefaultConfig
+      options: {...this.config.openaiDefaultConfig}
     }
-    
-    console.log(openaiDefaultConfig)
+
+    openaiDefaultConfig.options.tools = this.config.openaiTools.map(tool=>tool.name)
+    openaiDefaultConfig.options.enable_tool_call = true
+
     this.addConcator('openai', openaiDefaultConfig)
 
   }

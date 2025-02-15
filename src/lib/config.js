@@ -9,12 +9,15 @@ export default class Config {
             frequency_penalty: 0,
             presence_penalty: 0,
             history: [],
+            tools: [],
+            enable_tool_call: false,
             opening: '',
             max_messages_num: 10,
         }
-        this.openaiTools = {}
+        this.openaiTools = []
         this.onebotDefaultConfig = null
         this.displayConfig = {}
+        this.loadOpenaiTools()
         this._loadStrogeConfig()
     }
 
@@ -49,7 +52,8 @@ export default class Config {
     async loadOpenaiTools() {
         const res = await fetch("/api/openai/tools")
         const data = await res.json()
-        this.openaiTools = data
+        this.openaiTools = Object.values(data.data.tools)
+        console.log(this.openaiTools)
         this._saveStrogeConfig()
     }
 
