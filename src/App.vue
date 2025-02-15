@@ -5,9 +5,10 @@ import displayButtons from "./components/DisplayButtons.vue";
 export default {
   data() {
     const displayConfig = config.getDisplayConfig();
+    const onPhone = window.innerWidth < 600;
 
     return {
-      onPhone: client.onPhone,
+      onPhone,
       client: client,
       fullScreen: displayConfig?.full_screen || false,
       beian: displayConfig?.beian || "",
@@ -27,7 +28,7 @@ export default {
   },
   computed: {
     onPrivate() {
-      return this.$route.path.includes("/profile") || this.$route.path.includes("/chat");
+      return this.$route.path.includes("/auth") || this.$route.path.includes("/profile") || this.$route.path.includes("/chat");
     }
   },
   async created() {
