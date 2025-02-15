@@ -270,7 +270,7 @@ export default {
 }
 
 .profile-container {
-    margin: 2rem 4rem 6rem 4rem;
+    margin: 2rem 0rem 6rem 0rem;
     width: calc(100% - 8rem);
     min-width: 20rem;
     max-width: 30rem;

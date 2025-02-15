@@ -577,7 +577,6 @@ $icon-hover: #09f
         position: relative
         margin-left: 1.5rem
         margin-bottom: 0.5rem
-        font-size: 1rem
         display: flex
         align-items: center
 
@@ -750,6 +749,10 @@ $icon-hover: #09f
         height: 100%
 
     .upsidebar
+        white-space: nowrap
+        max-width: 7rem
+        text-overflow: ellipsis
+        overflow: hidden
         background: #00a8ff linear-gradient(to right, #00d2f8, #00a8ff)
 
     .upsidebar *
