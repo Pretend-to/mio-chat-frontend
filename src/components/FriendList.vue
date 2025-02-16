@@ -121,6 +121,7 @@ export default {
           history: preset.history,
           textWrapper: preset.textWrapper,
           tools: preset.tools,
+          enable_tool_call : preset.tools ? true : false
         },
       };
       client.addConcator("openai", contactor);
