@@ -80,7 +80,7 @@ export default {
     async setModel(name) {
       this.activeContactor.options.model = name;
       this.activeContactor.title = name;
-      // this.activeContactor.avatar = this.activeContactor.getAvatar(name);
+      this.activeContactor.loadAvatar();
       await client.setLocalStorage(); //持久化存储
     },
     toimg() {

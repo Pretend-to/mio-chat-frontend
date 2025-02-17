@@ -2,6 +2,24 @@ import Onebot from "./adapter/onebot.js";
 import Openai from "./adapter/openai.js";
 import EventEmmiter from "./event.js";
 
+
+const AVATAR_BASE_PATH = "https://registry.npmmirror.com/@lobehub/icons-static-svg/latest/files/icons";
+
+const AVATAR_MAP = {
+  "gpt-": "openai.svg",
+  "o3": "openai.svg",
+  "o1": "openai.svg",
+  "moon": "moonshot.svg",
+  "deepseek": "deepseek-color.svg",
+  "glm": "zhipu-color.svg",
+  "gemini": "gemini-color.svg",
+  "command": "cohere-color.svg",
+  "claude": "claude-color.svg",
+  "spark": "spark-color.svg",
+  "qwen": "qwen-color.svg",
+  "hunyuan": "hunyuan-color.svg",
+};
+
 const avatarPolicy = [
   "MODEL",
   "CUSTOM",
@@ -472,13 +490,14 @@ export default class Contactor extends EventEmmiter {
   }
 
   getAvatarByModel(model) {
-    const basePath = "/static/avatar";
-    if (model.includes("gpt")) return `${basePath}/openai.png`;
-    else if (model.includes("moon")) return `${basePath}/moonshot.png`;
-    else if (model.includes("deepseek")) return `${basePath}/deepseek.png`;
-    else if (model.includes("glm")) return `${basePath}/chatglm.png}`;
-    else if (model.includes("gemini")) return `${basePath}/gemini.png`;
-    else if (model.includes("claude")) return `${basePath}/claude.png`;
-    else return `${basePath}/openai.png`;
+    const lowerModel = model.toLowerCase();
+  
+    for (const key in AVATAR_MAP) {
+      if (lowerModel.includes(key)) {
+        return `${AVATAR_BASE_PATH}/${AVATAR_MAP[key]}`;
+      }
+    }
+  
+    return `${AVATAR_BASE_PATH}/openai.svg`;
   }
 }

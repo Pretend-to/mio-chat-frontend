@@ -360,12 +360,15 @@ button#addcont {
   flex-basis: 2.65rem;
   min-width: 2.65rem;
   height: 2.65rem;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: white;
 }
 
 .avatar > img {
   width: 100%;
   height: 100%;
-  border-radius: 50%;
+  scale: 0.9;
 }
 
 .info {
