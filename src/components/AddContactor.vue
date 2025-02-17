@@ -1,221 +1,249 @@
 <template>
     <div class="add-contactor">
-        <div class="head">
-            <div class="title">添加机器人</div>
-            <div class="close-icon" @click="close">✕</div>
+      <div class="head">
+        <div class="title">添加机器人</div>
+        <div class="close-icon" @click="close">✕</div>
+      </div>
+      <div class="body">
+        <div class="search">
+          <i class="iconfont sousuo listicon" />
+          <input type="text" placeholder="输入搜索关键词" @input="loadSerachPresets" v-model="keyWord" />
         </div>
-        <div class="body">
-            <div class="search">
-                <i class="iconfont sousuo listicon" />
-                <input type="text" placeholder="输入搜索关键词" @input="loadSerachPresets" v-model="keyWord" />
+        <div class="info">
+          <header class="presets-types">
+            <nav
+              v-for="(type, index) in avaliablePresetTypes"
+              :key="index"
+              @click="changeShownType(index)"
+              :class="activeTypeIndex === index ? 'active' : ''"
+            >
+              {{ type }}
+            </nav>
+          </header>
+          <div :style="{ left: buttonTranslate }" class="slide-button"></div>
+          <div v-if="shownPrestsList.length > 0 || [0, 3].includes(activeTypeIndex)" class="presets-list">
+            <div class="presets-item" v-for="(preset, index) in shownPrestsList" :key="index">
+              <div class="preset-avatar">{{ preset.name.slice(0, 2) }}</div>
+              <div class="preset-info">
+                <div class="preset-name">{{ preset.name }}</div>
+                <div :title="preset.opening" class="preset-description">{{ preset.opening }}</div>
+              </div>
+              <el-button @click="addBot(preset)">添加</el-button>
             </div>
-            <div class="info">
-                <header class="presets-types">
-                    <nav v-for="(type, index) in avaliablePresetTypes" :key="index" @click="changeShownType(index)"
-                        :class="activeTypeIndex === index ? 'active' : ''">
-                        {{ type }}
-                    </nav>
-                </header>
-                <div :style="{ left: buttonTranslate }" class="slide-button"></div>
-                <div v-if="shownPrestsList.length > 0 || [0, 3].includes(activeTypeIndex)" class="presets-list">
-                    <div class="presets-item" v-for="(preset, index) in shownPrestsList" :key="index">
-                        <div class="preset-avatar">{{ preset.name.slice(0, 2) }}</div>
-                        <div class="preset-info">
-                            <div class="preset-name">{{ preset.name }}</div>
-                            <div :title="preset.opening" class="preset-description">{{ preset.opening }}</div>
-                        </div>
-                        <el-button @click="addBot(preset)">添加</el-button>
-                    </div>
-                    <div v-show="showPresetsLoader" ref="loader" class="loading">
-                        <div></div>
-                        <div></div>
-                        <div></div>
-                        <div></div>
-                        <div></div>
-                    </div>
-                </div>
-                <div class="empty-list" v-else>
-                    <el-empty :image-size="200" />
-                </div>
+            <div v-show="showPresetsLoader" ref="loader" class="loading">
+              <div></div>
+              <div></div>
+              <div></div>
+              <div></div>
+              <div></div>
             </div>
-            <div class="options"></div>
+          </div>
+          <div class="empty-list" v-else>
+            <el-empty :image-size="200" />
+          </div>
         </div>
+        <div class="options"></div>
+      </div>
     </div>
-</template>
-<script>
-export default {
+  </template>
+  
+  <script>
+  export default {
     data() {
-        const avaliablePresetTypes = ["推荐", "最近", "本地", "系统"];
-        return {
-            show: false,
-            presetsList: [],
-            recommendPresets: [],
-            recentPresets: [],
-            localPresets: [],
-            systemPresets: [],
-            searchPresets: [],
-            systemShownNum: 0,
-            recommendShownNum: 0,
-            keyWord: "",
-            activeTypeIndex: 0,
-            buttonTranslate: 0,
-            avaliablePresetTypes,
-            moreSystemPresets: true,
-            moreRecommendPresets: true,
-        };
+      const avaliablePresetTypes = ["推荐", "最近", "本地", "系统"];
+      return {
+        show: false,
+        presetsList: [],
+        recommendPresets: [],
+        recentPresets: [],
+        localPresets: [],
+        systemPresets: [],
+        searchPresets: [],
+        systemShownNum: 0,
+        recommendShownNum: 0,
+        keyWord: "",
+        activeTypeIndex: 0,
+        buttonTranslate: 0,
+        avaliablePresetTypes,
+        moreSystemPresets: true,
+        moreRecommendPresets: true,
+        observer: null, // Store the observer instance
+      };
     },
     computed: {
-        showPresetsLoader() {
-            return this.activeTypeIndex == 3
-                ? this.moreSystemPresets
-                : this.activeTypeIndex == 0
-                    ? this.moreRecommendPresets
-                    : false;
-        },
-        shownPrestsList() {
-            // 如果 keyWord 不为空，返回 searchPresets
-            if (this.keyWord) {
-                return this.searchPresets;
-            }
-            return this.activeTypeIndex === 2
-                ? this.localPresets
-                : this.activeTypeIndex === 1
-                    ? this.recentPresets
-                    : this.activeTypeIndex === 0
-                        ? this.recommendPresets
-                        : this.activeTypeIndex === 3
-                            ? this.systemPresets
-                            : null; // 或者返回默认值
-        },
+      showPresetsLoader() {
+        return this.activeTypeIndex == 3
+          ? this.moreSystemPresets
+          : this.activeTypeIndex == 0
+            ? this.moreRecommendPresets
+            : false;
+      },
+      shownPrestsList() {
+        // 如果 keyWord 不为空，返回 searchPresets
+        if (this.keyWord) {
+          return this.searchPresets;
+        }
+        return this.activeTypeIndex === 2
+          ? this.localPresets
+          : this.activeTypeIndex === 1
+            ? this.recentPresets
+            : this.activeTypeIndex === 0
+              ? this.recommendPresets
+              : this.activeTypeIndex === 3
+                ? this.systemPresets
+                : null; // 或者返回默认值
+      },
     },
     methods: {
-        async addBot(preset) {
-            this.strogeAddHistory(preset);
-            this.$emit("addBot", preset);
-            // this.close();
-            console.log(preset);
-        },
-        strogeAddHistory(preset) {
-            // 先检查现有列表中是否有重复项
-            const existingItem = this.recentPresets.find(
-                (item) => item.name === preset.name
-            );
-            if (existingItem) {
-                // 如果有重复项，将其从数组中移除
-                this.recentPresets.splice(this.recentPresets.indexOf(existingItem), 1);
-            }
-
-            // 添加新项目到数组的最前面
-            this.recentPresets.unshift(preset);
-
-            // 检查数组长度并保持在小于或等于6
-            if (this.recentPresets.length > 6) {
-                this.recentPresets.pop(); // 移除最后一个元素，即最旧的元素
-            }
-
-            // 更新到 localStorage
-            localStorage.setItem("addHistory", JSON.stringify(this.recentPresets));
-        },
-
-        getAddHistory() {
-            const data = localStorage.getItem("addHistory");
-            if (data) {
-                this.recentPresets = JSON.parse(data);
-            }
-        },
-        async changeShownType(index) {
-            this.activeTypeIndex = index;
-            this.buttonTranslate = `${49.6 * index}px`;
-            await this.loadSpecificType();
-        },
-        close() {
-            this.$emit("close");
-        },
-        async loadSpecificType() {
-            const type = this.avaliablePresetTypes[this.activeTypeIndex];
-            this.presetsList = await this.getPresetList(type);
-        },
-        async getPresetList(type) {
-            if (type === "系统") {
-                return await this.loadSystemPresets();
-            } else if (type === "推荐") {
-                return await this.loadRecommendedPresets();
-            } else if (type === "最近") {
-                return this.recentPresets;
-            } else if (type === "本地") {
-                return this.localPresets;
-            }
-        },
-        async loadRecommendedPresets() {
-            const res = await fetch(
-                `/api/openai/presets?type=recommended&start=${this.recommendShownNum}`
-            ).then((res) => res.json());
-            for (let i = 0; i < res.data.length; i++) {
-                this.recommendPresets.push(res.data[i]);
-            }
-            this.recommendShownNum += res.data.length;
-            if (res.data.length < 9) {
-                this.moreRecommendPresets = false;
-            }
-
-            return this.recommendPresets;
-        },
-        async loadSystemPresets() {
-            const res = await fetch(
-                `/api/openai/presets?type=system&start=${this.systemShownNum}`
-            ).then((res) => res.json());
-            for (let i = 0; i < res.data.length; i++) {
-                this.systemPresets.push(res.data[i]);
-            }
-            this.systemShownNum += res.data.length;
-            if (res.data.length < 9) {
-                this.moreSystemPresets = false;
-            }
-
-            return this.systemPresets;
-        },
-        async loadSerachPresets() {
-            const load = async () => {
-                const res = await fetch(
-                    `/api/openai/presets?type=search&keyword=${this.keyWord}`
-                ).then((res) => res.json());
-                this.searchPresets = res.data;
-            }
-
-            // 添加节流逻辑
-            if (this.searchTimer) {
-                clearTimeout(this.searchTimer);
-            }
-            this.searchTimer = setTimeout(() => {
-                load();
-            }, 500);
-        },
+      async addBot(preset) {
+        this.strogeAddHistory(preset);
+        this.$emit("addBot", preset);
+        // this.close();
+        console.log(preset);
+      },
+      strogeAddHistory(preset) {
+        // 先检查现有列表中是否有重复项
+        const existingItem = this.recentPresets.find(
+          (item) => item.name === preset.name
+        );
+        if (existingItem) {
+          // 如果有重复项，将其从数组中移除
+          this.recentPresets.splice(this.recentPresets.indexOf(existingItem), 1);
+        }
+        // 添加新项目到数组的最前面
+        this.recentPresets.unshift(preset);
+        // 检查数组长度并保持在小于或等于6
+        if (this.recentPresets.length > 6) {
+          this.recentPresets.pop(); // 移除最后一个元素，即最旧的元素
+        }
+        // 更新到 localStorage
+        localStorage.setItem("addHistory", JSON.stringify(this.recentPresets));
+      },
+      getAddHistory() {
+        const data = localStorage.getItem("addHistory");
+        if (data) {
+          this.recentPresets = JSON.parse(data);
+        }
+      },
+      async changeShownType(index) {
+        this.activeTypeIndex = index;
+        this.buttonTranslate = `${49.6 * index}px`;
+        await this.loadSpecificType();
+      },
+      close() {
+        this.$emit("close");
+      },
+      async loadSpecificType() {
+        const type = this.avaliablePresetTypes[this.activeTypeIndex];
+        this.presetsList = await this.getPresetList(type);
+      },
+      async getPresetList(type) {
+        if (type === "系统") {
+          return await this.loadSystemPresets();
+        } else if (type === "推荐") {
+          return await this.loadRecommendedPresets();
+        } else if (type === "最近") {
+          return this.recentPresets;
+        } else if (type === "本地") {
+          return this.localPresets;
+        }
+      },
+      async loadRecommendedPresets() {
+        const res = await fetch(
+          `/api/openai/presets?type=recommended&start=${this.recommendShownNum}`
+        ).then((res) => res.json());
+        for (let i = 0; i < res.data.length; i++) {
+          this.recommendPresets.push(res.data[i]);
+        }
+        this.recommendShownNum += res.data.length;
+        if (res.data.length < 9) {
+          this.moreRecommendPresets = false;
+        }
+        return this.recommendPresets;
+      },
+      async loadSystemPresets() {
+        const res = await fetch(
+          `/api/openai/presets?type=system&start=${this.systemShownNum}`
+        ).then((res) => res.json());
+        for (let i = 0; i < res.data.length; i++) {
+          this.systemPresets.push(res.data[i]);
+        }
+        this.systemShownNum += res.data.length;
+        if (res.data.length < 9) {
+          this.moreSystemPresets = false;
+        }
+        return this.systemPresets;
+      },
+      async loadSerachPresets() {
+        const load = async () => {
+          const res = await fetch(
+            `/api/openai/presets?type=search&keyword=${this.keyWord}`
+          ).then((res) => res.json());
+          this.searchPresets = res.data;
+        }
+        // 添加节流逻辑
+        if (this.searchTimer) {
+          clearTimeout(this.searchTimer);
+        }
+        this.searchTimer = setTimeout(() => {
+          load();
+        }, 500);
+      },
+      loadMoreData() {
+        if (this.showPresetsLoader && this.activeTypeIndex === 3) {
+          this.loadSystemPresets();
+        } else if (this.showPresetsLoader && this.activeTypeIndex === 0) {
+          this.loadRecommendedPresets();
+        }
+      },
+      handleScroll() {
+        const loader = this.$refs.loader;
+        if (!loader) return;
+  
+        const rect = loader.getBoundingClientRect();
+        const isVisible = (rect.top >= 0) &&
+          (rect.left >= 0) &&
+          (rect.bottom <= (window.innerHeight || document.documentElement.clientHeight)) &&
+          (rect.right <= (window.innerWidth || document.documentElement.clientWidth));
+  
+        if (isVisible) {
+          this.loadMoreData();
+        }
+      },
     },
     mounted() {
+      this.getAddHistory();
+  
+      if ('IntersectionObserver' in window) {
         const callback = (entries) => {
-            entries.forEach((entry) => {
-                if (entry.isIntersecting) {
-                    if (this.showPresetsLoader && this.activeTypeIndex === 3) {
-                        this.loadSystemPresets();
-                    } else if (this.showPresetsLoader && this.activeTypeIndex === 0) {
-                        this.loadRecommendedPresets();
-                    }
-                } else {
-                    // console.log('out');
-                }
-            });
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              this.loadMoreData();
+            }
+          });
         };
-
-        const observer = new IntersectionObserver(callback);
-
+  
+        this.observer = new IntersectionObserver(callback);
         const presetsLoader = this.$refs.loader;
-
-        observer.observe(presetsLoader);
-
-        this.getAddHistory();
+        if (presetsLoader) {
+          this.observer.observe(presetsLoader);
+        }
+  
+      } else {
+        // Fallback for browsers that do not support IntersectionObserver
+        // Use scroll event to detect when the loader is visible.
+        window.addEventListener('scroll', this.handleScroll);
+      }
     },
-};
-</script>
+    beforeUnmount() {
+      if (this.observer) {
+        this.observer.disconnect();
+      } else {
+        window.removeEventListener('scroll', this.handleScroll);
+      }
+    },
+  };
+  </script>
 <style scoped>
 .empty-list {
     display: flex;

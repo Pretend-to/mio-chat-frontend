@@ -370,7 +370,7 @@ button#addcont {
   height: 100%;
 }
 
-.avatar > img.model {
+.avatar.model > img {
   scale: 0.9;
 }
 
