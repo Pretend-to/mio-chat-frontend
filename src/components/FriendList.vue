@@ -193,7 +193,7 @@ export default {
         class="lists"
         :id="getId(item)"
       >
-        <div class="avatar">
+        <div class="avatar" :class="item.avatarPolicy == 1 ? 'custom' : 'model'">
           <img :src="item.avatar" :alt="item.name" />
         </div>
         <div class="info">
@@ -368,8 +368,13 @@ button#addcont {
 .avatar > img {
   width: 100%;
   height: 100%;
+}
+
+.avatar > img.model {
   scale: 0.9;
 }
+
+
 
 .info {
   height: 100%;
