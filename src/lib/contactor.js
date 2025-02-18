@@ -161,13 +161,20 @@ export default class Contactor extends EventEmmiter {
     await this.kernel.send(message);
   }
 
+  _getFilePrompt(fileElms) {
+    const start = "以下是用户上传的文件：\n";
+    return start + fileElms.join("\n");
+  }
+
   _getValidOpenaiMessage(){
-    const cuttedMessageList = this.messageChain.slice(this.firstMessageIndex);
+    const cuttedMessageList = this.messageChain.slice(this.firstMessageIndex, this.firstMessageIndex + this.options.max_messages_num);
     const validMessageList = cuttedMessageList.filter(
       (msg) => msg.role != "mio_system"
     );
 
+
     const mergedMessages = validMessageList.map(message => {
+      const fileList = []
       const subArray = []
       message.content.forEach((elm) => {
         const role = elm.type == "tool_call" ? "tool" : message.role == "user" ? "user" : "assistant";
@@ -206,10 +213,15 @@ export default class Contactor extends EventEmmiter {
             formatedMsg.content = elm.data.file
             formatedMsg._content_type = "image"
             subArray.push(formatedMsg)
+          } else if (elm.type == "file") {
+            fileList.push(elm.data.file)
           }
-          // TODO: 文件上传
         }
       })
+      if(fileList.length > 0) {
+        const textElm = subArray.filter(elm => elm._content_type == "text")
+        textElm[0].content = textElm[0].content + this._getFilePrompt(fileList)
+      }
       return subArray
     })
     let finalMessages = []
@@ -217,6 +229,8 @@ export default class Contactor extends EventEmmiter {
     mergedMessages.forEach((subArray) => {
       const textElm = subArray.filter(elm => elm._content_type == "text")
       const imageElm = subArray.filter(elm => elm._content_type == "image")
+      const fileElm = subArray.filter(elm => elm._content_type == "file")
+      const filePrompt = fileElm.length > 0? this._getFilePrompt(fileElm) : ""
       let message = null
       if (textElm.length > 0 && imageElm.length > 0 && imageElm[0].role == "user") {
         message = {
@@ -224,7 +238,7 @@ export default class Contactor extends EventEmmiter {
           content: [...textElm.map((elm) => {
             return {
               type: "text",
-              text: elm.content.replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+              text: elm.content + filePrompt
             }
           }), ...imageElm.map((elm) => {
             return {
@@ -251,10 +265,7 @@ export default class Contactor extends EventEmmiter {
       finalMessages = this.options.history.concat(finalMessages)
     }
 
-    const max_messages = this.options.max_messages_num;
-    if (finalMessages.length > max_messages) {
-      finalMessages = finalMessages.slice(-max_messages);
-    }
+
     return finalMessages
   }
   /**

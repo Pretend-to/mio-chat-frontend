@@ -110,7 +110,8 @@ export default {
       const contactor = {
         id: this.genFakeId(),
         namePolicy: 1,
-        avatarPolicy: 0,
+        avatarPolicy: preset.customAvatar ? 1 : 0,
+        avatar: preset.customAvatar? preset.customAvatar : undefined,
         name: preset.name,
         title: preset.title,
         priority: 1,

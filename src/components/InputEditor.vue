@@ -85,12 +85,12 @@ export default {
     },
     uploadFile() {
       const avaliableImageFromats = ["png", "jpg", "jpeg"];
-      // const avaliableDocFormats = ["docx", "pdf", "pptx", "xlsx"];
+      const avaliableDocFormats = ["docx", "pdf", "pptx", "xlsx"];
       const fileInput = document.createElement("input");
       fileInput.type = "file";
       fileInput.accept = ``;
 
-      for (const format of avaliableImageFromats) {
+      for (const format of [...avaliableDocFormats, ...avaliableImageFromats]) {
         fileInput.accept += `.${format},`;
       }
 
@@ -99,8 +99,8 @@ export default {
       fileInput.onchange = async (e) => {
         const file = e.target.files[0];
         if (file) {
-          if (file.size <= 100 * 1024 * 1024) {
-            // 检查文件大小是否小于等于100MB
+          if (file.size <= 50 * 1024 * 1024) {
+            // 检查文件大小是否小于等于 50MB
             this.$message({
               message: "文件上传中...",
               type: "info",
@@ -109,12 +109,20 @@ export default {
             if (file.type.startsWith("image/")) {
               this.handelUploadImage(file);
             } else {
-              const upload = await client.uploadFile(file);
-              this.uploaded.files.push(upload.data.url);
+              const upload = await client.uploadFile(file,{
+                onProgress: (percent) => {
+                  console.log(percent);
+                }
+              });
+              this.uploaded.files.push(`${upload.data.url}?size=${file.size}&name=${file.name}`);
             }
+            this.$message({
+              message: "文件上传成功",
+              type: "success",
+            });
           } else {
             this.$message({
-              message: "文件大小超过10MB，无法上传",
+              message: "文件大小超过50MB，无法上传",
               type: "error",
             });
           }
@@ -127,10 +135,7 @@ export default {
         const base64 = e.target.result;
         const upload = await client.uploadImage(base64);
         const imageUrl = upload.data.url;
-        this.$message({
-          message: "文件上传成功",
-          type: "success",
-        });
+
         // 将图片以image元素展示在输入框
         const imageElement = document.createElement("img");
         imageElement.src = imageUrl;
@@ -157,10 +162,6 @@ export default {
         }, 0);
 
       };
-      this.$message({
-        message: "图片上传中...",
-        type: "info",
-      });
       reader.readAsDataURL(file);
     },
     setModel() {

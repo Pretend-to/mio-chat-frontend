@@ -2,6 +2,7 @@
 import { MdPreview } from "md-editor-v3";
 import ForwardMsg from "@/components/ForwardMsg.vue";
 import InputEditor from "@/components/InputEditor.vue";
+import FileBlock from "@/components/FileBlock.vue";
 import ToolCallBar from "@/components/ToolCallBar.vue";
 import "emoji-picker-element";
 import html2canvas from "html2canvas"
@@ -427,7 +428,8 @@ export default {
     MdPreview,
     ForwardMsg,
     InputEditor,
-    ToolCallBar
+    ToolCallBar,
+    FileBlock,
   },
   watch: {
     "$route.params.id"(newVal, oldVal) {
@@ -494,8 +496,7 @@ export default {
                   :modelValue="getReplyText(element.data.id)" />
                 <ForwardMsg v-else-if="element.type === 'nodes'" :contactor="activeContactor"
                   :messages="element.data.messages" />
-                <MdPreview v-else-if="element.type === 'file'" previewTheme="github" :editorId="`previewer-${index}`"
-                  :modelValue="'> ' + element.data.file" />
+                <FileBlock v-else-if="element.type === 'file'" :file_url="element.data.file" />
                 <div v-else-if="element.type === 'blank'" class="blank-message"
                   style="width: 10rem; height: 28.8px; position: relative;">
                   <span class="blank_loader"></span>

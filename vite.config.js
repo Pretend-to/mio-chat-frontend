@@ -1,9 +1,3 @@
-/**
- * @author 彭志勇 <2457305628@qq.com>
- * @lastEditor 彭志勇 <2457305628@qq.com>
- * @lastEditTime 2024-04-25 06:25:30
- */
-
 import { fileURLToPath, URL } from 'node:url'
 
 import { defineConfig } from 'vite'
@@ -38,13 +32,5 @@ export default defineConfig({
         target: "http://127.0.0.1:3080/",
       }
     }
-    // proxy: {
-    //   "/api/gateway": {
-    //     target: "ws://149.88.72.168:3080/",
-    //   },
-    //   "/api": {
-    //     target: "http://149.88.72.168:3080/",
-    //   }
-    // }
   }
 })

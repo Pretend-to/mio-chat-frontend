@@ -3,7 +3,9 @@ import Contactor from './contactor.js'
 import localforage from 'localforage'
 import EventEmitter from './event.js'
 import { reactive } from 'vue'
+import UploadWorker from '../worker/fileUpload.js?worker'
 
+// Configure localforage
 localforage.config({
   name: 'mio-chat'
 })
@@ -11,47 +13,46 @@ localforage.config({
 export default class Client extends EventEmitter {
   constructor(config) {
     super()
-    this.everLogin = false // 读取
-    this.id = null // 读取
-    this.code = null // 读取
-    this.isConnected = false // 动态
-    this.contactList = [] // 读取
-    this.socket = null // 动态
-    this.qq = null // web
-    this.botqq = null // web
-    this.avatar = null // web
-    this.onPhone = null // 动态
-    this.models = [] 
-    this.title = "Mio" // 固定
-    this.name = "user" // 固定
-    this.displaySettings = null // web
-    this.config = config //传参
+    this.everLogin = false     // Loaded from storage
+    this.id = null             // Loaded from storage
+    this.code = null           // Loaded from storage
+    this.isConnected = false   // Dynamic
+    this.contactList = []      // Loaded from storage
+    this.socket = null         // Dynamic
+    this.qq = null             // Web
+    this.botqq = null          // Web
+    this.avatar = null         // Web
+    this.onPhone = null        // Dynamic
+    this.models = []
+    this.title = "Mio"         // Fixed
+    this.name = "user"         // Fixed
+    this.displaySettings = null // Web
+    this.config = config       // Parameter
   }
 
   /**
-   * 预初始化
-   * @returns {object} 初始化信息
+   * Prepare initialization
+   * @returns {object} Initialization information
    */
   async beforeInit() {
-
     await this.setDisplayInfo()
     const localConfig = await this.getLocalStorage()
     await this.config.loadOnebotDefaultConfig()
-
+    
     if (localConfig) {
       localConfig.isConnected = false
       this.loadLocalStorage(localConfig)
     } else {
-      // 使用者初次使用
+      // First-time user
       this.id = this.genFakeId()
       this.code = null
     }
-
+    
     this.emit('loaded')
   }
 
   async genDefaultConctor() {
-
+    // Create default OneBot contactor
     const onebotDefaultConfig = {
       id: this.genFakeId(),
       name: 'OneBot',
@@ -63,28 +64,26 @@ export default class Client extends EventEmitter {
       options: this.config.onebotDefaultConfig,
       lastUpdate: -Infinity
     }
-    
     this.addConcator('onebot', onebotDefaultConfig)
+
+    // Prepare model options
     const models = this.models
-    const options = models.map(modelGroup => {
-      return {
-        value: modelGroup.owner,
-        label: modelGroup.owner,
-        children: modelGroup.models.map(model => {
-          return {
-            value: model,
-            label: model,
-          }
-        })
-
-      }
-    })
+    const options = models.map(modelGroup => ({
+      value: modelGroup.owner,
+      label: modelGroup.owner,
+      children: modelGroup.models.map(model => ({
+        value: model,
+        label: model,
+      }))
+    }))
+    
     console.log(options)
-
+    
+    // Update and create OpenAI contactor
     this.config.updateOpenaiDefaultConfig({
       model: this.default_model
     })
-
+    
     const openaiDefaultConfig = {
       id: this.genFakeId(),
       name: 'MioBot',
@@ -96,20 +95,20 @@ export default class Client extends EventEmitter {
       lastUpdate: -Infinity,
       options: {...this.config.openaiDefaultConfig}
     }
-
-    openaiDefaultConfig.options.tools = this.config.openaiTools.map(tool=>tool.name)
+    
+    openaiDefaultConfig.options.tools = this.config.openaiTools.map(tool => tool.name)
     openaiDefaultConfig.options.enable_tool_call = true
-
     this.addConcator('openai', openaiDefaultConfig)
-
   }
 
   async addConcator(platform, config) {
     const bot = new Contactor(platform, config)
     bot.loadName()
     bot.loadAvatar()
+    
     const list = reactive(this.contactList)
     list.push(bot)
+    
     await this.setLocalStorage();
     return bot
   }
@@ -117,25 +116,27 @@ export default class Client extends EventEmitter {
   rmContactor(id) {
     const list = reactive(this.contactList)
     const index = list.findIndex((item) => item.id == id)
+    
     if (index != -1) {
       list.splice(index, 1)
       this.setLocalStorage()
     }
   }
 
-  reset(){
+  reset() {
     localforage.clear()
     localStorage.clear()
-    // 刷新页面
+    // Refresh page
     window.location.reload()
   }
+
   async init() {
     if (this.everLogin) {
-      console.log('检测到缓存，尝试自动重连')
+      console.log('Detected cache, attempting automatic reconnection')
       this.isConnected = false
       await this.login(this.code)
     } else {
-      console.log('没登陆过，请先登录')
+      console.log('Not logged in before, please login first')
     }
   }
 
@@ -144,42 +145,33 @@ export default class Client extends EventEmitter {
   }
 
   /**
-   * 生成一个以1开头的5位随机ID
-   * @returns {number} 1开头的5位随机ID
+   * Generate a random 5-digit ID starting with 1
+   * @returns {number} 5-digit random ID starting with 1
    */
   genFakeId() {
-    // 生成5位随机数
-    const randomNum = Math.floor(1000 + Math.random() * 9000)
-    // 将随机数转换为字符串
-    const randomNumStr = `1${randomNum}`
     if (!this.id) {
-      // 将拼接后的字符串转换为数字并返回
-      return parseInt(randomNumStr)
+      // Generate 5-digit random number starting with 1
+      const randomNum = Math.floor(1000 + Math.random() * 9000)
+      return parseInt(`1${randomNum}`)
     } else {
-      // 生成5位随机数
+      // Generate 4-digit random number and append to existing ID
       const subRandomNum = Math.floor(1000 + Math.random() * 9000)
-      // 将随机数转换为字符串
-      const randomNumStr = `${this.id}${subRandomNum}`
-      return parseInt(randomNumStr)
+      return parseInt(`${this.id}${subRandomNum}`)
     }
   }
 
   /**
-   * 获取localstorage中的用户信息
-   * @returns {object} 用户信息
+   * Get user information from localStorage
+   * @returns {object|false} User information or false if not found
    */
   async getLocalStorage() {
     const client = await localforage.getItem('client')
-    if (client) {
-      return JSON.parse(client)
-    } else {
-      return false
-    }
+    return client ? JSON.parse(client) : false
   }
 
   /**
-   * 从localstorage中加载用户信息
-   * @param {object} client 用户信息
+   * Load user information from localStorage
+   * @param {object} client User information
    */
   loadLocalStorage(client) {
     this.everLogin = client.everLogin
@@ -187,46 +179,54 @@ export default class Client extends EventEmitter {
     this.code = client.code
     this.avatar = client.avatar
     this.models = client.models
-    // 如果联系人列表存在，那么实例化为联系人对象
-    if (client.contactList.length != 0) {
-      this.contactList = []
+    
+    // If contact list exists, instantiate as contact objects
+    if (client.contactList && client.contactList.length != 0) {
       this.contactList = client.contactList.map((item) => new Contactor(item.platform, item))
+    } else {
+      this.contactList = []
     }
   }
 
   /**
-   * 设置localstorage中的用户信息
+   * Save user information to localStorage
    */
   async setLocalStorage() {
     await localforage.setItem('client', JSON.stringify(this))
   }
 
   /**
-   * 登录
-   * @param {string} code 访问码
-   * @returns {Promise} 登录结果
+   * Login
+   * @param {string} code Access code
+   * @returns {Promise} Login result
    */
   async login(code) {
     this.code = code
+    
     return new Promise((resolve) => {
       const socket = new Socket(this.id, this.code)
+      
       socket.on('connect', async (info) => {
-        console.log('登录成功')
+        console.log('Login successful')
         this.qq = info.admin_qq
         this.avatar = `/api/qava?q=${this.qq}`
         this.botqq = info.bot_qq
         this.default_model = info.default_model
         this.models = info.models
-
         this.everLogin = true
         this.isConnected = true
-
         this.socket = socket
+        
         this.addMsgListener()
-        if(this.contactList.length == 0) await this.genDefaultConctor()
+        
+        if (this.contactList.length == 0) {
+          await this.genDefaultConctor()
+        }
+        
         this.setLocalStorage()
         resolve(info)
       })
+      
       socket.connect()
     })
   }
@@ -238,29 +238,29 @@ export default class Client extends EventEmitter {
       const id = data.id
       const content = data.content
       const type = data.type
-
+      
       if (type == 'message') {
         const contactor = this.getContactor(id)
         if (contactor) {
           contactor.revMessage(content)
           this.setLocalStorage()
         }
-      }else if (type == 'del_msg'){
+      } else if (type == 'del_msg') {
         const onebotContactors = this.contactList.filter((item) => item.platform == 'onebot')
-        for(const onebotContactor of onebotContactors){
+        for (const onebotContactor of onebotContactors) {
           const deleted = onebotContactor.delMessage(content.message_id)
-          if(deleted){
+          if (deleted) {
             this.setLocalStorage()
-            console.log('删除消息成功')
+            console.log('Message deleted successfully')
             break
           }
         }
-      } 
+      }
     })
   }
 
   /**
-   * 登出
+   * Logout
    */
   async logout() {
     this.isConnected = false
@@ -270,9 +270,9 @@ export default class Client extends EventEmitter {
   }
 
   /**
-   * 获取联系人
-   * @param {number} id 联系人ID
-   * @returns {Contactor} 联系人对象
+   * Get a contactor by ID
+   * @param {number} id Contactor ID
+   * @returns {Contactor} Contactor object or first contactor if not found
    */
   getContactor(id) {
     return this.contactList.find((item) => item.id == id) ?? this.contactList[0]
@@ -281,28 +281,29 @@ export default class Client extends EventEmitter {
   async setDisplayInfo() {
     const res = await fetch('/api/base_info')
     const { data } = await res.json()
-
-    const stroged = this.config.getDisplayConfig()
-    if (!stroged) {
+    const stored = this.config.getDisplayConfig()
+    
+    if (!stored) {
       this.config.setDisplayConfig(data)
     }
-
+    
     this.admin_qq = data.admin_qq
     this.bot_qq = data.bot_qq
-
     this.displaySettings = data
-
+    
     const keyWidth = 600
-    this.onPhone = window.innerWidth < keyWidth 
+    this.onPhone = window.innerWidth < keyWidth
+    
     const handleResize = () => {
-       if ((window.innerWidth < keyWidth) && !this.onPhone) {
-         this.emit('device-change','mobile')
-         this.onPhone = true
-       }else if ((window.innerWidth >= keyWidth) && this.onPhone) {
-         this.emit('device-change','desktop')
-         this.onPhone = false 
-       }
+      if ((window.innerWidth < keyWidth) && !this.onPhone) {
+        this.emit('device-change', 'mobile')
+        this.onPhone = true
+      } else if ((window.innerWidth >= keyWidth) && this.onPhone) {
+        this.emit('device-change', 'desktop')
+        this.onPhone = false
+      }
     }
+    
     window.addEventListener("resize", handleResize);
   }
 
@@ -315,41 +316,174 @@ export default class Client extends EventEmitter {
     return myclient.everLogin
   }
 
-  async uploadFile(file) {
-    const formData = new FormData();
-    formData.append('file', file); // 将文件添加到 FormData
-
-    try {
-      const response = await fetch('/api/upload/file', {
-          method: 'POST',
-          body: formData
-      });
-
-      return await response.json();
-  } catch (error) {
-      console.error('Error uploading file:', error);
-  }
-
-  }
-
-  async uploadImage(image) {
-    const body = {
-      image : image
+  /**
+   * Upload file or image
+   * @param {File|Blob|string} fileOrImage - File object, Blob, or base64 string for images
+   * @param {Object} options - Upload options
+   * @param {boolean} options.isImage - Indicates if upload is an image
+   * @param {Function} options.onProgress - Progress callback (percent complete)
+   * @returns {Promise<Object>} Upload result
+   */
+  async uploadFile(fileOrImage, options = {}) {
+    const { isImage = false, onProgress = null } = options;
+    
+    // Handle image upload (base64 string or blob)
+    if (isImage || (typeof fileOrImage === 'string' && fileOrImage.startsWith('data:'))) {
+      return this.uploadImage(fileOrImage);
     }
+    
+    const file = fileOrImage;
+    return new Promise((resolve, reject) => {
+      const chunkSize = 1024 * 1024; // 1MB
+      let md5Hash = null;
+      
+      const finalizeUpload = async (totalChunks) => {
+        try {
+          const response = await fetch('/api/upload/finalize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ totalChunks, md5: md5Hash, filename: file.name }),
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error ${response.status}`);
+          }
+          
+          const data = await response.json();
+          resolve(data);
+        } catch (error) {
+          reject({ error: `Finalization error: ${error.message}` });
+        }
+      };
+      
+      const uploadChunk = async (chunk, index, totalChunks) => {
+        return new Promise((resolve, reject) => {
+          const formData = new FormData();
+          formData.append('file', chunk);
+          formData.append('md5', md5Hash);
+          formData.append('chunkIndex', index);
+          formData.append('totalChunks', totalChunks);
+          formData.append("filename", file.name);
+          
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', '/api/upload/chunk', true);
+          
+          // Track progress if callback provided
+          if (onProgress) {
+            xhr.upload.onprogress = (event) => {
+              if (event.lengthComputable) {
+                // Calculate overall progress based on chunks
+                const chunkProgress = (event.loaded / event.total);
+                const overallProgress = ((index/totalChunks) + (1/totalChunks) * chunkProgress) * 100;
+                onProgress(Math.round(overallProgress));
+              }
+            };
+          }
+          
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(); // Successful upload
+            } else {
+              reject(xhr.statusText); // Failed upload
+            }
+          };
+          
+          xhr.onerror = () => {
+            reject('Network Error');
+          };
+          
+          xhr.send(formData);
+        });
+      };
+      
+      const uploadFileChunks = async () => {
+        if (!file || !md5Hash) {
+          return reject({ error: 'Invalid file or missing hash' });
+        }
+        
+        const totalChunks = Math.ceil(file.size / chunkSize);
+        
+        try {
+          for (let currentChunk = 0; currentChunk < totalChunks; currentChunk++) {
+            const start = currentChunk * chunkSize;
+            const end = Math.min(start + chunkSize, file.size);
+            const chunk = file.slice(start, end);
+            
+            await uploadChunk(chunk, currentChunk, totalChunks);
+          }
+          
+          // All chunks uploaded, finalize
+          await finalizeUpload(totalChunks);
+        } catch (error) {
+          reject({ error: `Upload error: ${error}` });
+        }
+      };
+      
+      // Start worker to calculate MD5
+      const worker = new UploadWorker();
+      worker.postMessage({ file, chunkSize });
+      
+      worker.onmessage = (e) => {
+        if (e.data.hash) {
+          md5Hash = e.data.hash;
+          console.log('MD5 calculated. Starting upload...');
+          uploadFileChunks();
+        } else if (e.data.error) {
+          reject({ error: e.data.error });
+          worker.terminate();
+        }
+      };
+      
+      worker.onerror = (error) => {
+        console.error('Worker error:', error);
+        reject({ error: `Worker error: ${error.message}` });
+        worker.terminate();
+      };
+    });
+  }
 
+  /**
+   * Upload image (now integrated into uploadFile)
+   * @param {string|Blob} image - Base64 string or Blob
+   * @returns {Promise<Object>} Upload result
+   */
+  async uploadImage(image) {
+    // If image is already provided as base64 string
+    const body = {
+      image: typeof image === 'string' ? image : await this._convertBlobToBase64(image)
+    };
+    
     try {
       const response = await fetch('/api/upload/image', {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(body)
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
       });
-
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
+      
       return await response.json();
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Error uploading image:', error);
+      throw error; // Re-throw to be handled by caller
     }
+  }
+  
+  /**
+   * Convert Blob to base64 string
+   * @param {Blob} blob - Image blob
+   * @returns {Promise<string>} Base64 string
+   */
+  async _convertBlobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   }
 }
