@@ -6,6 +6,7 @@ export default {
   data() {
     const displayConfig = config.getDisplayConfig();
     const onPhone = window.innerWidth < 600;
+    this.$message(`${window.innerWidth}`)
 
     return {
       onPhone,
