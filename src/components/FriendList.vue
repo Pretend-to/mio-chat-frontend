@@ -149,6 +149,9 @@ export default {
   },
   mounted() {
     this.addReactiveListener();
+    setTimeout(()=>{
+      this.$message(`List: ${this.onPhone?'true':'false'}`)
+    })
   },
   beforeCreate() {
     if (client.getContactors().length == 0) {
