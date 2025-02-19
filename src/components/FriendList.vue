@@ -7,7 +7,7 @@ export default {
     let list = client.getContactors();
 
     return {
-      onPhone: client.onPhone,
+      onPhone: window.innerWidth < 600,
       contactorList: list,
       showAddOptions: false,
       showAddWindow: false,
