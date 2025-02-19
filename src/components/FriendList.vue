@@ -149,8 +149,8 @@ export default {
   },
   mounted() {
     this.addReactiveListener();
-    setTimeout(()=>{
-      this.$message(`List: ${this.onPhone?'true':'false'}`)
+    setInterval(()=>{
+      this.$message(`App: ${this.onPhone?'true':'false'}`)
     })
   },
   beforeCreate() {
