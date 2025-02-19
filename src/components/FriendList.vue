@@ -5,9 +5,10 @@ import AddContactor from "@/components/AddContactor.vue";
 export default {
   data() {
     let list = client.getContactors();
+    const onPhone = window.innerWidth < 600;
 
     return {
-      onPhone: window.innerWidth < 600,
+      onPhone,
       contactorList: list,
       showAddOptions: false,
       showAddWindow: false,

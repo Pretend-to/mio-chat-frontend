@@ -7,6 +7,7 @@ export default {
     const displayConfig = config.getDisplayConfig();
     const onPhone = window.innerWidth < 600;
 
+
     return {
       onPhone,
       client: client,
@@ -50,6 +51,9 @@ export default {
       }else {
         this.onPhone = false;
       }
+    })
+    setTimeout(()=>{
+      this.$message(`App: ${this.onPhone?'true':'false'}`)
     })
   },
 };
