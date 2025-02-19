@@ -52,9 +52,7 @@ export default {
         this.onPhone = false;
       }
     })
-    setInterval(()=>{
-      this.$message(`App: ${this.onPhone?'true':'false'}`)
-    })
+
   },
 };
 </script>

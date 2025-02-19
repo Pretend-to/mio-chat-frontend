@@ -149,9 +149,7 @@ export default {
   },
   mounted() {
     this.addReactiveListener();
-    setInterval(()=>{
-      this.$message(`App: ${this.onPhone?'true':'false'}`)
-    })
+
   },
   beforeCreate() {
     if (client.getContactors().length == 0) {
@@ -266,8 +264,7 @@ export default {
   height: 100%;
   display: flex;
   flex-direction: column;
-  width: 100%;
-  max-width: none;
+  width: 100vw;
 }
 
 .upsidebar {
