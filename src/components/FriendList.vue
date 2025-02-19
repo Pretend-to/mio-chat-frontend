@@ -265,6 +265,7 @@ export default {
   display: flex;
   flex-direction: column;
   width: 100vw;
+  max-width: none;
 }
 
 .upsidebar {
