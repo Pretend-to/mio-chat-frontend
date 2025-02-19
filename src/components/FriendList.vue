@@ -261,10 +261,9 @@ export default {
   height: 100%;
 }
 #friendlists.mobile {
-  height: 100%;
   display: flex;
   flex-direction: column;
-  width: 100vw;
+  width: 100%;
   max-width: none;
 }
 
