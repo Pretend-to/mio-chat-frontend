@@ -50,6 +50,7 @@
 
 <script>
 import { MdPreview } from 'md-editor-v3'
+import { client } from '@/lib/runtime.js'
 
 export default {
     data() {
@@ -62,25 +63,21 @@ export default {
         messages: Array,
         contactor: Object
     },
-    mounted() {
-        console.log(this.messages)
-        console.log(this.contactor)
-    },
     components: {
         MdPreview
     },
     created() {
-        if (window.innerWidth < 600 ) this.onPhone = true
-        else if(window.innerWidth >= 600 ) this.onPhone = false
+        this.onPhone = window.innerWidth < 600
 
-        window.addEventListener('resize', () => {
-            if (window.innerWidth < 600) {
-                this.onPhone = true
-            } else if (window.innerWidth >= 600) {
-                this.onPhone = false
+        client.on('device-change', (type) => {
+            if (type == "mobile") {
+                this.onPhone = true;
+            } else {
+                this.onPhone = false;
             }
-        })
+        },false)
     },
+
 }
 </script>
 
