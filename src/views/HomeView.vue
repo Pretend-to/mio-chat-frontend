@@ -13,23 +13,17 @@
 
 <script>
 import friendlist from '@/components/FriendList.vue'
-import { client } from '@/lib/runtime.js'
 
 export default {
     data() {
+        const onPhone = window.innerWidth < 600;
         return {
-            onPhone: client.onPhone,
-            client: client,
+            onPhone,
             pagePath: this.$route.path
         }
     },
     components: {
         friendlist,
-    },
-    methods: {
-    },mounted(){
-
-    },computed:{
     },
     watch: {
         '$route': function (newVal) {
