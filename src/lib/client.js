@@ -447,32 +447,22 @@ export default class Client extends EventEmitter {
    * @param {string|Blob} image - Base64 string or Blob
    * @returns {Promise<Object>} Upload result
    */
-  async uploadImage(image) {
-    // If image is already provided as base64 string
-    const body = {
-      image: typeof image === 'string' ? image : await this._convertBlobToBase64(image)
-    };
-    
+  async uploadImage(formData) {
     try {
       const response = await fetch('/api/upload/image', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
+        body: formData
       });
-      
       if (!response.ok) {
         throw new Error(`HTTP error ${response.status}`);
       }
-      
       return await response.json();
     } catch (error) {
       console.error('Error uploading image:', error);
       throw error; // Re-throw to be handled by caller
     }
   }
-  
+
   /**
    * Convert Blob to base64 string
    * @param {Blob} blob - Image blob

@@ -84,63 +84,84 @@ export default {
       editor.focus();
     },
     uploadFile() {
-      const avaliableImageFromats = ["png", "jpg", "jpeg"];
-      const avaliableDocFormats = ["docx", "pdf", "pptx", "xlsx"];
-      const fileInput = document.createElement("input");
-      fileInput.type = "file";
-      fileInput.accept = ``;
+    const availableImageFormats = ["png", "jpg", "jpeg"];
+    const availableDocFormats = ["docx", "pdf", "pptx", "xlsx"];
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = ""; // 初始化为空，然后拼接
 
-      for (const format of [...avaliableDocFormats, ...avaliableImageFromats]) {
-        fileInput.accept += `.${format},`;
-      }
+    // 构建 accept 字符串，让用户只能选择指定类型的文件
+    for (const format of [...availableDocFormats, ...availableImageFormats]) {
+      fileInput.accept += `.${format},`; // 用逗号分隔多个文件类型
+    }
 
-      fileInput.click();
+    fileInput.click(); // 模拟点击，打开文件选择对话框
 
-      fileInput.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-          if (file.size <= 50 * 1024 * 1024) {
-            // 检查文件大小是否小于等于 50MB
-            this.$message({
-              message: "文件上传中...",
-              type: "info",
-            });
+    fileInput.onchange = async (e) => {
+      try {
+        const file = e.target.files[0]; // 获取用户选择的第一个文件
 
-            if (file.type.startsWith("image/")) {
-              this.handelUploadImage(file);
-            } else {
-              const upload = await client.uploadFile(file,{
-                onProgress: (percent) => {
-                  console.log(percent);
-                }
-              });
-              this.uploaded.files.push(`${upload.data.url}?size=${file.size}&name=${file.name}`);
-            }
-            this.$message({
-              message: "文件上传成功",
-              type: "success",
-            });
-          } else {
-            this.$message({
-              message: "文件大小超过50MB，无法上传",
-              type: "error",
-            });
-          }
+        if (!file) {
+          return; // 用户取消了选择，直接返回
         }
-      };
-    },
-    handelUploadImage(file) {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const base64 = e.target.result;
-        const upload = await client.uploadImage(base64);
-        const imageUrl = upload.data.url;
 
+        if (file.size > 50 * 1024 * 1024) {
+          // 检查文件大小，超过 50MB 给出提示
+          this.$message({
+            message: "文件大小超过50MB，无法上传",
+            type: "error",
+          });
+          return; // 阻止上传
+        }
+
+        this.$message({
+          message: "文件上传中...",
+          type: "info",
+        });
+
+        if (file.type.startsWith("image/")) {
+          // 如果是图片，调用图片处理函数
+          this.handleUploadImage(file);
+        } else {
+          // 如果是文档，调用文档上传函数
+          const upload = await client.uploadFile(file, {
+            onProgress: (percent) => {
+              console.log(percent); // 显示上传进度
+            },
+          });
+
+          this.$message({
+            message: "文件上传成功",
+            type: "success",
+          });
+
+          // 将上传成功的文件信息添加到已上传文件列表
+          this.uploaded.files.push(`${upload.data.url}?size=${file.size}&name=${file.name}`);
+        }
+      } catch (error) {
+        // 统一处理上传过程中的错误
+        console.error("文件上传失败:", error);
+        this.$message({
+          message: "文件上传失败，请稍后再试",
+          type: "error",
+        });
+      }
+    };
+  },
+    handleUploadImage(file) {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    // 通过uploadImage方法上传
+    client.uploadImage(formData).then(upload => {
+        const imageUrl = upload.data.url;
+        
         // 将图片以image元素展示在输入框
         const imageElement = document.createElement("img");
         imageElement.src = imageUrl;
         imageElement.alt = file.name;
         imageElement.style.maxWidth = "10rem";
+
         const range = document.createRange();
         range.selectNodeContents(this.$refs.textarea);
         range.collapse(false);
@@ -148,22 +169,32 @@ export default {
         selection.removeAllRanges();
         selection.addRange(range);
         const fragment = range.createContextualFragment(
-          `<span>${imageElement.outerHTML}</span>`
+            `<span>${imageElement.outerHTML}</span>`
         );
         range.insertNode(fragment);
+
         // 将光标移到span元素后面
         setTimeout(() => {
-          const newRange = document.createRange();
-          newRange.selectNodeContents(this.$refs.textarea);
-          newRange.collapse(false);
-          const newSelection = window.getSelection();
-          newSelection.removeAllRanges();
-          newSelection.addRange(newRange);
+            const newRange = document.createRange();
+            newRange.selectNodeContents(this.$refs.textarea);
+            newRange.collapse(false);
+            const newSelection = window.getSelection();
+            newSelection.removeAllRanges();
+            newSelection.addRange(newRange);
         }, 0);
 
-      };
-      reader.readAsDataURL(file);
-    },
+        this.$message({
+            message: '上传图片成功',
+            type: 'success', 
+        })
+    }).catch(error => {
+        console.error('Error handling uploaded image:', error);
+        this.$message({
+            message: '上传图片失败',
+            type: 'error',
+        });
+    });
+},
     setModel() {
       this.selectedModel = [...this.selectedOptions];
       this.$emit("setModel", this.selectedModel[1]);
