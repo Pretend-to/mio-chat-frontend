@@ -167,7 +167,7 @@ export default class Contactor extends EventEmmiter {
   }
 
   _getValidOpenaiMessage(){
-    const cuttedMessageList = this.messageChain.slice(this.firstMessageIndex, this.firstMessageIndex + this.options.max_messages_num);
+    const cuttedMessageList = this.messageChain.slice(this.firstMessageIndex).slice(-this.options.max_messages_num);
     const validMessageList = cuttedMessageList.filter(
       (msg) => msg.role != "mio_system"
     );
