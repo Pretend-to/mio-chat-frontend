@@ -98,8 +98,6 @@
       async addBot(preset) {
         this.strogeAddHistory(preset);
         this.$emit("addBot", preset);
-        // this.close();
-        console.log(preset);
       },
       strogeAddHistory(preset) {
         // 先检查现有列表中是否有重复项

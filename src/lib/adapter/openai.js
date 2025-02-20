@@ -42,22 +42,29 @@ export default class Openai extends Adapter {
 
         const response = await this.fetch(`/api/openai/completions`, messages)
         const { chunk } = response
-        console.log(chunk)
         return chunk
     }
 
-    async send(messages,index,settings){
-        console.log("send message to openai")
-        // wrap the message with prompt
+    async send(messages, index, settings) {
+        console.log("send message to openai");
+    
+        // Correct the spelling and add default value for model:
+        const validSettingKeys = ["top_p", "temperature", "stream", "model", "tools"];
+    
+        const validSettings = settings ? Object.fromEntries(Object.entries(settings).filter(([key]) => validSettingKeys.includes(key))) : {};
         const data = {
-            ...settings,
+            ...validSettings, // Use the filtered settings
             messages
-        }
+        };
+    
+        console.log(data);
+    
         for await (const chunk of client.socket.streamCompletions(data)) {
-            if (chunk.data.chunk) this.emit(`updateMessage`,{chunk:chunk.data.chunk,index:index})
-            else if (chunk.data.tool_call) this.emit(`updateToolCall`,{tool_call:chunk.data.tool_call,index:index})
-            else if (chunk.message == 'completed') this.emit(`completeMessage`,{index:index}) 
-            else if (chunk.message == 'failed') this.emit(`failedMessage`,{error:chunk.data.error,index:index})
+            if (chunk.data.chunk) this.emit(`updateMessage`, { chunk: chunk.data.chunk, index: index });
+            else if (chunk.data.reasoning_content) this.emit(`updateReasoning`, { reasoningContent: chunk.data.reasoning_content, index: index });
+            else if (chunk.data.tool_call) this.emit(`updateToolCall`, { tool_call: chunk.data.tool_call, index: index });
+            else if (chunk.message == 'completed') this.emit(`completeMessage`, { index: index });
+            else if (chunk.message == 'failed') this.emit(`failedMessage`, { error: chunk.data.error, index: index });
         }
     }
 

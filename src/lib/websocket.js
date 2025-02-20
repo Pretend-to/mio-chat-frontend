@@ -68,8 +68,8 @@ export default class Socket extends EventEmitter {
     this.socket.onclose = () => {
       this.available = false;
       this.disconnect();
-      console.error("WebSocket连接断开，将在5秒后尝试重新连接...");
-      setTimeout(() => this.connect(), 5000); // Attempt to reconnect after 5 seconds
+      console.error("WebSocket连接断开，将在2秒后尝试重新连接...");
+      setTimeout(() => this.connect(), 2000); // Attempt to reconnect after 5 seconds
     };
 
     this.socket.onerror = (error) => {

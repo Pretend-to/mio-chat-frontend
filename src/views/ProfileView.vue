@@ -29,13 +29,17 @@
                                         v-else-if="['stream', 'enable_tool_call'].includes(key)"
                                         v-model="openaiSettings[key]"></el-switch>
                                     <el-slider @change="updateOpenaiOptions"
-                                        v-else-if="['top_p', 'temperature'].includes(key)" v-model="openaiSettings[key]"
+                                        v-else-if="['temperature'].includes(key)" v-model="openaiSettings[key]"
                                         :step="sliderTypeARange[2]" :min="sliderTypeARange[0]"
                                         :max="sliderTypeARange[1]" />
                                     <el-slider @change="updateOpenaiOptions"
+                                        v-else-if="['top_p'].includes(key)" v-model="openaiSettings[key]"
+                                        :step="sliderTypeBRange[2]" :min="sliderTypeBRange[0]"
+                                        :max="sliderTypeBRange[1]" />
+                                    <el-slider @change="updateOpenaiOptions"
                                         v-else-if="['frequency_penalty', 'presence_penalty'].includes(key)"
-                                        v-model="openaiSettings[key]" :step="sliderTypeBRange[2]"
-                                        :min="sliderTypeBRange[0]" :max="sliderTypeBRange[1]" />
+                                        v-model="openaiSettings[key]" :step="sliderTypeCRange[2]"
+                                        :min="sliderTypeCRange[0]" :max="sliderTypeCRange[1]" />
                                 </div>
                             </div>
                         </div>
@@ -130,8 +134,9 @@ export default {
             openaiSettings: this.getShownOpenAISettings(contactor.options),
             currentDelay: 0,
             centerDialogVisible: false,
-            sliderTypeARange: [0, 1, 0.1],
-            sliderTypeBRange: [-2, 2, 0.2],
+            sliderTypeARange: [0, 2, 0.1],
+            sliderTypeBRange: [0, 1, 0.1],
+            sliderTypeCRange: [-2, 2, 0.1],
             showPresetsDetail: false,
             showToolsDetail: false,
             presetHistory: contactor.options.history,

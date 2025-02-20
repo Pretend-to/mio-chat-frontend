@@ -66,19 +66,6 @@ export default class Client extends EventEmitter {
     }
     this.addConcator('onebot', onebotDefaultConfig)
 
-    // Prepare model options
-    const models = this.models
-    const options = models.map(modelGroup => ({
-      value: modelGroup.owner,
-      label: modelGroup.owner,
-      children: modelGroup.models.map(model => ({
-        value: model,
-        label: model,
-      }))
-    }))
-    
-    console.log(options)
-    
     // Update and create OpenAI contactor
     this.config.updateOpenaiDefaultConfig({
       model: this.default_model

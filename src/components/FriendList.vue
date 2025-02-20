@@ -58,8 +58,6 @@ export default {
         options: options,
       };
 
-      console.log(openaiDefaultConfig);
-
       this.showAddOptions = false;
       await client.addConcator("openai", openaiDefaultConfig);
       this.addReactiveListener();
@@ -107,7 +105,6 @@ export default {
       }
     },
     addPresetContactor(preset) {
-      console.log(preset);
       const contactor = {
         id: this.genFakeId(),
         namePolicy: 1,

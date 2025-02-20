@@ -4,6 +4,7 @@ import ForwardMsg from "@/components/ForwardMsg.vue";
 import InputEditor from "@/components/InputEditor.vue";
 import FileBlock from "@/components/FileBlock.vue";
 import ToolCallBar from "@/components/ToolCallBar.vue";
+import ReasonBlock  from "@/components/ReasonBlock.vue"
 import "emoji-picker-element";
 import html2canvas from "html2canvas"
 import { client } from "@/lib/runtime.js";
@@ -430,6 +431,7 @@ export default {
     InputEditor,
     ToolCallBar,
     FileBlock,
+    ReasonBlock
   },
   watch: {
     "$route.params.id"(newVal, oldVal) {
@@ -497,6 +499,7 @@ export default {
                 <ForwardMsg v-else-if="element.type === 'nodes'" :contactor="activeContactor"
                   :messages="element.data.messages" />
                 <FileBlock v-else-if="element.type === 'file'" :file_url="element.data.file" />
+                <ReasonBlock v-else-if="element.type === 'reason'" :finished="element.data.finished" :content="element.data.text" />
                 <div v-else-if="element.type === 'blank'" class="blank-message"
                   style="width: 10rem; height: 28.8px; position: relative;">
                   <span class="blank_loader"></span>

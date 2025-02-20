@@ -53,7 +53,6 @@ export default class Config {
         const res = await fetch("/api/openai/tools")
         const data = await res.json()
         this.openaiTools = Object.values(data.data.tools)
-        console.log(this.openaiTools)
         this._saveStrogeConfig()
     }
 

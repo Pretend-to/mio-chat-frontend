@@ -272,11 +272,9 @@ export default class Contactor extends EventEmmiter {
    * 从网页前端发来的消息
    */
   async webSend(message) {
-    console.log(message);
     this.updateLastUpdate();
     this.messageChain.push(message);
     if (this.platform == "onebot") {
-      console.log(message.content);
       return await this.kernel.send(this.id, message.content);
     } else {
       // 截取从this.firstMessageIndex到结尾的消息
@@ -304,8 +302,6 @@ export default class Contactor extends EventEmmiter {
     this.updateLastUpdate();
 
     const webMessage = this.kernel.convertMessage(message);
-    console.log(`收到消息，id:${this.id},激活状态:${this.active}`);
-    console.log(webMessage);
 
     if (!this.active) this.messageChain.push(webMessage);
     else this.emit("revMessage", webMessage);
@@ -481,7 +477,6 @@ export default class Contactor extends EventEmmiter {
     } else if(namePolicy[this.namePolicy] == 'CUSTOM') {
       name =  this.name; 
     } else if(namePolicy[this.namePolicy] == 'SUMMARY') {
-      console.log(this.messageChain)
       if(this.messageChain.length < 2) {
        name = '新建的 Bot'
       }else if(this.messageChain.length == 2 || this.messageChain.length % 6 == 0) {

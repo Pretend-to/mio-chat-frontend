@@ -124,11 +124,12 @@ export default {
             this.handleUploadImage(file);
           } else {
             // 如果是文档，调用文档上传函数
-            const upload = await client.uploadFile(file, {
-              onProgress: (percent) => {
-                console.log(percent); // 显示上传进度
-              },
-            });
+            // const upload = await client.uploadFile(file, {
+            //   onProgress: (percent) => {
+            //     console.log(percent); // 显示上传进度
+            //   },
+            // });
+            const upload = await client.uploadFile(file);
 
             this.$message({
               message: "文件上传成功",
@@ -335,9 +336,6 @@ export default {
 
       // 提取每个img元素的src属性
       const ImageSrcs = Array.from(images).map(img => img.src);
-
-      // 现在srcs数组中包含了所有img元素的src属性
-      console.log(ImageSrcs);
 
       let msg = this.getSafeText(this.userInput);
 
