@@ -499,7 +499,7 @@ export default {
                 <ForwardMsg v-else-if="element.type === 'nodes'" :contactor="activeContactor"
                   :messages="element.data.messages" />
                 <FileBlock v-else-if="element.type === 'file'" :file_url="element.data.file" />
-                <ReasonBlock v-else-if="element.type === 'reason'" :finished="element.data.finished" :content="element.data.text" />
+                <ReasonBlock v-else-if="element.type === 'reason'" :endTime="element.data.endTime" :startTime="element.data.startTime" :content="element.data.text" />
                 <div v-else-if="element.type === 'blank'" class="blank-message"
                   style="width: 10rem; height: 28.8px; position: relative;">
                   <span class="blank_loader"></span>

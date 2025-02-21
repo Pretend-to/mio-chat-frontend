@@ -387,7 +387,6 @@ export default {
         container.content.push(replyData);
       }
 
-      console.log(container);
       return container;
     },
     async send() {
@@ -438,8 +437,6 @@ export default {
           // 处理按下 Ctrl+Enter 键的逻辑
         } else {
           this.userInput += "\n";
-          console.log(this.userInput)
-
         }
       }
 
@@ -468,10 +465,9 @@ export default {
         // 检查是否为文件类型
         if (items[i].type.indexOf("image") !== -1) {
           var blob = items[i].getAsFile();
-          this.handelUploadImage(blob);
+          this.handleUploadImage(blob);
         } else if (items[i].type === "text/plain") {
           var text = (e.originalEvent || e).clipboardData.getData("text/plain");
-          console.log(text);
           document.execCommand("insertText", false, text);
           this.userInput = this.$refs.textarea.innerText;
         }

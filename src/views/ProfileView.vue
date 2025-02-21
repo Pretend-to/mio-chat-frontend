@@ -174,9 +174,9 @@ export default {
     },
     methods: {
         handleToolConfig() {
-            this.activeContactor.options.tools = this.toolsList.map((tool) => {
-                return tool.enabled ? tool.name : undefined; 
-            })
+            this.activeContactor.options.tools = this.toolsList
+                .filter(tool => tool.enabled)
+                .map(tool => tool.name);
             client.setLocalStorage(); //持久化存储
         },
         initContactor(){

@@ -68,10 +68,40 @@ export default class Contactor extends EventEmmiter {
   }
 
   enableOpenaiListener() {
+    this.kernel.on("updateReasoning", (e) => {
+      const { reasoning_content, index } = e;
+      const rawMessage = this.messageChain[index];
+      if (!rawMessage) return;
+
+      const lastMsgElm = rawMessage.content[rawMessage.content.length - 1];
+      const isFirstElement = ["blank", "reason"].includes(lastMsgElm.type);
+
+      const msgElm = {
+        type: "reason",
+        data: {
+          text: (lastMsgElm.type == "reason" ? lastMsgElm.data.text : "").concat(
+            reasoning_content
+          ),
+          startTime: lastMsgElm.type!=="reason" ? new Date().getTime() : lastMsgElm.data.startTime,
+          endTime: 0,
+        },
+      };
+
+      if (isFirstElement) rawMessage.content[rawMessage.content.length - 1] = msgElm;
+      else rawMessage.content.push(msgElm);
+
+      this.emit("updateMessage"); // 更新响应式数据
+      this.emit("updateMessageSummary")
+    });
+
     this.kernel.on("updateMessage", (e) => {
       const { chunk, index } = e;
       const rawMessage = this.messageChain[index];
       if (!rawMessage) return;
+
+      rawMessage.content.forEach((msgElm) => {
+        if (msgElm.type == "reason") msgElm.data.endTime = new Date().getTime(); 
+      })
 
       const lastMsgElm = rawMessage.content[rawMessage.content.length - 1];
       const isFirstElement = ["blank", "text"].includes(lastMsgElm.type);
@@ -180,7 +210,7 @@ export default class Contactor extends EventEmmiter {
         const role = elm.type == "tool_call" ? "tool" : message.role == "user" ? "user" : "assistant";
         const formatedMsg = {
           role: role,
-          content: undefined,
+          content: "none",
           _content_type: undefined
         }
         if (role == "tool") {
