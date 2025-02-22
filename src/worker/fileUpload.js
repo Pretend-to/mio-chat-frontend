@@ -1,11 +1,11 @@
 // worker.js (计算 MD5)
-import SparkMD5 from 'spark-md5';
+import SparkMD5 from "spark-md5";
 
 self.onmessage = function (e) {
   const { file, chunkSize } = e.data;
 
   if (!file) {
-    self.postMessage({ error: 'No file provided' });
+    self.postMessage({ error: "No file provided" });
     return;
   }
 
@@ -30,7 +30,7 @@ self.onmessage = function (e) {
   };
 
   fileReader.onerror = function () {
-    self.postMessage({ error: 'Error reading file' });
+    self.postMessage({ error: "Error reading file" });
   };
 
   function loadNextChunk() {

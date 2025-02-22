@@ -8,13 +8,11 @@ import EventEmitter from "../event.js";
 import { client } from "@/lib/runtime.js";
 
 export default class Adapter extends EventEmitter {
-    constructor() {
-        super();
+  constructor() {
+    super();
+  }
 
-    }
-
-    async fetch(url,data){
-        return await client.socket.fetch(url,data);
-    }
-
+  async fetch(url, data) {
+    return await client.socket.fetch(url, data);
+  }
 }

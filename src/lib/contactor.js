@@ -2,34 +2,27 @@ import Onebot from "./adapter/onebot.js";
 import Openai from "./adapter/openai.js";
 import EventEmmiter from "./event.js";
 
-
-const AVATAR_BASE_PATH = "https://registry.npmmirror.com/@lobehub/icons-static-svg/latest/files/icons";
+const AVATAR_BASE_PATH =
+  "https://registry.npmmirror.com/@lobehub/icons-static-svg/latest/files/icons";
 
 const AVATAR_MAP = {
   "gpt-": "openai.svg",
-  "o3": "openai.svg",
-  "o1": "openai.svg",
-  "moon": "moonshot.svg",
-  "deepseek": "deepseek-color.svg",
-  "glm": "zhipu-color.svg",
-  "gemini": "gemini-color.svg",
-  "command": "cohere-color.svg",
-  "claude": "claude-color.svg",
-  "spark": "spark-color.svg",
-  "qwen": "qwen-color.svg",
-  "hunyuan": "hunyuan-color.svg",
+  o3: "openai.svg",
+  o1: "openai.svg",
+  moon: "moonshot.svg",
+  deepseek: "deepseek-color.svg",
+  glm: "zhipu-color.svg",
+  gemini: "gemini-color.svg",
+  command: "cohere-color.svg",
+  claude: "claude-color.svg",
+  spark: "spark-color.svg",
+  qwen: "qwen-color.svg",
+  hunyuan: "hunyuan-color.svg",
 };
 
-const avatarPolicy = [
-  "MODEL",
-  "CUSTOM",
-]
+const avatarPolicy = ["MODEL", "CUSTOM"];
 
-const namePolicy = [
-  "MODEL",
-  "CUSTOM",
-  "SUMMARY" 
-]
+const namePolicy = ["MODEL", "CUSTOM", "SUMMARY"];
 
 export default class Contactor extends EventEmmiter {
   /**
@@ -79,19 +72,24 @@ export default class Contactor extends EventEmmiter {
       const msgElm = {
         type: "reason",
         data: {
-          text: (lastMsgElm.type == "reason" ? lastMsgElm.data.text : "").concat(
-            reasoning_content
-          ),
-          startTime: lastMsgElm.type!=="reason" ? new Date().getTime() : lastMsgElm.data.startTime,
+          text: (lastMsgElm.type == "reason"
+            ? lastMsgElm.data.text
+            : ""
+          ).concat(reasoning_content),
+          startTime:
+            lastMsgElm.type !== "reason"
+              ? new Date().getTime()
+              : lastMsgElm.data.startTime,
           endTime: 0,
         },
       };
 
-      if (isFirstElement) rawMessage.content[rawMessage.content.length - 1] = msgElm;
+      if (isFirstElement)
+        rawMessage.content[rawMessage.content.length - 1] = msgElm;
       else rawMessage.content.push(msgElm);
 
       this.emit("updateMessage"); // 更新响应式数据
-      this.emit("updateMessageSummary")
+      this.emit("updateMessageSummary");
     });
 
     this.kernel.on("updateMessage", (e) => {
@@ -100,8 +98,9 @@ export default class Contactor extends EventEmmiter {
       if (!rawMessage) return;
 
       rawMessage.content.forEach((msgElm) => {
-        if (msgElm.type == "reason") msgElm.data.endTime = new Date().getTime(); 
-      })
+        if (msgElm.type == "reason" && !msgElm.data.endTime)
+          msgElm.data.endTime = new Date().getTime();
+      });
 
       const lastMsgElm = rawMessage.content[rawMessage.content.length - 1];
       const isFirstElement = ["blank", "text"].includes(lastMsgElm.type);
@@ -110,16 +109,17 @@ export default class Contactor extends EventEmmiter {
         type: "text",
         data: {
           text: (lastMsgElm.type == "text" ? lastMsgElm.data.text : "").concat(
-            chunk
+            chunk,
           ),
         },
       };
 
-      if (isFirstElement) rawMessage.content[rawMessage.content.length - 1] = msgElm;
+      if (isFirstElement)
+        rawMessage.content[rawMessage.content.length - 1] = msgElm;
       else rawMessage.content.push(msgElm);
 
       this.emit("updateMessage"); // 更新响应式数据
-      this.emit("updateMessageSummary")
+      this.emit("updateMessageSummary");
     });
 
     this.kernel.on("updateToolCall", (e) => {
@@ -129,24 +129,26 @@ export default class Contactor extends EventEmmiter {
 
       const lastMsgElm = rawMessage.content[rawMessage.content.length - 1];
       const isFirstElement = ["blank", "tool_call"].includes(lastMsgElm.type);
-      const continuousCall = lastMsgElm.type == "tool_call" && lastMsgElm.data.id !== tool_call.id;
+      const continuousCall =
+        lastMsgElm.type == "tool_call" && lastMsgElm.data.id !== tool_call.id;
 
       const msgElm = {
         type: "tool_call",
         data: {
           ...tool_call,
-          params: tool_call.action == 'pending' ? lastMsgElm.data.params += tool_call.params : tool_call.params
+          params:
+            tool_call.action == "pending"
+              ? (lastMsgElm.data.params += tool_call.params)
+              : tool_call.params,
         },
       };
 
-
-      if (isFirstElement && !continuousCall) rawMessage.content[rawMessage.content.length - 1] = msgElm;
+      if (isFirstElement && !continuousCall)
+        rawMessage.content[rawMessage.content.length - 1] = msgElm;
       else rawMessage.content.push(msgElm);
 
-
       this.emit("updateMessage"); // 更新响应式数据
-      this.emit("updateMessageSummary")
-
+      this.emit("updateMessageSummary");
     });
 
     this.kernel.on("completeMessage", (e) => {
@@ -154,7 +156,7 @@ export default class Contactor extends EventEmmiter {
       const messageIndex = e.index;
       const rawMessage = this.messageChain[messageIndex];
       if (rawMessage) {
-        this.emit("updateMessageSummary")
+        this.emit("updateMessageSummary");
 
         this.emit("completeMessage", {
           index: messageIndex,
@@ -168,18 +170,14 @@ export default class Contactor extends EventEmmiter {
       const messageIndex = e.index;
       const rawMessage = this.messageChain[messageIndex];
       if (rawMessage) {
-        this.emit("updateMessageSummary")
+        this.emit("updateMessageSummary");
 
         this.emit("completeMessage", {
-          text:
-            "请求发生错误！\n```json\n" +
-            e.error +
-            "\n```\n",
+          text: "请求发生错误！\n```json\n" + e.error + "\n```\n",
           index: messageIndex,
           error: true,
         });
       }
-
     });
   }
 
@@ -196,107 +194,119 @@ export default class Contactor extends EventEmmiter {
     return start + fileElms.join("\n");
   }
 
-  _getValidOpenaiMessage(){
-    const cuttedMessageList = this.messageChain.slice(this.firstMessageIndex).slice(-this.options.max_messages_num);
+  _getValidOpenaiMessage() {
+    const cuttedMessageList = this.messageChain
+      .slice(this.firstMessageIndex)
+      .slice(-this.options.max_messages_num);
     const validMessageList = cuttedMessageList.filter(
-      (msg) => msg.role != "mio_system"
+      (msg) => msg.role != "mio_system",
     );
 
-
-    const mergedMessages = validMessageList.map(message => {
-      const fileList = []
-      const subArray = []
+    const mergedMessages = validMessageList.map((message) => {
+      const fileList = [];
+      const subArray = [];
       message.content.forEach((elm) => {
-        const role = elm.type == "tool_call" ? "tool" : message.role == "user" ? "user" : "assistant";
+        const role =
+          elm.type == "tool_call"
+            ? "tool"
+            : message.role == "user"
+              ? "user"
+              : "assistant";
         const formatedMsg = {
           role: role,
           content: "none",
-          _content_type: undefined
-        }
+          _content_type: undefined,
+        };
         if (role == "tool") {
-          formatedMsg.role = "assistant"
-          formatedMsg.content = null
-          formatedMsg.tool_calls = [{
-            id: elm.data.id,
-            function: {
-              name: elm.data.name,
-              arguments: elm.data.params
+          formatedMsg.role = "assistant";
+          formatedMsg.content = null;
+          formatedMsg.tool_calls = [
+            {
+              id: elm.data.id,
+              function: {
+                name: elm.data.name,
+                arguments: elm.data.params,
+              },
+              type: "function",
             },
-            type: "function"
-          }]
-          subArray.push({ ...formatedMsg })
+          ];
+          subArray.push({ ...formatedMsg });
 
-          delete formatedMsg.tool_calls
-          formatedMsg.role = "tool"
-          formatedMsg.content = JSON.stringify(elm.data.result)
-          formatedMsg.tool_call_id = elm.data.id
-          subArray.push({ ...formatedMsg })
+          delete formatedMsg.tool_calls;
+          formatedMsg.role = "tool";
+          formatedMsg.content = JSON.stringify(elm.data.result);
+          formatedMsg.tool_call_id = elm.data.id;
+          subArray.push({ ...formatedMsg });
 
-          formatedMsg.role = role
-
+          formatedMsg.role = role;
         } else if (role == "user" || role == "assistant") {
           if (elm.type == "text") {
-            formatedMsg.content = elm.data.text
-            formatedMsg._content_type = "text"
-            subArray.push(formatedMsg)
+            formatedMsg.content = elm.data.text;
+            formatedMsg._content_type = "text";
+            subArray.push(formatedMsg);
           } else if (elm.type == "image") {
-            formatedMsg.content = elm.data.file
-            formatedMsg._content_type = "image"
-            subArray.push(formatedMsg)
+            formatedMsg.content = elm.data.file;
+            formatedMsg._content_type = "image";
+            subArray.push(formatedMsg);
           } else if (elm.type == "file") {
-            fileList.push(elm.data.file)
+            fileList.push(elm.data.file);
           }
         }
-      })
-      if(fileList.length > 0) {
-        const textElm = subArray.filter(elm => elm._content_type == "text")
-        textElm[0].content = textElm[0].content + this._getFilePrompt(fileList)
+      });
+      if (fileList.length > 0) {
+        const textElm = subArray.filter((elm) => elm._content_type == "text");
+        textElm[0].content = textElm[0].content + this._getFilePrompt(fileList);
       }
-      return subArray
-    })
-    let finalMessages = []
+      return subArray;
+    });
+    let finalMessages = [];
 
     mergedMessages.forEach((subArray) => {
-      const textElm = subArray.filter(elm => elm._content_type == "text")
-      const imageElm = subArray.filter(elm => elm._content_type == "image")
-      const fileElm = subArray.filter(elm => elm._content_type == "file")
-      const filePrompt = fileElm.length > 0? this._getFilePrompt(fileElm) : ""
-      let message = null
-      if (textElm.length > 0 && imageElm.length > 0 && imageElm[0].role == "user") {
+      const textElm = subArray.filter((elm) => elm._content_type == "text");
+      const imageElm = subArray.filter((elm) => elm._content_type == "image");
+      const fileElm = subArray.filter((elm) => elm._content_type == "file");
+      const filePrompt = fileElm.length > 0 ? this._getFilePrompt(fileElm) : "";
+      let message = null;
+      if (
+        textElm.length > 0 &&
+        imageElm.length > 0 &&
+        imageElm[0].role == "user"
+      ) {
         message = {
           role: "user",
-          content: [...textElm.map((elm) => {
-            return {
-              type: "text",
-              text: elm.content + filePrompt
-            }
-          }), ...imageElm.map((elm) => {
-            return {
-              type: "image_url",
-              image_url: {
-                url: elm.content
-              }
-            }
-          })]
-        }
+          content: [
+            ...textElm.map((elm) => {
+              return {
+                type: "text",
+                text: elm.content + filePrompt,
+              };
+            }),
+            ...imageElm.map((elm) => {
+              return {
+                type: "image_url",
+                image_url: {
+                  url: elm.content,
+                },
+              };
+            }),
+          ],
+        };
       }
       if (message?.content.length == subArray.length) {
-        finalMessages.push(message)
+        finalMessages.push(message);
       } else {
-        subArray.forEach(elm => {
-          delete elm._content_type
+        subArray.forEach((elm) => {
+          delete elm._content_type;
         });
-        finalMessages.push(...subArray)
+        finalMessages.push(...subArray);
       }
-    })
-
+    });
 
     if (this.options.history) {
-      finalMessages = this.options.history.concat(finalMessages)
+      finalMessages = this.options.history.concat(finalMessages);
     }
 
-
-    return finalMessages
+    return finalMessages;
   }
   /**
    * 从网页前端发来的消息
@@ -312,7 +322,7 @@ export default class Contactor extends EventEmmiter {
 
       // 立即发生回复消息
       this.revMessage({ content: [] });
-      
+
       const replyIndex = this.messageChain.length - 1;
 
       this.kernel.send(finalMessages, replyIndex, this.options);
@@ -461,15 +471,26 @@ export default class Contactor extends EventEmmiter {
   getLastMessageSummary(message) {
     const getMessageText = (element) => {
       switch (element.type) {
-        case "text": return element.data.text;
-        case "image": return "[图片]";
-        case "record": return "[语音]";
-        case "video": return "[视频]";
-        case "file": return "[文件]";
-        case "tool_call": return `[调用工具] ${element.data.name}`;
-        case "blank": return "正在思考中...";
-        case "reply": return ""; // 空字符串处理
-        default: return "[未知消息类型] " + element.type;
+        case "text":
+          return element.data.text;
+        case "image":
+          return "[图片]";
+        case "record":
+          return "[语音]";
+        case "video":
+          return "[视频]";
+        case "file":
+          return "[文件]";
+        case "tool_call":
+          return `[调用工具] ${element.data.name}`;
+        case "reason":
+          return element.data.text;
+        case "blank":
+          return "正在思考中...";
+        case "reply":
+          return ""; // 空字符串处理
+        default:
+          return "[未知消息类型] " + element.type;
       }
     };
 
@@ -488,52 +509,57 @@ export default class Contactor extends EventEmmiter {
   }
 
   loadAvatar() {
-    let avatar = '/static/avatar/miobot.png';
-    if(avatarPolicy[this.avatarPolicy] == 'MODEL') {
+    let avatar = "/static/avatar/miobot.png";
+    if (avatarPolicy[this.avatarPolicy] == "MODEL") {
       const model = this.options.model;
-      avatar = this.getAvatarByModel(model) 
-    }else if(avatarPolicy[this.avatarPolicy] == 'CUSTOM') {
-      avatar = this.avatar 
+      avatar = this.getAvatarByModel(model);
+    } else if (avatarPolicy[this.avatarPolicy] == "CUSTOM") {
+      avatar = this.avatar;
     }
-    this.avatar = avatar
-    return avatar
+    this.avatar = avatar;
+    return avatar;
   }
 
   async loadName() {
-    let name = this.name ?? '未命名 Bot'
-    if(namePolicy[this.namePolicy] == 'MODEL') {
+    let name = this.name ?? "未命名 Bot";
+    if (namePolicy[this.namePolicy] == "MODEL") {
       const model = this.options.model;
-      name =  model;
-    } else if(namePolicy[this.namePolicy] == 'CUSTOM') {
-      name =  this.name; 
-    } else if(namePolicy[this.namePolicy] == 'SUMMARY') {
-      if(this.messageChain.length < 2) {
-       name = '新建的 Bot'
-      }else if(this.messageChain.length == 2 || this.messageChain.length % 6 == 0) {
-       name = await this.getMessagesSummary() 
+      name = model;
+    } else if (namePolicy[this.namePolicy] == "CUSTOM") {
+      name = this.name;
+    } else if (namePolicy[this.namePolicy] == "SUMMARY") {
+      if (this.messageChain.length < 2) {
+        name = "新建的 Bot";
+      } else if (
+        this.messageChain.length == 2 ||
+        this.messageChain.length % 6 == 0
+      ) {
+        name = await this.getMessagesSummary();
       }
     }
-    this.name = name
-    return name
+    this.name = name;
+    return name;
   }
 
   getMessagesSummary() {
-    if(this.platform == "openai") {
-      return this.kernel.getMessagesSummary(this._getValidOpenaiMessage().slice(-4));
-    }else {
-      return '仅支持 OpenAI Chat Bot'
+    if (this.platform == "openai") {
+      return this.kernel.getMessagesSummary(
+        this._getValidOpenaiMessage().slice(-4),
+      );
+    } else {
+      return "仅支持 OpenAI Chat Bot";
     }
   }
 
   getAvatarByModel(model) {
     const lowerModel = model.toLowerCase();
-  
+
     for (const key in AVATAR_MAP) {
       if (lowerModel.includes(key)) {
         return `${AVATAR_BASE_PATH}/${AVATAR_MAP[key]}`;
       }
     }
-  
+
     return `${AVATAR_BASE_PATH}/openai.svg`;
   }
 }

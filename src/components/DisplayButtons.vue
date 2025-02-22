@@ -1,39 +1,39 @@
 <template>
-    <ul :class="{ 'window-controls':true, fullscreen:fullScreen}">
-        <li class="button" @click="waiting()">
-            <span class="window-min">—</span>
-        </li>
-        <li v-if="fullScreen" class="button" @click="configFullScreen(false)">
-            <span class="window-inmax">
-                <i class="iconfont chuangkouhua"></i>
-            </span>
-        </li>
-        <li v-else class="button" @click="configFullScreen(true)">
-            <span class="window-max">▢</span>
-        </li>
-        <li class="button" @click="waiting()" id="close">
-            <span class="window-close">&times;</span>
-        </li>
-    </ul>
+  <ul :class="{ 'window-controls': true, fullscreen: fullScreen }">
+    <li class="button" @click="waiting()">
+      <span class="window-min">—</span>
+    </li>
+    <li v-if="fullScreen" class="button" @click="configFullScreen(false)">
+      <span class="window-inmax">
+        <i class="iconfont chuangkouhua"></i>
+      </span>
+    </li>
+    <li v-else class="button" @click="configFullScreen(true)">
+      <span class="window-max">▢</span>
+    </li>
+    <li id="close" class="button" @click="waiting()">
+      <span class="window-close">&times;</span>
+    </li>
+  </ul>
 </template>
 
 <script>
 export default {
-   props: {
-        fullScreen: {
-            type: Boolean,
-            default: false
-        }
-    }, 
-    methods: {
-        waiting() {
-            this.$message({ message: "此功能尚未开放", type: "warning" });
-        },
-        configFullScreen(fullScreen) {
-            this.$emit('full-screen', fullScreen)
-        }
-    }
-}
+  props: {
+    fullScreen: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  methods: {
+    waiting() {
+      this.$message({ message: "此功能尚未开放", type: "warning" });
+    },
+    configFullScreen(fullScreen) {
+      this.$emit("full-screen", fullScreen);
+    },
+  },
+};
 </script>
 
 <style scoped lang="sass">
@@ -44,7 +44,7 @@ export default {
     height: 2rem
     z-index: 100
     right: 0
-    
+
     &.fullscreen
         position: fixed
 

@@ -1,3 +1,78 @@
+<template>
+  <div class="auth-view">
+    <div class="container">
+      <div ref="iconContainer" class="icon-container">
+        <i class="iconfont ChatGPT"></i>
+      </div>
+      <h1 class="title">登录验证</h1>
+      <p class="hint">管理员开启了密码验证，请在下方填入访问码</p>
+      <input
+        v-model="accessCode"
+        type="password"
+        placeholder="在此处填写访问码"
+      />
+      <div class="controls">
+        <button class="later" @click="login()">游客登录</button>
+        <button class="login" @click="login(accessCode)">Login</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { nextTick, onUnmounted, onMounted, ref } from "vue";
+import router from "@/router";
+import { client } from "@/lib/runtime.js";
+import { ElMessage } from "element-plus";
+
+const accessCode = ref();
+const requesting = ref(false);
+const iconContainer = ref();
+
+const login = async (code) => {
+  console.log("触发login了");
+
+  // 激活图标
+  await nextTick(() => iconContainer.value.classList.add("active"));
+
+  if (requesting.value) {
+    return;
+  } else {
+    requesting.value = true;
+    try {
+      const result = await client.login(code);
+      if (result) {
+        ElMessage.success(
+          `成功以${result.is_admin ? "管理员身份" : "游客身份"}登录，欢迎使用!`,
+        );
+        await router.push("/");
+        // 删除回车触发login的监听
+      }
+    } catch (error) {
+      ElMessage.error(error);
+    }
+    requesting.value = false;
+  }
+};
+
+// 定义一个命名函数供事件监听和移除使用
+function handleEnter(e) {
+  if (e.key === "Enter") {
+    login(accessCode.value);
+  }
+}
+
+// 在unmounted时移除监听
+onUnmounted(() => {
+  console.log("unmounted");
+  removeEventListener("keydown", handleEnter); // 使用相同的函数引用进行移除
+});
+
+onMounted(() => {
+  addEventListener("keydown", handleEnter);
+});
+</script>
+
 <style lang="sass" scoped>
 $baseColor: #1d93ab
 
@@ -85,75 +160,3 @@ $baseColor: #1d93ab
                 color: white
                 background: $baseColor
 </style>
-
-<template>
-    <div class="auth-view">
-        <div class="container">
-            <div class="icon-container" ref="iconContainer">
-                <i class="iconfont ChatGPT"></i>
-            </div>
-            <h1 class="title">登录验证</h1>
-            <p class="hint">管理员开启了密码验证，请在下方填入访问码</p>
-            <input type="password" v-model="accessCode" placeholder="在此处填写访问码">
-            <div class="controls">
-                <button class="later" @click="login()">游客登录</button>
-                <button class="login" @click="login(accessCode)">Login</button>
-            </div>
-        </div>
-    </div>
-</template>
-
-<script setup>
-import { nextTick, onUnmounted, onMounted ,ref } from 'vue'
-import router from '@/router'
-import { client } from '@/lib/runtime.js'
-import { ElMessage } from 'element-plus'
-
-const accessCode = ref()
-const requesting = ref(false)
-const iconContainer = ref()
-
-const login = async (code) => {
-
-    console.log("触发login了")
-
-    // 激活图标
-    await nextTick(() => iconContainer.value.classList.add('active'))
-    
-    if (requesting.value) {
-        return
-    } else {
-        requesting.value = true
-        try {
-            const result = await client.login(code)
-            if (result) {
-                ElMessage.success(`成功以${result.is_admin ? '管理员身份' : '游客身份'}登录，欢迎使用!`)
-                await router.push('/')
-                // 删除回车触发login的监听
-            }
-        } catch (error) {
-            ElMessage.error(error)
-        }
-        requesting.value = false
-    }
-}
-
-// 定义一个命名函数供事件监听和移除使用
-function handleEnter(e) {
-    if (e.key === 'Enter') {
-        login(accessCode.value);
-    }
-}
-
-
-// 在unmounted时移除监听
-onUnmounted(() => {
-    console.log('unmounted');
-    removeEventListener('keydown', handleEnter); // 使用相同的函数引用进行移除
-});
-
-onMounted(() => {
-    addEventListener('keydown',handleEnter)
-})
-
-</script>

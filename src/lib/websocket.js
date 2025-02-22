@@ -43,7 +43,6 @@ export default class Socket extends EventEmitter {
     this.socket = new WebSocket(fullUrl);
     console.log("WebSocket连接中...");
 
-    
     this.socket.onopen = () => {
       this.available = true;
       console.log("WebSocket连接成功");
@@ -61,8 +60,6 @@ export default class Socket extends EventEmitter {
           this.delay = delayTo + delayBack;
         }
       }, 3000);
-
-
     };
 
     this.socket.onclose = () => {
@@ -119,7 +116,7 @@ export default class Socket extends EventEmitter {
       if (e.protocol == "onebot") {
         this.emit("onebot_message", e);
       } else if (e.protocol == "system") {
-        if(e.type == "login") this.emit("connect", e.data)
+        if (e.type == "login") this.emit("connect", e.data);
         this.emit("system_message", e);
       }
     } catch (error) {

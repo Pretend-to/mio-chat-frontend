@@ -1,12 +1,15 @@
 <script>
-import { client,config } from "@/lib/runtime.js";
+import { client, config } from "@/lib/runtime.js";
 import sideBar from "@/components/SideBar.vue";
 import displayButtons from "./components/DisplayButtons.vue";
 export default {
+  components: {
+    sideBar,
+    displayButtons,
+  },
   data() {
     const displayConfig = config.getDisplayConfig();
     const onPhone = window.innerWidth < 600;
-
 
     return {
       onPhone,
@@ -15,44 +18,42 @@ export default {
       beian: displayConfig?.beian || "",
     };
   },
-  methods: {
-    setWindowSize(fullScreen) {
-      this.fullScreen = fullScreen;
-      config.updateDisplayConfig({
-        full_screen: fullScreen, 
-      })
-    }, 
-  },
-  components: {
-    sideBar,
-    displayButtons,
-  },
   computed: {
     onPrivate() {
-      return this.$route.path.includes("/auth") || this.$route.path.includes("/profile") || this.$route.path.includes("/chat");
-    }
+      return (
+        this.$route.path.includes("/auth") ||
+        this.$route.path.includes("/profile") ||
+        this.$route.path.includes("/chat")
+      );
+    },
   },
   async created() {
-
     await client.beforeInit();
     await client.init();
     const displayConfig = config.getDisplayConfig();
 
-    if(displayConfig) {
+    if (displayConfig) {
       this.fullScreen = displayConfig.full_screen;
       this.beian = displayConfig.beian;
       document.title = displayConfig.title;
     }
   },
   mounted() {
-    client.on('device-change',(type)=>{
-      if(type == "mobile") {
+    client.on("device-change", (type) => {
+      if (type == "mobile") {
         this.onPhone = true;
-      }else {
+      } else {
         this.onPhone = false;
       }
-    })
-
+    });
+  },
+  methods: {
+    setWindowSize(fullScreen) {
+      this.fullScreen = fullScreen;
+      config.updateDisplayConfig({
+        full_screen: fullScreen,
+      });
+    },
   },
 };
 </script>
@@ -63,12 +64,21 @@ export default {
       <sideBar v-if="!onPrivate"></sideBar>
     </div>
     <div v-else class="mio-chat" :class="{ fullscreen: fullScreen }">
-      <displayButtons :fullScreen @full-screen="setWindowSize"></displayButtons>
+      <displayButtons
+        :full-screen
+        @full-screen="setWindowSize"
+      ></displayButtons>
       <sideBar ref="sidebar"></sideBar>
       <router-view></router-view>
     </div>
   </div>
-  <a v-if="beian" id="beian" href="https://beian.miit.gov.cn/" target="_blank">{{ beian }}</a>
+  <a
+    v-if="beian"
+    id="beian"
+    href="https://beian.miit.gov.cn/"
+    target="_blank"
+    >{{ beian }}</a
+  >
 </template>
 <style scoped>
 #app {
@@ -126,5 +136,6 @@ a#beian {
   color: #fff;
   text-decoration: none;
 }
-@media (min-width: 1024px) {}
+@media (min-width: 1024px) {
+}
 </style>

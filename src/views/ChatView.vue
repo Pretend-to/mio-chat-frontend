@@ -4,13 +4,20 @@ import ForwardMsg from "@/components/ForwardMsg.vue";
 import InputEditor from "@/components/InputEditor.vue";
 import FileBlock from "@/components/FileBlock.vue";
 import ToolCallBar from "@/components/ToolCallBar.vue";
-import ReasonBlock  from "@/components/ReasonBlock.vue"
+import ReasonBlock from "@/components/ReasonBlock.vue";
 import "emoji-picker-element";
-import html2canvas from "html2canvas"
+import html2canvas from "html2canvas";
 import { client } from "@/lib/runtime.js";
 
 export default {
-
+  components: {
+    MdPreview,
+    ForwardMsg,
+    InputEditor,
+    ToolCallBar,
+    FileBlock,
+    ReasonBlock,
+  },
   data() {
     const currentId = parseInt(this.$route.params.id);
     const contactor = client.getContactor(currentId);
@@ -39,6 +46,84 @@ export default {
       fullScreen: false,
     };
   },
+  computed: {
+    getDelayStatus() {
+      return this.currentDelay > 1000
+        ? "high"
+        : this.currentDelay > 500
+          ? "mid"
+          : this.currentDelay > 100
+            ? "low"
+            : "ultra";
+    },
+    activeMessageChain() {
+      return this.activeContactor.options.opening
+        ? [
+            {
+              role: "other",
+              content: [
+                {
+                  type: "text",
+                  data: {
+                    text: this.activeContactor.options.opening,
+                  },
+                },
+              ],
+              time: this.activeContactor.createTime,
+            },
+            ...this.activeContactor.messageChain,
+          ]
+        : this.activeContactor.messageChain;
+    },
+  },
+  watch: {
+    "$route.params.id"(newVal, oldVal) {
+      const currentId = parseInt(newVal);
+      const contactor = client.getContactor(currentId);
+      this.activeContactor = contactor;
+      this.initContactor(this.activeContactor);
+      this.toButtom();
+      if (oldVal) {
+        const oldId = parseInt(oldVal);
+        const oldContactor = client.getContactor(oldId);
+        this.disableContactor(oldContactor);
+      }
+    },
+  },
+  mounted() {
+    document.addEventListener("click", () => {
+      this.showMenu = false;
+      // if( this.showemoji) this.showemoji = false;
+    });
+
+    this.$refs.chatWindow.addEventListener("scroll", this.scrollHandler);
+
+    console.log(this.activeContactor);
+    this.toButtom();
+
+    const currentId = this.$route.params.id;
+    const contactor = client.getContactor(currentId);
+    this.initContactor(contactor);
+
+    this.fullScreen = this.client.fullScreen;
+
+    setInterval(() => {
+      this.currentDelay = this.client.socket.delay;
+    }, 3000);
+
+    console.log(contactor.options);
+  },
+  updated() {
+    if (this.toupdate && this.autoScroll) {
+      this.toButtom();
+      this.toupdate = false;
+    }
+  },
+  beforeUnmount() {
+    // 移除事件监听
+    this.disableContactor(this.activeContactor);
+    this.$refs.chatWindow.removeEventListener("scroll", this.scrollHandler);
+  },
   methods: {
     toButtom(clicked) {
       if (clicked) this.$message("已滑至底部");
@@ -52,7 +137,7 @@ export default {
       this.activeContactor.messageChain = [];
       this.activeContactor.updateFirstMessage();
       client.setLocalStorage(); //持久化存储
-      this.activeContactor.emit("updateMessageSummary")
+      this.activeContactor.emit("updateMessageSummary");
 
       this.toupdate = true;
       this.$message({ message: "已清除会话记录", type: "success" });
@@ -88,12 +173,11 @@ export default {
     toimg() {
       // 使用html2canvas把 this.$refs.chatWindow 渲染为图片
       const rect = this.$refs.chatWindow.getBoundingClientRect();
-      rect.height = this.$refs.chatWindow.scrollHeight
+      rect.height = this.$refs.chatWindow.scrollHeight;
 
-      console.log(rect)
-      
+      console.log(rect);
+
       // 获取当前浏览器真实缩放比例
-
 
       html2canvas(this.$refs.chatWindow, {
         windowHeight: rect.height * 1.2,
@@ -111,21 +195,26 @@ export default {
       });
     },
     hasOpening() {
-      return this.activeContactor.options.opening? true : false;
+      return this.activeContactor.options.opening ? true : false;
     },
     getFullMessages() {
-      return this.hasOpening() ?
-        [{
-          role: "other",
-          content: [{
-            type: "text",
-            data: {
-              text: this.activeContactor.options.opening
-            }
-          }],
-          time: this.activeContactor.createTime
-        },...this.activeContactor.messageChain] :
-        this.activeContactor.messageChain
+      return this.hasOpening()
+        ? [
+            {
+              role: "other",
+              content: [
+                {
+                  type: "text",
+                  data: {
+                    text: this.activeContactor.options.opening,
+                  },
+                },
+              ],
+              time: this.activeContactor.createTime,
+            },
+            ...this.activeContactor.messageChain,
+          ]
+        : this.activeContactor.messageChain;
     },
     showTime(index) {
       const list = this.getFullMessages();
@@ -209,11 +298,10 @@ export default {
       var scrollHeight = this.$refs.chatWindow.scrollHeight; // 内容总高度
 
       // 计算滚动位置的实际像素长度
-      var scrollPercentage = (scrollTop / (scrollHeight - clientHeight))
-      var height = scrollPercentage * scrollHeight
+      var scrollPercentage = scrollTop / (scrollHeight - clientHeight);
+      var height = scrollPercentage * scrollHeight;
 
-      return scrollHeight - height
-
+      return scrollHeight - height;
     },
 
     initContactor(contactor) {
@@ -241,19 +329,26 @@ export default {
         rawMessage.status = "completed";
         if (!e.error) {
           rawMessage.content.forEach((element, index) => {
-            if (element.type === "text" && this.activeContactor.platform === "onebot") {
-              const formatedMessage = this.separateTextAndImages(element.data.text);
+            if (
+              element.type === "text" &&
+              this.activeContactor.platform === "onebot"
+            ) {
+              const formatedMessage = this.separateTextAndImages(
+                element.data.text,
+              );
               // 把 formatedMessage 里的元素展开到 index 这个位置
               rawMessage.content.splice(index, 1, ...formatedMessage);
             }
           });
         } else {
-          rawMessage.content = [{
-            type: "text",
-            data: {
-              text: e.text
-            }
-          }]
+          rawMessage.content = [
+            {
+              type: "text",
+              data: {
+                text: e.text,
+              },
+            },
+          ];
         }
 
         this.$forceUpdate();
@@ -271,7 +366,9 @@ export default {
     },
     getReplyText(id) {
       let content = "";
-      const message = this.activeContactor.messageChain.find((item) => item.id === id);
+      const message = this.activeContactor.messageChain.find(
+        (item) => item.id === id,
+      );
       if (message) {
         message.content.forEach((element) => {
           if (element.type === "text") {
@@ -289,7 +386,10 @@ export default {
     },
     showMessageMenu(event, messageIndex) {
       console.log(messageIndex);
-      this.validMessageIndex = this.activeContactor.platform === "openai" && this.hasOpening()? messageIndex - 1 : messageIndex;
+      this.validMessageIndex =
+        this.activeContactor.platform === "openai" && this.hasOpening()
+          ? messageIndex - 1
+          : messageIndex;
       event.preventDefault();
       this.showMenu = true;
       this.menuTop = event.clientY;
@@ -301,7 +401,8 @@ export default {
         case "copy": {
           // Construct the text to copy
           let text = "";
-          const message = this.activeContactor.messageChain[this.validMessageIndex]; // Corrected typo
+          const message =
+            this.activeContactor.messageChain[this.validMessageIndex]; // Corrected typo
           console.log(this.validMessageIndex);
           message.content.forEach((element) => {
             if (element.type === "text") {
@@ -339,7 +440,7 @@ export default {
           } else {
             this.userInput +=
               this.getReplyText(
-                this.activeContactor.messageChain[this.validMessageIndex].id
+                this.activeContactor.messageChain[this.validMessageIndex].id,
               ) + "\n\n";
           }
 
@@ -361,90 +462,9 @@ export default {
       this.showMenu = false;
       if (this.showemoji) this.showemoji = false;
 
-      const scrollHeight = this.getChatwindowScrollheight()
+      const scrollHeight = this.getChatwindowScrollheight();
 
       this.autoScroll = scrollHeight > 300 ? false : true;
-    }
-  },
-  mounted() {
-    document.addEventListener("click", () => {
-      this.showMenu = false;
-      // if( this.showemoji) this.showemoji = false;
-    });
-
-    this.$refs.chatWindow.addEventListener("scroll", this.scrollHandler);
-
-    console.log(this.activeContactor);
-    this.toButtom();
-
-    const currentId = this.$route.params.id;
-    const contactor = client.getContactor(currentId);
-    this.initContactor(contactor);
-
-    this.fullScreen = this.client.fullScreen;
-
-    setInterval(() => {
-      this.currentDelay = this.client.socket.delay;
-    }, 3000);
-
-    console.log(contactor.options);
-  },
-  updated() {
-    if (this.toupdate && this.autoScroll) {
-      this.toButtom();
-      this.toupdate = false;
-    }
-  },
-  beforeUnmount() {
-    // 移除事件监听
-    this.disableContactor(this.activeContactor);
-    this.$refs.chatWindow.removeEventListener("scroll", this.scrollHandler);
-  },
-  computed: {
-    getDelayStatus() {
-      return this.currentDelay > 1000
-        ? "high"
-        : this.currentDelay > 500
-          ? "mid"
-          : this.currentDelay > 100
-            ? "low"
-            : "ultra";
-    },
-    activeMessageChain() {
-      return this.activeContactor.options.opening ? 
-        [{
-          role: "other",
-          content: [{
-            type: "text",
-            data: {
-              text: this.activeContactor.options.opening
-            }
-          }],
-          time: this.activeContactor.createTime
-        },...this.activeContactor.messageChain] :
-        this.activeContactor.messageChain
-    },
-  },
-  components: {
-    MdPreview,
-    ForwardMsg,
-    InputEditor,
-    ToolCallBar,
-    FileBlock,
-    ReasonBlock
-  },
-  watch: {
-    "$route.params.id"(newVal, oldVal) {
-      const currentId = parseInt(newVal);
-      const contactor = client.getContactor(currentId);
-      this.activeContactor = contactor;
-      this.initContactor(this.activeContactor);
-      this.toButtom();
-      if (oldVal) {
-        const oldId = parseInt(oldVal);
-        const oldContactor = client.getContactor(oldId);
-        this.disableContactor(oldContactor);
-      }
     },
   },
 };
@@ -456,7 +476,10 @@ export default {
       <div class="return" @click="tolist()">
         <i class="iconfont icon-return"></i>
       </div>
-      <div @click="$router.push(`/profile/${activeContactor.id}`)" class="name-area">
+      <div
+        class="name-area"
+        @click="$router.push(`/profile/${activeContactor.id}`)"
+      >
         {{ activeContactor.name }}
         <span :class="'delay-status ' + getDelayStatus"></span>
         <span class="delay-num">当前延迟: {{ currentDelay }} ms</span>
@@ -467,50 +490,115 @@ export default {
         </div>
       </div>
     </div>
-    <div class="message-window" ref="chatWindow">
-      <div v-for="(item, index) of activeMessageChain" :key="index" class="message-container" ref="message">
-        <div class="message-time" v-if="showTime(index).show">
+    <div ref="chatWindow" class="message-window">
+      <div
+        v-for="(item, index) of activeMessageChain"
+        :key="index"
+        ref="message"
+        class="message-container"
+      >
+        <div v-if="showTime(index).show" class="message-time">
           {{ showTime(index).time }}
         </div>
-        <div class="message-body" :id="item.role">
-          <div class="avatar" v-if="item.role !== 'mio_system'">
-            <img v-if="item.role === 'other'" @click="$router.push(`/profile/${activeContactor.id}`)"
-              :src="activeContactor.avatar" :alt="activeContactor.name" />
+        <div :id="item.role" class="message-body">
+          <div v-if="item.role !== 'mio_system'" class="avatar">
+            <img
+              v-if="item.role === 'other'"
+              :src="activeContactor.avatar"
+              :alt="activeContactor.name"
+              @click="$router.push(`/profile/${activeContactor.id}`)"
+            />
             <img v-else :src="client.avatar" :alt="client.name" />
           </div>
-          <div class="msg" v-if="item.role !== 'mio_system'">
+          <div v-if="item.role !== 'mio_system'" class="msg">
             <div class="wholename">
-              <div class="title" v-if="item.role === 'other' ? activeContactor.title : client.title">
-                {{ item.role === "other" ? activeContactor.title : client.title }}
+              <div
+                v-if="
+                  item.role === 'other' ? activeContactor.title : client.title
+                "
+                class="title"
+              >
+                {{
+                  item.role === "other" ? activeContactor.title : client.title
+                }}
               </div>
               <div class="name">
                 {{ item.role === "other" ? activeContactor.name : client.name }}
               </div>
             </div>
-            <div class="content" @contextmenu.self="showMessageMenu($event, index)">
-              <div class="inner-content" v-for="(element, index) of item.content" :key="index">
-                <MdPreview v-if="element.type === 'text'" :noImgZoomIn="false" previewTheme="github"
-                  :editorId="`previewer-${index}`" :modelValue="element.data.text" />
-                <el-image v-else-if="element.type === 'image'" style="max-width: 20rem;" :src="element.data.file"
-                  :zoom-rate="1.2" :max-scale="7" :min-scale="0.2" :preview-src-list="[element.data.file]"
-                  :initial-index="4" :key="index" fit="cover" />
-                <MdPreview v-else-if="element.type === 'reply'" previewTheme="github" :editorId="`previewer-${index}`"
-                  :modelValue="getReplyText(element.data.id)" />
-                <ForwardMsg v-else-if="element.type === 'nodes'" :contactor="activeContactor"
-                  :messages="element.data.messages" />
-                <FileBlock v-else-if="element.type === 'file'" :file_url="element.data.file" />
-                <ReasonBlock v-else-if="element.type === 'reason'" :endTime="element.data.endTime" :startTime="element.data.startTime" :content="element.data.text" />
-                <div v-else-if="element.type === 'blank'" class="blank-message"
-                  style="width: 10rem; height: 28.8px; position: relative;">
+            <div
+              class="content"
+              @contextmenu.self="showMessageMenu($event, index)"
+            >
+              <div
+                v-for="(element, index) of item.content"
+                :key="index"
+                class="inner-content"
+              >
+                <MdPreview
+                  v-if="element.type === 'text'"
+                  :no-img-zoom-in="false"
+                  preview-theme="github"
+                  :editor-id="`previewer-${index}`"
+                  :model-value="element.data.text"
+                />
+                <el-image
+                  v-else-if="element.type === 'image'"
+                  :key="index"
+                  style="max-width: 20rem"
+                  :src="element.data.file"
+                  :zoom-rate="1.2"
+                  :max-scale="7"
+                  :min-scale="0.2"
+                  :preview-src-list="[element.data.file]"
+                  :initial-index="4"
+                  fit="cover"
+                />
+                <MdPreview
+                  v-else-if="element.type === 'reply'"
+                  preview-theme="github"
+                  :editor-id="`previewer-${index}`"
+                  :model-value="getReplyText(element.data.id)"
+                />
+                <ForwardMsg
+                  v-else-if="element.type === 'nodes'"
+                  :contactor="activeContactor"
+                  :messages="element.data.messages"
+                />
+                <FileBlock
+                  v-else-if="element.type === 'file'"
+                  :file_url="element.data.file"
+                />
+                <ReasonBlock
+                  v-else-if="element.type === 'reason'"
+                  :end-time="element.data.endTime"
+                  :start-time="element.data.startTime"
+                  :content="element.data.text"
+                />
+                <div
+                  v-else-if="element.type === 'blank'"
+                  class="blank-message"
+                  style="width: 10rem; height: 28.8px; position: relative"
+                >
                   <span class="blank_loader"></span>
                 </div>
-                <ToolCallBar v-else-if="element.type === 'tool_call'" :tool_call="element.data" />
-                <MdPreview v-else previewTheme="github" :editorId="`previewer-${index}`"
-                  :modelValue="'未知的消息类型：\n```\n' + element + '\n```'" />
+                <ToolCallBar
+                  v-else-if="element.type === 'tool_call'"
+                  :tool_call="element.data"
+                />
+                <MdPreview
+                  v-else
+                  preview-theme="github"
+                  :editor-id="`previewer-${index}`"
+                  :model-value="'未知的消息类型：\n```\n' + element + '\n```'"
+                />
               </div>
             </div>
-            <div v-if="showMenu && validMessageIndex === index" id="message-menu"
-              :style="{ top: menuTop + 'px', left: menuLeft + 'px' }">
+            <div
+              v-if="showMenu && validMessageIndex === index"
+              id="message-menu"
+              :style="{ top: menuTop + 'px', left: menuLeft + 'px' }"
+            >
               <div @click="messageMenuClick('copy')">
                 <i class="iconfont fuzhi"></i><span>复制</span>
               </div>
@@ -528,8 +616,15 @@ export default {
         </div>
       </div>
     </div>
-    <InputEditor ref="inputEditor" :activeContactor="activeContactor" @stroge="client.setLocalStorage()"
-      @setModel="setModel" @cleanScreen="cleanScreen" @cleanHistory="cleanHistory" @sendMessage="toButtom" />
+    <InputEditor
+      ref="inputEditor"
+      :active-contactor="activeContactor"
+      @stroge="client.setLocalStorage()"
+      @set-model="setModel"
+      @clean-screen="cleanScreen"
+      @clean-history="cleanHistory"
+      @send-message="toButtom"
+    />
   </div>
 </template>
 
@@ -591,7 +686,7 @@ $icon-hover: #09f
         flex-wrap: wrap
         flex-direction: row-reverse
         align-items: flex-end
-        
+
 
         .share
             margin-bottom:.4rem
@@ -635,14 +730,14 @@ $icon-hover: #09f
     left: 50%
     transform: translate(-50%, -50%)
 
-.message-body > .avatar 
+.message-body > .avatar
   cursor: pointer
   flex-basis: 2.65rem
   min-width: 2.65rem
   height: 2.65rem
 
 
-.avatar > img 
+.avatar > img
   width: 100%
   height: 100%
   border-radius: 50%
@@ -781,26 +876,31 @@ $icon-hover: #09f
     .delay-status
         position: relative
         top: -.2rem
-
 </style>
 <style scoped>
 @keyframes move {
-    0% {
-        left: -20%; /* 开始位置 */
-    }
-    100% {
-        left: 120%; /* 结束位置 */
-    }
+  0% {
+    left: -20%; /* 开始位置 */
+  }
+  100% {
+    left: 120%; /* 结束位置 */
+  }
 }
 
 .blank_loader {
-    width: 10%;
-    height: 200%;
-    position: absolute;
-    background: linear-gradient(to right, rgb(255, 255, 255), rgb(0, 0, 0) 50%, transparent 50%, transparent);
-    top: -50%;
-    transform: rotate(30deg);
-    filter: blur(5px);
-    animation: move 1s linear infinite; /* 每1s循环 */
+  width: 10%;
+  height: 200%;
+  position: absolute;
+  background: linear-gradient(
+    to right,
+    rgb(255, 255, 255),
+    rgb(0, 0, 0) 50%,
+    transparent 50%,
+    transparent
+  );
+  top: -50%;
+  transform: rotate(30deg);
+  filter: blur(5px);
+  animation: move 1s linear infinite; /* 每1s循环 */
 }
 </style>

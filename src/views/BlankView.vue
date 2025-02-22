@@ -1,9 +1,7 @@
 <template>
   <div class="blank-view">
     <div class="upside-bar">
-      <div class="options">
-
-      </div>
+      <div class="options"></div>
     </div>
   </div>
 </template>
@@ -14,10 +12,11 @@ export default {
   name: "BlankView",
   data() {
     return {
-        fullScreen: false,
-        client: client,
+      fullScreen: false,
+      client: client,
     };
   },
+  watch: {},
   created() {
     this.fullScreen = client.fullScreen;
   },
@@ -26,11 +25,10 @@ export default {
       this.$message({ message: "此功能尚未开放", type: "warning" });
     },
   },
-  watch:{},
-}
+};
 </script>
 <style lang="sass" scoped>
-.blank-view 
+.blank-view
   background-color: #f2f2f2
   flex-grow: 1
 

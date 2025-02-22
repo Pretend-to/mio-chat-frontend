@@ -1,22 +1,21 @@
 div.github-theme p {
-    font-size: 14px;
-    line-height: 1.6;
-    margin: 0;
-    padding: 0.2rem 0;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0.2rem 0;
 }
 
 .md-editor-preview-wrapper {
-    position: relative;
-    flex: 1;
-    box-sizing: border-box;
-    overflow: auto;
-    padding: 0 0 ;
+  position: relative;
+  flex: 1;
+  box-sizing: border-box;
+  overflow: auto;
+  padding: 0 0;
 }
 
 .md-editor-preview-wrapper * {
-    user-select: text;
+  user-select: text;
 }
-
 
 .message-body#user .md-editor h1,
 .message-body#user .md-editor h2,
@@ -26,68 +25,64 @@ div.github-theme p {
 .message-body#user .md-editor h6,
 .message-body#user .md-editor li,
 .message-body#user .md-editor ul,
-.message-body#user .md-editor p{
-
-    color: aliceblue;
-    background-color: rgb(0, 153, 255);
-
+.message-body#user .md-editor p {
+  color: aliceblue;
+  background-color: rgb(0, 153, 255);
 }
-
 
 figure {
-    margin: 0;
+  margin: 0;
 }
 ::-webkit-scrollbar {
-    width: 4px;
+  width: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-    border-radius: 10px;
-    -webkit-box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
-    background: #adacac8a;
+  border-radius: 10px;
+  -webkit-box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+  background: #adacac8a;
 }
 
 .el-popper__arrow {
-    display: none;
+  display: none;
 }
 
 .code-block {
-    font-size: 0.8rem;
+  font-size: 0.8rem;
 }
 
 .bu-emoji .el-cascader {
-    position: absolute; 
-    right: 1.5rem; 
-    width: 1rem; 
-    opacity: 0%;
+  position: absolute;
+  right: 1.5rem;
+  width: 1rem;
+  opacity: 0%;
 }
 
 .bu-emoji .el-cascader:hover + i {
-    color:rgb(0, 153, 255);
+  color: rgb(0, 153, 255);
 }
 
 @media (max-width: 600px) {
-    .code-block {
-        font-size: 0.6rem;
-    }
-    
+  .code-block {
+    font-size: 0.6rem;
+  }
 }
 
 .md-editor {
-    --md-bk-color : none;
+  --md-bk-color: none;
 }
 
 #user code {
-    --md-theme-code-inline-bg-color: rgba(133, 206, 255, 0.562);
+  --md-theme-code-inline-bg-color: rgba(133, 206, 255, 0.562);
 }
 
-.message-container iframe{
-    width: 100%;
-    height: 36rem;
-    border: 0px;
-    resize: both;
+.message-container iframe {
+  width: 100%;
+  height: 36rem;
+  border: 0px;
+  resize: both;
 }
 
-.message-body#user a{
-    color: #ffffff;
+.message-body#user a {
+  color: #ffffff;
 }

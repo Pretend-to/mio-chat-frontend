@@ -3,6 +3,9 @@ import { client, config } from "@/lib/runtime.js";
 import AddContactor from "@/components/AddContactor.vue";
 
 export default {
+  components: {
+    AddContactor,
+  },
   data() {
     let list = client.getContactors();
     const onPhone = window.innerWidth < 600;
@@ -13,6 +16,27 @@ export default {
       showAddOptions: false,
       showAddWindow: false,
     };
+  },
+  computed: {
+    sortedList() {
+      return [...this.contactorList].sort((a, b) =>
+        b.priority - a.priority == -1 ? 1 : b.lastUpdate - a.lastUpdate,
+      );
+    },
+  },
+  mounted() {
+    this.addReactiveListener();
+  },
+  beforeCreate() {
+    if (client.getContactors().length == 0) {
+      client.on(
+        "loaded",
+        () => {
+          this.contactorList = client.getContactors();
+        },
+        false,
+      );
+    }
   },
   methods: {
     genBotByPreset() {
@@ -47,8 +71,8 @@ export default {
     },
     async genBlankBot() {
       const options = {
-        ...config.openaiDefaultConfig
-      }
+        ...config.openaiDefaultConfig,
+      };
       const openaiDefaultConfig = {
         id: this.genFakeId(),
         title: options.default_model,
@@ -109,7 +133,7 @@ export default {
         id: this.genFakeId(),
         namePolicy: 1,
         avatarPolicy: preset.customAvatar ? 1 : 0,
-        avatar: preset.customAvatar? preset.customAvatar : undefined,
+        avatar: preset.customAvatar ? preset.customAvatar : undefined,
         name: preset.name,
         title: preset.title,
         priority: 1,
@@ -120,7 +144,7 @@ export default {
           history: preset.history,
           textWrapper: preset.textWrapper,
           tools: preset.tools,
-          enable_tool_call : preset.tools ? true : false
+          enable_tool_call: preset.tools ? true : false,
         },
       };
       client.addConcator("openai", contactor);
@@ -134,36 +158,15 @@ export default {
       });
     },
   },
-  components: {
-    AddContactor,
-  },
-  computed: {
-    sortedList() {
-      return [...this.contactorList].sort((a, b) =>
-        b.priority - a.priority == -1 ? 1 : b.lastUpdate - a.lastUpdate
-      );
-    },
-  },
-  mounted() {
-    this.addReactiveListener();
-
-  },
-  beforeCreate() {
-    if (client.getContactors().length == 0) {
-      client.on("loaded", () => {
-        this.contactorList = client.getContactors();
-      },false);
-    }
-  },
 };
 </script>
 
 <template>
   <div id="friendlists" ref="friendlists" :class="onPhone ? 'mobile' : ''">
-    <div class="upsidebar" id="friends">
+    <div id="friends" class="upsidebar">
       <div class="search">
         <i class="iconfont sousuo listicon"></i>
-        <input type="text" id="tosearch" placeholder="搜索" />
+        <input id="tosearch" type="text" placeholder="搜索" />
       </div>
       <div class="bu-add">
         <button id="addcont" @click="showAddOptions = !showAddOptions">
@@ -171,8 +174,8 @@ export default {
         </button>
         <div
           v-show="showAddOptions"
-          :style="{ left: onPhone ? '-6rem' : '0px' }"
           id="add-options"
+          :style="{ left: onPhone ? '-6rem' : '0px' }"
         >
           <ul>
             <li>
@@ -187,19 +190,22 @@ export default {
     </div>
     <div class="people">
       <div
-        @click="showChat(item.id)"
         v-for="(item, index) of sortedList"
+        :id="getId(item)"
         :key="index"
         class="lists"
-        :id="getId(item)"
+        @click="showChat(item.id)"
       >
-        <div class="avatar" :class="item.avatarPolicy == 1 ? 'custom' : 'model'">
+        <div
+          class="avatar"
+          :class="item.avatarPolicy == 1 ? 'custom' : 'model'"
+        >
           <img :src="item.avatar" :alt="item.name" />
         </div>
         <div class="info">
           <div class="name">{{ item.name }}</div>
-          <div class="msginfo" id="time">{{ item.getLastTime() }}</div>
-          <div class="msginfo" id="msgctt">{{ item.lastMessageSummary }}</div>
+          <div id="time" class="msginfo">{{ item.getLastTime() }}</div>
+          <div id="msgctt" class="msginfo">{{ item.lastMessageSummary }}</div>
         </div>
       </div>
     </div>
@@ -207,7 +213,7 @@ export default {
     <AddContactor
       v-if="showAddWindow"
       @close="showAddWindow = false"
-      @addBot="addPresetContactor"
+      @add-bot="addPresetContactor"
     ></AddContactor>
   </div>
 </template>
@@ -372,8 +378,6 @@ button#addcont {
 .avatar.model > img {
   scale: 0.9;
 }
-
-
 
 .info {
   height: 100%;
