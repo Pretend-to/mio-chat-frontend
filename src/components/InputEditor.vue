@@ -119,23 +119,23 @@ export default {
     // 添加拖拽事件监听器
     this.handleDragOver = (e) => {
       e.preventDefault();
-      this.$refs.textarea.style.backgroundColor = "#e0e0e0";
+      this.textareaRef.style.backgroundColor = "#e0e0e0";
     };
     this.handleDragLeave = (e) => {
       e.preventDefault();
-      this.$refs.textarea.style.backgroundColor = "#f1f1f1";
+      this.textareaRef.style.backgroundColor = "#f1f1f1";
     };
     this.handleDrop = (e) => {
       e.preventDefault();
-      this.$refs.textarea.style.backgroundColor = "#f1f1f1";
+      this.textareaRef.style.backgroundColor = "#f1f1f1";
       const files = e.dataTransfer.files;
       if (files.length > 0) {
         this.handleDroppedFile(files[0]);
       }
     };
-    this.$refs.textarea.addEventListener("dragover", this.handleDragOver);
-    this.$refs.textarea.addEventListener("dragleave", this.handleDragLeave);
-    this.$refs.textarea.addEventListener("drop", this.handleDrop);
+    this.textareaRef.addEventListener("dragover", this.handleDragOver);
+    this.textareaRef.addEventListener("dragleave", this.handleDragLeave);
+    this.textareaRef.addEventListener("drop", this.handleDrop);
     // 将paste事件的处理函数定义为一个方法
     this.handlePaste = (e) => {
       e.preventDefault();
@@ -150,24 +150,22 @@ export default {
         } else if (items[i].type === "text/plain") {
           var text = (e.originalEvent || e).clipboardData.getData("text/plain");
           document.execCommand("insertText", false, text);
-          this.userInput = this.$refs.textarea.innerText;
+          this.userInput = this.textareaRef.innerText;
         }
       }
       this.isPasting = false;
     };
     // 添加paste事件监听器
-    document.addEventListener("paste", this.handlePaste);
+    this.textareaRef.addEventListener("paste", this.handlePaste);
     this.host = window.location.origin;
   },
   unmounted() {
     this.textareaRef.removeEventListener("input", this.adjustTextareaHeight);
+    this.textareaRef.removeEventListener("dragover", this.handleDragOver);
+    this.textareaRef.removeEventListener("dragleave", this.handleDragLeave);
+    this.textareaRef.removeEventListener("drop", this.handleDrop);
+    this.textareaRef.removeEventListener("paste", this.handlePaste);
     this.textareaRef = null;
-    // 移除拖拽事件监听器
-    this.$refs.textarea.removeEventListener("dragover", this.handleDragOver);
-    this.$refs.textarea.removeEventListener("dragleave", this.handleDragLeave);
-    this.$refs.textarea.removeEventListener("drop", this.handleDrop);
-    // 移除paste事件监听器
-    document.removeEventListener("paste", this.handlePaste);
   },
   methods: {
     handleDroppedFile(file) {
@@ -179,7 +177,7 @@ export default {
     },
     ctrlEmojiPanel() {
       this.showemoji = !this.showemoji;
-      const editor = this.$refs.textarea;
+      const editor = this.textareaRef;
       editor.focus();
     },
     uploadFile(file) {
@@ -259,9 +257,10 @@ export default {
                 imageElement.src = imageUrl;
                 imageElement.alt = file.name;
                 imageElement.style.maxWidth = "10rem";
+                imageElement.style.maxHeight = "10rem";
 
                 const range = document.createRange();
-                range.selectNodeContents(this.$refs.textarea);
+                range.selectNodeContents(this.textareaRef);
                 range.collapse(false);
                 const selection = window.getSelection();
                 selection.removeAllRanges();
@@ -273,7 +272,7 @@ export default {
 
                 setTimeout(() => {
                   const newRange = document.createRange();
-                  newRange.selectNodeContents(this.$refs.textarea);
+                  newRange.selectNodeContents(this.textareaRef);
                   newRange.collapse(false);
                   const newSelection = window.getSelection();
                   newSelection.removeAllRanges();
@@ -345,7 +344,7 @@ export default {
       return result;
     },
     adjustTextareaHeight() {
-      const textarea = this.$refs.textarea;
+      const textarea = this.textareaRef;
       textarea.style.height = "auto";
       textarea.style.height = textarea.scrollHeight + "px";
     },
@@ -370,7 +369,7 @@ export default {
       this.$message({ message: "此功能尚未开放", type: "warning" });
     },
     getemoji(e) {
-      const inputer = this.$refs.textarea;
+      const inputer = this.textareaRef;
       inputer.focus();
       const range = document.createRange();
       const sel = window.getSelection();
@@ -401,15 +400,15 @@ export default {
       }
     },
     presend() {
-      this.$refs.textarea.focus();
+      this.textareaRef.focus();
       // 获取textarea中的所有img元素
-      const images = this.$refs.textarea.querySelectorAll("img");
+      const images = this.textareaRef.querySelectorAll("img");
       const ImageSrcs = Array.from(images).map((img) => img.src);
-      // let msg = this.getSafeText(this.$refs.textarea.innerText);  // Use innerText, not userInput
+      // let msg = this.getSafeText(this.textareaRef.innerText);  // Use innerText, not userInput
       let msg = this.getSafeText(this.userInput);
       const wrappedMessage =
         this.activeContactor.platform === "onebot" ? this.wrapText(msg) : msg;
-      this.userInput = this.$refs.textarea.innerHTML = ""; // Clear the textarea
+      this.userInput = this.textareaRef.innerHTML = ""; // Clear the textarea
       this.adjustTextareaHeight();
 
       const container = {
@@ -466,9 +465,8 @@ export default {
       this.activeContactor.emit("updateMessageSummary");
       container.id = message_id;
       this.$emit("stroge");
-      // Don't clear here.  Let removeFile handle it.
-      // this.uploaded.images = [];
-      // this.uploaded.files = [];
+      this.uploaded.images = [];
+      this.uploaded.files = [];
     },
     getSafeText(text) {
       // return text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -520,7 +518,7 @@ export default {
       }, 0);
     },
     handleInput() {
-      if (!this.isPasting) this.userInput = this.$refs.textarea.innerText;
+      if (!this.isPasting) this.userInput = this.textareaRef.innerText;
     },
   },
 };

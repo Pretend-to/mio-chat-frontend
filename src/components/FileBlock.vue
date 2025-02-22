@@ -109,18 +109,18 @@ export default {
 }
 /* Add specific styles for each file type */
 .file-icon-pdf {
-  background-color: red;
+  background-color: #e70012;
 }
 
 .file-icon-spreadsheet {
-  background-color: green;
+  background-color: #138147;
 }
 
 .file-icon-word {
-  background-color: blue;
+  background-color: #144eb3;
 }
 .file-icon-ppt {
-  background-color: red;
+  background-color: #ca4b27;
 }
 
 .file-icon-other {

@@ -531,33 +531,30 @@ export default {
               @contextmenu.self="showMessageMenu($event, index)"
             >
               <div
-                v-for="(element, index) of item.content"
-                :key="index"
+                v-for="(element, elmIndex) of item.content"
+                :key="elmIndex"
                 class="inner-content"
               >
                 <MdPreview
                   v-if="element.type === 'text'"
                   :no-img-zoom-in="false"
                   preview-theme="github"
-                  :editor-id="`previewer-${index}`"
                   :model-value="element.data.text"
                 />
                 <el-image
                   v-else-if="element.type === 'image'"
-                  :key="index"
-                  style="max-width: 20rem"
+                  style="max-width: 10rem"
                   :src="element.data.file"
                   :zoom-rate="1.2"
                   :max-scale="7"
                   :min-scale="0.2"
                   :preview-src-list="[element.data.file]"
                   :initial-index="4"
-                  fit="cover"
+                  fit="contain"
                 />
                 <MdPreview
                   v-else-if="element.type === 'reply'"
                   preview-theme="github"
-                  :editor-id="`previewer-${index}`"
                   :model-value="getReplyText(element.data.id)"
                 />
                 <ForwardMsg
@@ -567,7 +564,7 @@ export default {
                 />
                 <FileBlock
                   v-else-if="element.type === 'file'"
-                  :file_url="element.data.file"
+                  :file-url="element.data.file"
                 />
                 <ReasonBlock
                   v-else-if="element.type === 'reason'"
@@ -589,7 +586,6 @@ export default {
                 <MdPreview
                   v-else
                   preview-theme="github"
-                  :editor-id="`previewer-${index}`"
                   :model-value="'未知的消息类型：\n```\n' + element + '\n```'"
                 />
               </div>

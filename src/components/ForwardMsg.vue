@@ -80,9 +80,16 @@ export default {
   components: {
     MdPreview,
   },
+  // ForwardMsg.vue
   props: {
-    messages: Array,
-    contactor: Object,
+    messages: {
+      type: Array,
+      default: () => [], // 对于数组，使用函数返回一个新的空数组
+    },
+    contactor: {
+      type: Object,
+      default: () => {}, // 对于字符串，使用空字符串
+    },
   },
   data() {
     return {
