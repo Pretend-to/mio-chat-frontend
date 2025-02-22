@@ -227,70 +227,125 @@ export default {
       }
     },
     handleUploadImage(file) {
+      const maxSizeMB = 5;
+      const maxSizeByte = maxSizeMB * 1024 * 1024;
+
       const img = new Image();
       const reader = new FileReader();
-
       reader.onload = (event) => {
         img.src = event.target.result;
       };
 
       img.onload = () => {
+        const fileType = file.type.toLowerCase();
+
+        // 处理 GIF 类型，上传原文件
+        if (fileType === "image/gif") {
+          // GIF 检查大小
+          if (file.size > maxSizeByte) {
+            this.$message.error(`图片大小不能超过 ${maxSizeMB}MB`);
+            return;
+          }
+          const formData = new FormData();
+          formData.append("image", file, file.name);
+          client
+            .uploadImage(formData)
+            .then((upload) => {
+              const imageUrl = upload.data.url;
+              this.uploaded.images.push(imageUrl);
+              this.insertImageToTextarea(imageUrl, file.name);
+              this.$message.success("上传图片成功");
+            })
+            .catch((error) => {
+              console.error("Error handling uploaded image:", error);
+              this.$message.error("上传图片失败");
+            });
+          return;
+        }
+
+        // 非GIF类型，使用Canvas处理
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
         canvas.width = img.width;
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
 
+        // 根据文件类型确定mimeType和quality, for toBlob
+        let mimeType, quality;
+
+        if (fileType === "image/png") {
+          mimeType = "image/png";
+          quality = undefined; // PNG的质量参数无效
+        } else if (fileType === "image/webp") {
+          mimeType = "image/webp";
+          quality = 0.7;
+        } else {
+          // 默认为jpeg（处理jpg or其他类型）
+          mimeType = "image/jpeg";
+          quality = 0.7;
+        }
+
         canvas.toBlob(
           (blob) => {
+            if (blob.size > maxSizeByte) {
+              this.$message.error(
+                `图片压缩后仍然超过 ${maxSizeMB}MB，请选择更小的图片`,
+              );
+              return;
+            }
+
             const formData = new FormData();
             formData.append("image", blob, file.name);
             client
               .uploadImage(formData)
               .then((upload) => {
                 const imageUrl = upload.data.url;
-                //Store image URL directly
                 this.uploaded.images.push(imageUrl);
-
-                // Display in textarea (optional, but keep for now, can remove later if only preview is needed)
-                const imageElement = document.createElement("img");
-                imageElement.src = imageUrl;
-                imageElement.alt = file.name;
-                imageElement.style.maxWidth = "10rem";
-                imageElement.style.maxHeight = "10rem";
-
-                const range = document.createRange();
-                range.selectNodeContents(this.textareaRef);
-                range.collapse(false);
-                const selection = window.getSelection();
-                selection.removeAllRanges();
-                selection.addRange(range);
-                const fragment = range.createContextualFragment(
-                  `<span>${imageElement.outerHTML}</span>`,
-                );
-                range.insertNode(fragment);
-
-                setTimeout(() => {
-                  const newRange = document.createRange();
-                  newRange.selectNodeContents(this.textareaRef);
-                  newRange.collapse(false);
-                  const newSelection = window.getSelection();
-                  newSelection.removeAllRanges();
-                  newSelection.addRange(newRange);
-                }, 0);
-
+                this.insertImageToTextarea(imageUrl, file.name);
                 this.$message.success("上传图片成功");
               })
               .catch((error) => {
-                console.error("Error handling uploaded image:", error);
+                console.error("上传图片失败", error);
                 this.$message.error("上传图片失败");
               });
           },
-          "image/jpeg",
-          0.7,
+          mimeType,
+          quality, // 对于不能使用quality参数的mime类型，此参数被忽略
         );
       };
       reader.readAsDataURL(file);
+    },
+    // 插入图片到文本域的方法
+    insertImageToTextarea(imageUrl, imageName) {
+      const imageElement = document.createElement("img");
+      imageElement.src = imageUrl;
+      imageElement.alt = imageName;
+      imageElement.style.maxWidth = "10rem";
+      imageElement.style.maxHeight = "10rem";
+
+      const range = document.createRange();
+      range.selectNodeContents(this.textareaRef);
+      range.collapse(false); // 将范围折叠到末尾
+
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      const fragment = range.createContextualFragment(
+        `<span>${imageElement.outerHTML}</span>`,
+      );
+      range.insertNode(fragment);
+
+      // 保持光标在插入的图片之后
+      setTimeout(() => {
+        const newRange = document.createRange();
+        newRange.selectNodeContents(this.textareaRef);
+        newRange.collapse(false); // 将范围折叠到末尾
+
+        const newSelection = window.getSelection();
+        newSelection.removeAllRanges();
+        newSelection.addRange(newRange);
+      }, 0);
     },
     setModel() {
       this.selectedModel = [...this.selectedOptions];

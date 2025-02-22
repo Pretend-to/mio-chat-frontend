@@ -31,19 +31,19 @@ export default {
       client: client,
       extraOptions: [],
       wraperPresets: {},
-      cursorPosition: [],
       selectedWraper: null,
       currentDelay: 0,
       toupdate: false,
-      ydaKey: 0,
+      seletedText: "",
+      seletedImage: "",
       showMenu: false,
       menuTop: 0,
       menuLeft: 0,
-      longPressTimer: null,
       validMessageIndex: -1,
       repliedMessage: null,
       autoScroll: false,
       fullScreen: false,
+      chatWindowRef: null,
     };
   },
   computed: {
@@ -82,7 +82,7 @@ export default {
       const contactor = client.getContactor(currentId);
       this.activeContactor = contactor;
       this.initContactor(this.activeContactor);
-      this.toButtom();
+      if (this.chatWindowRef) this.toButtom();
       if (oldVal) {
         const oldId = parseInt(oldVal);
         const oldContactor = client.getContactor(oldId);
@@ -93,10 +93,12 @@ export default {
   mounted() {
     document.addEventListener("click", () => {
       this.showMenu = false;
+      this.seletedText = "";
+      this.seletedImage = "";
       // if( this.showemoji) this.showemoji = false;
     });
-
-    this.$refs.chatWindow.addEventListener("scroll", this.scrollHandler);
+    this.chatWindowRef = this.$refs.chatWindow;
+    this.chatWindowRef.addEventListener("scroll", this.scrollHandler);
 
     console.log(this.activeContactor);
     this.toButtom();
@@ -122,12 +124,19 @@ export default {
   beforeUnmount() {
     // 移除事件监听
     this.disableContactor(this.activeContactor);
-    this.$refs.chatWindow.removeEventListener("scroll", this.scrollHandler);
+    this.chatWindowRef.removeEventListener("scroll", this.scrollHandler);
   },
   methods: {
+    handleMouseUp() {
+      const selectedText = window.getSelection().toString();
+      if (selectedText) {
+        this.seletedText = selectedText;
+        console.log("选中的文本：" + selectedText);
+      }
+    },
     toButtom(clicked) {
       if (clicked) this.$message("已滑至底部");
-      const chatWindow = this.$refs.chatWindow;
+      const chatWindow = this.chatWindowRef;
       //console.log("滑动条位置顶部与元素顶部间距："+ chatWindow.scrollTop + "元素高度" + chatWindow.scrollHeight)
       setTimeout(() => (chatWindow.scrollTop = chatWindow.scrollHeight), 0);
 
@@ -171,15 +180,15 @@ export default {
       await client.setLocalStorage(); //持久化存储
     },
     toimg() {
-      // 使用html2canvas把 this.$refs.chatWindow 渲染为图片
-      const rect = this.$refs.chatWindow.getBoundingClientRect();
-      rect.height = this.$refs.chatWindow.scrollHeight;
+      // 使用html2canvas把 this.chatWindowRef 渲染为图片
+      const rect = this.chatWindowRef.getBoundingClientRect();
+      rect.height = this.chatWindowRef.scrollHeight;
 
       console.log(rect);
 
       // 获取当前浏览器真实缩放比例
 
-      html2canvas(this.$refs.chatWindow, {
+      html2canvas(this.chatWindowRef, {
         windowHeight: rect.height * 1.2,
         width: rect.width,
         // 例如: allowTaint: true, backgroundColor: null
@@ -293,9 +302,9 @@ export default {
     },
 
     getChatwindowScrollheight() {
-      var scrollTop = this.$refs.chatWindow.scrollTop; // 当前滚动条的垂直位置
-      var clientHeight = this.$refs.chatWindow.clientHeight; // 可视区域高度
-      var scrollHeight = this.$refs.chatWindow.scrollHeight; // 内容总高度
+      var scrollTop = this.chatWindowRef.scrollTop; // 当前滚动条的垂直位置
+      var clientHeight = this.chatWindowRef.clientHeight; // 可视区域高度
+      var scrollHeight = this.chatWindowRef.scrollHeight; // 内容总高度
 
       // 计算滚动位置的实际像素长度
       var scrollPercentage = scrollTop / (scrollHeight - clientHeight);
@@ -385,7 +394,14 @@ export default {
       }
     },
     showMessageMenu(event, messageIndex) {
-      console.log(messageIndex);
+      // 确定右击的元素类型
+      if (event.target.tagName.toLowerCase() === "img") {
+        const imgElement = event.target;
+        const imgSrc = imgElement.src;
+        this.seletedImage = imgSrc;
+      } else {
+        console.log("用户右击了非图片元素");
+      }
       this.validMessageIndex =
         this.activeContactor.platform === "openai" && this.hasOpening()
           ? messageIndex - 1
@@ -394,16 +410,116 @@ export default {
       this.showMenu = true;
       this.menuTop = event.clientY;
       this.menuLeft = event.clientX;
+
+      const currentSelectedText = window.getSelection().toString();
+      if (currentSelectedText) {
+        this.seletedText = currentSelectedText;
+      } else {
+        this.seletedText = "";
+      }
     },
     messageMenuClick(event) {
+      const copyTextToClipboard = (text) => {
+        const textarea = document.createElement("textarea");
+        textarea.style.position = "absolute";
+        textarea.style.left = "-9999px"; // Move it off-screen
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        textarea.setSelectionRange(0, 99999); // For mobile devices
+        // Copy the text and remove the textarea
+        try {
+          document.execCommand("copy");
+          this.$message({ message: "复制成功", type: "success" });
+        } catch (err) {
+          console.error("Copy failed:", err);
+          this.$message({ message: "复制失败", type: "error" });
+        } finally {
+          document.body.removeChild(textarea);
+        }
+      };
+
+      const copyImageToClipboard = (imgSrc) => {
+        try {
+          fetch(imgSrc)
+            .then((response) => {
+              // 检查响应的状态
+              if (!response.ok) {
+                throw new Error("网络错误，无法获取图片");
+              }
+              return response.blob();
+            })
+            .then((blob) => {
+              // 创建一个图像对象
+              const img = new Image();
+              const url = URL.createObjectURL(blob);
+
+              img.onload = () => {
+                // 创建一个 canvas 元素
+                const canvas = document.createElement("canvas");
+                canvas.width = img.width;
+                canvas.height = img.height;
+
+                // 在 canvas 上绘制图像
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0);
+
+                // 将 canvas 转换为 PNG Blob
+                canvas.toBlob((pngBlob) => {
+                  if (pngBlob) {
+                    const item = new ClipboardItem({ "image/png": pngBlob });
+                    navigator.clipboard
+                      .write([item])
+                      .then(() => {
+                        this.$message({
+                          message: "图片已复制到剪贴板",
+                          type: "success",
+                        });
+                      })
+                      .catch((err) => {
+                        console.error("Copy image failed:", err);
+                        this.$message({
+                          message: "复制图片失败",
+                          type: "error",
+                        });
+                      });
+                  } else {
+                    this.$message({
+                      message: "转换为 PNG 失败",
+                      type: "error",
+                    });
+                  }
+                  // 释放 object URL
+                  URL.revokeObjectURL(url);
+                }, "image/png");
+              };
+
+              img.src = url; // 触发图像加载
+            })
+            .catch((err) => {
+              console.error("Fetch error:", err);
+              this.$message({ message: "复制图片失败", type: "error" });
+            });
+        } catch (err) {
+          console.error("Error while copying image:", err);
+          this.$message({ message: "复制图片失败", type: "error" });
+        }
+      };
+
+      const downloadImage = (imgSrc) => {
+        const link = document.createElement("a");
+        link.href = imgSrc;
+        link.download = "image.png";
+        link.click();
+      };
+
       // 处理菜单项点击事件
       switch (event) {
         case "copy": {
-          // Construct the text to copy
           let text = "";
+          // Construct the text to copy
           const message =
             this.activeContactor.messageChain[this.validMessageIndex]; // Corrected typo
-          console.log(this.validMessageIndex);
           message.content.forEach((element) => {
             if (element.type === "text") {
               text += element.data.text;
@@ -411,27 +527,18 @@ export default {
               text += "[图片]";
             }
           });
-
-          // Create a new textarea, append it to the body, set its value, and select the text
-          const textarea = document.createElement("textarea");
-          textarea.style.position = "absolute";
-          textarea.style.left = "-9999px"; // Move it off-screen
-          textarea.value = text;
-          document.body.appendChild(textarea);
-          textarea.select();
-          textarea.setSelectionRange(0, 99999); // For mobile devices
-
-          // Copy the text and remove the textarea
-          try {
-            document.execCommand("copy");
-            this.$message({ message: "复制成功", type: "success" });
-          } catch (err) {
-            console.error("Copy failed:", err);
-          } finally {
-            document.body.removeChild(textarea);
-          }
+          copyTextToClipboard(text);
           break;
         }
+        case "copySeletedText":
+          copyTextToClipboard(this.seletedText);
+          break;
+        case "copySeletedImage":
+          copyImageToClipboard(this.seletedImage);
+          break;
+        case "saveSeletedImage":
+          downloadImage(this.seletedImage);
+          break;
         case "reply":
           if (this.activeContactor.platform === "onebot") {
             this.repliedMessage =
@@ -443,7 +550,6 @@ export default {
                 this.activeContactor.messageChain[this.validMessageIndex].id,
               ) + "\n\n";
           }
-
           break;
         case "delete":
           if (this.activeContactor.platform === "onebot")
@@ -456,6 +562,8 @@ export default {
         default:
           break;
       }
+      this.seletedText = "";
+      this.seletedImage = "";
       this.showMenu = false;
     },
     scrollHandler() {
@@ -528,7 +636,8 @@ export default {
             </div>
             <div
               class="content"
-              @contextmenu.self="showMessageMenu($event, index)"
+              @mouseup="handleMouseUp"
+              @contextmenu="showMessageMenu($event, index)"
             >
               <div
                 v-for="(element, elmIndex) of item.content"
@@ -539,11 +648,11 @@ export default {
                   v-if="element.type === 'text'"
                   :no-img-zoom-in="false"
                   preview-theme="github"
+                  :code-foldable="false"
                   :model-value="element.data.text"
                 />
                 <el-image
                   v-else-if="element.type === 'image'"
-                  style="max-width: 10rem"
                   :src="element.data.file"
                   :zoom-rate="1.2"
                   :max-scale="7"
@@ -595,14 +704,36 @@ export default {
               id="message-menu"
               :style="{ top: menuTop + 'px', left: menuLeft + 'px' }"
             >
-              <div @click="messageMenuClick('copy')">
-                <i class="iconfont fuzhi"></i><span>复制</span>
+              <div @click.stop="messageMenuClick('copy')">
+                <i class="iconfont fuzhi"></i>
+                <span>复制消息</span>
               </div>
-              <div @click="messageMenuClick('reply')">
-                <i class="iconfont yinyong"></i><span>引用</span>
+              <div
+                v-if="seletedText"
+                @click.stop="messageMenuClick('copySeletedText')"
+              >
+                <i class="iconfont fuzhi"></i>
+                <span>复制选中</span>
               </div>
-              <div @click="messageMenuClick('delete')">
-                <i class="iconfont shanchu"></i><span>删除</span>
+              <div
+                v-if="seletedImage"
+                @click.stop="messageMenuClick('copySeletedImage')"
+              >
+                <i class="iconfont fuzhi"></i>
+                <span>复制图片</span>
+              </div>
+              <div
+                v-if="seletedImage"
+                @click.stop="messageMenuClick('saveSeletedImage')"
+              >
+                <i class="iconfont fuzhi"></i>
+                <span>保存图片</span>
+              </div>
+              <div @click.stop="messageMenuClick('reply')">
+                <i class="iconfont yinyong"></i><span>引用消息</span>
+              </div>
+              <div @click.stop="messageMenuClick('delete')">
+                <i class="iconfont shanchu"></i><span>删除消息</span>
               </div>
             </div>
           </div>
