@@ -136,11 +136,11 @@ export default {
     },
     toButtom(clicked) {
       if (clicked) this.$message("已滑至底部");
-      const chatWindow = this.chatWindowRef;
       //console.log("滑动条位置顶部与元素顶部间距："+ chatWindow.scrollTop + "元素高度" + chatWindow.scrollHeight)
-      setTimeout(() => (chatWindow.scrollTop = chatWindow.scrollHeight), 0);
-
-      //console.log(chatWindow.scrollHeight)
+      setTimeout(
+        () => (this.chatWindowRef.scrollTop = this.chatWindowRef.scrollHeight),
+        0,
+      );
     },
     cleanScreen() {
       this.activeContactor.messageChain = [];
