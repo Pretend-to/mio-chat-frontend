@@ -98,6 +98,7 @@ export default {
       // if( this.showemoji) this.showemoji = false;
     });
     this.chatWindowRef = this.$refs.chatWindow;
+    console.log(this.$refs);
     this.chatWindowRef.addEventListener("scroll", this.scrollHandler);
 
     console.log(this.activeContactor);
@@ -136,11 +137,11 @@ export default {
     },
     toButtom(clicked) {
       if (clicked) this.$message("已滑至底部");
-      //console.log("滑动条位置顶部与元素顶部间距："+ chatWindow.scrollTop + "元素高度" + chatWindow.scrollHeight)
-      setTimeout(
-        () => (this.chatWindowRef.scrollTop = this.chatWindowRef.scrollHeight),
-        0,
-      );
+      this.$nextTick(() => {
+        if (this.chatWindowRef) {
+          this.chatWindowRef.scrollTop = this.chatWindowRef.scrollHeight;
+        }
+      });
     },
     cleanScreen() {
       this.activeContactor.messageChain = [];
@@ -751,6 +752,7 @@ export default {
       @clean-screen="cleanScreen"
       @clean-history="cleanHistory"
       @send-message="toButtom"
+      @to-buttom="toButtom"
     />
   </div>
 </template>

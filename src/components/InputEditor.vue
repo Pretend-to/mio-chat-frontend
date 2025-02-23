@@ -509,16 +509,13 @@ export default {
       return container;
     },
     async send() {
-      // Disable send button if no text AND no files.
-      if (!this.userInput && this.uploadedFilesDisplay.length === 0) {
-        return;
-      }
       this.$emit("sendMessage");
       const container = this.presend();
       // this.userInput = "";  // Already cleared in presend
       const message_id = await this.activeContactor.webSend(container); //发送消息
       this.activeContactor.emit("updateMessageSummary");
       container.id = message_id;
+      this.$emit("toButtom");
       this.$emit("stroge");
       this.uploaded.images = [];
       this.uploaded.files = [];
@@ -556,10 +553,7 @@ export default {
       if (event.key === "Enter") {
         if (event.ctrlKey) {
           // Send only if there's text OR files.
-          if (
-            (this.userInput && this.isValidInput(this.userInput)) ||
-            this.uploadedFilesDisplay.length > 0
-          ) {
+          if (this.userInput && this.isValidInput(this.userInput)) {
             this.send();
           } else {
             this.$message({ message: "不能发送空消息", type: "warning" });
