@@ -209,6 +209,9 @@ export default class Client extends EventEmitter {
         this.socket = socket;
 
         this.addMsgListener();
+        this.config.updateOpenaiDefaultConfig({
+          model: info.default_model,
+        });
 
         if (this.contactList.length == 0) {
           await this.genDefaultConctor();
