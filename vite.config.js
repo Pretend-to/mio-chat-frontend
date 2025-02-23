@@ -63,8 +63,8 @@ export default defineConfig(({ mode }) => {
       terserOptions: {
         compress: {
           keep_infinity: true, // 避免大数被压缩
-          // drop_console: mode !== "development", // 开发环境保留 console
-          // pure_funcs: ["console.debug", "console.table"], // 保留常用日志方法
+          drop_console: mode !== "development", // 开发环境保留 console
+          pure_funcs: ["console.debug", "console.table"], // 保留常用日志方法
         },
       },
       rollupOptions: {

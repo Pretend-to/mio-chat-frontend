@@ -57,6 +57,7 @@ export default {
       default: () => [],
     },
   },
+  emits: { updatePresetsHistory: null },
   data() {
     const presetMessages = [...this.presetsHistory];
     return {
