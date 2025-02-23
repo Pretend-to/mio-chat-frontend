@@ -136,11 +136,14 @@ export default {
       }
     },
     toButtom(clicked) {
-      if (clicked) this.$message("已滑至底部");
       setTimeout(() => {
         if (this.chatWindowRef) {
           this.chatWindowRef.scrollTop = this.chatWindowRef.scrollHeight;
+        } else {
+          const elm = document.getElementById("main-messages-window");
+          elm.scrollTop = elm.scrollHeight;
         }
+        if (clicked) this.$message("已滑至底部");
       }, 20);
     },
     cleanScreen() {
@@ -599,7 +602,7 @@ export default {
         </div>
       </div>
     </div>
-    <div ref="chatWindow" class="message-window">
+    <div id="main-messages-window" ref="chatWindow" class="message-window">
       <div
         v-for="(item, index) of activeMessageChain"
         :key="index"
