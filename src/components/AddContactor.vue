@@ -63,6 +63,7 @@
 
 <script>
 export default {
+  emits: ["addBot", "close"],
   data() {
     const avaliablePresetTypes = ["推荐", "最近", "本地", "系统"];
     return {
