@@ -35,7 +35,12 @@
             :key="index"
             class="presets-item"
           >
-            <div class="preset-avatar">{{ preset.name.slice(0, 2) }}</div>
+            <div v-if="!preset.recommendedModel" class="preset-avatar">
+              {{ preset.name.slice(0, 2) }}
+            </div>
+            <div v-else class="preset-avatar model">
+              <img :src="Contactor.getAvatarByModel(preset.recommendedModel)" />
+            </div>
             <div class="preset-info">
               <div class="preset-name">{{ preset.name }}</div>
               <div :title="preset.opening" class="preset-description">
@@ -62,6 +67,7 @@
 </template>
 
 <script>
+import Contactor from "../lib/contactor";
 export default {
   emits: ["addBot", "close"],
   data() {
@@ -83,6 +89,7 @@ export default {
       moreSystemPresets: true,
       moreRecommendPresets: true,
       observer: null, // Store the observer instance
+      Contactor,
     };
   },
   computed: {
@@ -318,6 +325,15 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.preset-avatar.model {
+  background-color: #ffffff;
+  border-radius: 50%;
+}
+
+.preset-avatar.model img {
+  width: 90%;
 }
 
 .preset-info {

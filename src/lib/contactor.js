@@ -512,7 +512,7 @@ export default class Contactor extends EventEmmiter {
     let avatar = "/static/avatar/miobot.png";
     if (avatarPolicy[this.avatarPolicy] == "MODEL") {
       const model = this.options.model;
-      avatar = this.getAvatarByModel(model);
+      avatar = Contactor.getAvatarByModel(model);
     } else if (avatarPolicy[this.avatarPolicy] == "CUSTOM") {
       avatar = this.avatar;
     }
@@ -551,7 +551,7 @@ export default class Contactor extends EventEmmiter {
     }
   }
 
-  getAvatarByModel(model) {
+  static getAvatarByModel(model) {
     const lowerModel = model.toLowerCase();
 
     for (const key in AVATAR_MAP) {

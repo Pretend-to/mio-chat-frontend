@@ -25,6 +25,7 @@ export default {
       default: false,
     },
   },
+  emits: "full-screen",
   methods: {
     waiting() {
       this.$message({ message: "此功能尚未开放", type: "warning" });

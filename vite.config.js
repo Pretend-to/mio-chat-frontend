@@ -102,6 +102,10 @@ export default defineConfig(({ mode }) => {
           target: env.VITE_API_URL || "http://127.0.0.1:3080/",
           changeOrigin: true,
         },
+        "/f": {
+          target: env.VITE_API_URL || "http://127.0.0.1:3080/",
+          changeOrigin: true,
+        },
       },
     },
 
