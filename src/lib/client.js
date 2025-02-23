@@ -120,6 +120,7 @@ export default class Client extends EventEmitter {
   }
 
   async init() {
+    await this.beforeInit();
     if (this.everLogin) {
       console.log("Detected cache, attempting automatic reconnection");
       this.isConnected = false;

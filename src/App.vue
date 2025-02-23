@@ -10,7 +10,6 @@ export default {
   data() {
     const displayConfig = config.getDisplayConfig();
     const onPhone = window.innerWidth < 600;
-
     return {
       onPhone,
       client: client,
@@ -27,9 +26,7 @@ export default {
       );
     },
   },
-  async created() {
-    await client.beforeInit();
-    await client.init();
+  created() {
     const displayConfig = config.getDisplayConfig();
 
     if (displayConfig) {

@@ -1,7 +1,7 @@
 <template>
   <div v-if="!onPhone" id="main">
     <friendlist></friendlist>
-    <router-view></router-view>
+    <router-view :loaded="loaded"></router-view>
   </div>
   <div v-else-if="pagePath === '/'" id="main-mobile">
     <friendlist></friendlist>

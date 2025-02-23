@@ -77,7 +77,7 @@ export default {
     },
   },
   watch: {
-    "$route.params.id"(newVal, oldVal) {
+    ["$route.params.id"](newVal, oldVal) {
       const currentId = parseInt(newVal);
       const contactor = client.getContactor(currentId);
       this.activeContactor = contactor;
@@ -91,6 +91,7 @@ export default {
     },
   },
   mounted() {
+    console.log("ChatView mounted");
     document.addEventListener("click", () => {
       this.showMenu = false;
       this.seletedText = "";

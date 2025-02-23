@@ -57,14 +57,14 @@ export default defineConfig(({ mode }) => {
     },
 
     build: {
-      target: "es2020", // 更现代的构建目标
+      target: "es2022", // 更现代的构建目标
       minify: "terser",
       cssCodeSplit: true,
       terserOptions: {
         compress: {
           keep_infinity: true, // 避免大数被压缩
-          drop_console: mode !== "development", // 开发环境保留 console
-          pure_funcs: ["console.debug", "console.table"], // 保留常用日志方法
+          // drop_console: mode !== "development", // 开发环境保留 console
+          // pure_funcs: ["console.debug", "console.table"], // 保留常用日志方法
         },
       },
       rollupOptions: {
@@ -88,6 +88,7 @@ export default defineConfig(({ mode }) => {
       },
       chunkSizeWarningLimit: 1500, // 调低 chunk 预警阈值
       assetsInlineLimit: 4096,
+      sourcemap: true,
     },
 
     server: {

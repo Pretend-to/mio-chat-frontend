@@ -10,4 +10,6 @@ import Config from "./config.js";
 const config = new Config();
 const client = new Client(config);
 
+await client.init();
+
 export { config, client };
