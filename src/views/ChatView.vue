@@ -137,11 +137,11 @@ export default {
     },
     toButtom(clicked) {
       if (clicked) this.$message("已滑至底部");
-      this.$nextTick(() => {
+      setTimeout(() => {
         if (this.chatWindowRef) {
           this.chatWindowRef.scrollTop = this.chatWindowRef.scrollHeight;
         }
-      });
+      }, 20);
     },
     cleanScreen() {
       this.activeContactor.messageChain = [];
