@@ -35,14 +35,14 @@
             :key="index"
             class="presets-item"
           >
-            <div v-if="!preset.recommendedModel" class="preset-avatar">
-              {{ preset.name.slice(0, 2) }}
-            </div>
-            <div v-else-if="preset.customAvatar" class="preset-avatar model">
+            <div v-if="preset.customAvatar" class="preset-avatar model">
               <img :src="preset.customAvatar" />
             </div>
-            <div v-else class="preset-avatar model">
+            <div v-else-if="preset.recommendedModel" class="preset-avatar model">
               <img :src="Contactor.getAvatarByModel(preset.recommendedModel)" />
+            </div>
+            <div v-else="!preset.recommendedModel" class="preset-avatar">
+              {{ preset.name.slice(0, 2) }}
             </div>
             <div class="preset-info">
               <div class="preset-name">{{ preset.name }}</div>
