@@ -115,7 +115,6 @@ export default class Client extends EventEmitter {
   reset() {
     localforage.clear();
     localStorage.clear();
-    // Refresh page
     window.location.reload();
   }
 

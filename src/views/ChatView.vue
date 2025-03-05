@@ -5,6 +5,7 @@ import InputEditor from "@/components/InputEditor.vue";
 import FileBlock from "@/components/FileBlock.vue";
 import ToolCallBar from "@/components/ToolCallBar.vue";
 import ReasonBlock from "@/components/ReasonBlock.vue";
+import ContextMenu from "@/components/ContextMenu.vue";
 import "emoji-picker-element";
 import html2canvas from "html2canvas";
 import { client } from "@/lib/runtime.js";
@@ -12,6 +13,7 @@ import { client } from "@/lib/runtime.js";
 export default {
   components: {
     MdPreview,
+    ContextMenu,
     ForwardMsg,
     InputEditor,
     ToolCallBar,
@@ -40,13 +42,29 @@ export default {
       menuTop: 0,
       menuLeft: 0,
       validMessageIndex: -1,
-      repliedMessage: null,
+      repliedMessageId: -1,
       autoScroll: false,
       fullScreen: false,
       chatWindowRef: null,
     };
   },
   computed: {
+    getMenuStyle() {
+      // return { top: this.menuTop + "px", left: this.menuLeft + "px" };
+      // 长度超出屏幕宽度，就向左移动
+      console.log(this.menuLeft);
+      if (this.menuLeft + 110 > window.innerWidth) {
+        return {
+          top: this.menuTop + "px",
+          left: this.menuLeft - 110 + "px",
+        };
+      } else {
+        return {
+          top: this.menuTop + "px",
+          left: this.menuLeft + "px",
+        };
+      }
+    },
     getDelayStatus() {
       return this.currentDelay > 1000
         ? "high"
@@ -348,7 +366,7 @@ export default {
               this.activeContactor.platform === "onebot"
             ) {
               const formatedMessage = this.separateTextAndImages(
-                element.data.text,
+                element.data.text
               );
               // 把 formatedMessage 里的元素展开到 index 这个位置
               rawMessage.content.splice(index, 1, ...formatedMessage);
@@ -381,7 +399,7 @@ export default {
     getReplyText(id) {
       let content = "";
       const message = this.activeContactor.messageChain.find(
-        (item) => item.id === id,
+        (item) => item.id === id
       );
       if (message) {
         message.content.forEach((element) => {
@@ -423,131 +441,44 @@ export default {
         this.seletedText = "";
       }
     },
-    messageMenuClick(event) {
-      const copyTextToClipboard = (text) => {
-        const textarea = document.createElement("textarea");
-        textarea.style.position = "absolute";
-        textarea.style.left = "-9999px"; // Move it off-screen
-        textarea.value = text;
-        document.body.appendChild(textarea);
-        textarea.select();
-        textarea.setSelectionRange(0, 99999); // For mobile devices
-        // Copy the text and remove the textarea
-        try {
-          document.execCommand("copy");
-          this.$message({ message: "复制成功", type: "success" });
-        } catch (err) {
-          console.error("Copy failed:", err);
-          this.$message({ message: "复制失败", type: "error" });
-        } finally {
-          document.body.removeChild(textarea);
-        }
-      };
+    scrollHandler() {
+      this.showMenu = false;
+      if (this.showemoji) this.showemoji = false;
 
-      const copyImageToClipboard = (imgSrc) => {
-        try {
-          fetch(imgSrc)
-            .then((response) => {
-              // 检查响应的状态
-              if (!response.ok) {
-                throw new Error("网络错误，无法获取图片");
-              }
-              return response.blob();
-            })
-            .then((blob) => {
-              // 创建一个图像对象
-              const img = new Image();
-              const url = URL.createObjectURL(blob);
+      const scrollHeight = this.getChatwindowScrollheight();
 
-              img.onload = () => {
-                // 创建一个 canvas 元素
-                const canvas = document.createElement("canvas");
-                canvas.width = img.width;
-                canvas.height = img.height;
-
-                // 在 canvas 上绘制图像
-                const ctx = canvas.getContext("2d");
-                ctx.drawImage(img, 0, 0);
-
-                // 将 canvas 转换为 PNG Blob
-                canvas.toBlob((pngBlob) => {
-                  if (pngBlob) {
-                    const item = new ClipboardItem({ "image/png": pngBlob });
-                    navigator.clipboard
-                      .write([item])
-                      .then(() => {
-                        this.$message({
-                          message: "图片已复制到剪贴板",
-                          type: "success",
-                        });
-                      })
-                      .catch((err) => {
-                        console.error("Copy image failed:", err);
-                        this.$message({
-                          message: "复制图片失败",
-                          type: "error",
-                        });
-                      });
-                  } else {
-                    this.$message({
-                      message: "转换为 PNG 失败",
-                      type: "error",
-                    });
-                  }
-                  // 释放 object URL
-                  URL.revokeObjectURL(url);
-                }, "image/png");
-              };
-
-              img.src = url; // 触发图像加载
-            })
-            .catch((err) => {
-              console.error("Fetch error:", err);
-              this.$message({ message: "复制图片失败", type: "error" });
-            });
-        } catch (err) {
-          console.error("Error while copying image:", err);
-          this.$message({ message: "复制图片失败", type: "error" });
-        }
-      };
-
-      const downloadImage = (imgSrc) => {
-        const link = document.createElement("a");
-        link.href = imgSrc;
-        link.download = "image.png";
-        link.click();
-      };
-
-      // 处理菜单项点击事件
-      switch (event) {
-        case "copy": {
-          let text = "";
-          // Construct the text to copy
-          const message =
-            this.activeContactor.messageChain[this.validMessageIndex]; // Corrected typo
-          message.content.forEach((element) => {
-            if (element.type === "text") {
-              text += element.data.text;
-            } else if (element.type === "image") {
-              text += "[图片]";
+      this.autoScroll = scrollHeight > 300 ? false : true;
+    },
+    getseletedMessage() {
+      return this.activeContactor.messageChain[this.validMessageIndex];
+    },
+    handleMessageOption(option) {
+      const message = this.getseletedMessage();
+      switch (option) {
+        case "retry":
+          if (this.activeContactor.platform === "onebot") {
+            // 重新发送一样的消息
+            if (message.role === "user") {
+              this.activeContactor.webSend(message);
+            } else {
+              this.activeContactor.webSend({
+                ...message,
+                role: "user",
+              });
             }
-          });
-          copyTextToClipboard(text);
-          break;
-        }
-        case "copySeletedText":
-          copyTextToClipboard(this.seletedText);
-          break;
-        case "copySeletedImage":
-          copyImageToClipboard(this.seletedImage);
-          break;
-        case "saveSeletedImage":
-          downloadImage(this.seletedImage);
+            this.$message({ message: "消息已重新发送", type: "success" });
+          } else {
+            if (message.role === "user") {
+              this.activeContactor.retryMessage(this.validMessageIndex + 1);
+            } else {
+              this.activeContactor.retryMessage(this.validMessageIndex);
+            }
+          }
+          this.toButtom();
           break;
         case "reply":
-          if (this.activeContactor.platform === "onebot") {
-            this.repliedMessage =
-              this.activeContactor.messageChain[this.validMessageIndex];
+        if (this.activeContactor.platform === "onebot") {
+            this.repliedMessageId = message.id
             this.$message({ message: "已引用该消息", type: "success" });
           } else {
             this.userInput +=
@@ -557,28 +488,13 @@ export default {
           }
           break;
         case "delete":
-          if (this.activeContactor.platform === "onebot")
-            this.activeContactor.messageChain.splice(this.validMessageIndex, 1);
-          else {
-            this.activeContactor.messageChain.splice(this.validMessageIndex, 1);
-          }
-          this.showMenu = false;
+          this.activeMessageChain.splice(this.validMessageIndex, 1);
+          client.setLocalStorage();
           break;
         default:
           break;
       }
-      this.seletedText = "";
-      this.seletedImage = "";
-      this.showMenu = false;
-    },
-    scrollHandler() {
-      this.showMenu = false;
-      if (this.showemoji) this.showemoji = false;
-
-      const scrollHeight = this.getChatwindowScrollheight();
-
-      this.autoScroll = scrollHeight > 300 ? false : true;
-    },
+    }
   },
 };
 </script>
@@ -604,9 +520,19 @@ export default {
       </div>
     </div>
     <div id="main-messages-window" ref="chatWindow" class="message-window">
+      <ContextMenu
+        type="message"
+        v-show="showMenu"
+        :message="getseletedMessage()"
+        :seletedText
+        :seletedImage
+        :style="getMenuStyle"
+        @message-option="handleMessageOption"
+        @close="showMenu = false"
+      />
       <div
         v-for="(item, index) of activeMessageChain"
-        :key="index"
+        :key="`${activeContactor.id}-${index}`"
         ref="message"
         class="message-container"
       >
@@ -704,43 +630,6 @@ export default {
                 />
               </div>
             </div>
-            <div
-              v-if="showMenu && validMessageIndex === index"
-              id="message-menu"
-              :style="{ top: menuTop + 'px', left: menuLeft + 'px' }"
-            >
-              <div @click.stop="messageMenuClick('copy')">
-                <i class="iconfont fuzhi"></i>
-                <span>复制消息</span>
-              </div>
-              <div
-                v-if="seletedText"
-                @click.stop="messageMenuClick('copySeletedText')"
-              >
-                <i class="iconfont fuzhi"></i>
-                <span>复制选中</span>
-              </div>
-              <div
-                v-if="seletedImage"
-                @click.stop="messageMenuClick('copySeletedImage')"
-              >
-                <i class="iconfont fuzhi"></i>
-                <span>复制图片</span>
-              </div>
-              <div
-                v-if="seletedImage"
-                @click.stop="messageMenuClick('saveSeletedImage')"
-              >
-                <i class="iconfont fuzhi"></i>
-                <span>保存图片</span>
-              </div>
-              <div @click.stop="messageMenuClick('reply')">
-                <i class="iconfont yinyong"></i><span>引用消息</span>
-              </div>
-              <div @click.stop="messageMenuClick('delete')">
-                <i class="iconfont shanchu"></i><span>删除消息</span>
-              </div>
-            </div>
           </div>
           <div v-else class="system-message">
             {{ item.content[0].data.text }}
@@ -750,12 +639,12 @@ export default {
     </div>
     <InputEditor
       ref="inputEditor"
-      :active-contactor="activeContactor"
+      :active-contactor
+      :replied-message-id
       @stroge="client.setLocalStorage()"
       @set-model="setModel"
       @clean-screen="cleanScreen"
       @clean-history="cleanHistory"
-      @send-message="toButtom"
       @to-buttom="toButtom"
     />
   </div>

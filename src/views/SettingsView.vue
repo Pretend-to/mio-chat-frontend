@@ -15,11 +15,10 @@ export default {
   methods: {
     reset() {
       this.$router.push("/auth");
-      console.log("666");
       // client.reset()
       setTimeout(() => {
         client.reset();
-      }, 50);
+      }, 0);
     },
   },
 };

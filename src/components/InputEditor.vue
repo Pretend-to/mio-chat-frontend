@@ -78,7 +78,6 @@ export default {
     "cleanHistory",
     "cleanScreen",
     "setModel",
-    "sendMessage",
     "stroge",
   ],
   data() {
@@ -497,11 +496,11 @@ export default {
         });
       });
 
-      if (this.repliedMessage) {
+      if (this.repliedMessageId) {
         const replyData = {
           type: "reply",
           data: {
-            id: this.repliedMessage.id,
+            id: this.repliedMessageId,
           },
         };
         container.content.push(replyData);
@@ -509,13 +508,12 @@ export default {
       return container;
     },
     async send() {
-      this.$emit("sendMessage");
+      this.$emit("toButtom");
       const container = this.presend();
       // this.userInput = "";  // Already cleared in presend
       const message_id = await this.activeContactor.webSend(container); //发送消息
       this.activeContactor.emit("updateMessageSummary");
       container.id = message_id;
-      this.$emit("toButtom");
       this.$emit("stroge");
       this.uploaded.images = [];
       this.uploaded.files = [];

@@ -194,10 +194,11 @@ export default class Contactor extends EventEmmiter {
     return start + fileElms.join("\n");
   }
 
-  _getValidOpenaiMessage() {
+  _getValidOpenaiMessage(start = this.firstMessageIndex, end = this.messageChain.length, length = this.options.max_messages_num) {
     const cuttedMessageList = this.messageChain
-      .slice(this.firstMessageIndex)
-      .slice(-this.options.max_messages_num);
+      .slice(start, end)
+      .slice(-length);
+
     const validMessageList = cuttedMessageList.filter(
       (msg) => msg.role != "mio_system",
     );
@@ -330,6 +331,19 @@ export default class Contactor extends EventEmmiter {
       return Math.floor(Math.random() * 100000000)
         .toString()
         .padStart(8, "0");
+    }
+  }
+
+  async retryMessage(index) {
+    const message = this.messageChain[index];
+    if (message) {
+      message.content = [{
+        type: "blank",
+      }];
+      this.updateLastUpdate();
+      const finalMessages = this._getValidOpenaiMessage(0,index);
+      this.kernel.send(finalMessages, index, this.options);
+      return true;
     }
   }
 

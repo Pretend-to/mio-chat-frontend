@@ -1,7 +1,3 @@
-/* eslint-env node */
-// eslint-disable-next-line no-undef
-require("@rushstack/eslint-patch/modern-module-resolution");
-
 module.exports = {
   root: true,
   env: {
@@ -18,13 +14,11 @@ module.exports = {
     ecmaVersion: "latest",
     sourceType: "module", // 明确指定为 module
   },
-  plugins: [
-    // 插件列表
-  ],
   rules: {
     "no-unused-vars": "warn", // 警告未使用的变量
     "no-console": process.env.NODE_ENV === "production" ? "warn" : "off", // 生产环境警告 console
     semi: "off", // 关闭 semi 规则 (由 Prettier 处理)
+    endOfLine: "auto",
 
     // Vue 规则
     "vue/no-unused-components": "warn",

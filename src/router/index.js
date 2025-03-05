@@ -54,8 +54,7 @@ router.beforeEach(async (to) => {
     // 检查用户是否已登录
     !everLogin &&
     // ❗️ 避免无限重定向
-    to.name !== "auth" &&
-    to.name !== "settings"
+    to.name !== "auth" 
   ) {
     console.log(
       `everLogin: ${everLogin} to.name!== auth: ${to.name !== "auth"}`,
