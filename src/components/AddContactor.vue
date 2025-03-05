@@ -35,7 +35,7 @@
             :key="index"
             class="presets-item"
           >
-            <div v-if="preset.customAvatar" class="preset-avatar model">
+            <div v-if="preset.customAvatar" class="preset-avatar custom">
               <img :src="preset.customAvatar" />
             </div>
             <div v-else-if="preset.recommendedModel" class="preset-avatar model">
@@ -321,6 +321,7 @@ export default {
 
 .preset-avatar {
   min-width: 2.8rem;
+  max-width: 2.8rem;
   height: 2.8rem;
   background-color: #0099ff;
   color: #fff;
@@ -332,6 +333,11 @@ export default {
 
 .preset-avatar.model {
   background-color: #ffffff;
+  border-radius: 50%;
+}
+
+.preset-avatar.custom img {
+  width: 100%;
   border-radius: 50%;
 }
 
