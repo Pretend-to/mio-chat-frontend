@@ -453,6 +453,7 @@ export default {
       return this.activeContactor.messageChain[this.validMessageIndex];
     },
     handleMessageOption(option) {
+      debugger;
       const message = this.getseletedMessage();
       switch (option) {
         case "retry":
@@ -488,7 +489,7 @@ export default {
           }
           break;
         case "delete":
-          this.activeMessageChain.splice(this.validMessageIndex, 1);
+          this.activeContactor.messageChain.splice(this.validMessageIndex, 1);
           client.setLocalStorage();
           break;
         default:
