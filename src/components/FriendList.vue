@@ -140,10 +140,9 @@ export default {
         options: {
           ...config.openaiDefaultConfig,
           model: preset.recommendedModel ?? client.default_model,
-          opening: preset.opening,
-          history: preset.history,
-          textWrapper: preset.textWrapper,
-          tools: preset.tools,
+          opening: preset.opening || "",
+          history: preset.history || [],
+          tools: preset.tools || [],
           enable_tool_call: preset.tools ? true : false,
         },
       };

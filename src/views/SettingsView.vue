@@ -14,11 +14,7 @@ export default {
   },
   methods: {
     reset() {
-      this.$router.push("/auth");
-      // client.reset()
-      setTimeout(() => {
-        client.reset();
-      }, 0);
+      client.reset();
     },
   },
 };

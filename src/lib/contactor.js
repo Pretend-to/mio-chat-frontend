@@ -478,10 +478,6 @@ export default class Contactor extends EventEmmiter {
     }
   }
 
-  setOpenaiPresets(presets) {
-    this.options.history = presets;
-  }
-
   getLastMessageSummary(message) {
     const getMessageText = (element) => {
       switch (element.type) {

@@ -106,7 +106,7 @@
               >
                 <PresetsList
                   :presets-history="presetHistory"
-                  @update-presets-history="updateOpenaiPresets"
+                  @updatePresets="updateOpenaiPresets"
                 />
               </div>
             </div>
@@ -253,7 +253,7 @@ export default {
         this.openaiSettings = this.getShownOpenAISettings(
           this.activeContactor.options,
         );
-        this.presetHistory = [...this.activeContactor.options.history];
+        this.presetHistory = this.activeContactor.options.history;
         this.loadToolsList();
       }
     },
@@ -267,9 +267,13 @@ export default {
         };
       });
     },
-    updateOpenaiPresets(presets) {
-      this.activeContactor.setOpenaiPresets(presets);
-      client.setLocalStorage(); //持久化存储
+    async updateOpenaiPresets(presets) {
+      this.activeContactor.options.history = presets;
+      await client.setLocalStorage(); //持久化存储
+      this.$message({
+        message: "预设历史记录已更新",
+        type: "success",
+      });
     },
     updateOpenaiOptions() {
       this.activeContactor.options = {

@@ -38,6 +38,9 @@
             <div v-if="!preset.recommendedModel" class="preset-avatar">
               {{ preset.name.slice(0, 2) }}
             </div>
+            <div v-else-if="preset.customAvatar" class="preset-avatar model">
+              <img :src="preset.customAvatar" />
+            </div>
             <div v-else class="preset-avatar model">
               <img :src="Contactor.getAvatarByModel(preset.recommendedModel)" />
             </div>

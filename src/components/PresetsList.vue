@@ -27,7 +27,7 @@
           :ref="`message-${index}`"
           class="message-content"
           contenteditable="true"
-          @input="handleMessageUpdate(index)"
+          @blur="handleMessageUpdate(index)"
         >
           {{ presetMessages[index].content }}
         </div>
@@ -49,6 +49,7 @@
     </div>
   </div>
 </template>
+
 <script>
 export default {
   props: {
@@ -57,6 +58,7 @@ export default {
       default: () => [],
     },
   },
+  emits: ['updatePresets'],
   data() {
     const presetMessages = [...this.presetsHistory];
     return {
@@ -72,24 +74,26 @@ export default {
   methods: {
     delPresetMessage() {
       this.presetMessages.splice(this.hoveredIndex, 1);
+      this.$emit('updatePresets', this.presetMessages);
     },
     addPresetMessage(role) {
-      if (role == "system" && this.presetMessages.length > 0) {
-        this.$message.warning("系统消息必须是第一条消息");
+      if (role == 'system' && this.presetMessages.length > 0) {
+        this.$message.warning('系统消息必须是第一条消息');
         return;
       }
       this.presetMessages.push({
         role,
-        content: "",
+        content: '',
       });
+      this.$emit('updatePresets', this.presetMessages);
     },
     getMessageAvatar(role) {
-      return role == "assistant" ? "🤖" : role == "system" ? "⚙️" : "👤";
+      return role == 'assistant' ? '🤖' : role == 'system' ? '⚙️' : '👤';
     },
     handleMessageUpdate(index) {
-      // console.log(this.presetMessages[index].content)
       this.presetMessages[index].content =
         this.$refs[`message-${index}`][0].innerText;
+      this.$emit('updatePresets', this.presetMessages);
     },
   },
 };
