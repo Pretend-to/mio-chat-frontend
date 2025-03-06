@@ -26,6 +26,22 @@ export default class Config {
     localStorage.setItem("display_config", JSON.stringify(config));
   }
 
+  setOpenaiModels(models) {
+    this.openaiModels = models;
+    this._saveStrogeConfig();
+  }
+
+  getOpenaiModels() {
+    return this.openaiModels;
+  }
+
+  getOpenaiModelOwner(model) {
+    const group = this.openaiModels.find((modelGroup) =>
+      modelGroup.models.includes(model),
+    )
+    return group?.owner;
+  }
+
   updateDisplayConfig(patch) {
     this.displayConfig = {
       ...this.displayConfig,

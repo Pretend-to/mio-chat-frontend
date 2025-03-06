@@ -1,23 +1,24 @@
 import Onebot from "./adapter/onebot.js";
 import Openai from "./adapter/openai.js";
 import EventEmmiter from "./event.js";
+import { config } from "@/lib/runtime.js"
 
 const AVATAR_BASE_PATH =
   "https://registry.npmmirror.com/@lobehub/icons-static-svg/latest/files/icons";
 
 const AVATAR_MAP = {
-  "gpt-": "openai.svg",
-  o3: "openai.svg",
-  o1: "openai.svg",
-  moon: "moonshot.svg",
-  deepseek: "deepseek-color.svg",
-  glm: "zhipu-color.svg",
-  gemini: "gemini-color.svg",
-  command: "cohere-color.svg",
-  claude: "claude-color.svg",
-  spark: "spark-color.svg",
-  qwen: "qwen-color.svg",
-  hunyuan: "hunyuan-color.svg",
+  "OpenAI": "openai.svg",
+  "Cohere": "cohere-color.svg",
+  "Anthropic": "claude-color.svg",
+  "Google": "gemini-color.svg", 
+  "X.AI": "grok-color.svg", 
+  "DeepSeek": "deepseek-color.svg",
+  "智谱清言": "zhipu-color.svg",
+  "豆包": "doubao-color.svg", 
+  "月之暗面 (kimi)": "moonshot.svg",
+  "科大讯飞": "spark-color.svg", 
+  "通义千问": "qwen-color.svg", 
+  "腾讯混元": "hunyuan-color.svg"
 };
 
 const avatarPolicy = ["MODEL", "CUSTOM"];
@@ -562,12 +563,11 @@ export default class Contactor extends EventEmmiter {
   }
 
   static getAvatarByModel(model) {
-    const lowerModel = model.toLowerCase();
 
-    for (const key in AVATAR_MAP) {
-      if (lowerModel.includes(key)) {
-        return `${AVATAR_BASE_PATH}/${AVATAR_MAP[key]}`;
-      }
+    const modelOwner = config.getOpenaiModelOwner(model)
+    debugger;
+    if (Object.keys(AVATAR_MAP).includes(modelOwner)) {
+      return `${AVATAR_BASE_PATH}/${AVATAR_MAP[modelOwner]}`;
     }
 
     return `${AVATAR_BASE_PATH}/openai.svg`;

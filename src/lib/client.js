@@ -23,7 +23,6 @@ export default class Client extends EventEmitter {
     this.botqq = null; // Web
     this.avatar = null; // Web
     this.onPhone = null; // Dynamic
-    this.models = [];
     this.title = "Mio"; // Fixed
     this.name = "user"; // Fixed
     this.displaySettings = null; // Web
@@ -167,7 +166,6 @@ export default class Client extends EventEmitter {
     this.id = client.id;
     this.code = client.code;
     this.avatar = client.avatar;
-    this.models = client.models;
 
     // If contact list exists, instantiate as contact objects
     if (client.contactList && client.contactList.length != 0) {
@@ -203,11 +201,11 @@ export default class Client extends EventEmitter {
         this.avatar = `/api/qava?q=${this.qq}`;
         this.botqq = info.bot_qq;
         this.default_model = info.default_model;
-        this.models = info.models;
         this.everLogin = true;
         this.isConnected = true;
         this.socket = socket;
 
+        this.config.setOpenaiModels(info.models);
         this.addMsgListener();
         this.config.updateOpenaiDefaultConfig({
           model: info.default_model,

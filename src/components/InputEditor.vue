@@ -351,7 +351,8 @@ export default {
       this.$emit("setModel", this.selectedModel[1]);
     },
     initExtraOptions() {
-      this.openaiModels = client.models.map((modelGroup) => {
+      const models = client.config.getOpenaiModels();
+      this.openaiModels = models.map((modelGroup) => {
         return {
           value: modelGroup.owner,
           label: modelGroup.owner,
@@ -378,10 +379,8 @@ export default {
       }
     },
     getOpenaiModelArray(model) {
-      const activeArray = client.models.find((modelGroup) =>
-        modelGroup.models.includes(model),
-      );
-      return [activeArray.owner, model];
+      const owner = client.config.getOpenaiModelOwner(model);
+      return [owner, model];
     },
     wrapText(rawText) {
       if (!this.selectedWraper) return rawText;
