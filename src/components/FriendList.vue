@@ -133,6 +133,12 @@ export default {
       const defaultOptions = config.openaiDefaultConfig;
       for(const key in defaultOptions){
         if(options[key] === undefined){
+          if(key == "enable_tool_call"){
+            if(options.tools){
+              result[key] = true;
+            }
+            continue;
+          }
           result[key] = defaultOptions[key];
         }else{
           result[key] = options[key];

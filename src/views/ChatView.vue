@@ -453,7 +453,6 @@ export default {
       return this.activeContactor.messageChain[this.validMessageIndex];
     },
     handleMessageOption(option) {
-      debugger;
       const message = this.getseletedMessage();
       switch (option) {
         case "retry":
