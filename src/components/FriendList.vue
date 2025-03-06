@@ -128,23 +128,28 @@ export default {
         return parseInt(randomNumStr);
       }
     },
+    mergeOptions(options) {
+      let result = {};
+      const defaultOptions = config.openaiDefaultConfig;
+      for(const key in defaultOptions){
+        if(options[key] === undefined){
+          result[key] = defaultOptions[key];
+        }else{
+          result[key] = options[key];
+        }
+      }
+      return result;
+    },
     addPresetContactor(preset) {
       const contactor = {
         id: this.genFakeId(),
         namePolicy: 1,
-        avatarPolicy: preset.customAvatar ? 1 : 0,
-        avatar: preset.customAvatar ? preset.customAvatar : undefined,
+        avatarPolicy: preset.avatar ? 1 : 0,
+        avatar: preset.avatar ? preset.avatar : undefined,
         name: preset.name,
         title: preset.title,
         priority: 1,
-        options: {
-          ...config.openaiDefaultConfig,
-          model: preset.recommendedModel ?? client.default_model,
-          opening: preset.opening || "",
-          history: preset.history || [],
-          tools: preset.tools || [],
-          enable_tool_call: preset.tools ? true : false,
-        },
+        options: this.mergeOptions(preset),
       };
       client.addConcator("openai", contactor);
       this.addReactiveListener();

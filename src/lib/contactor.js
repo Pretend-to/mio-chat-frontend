@@ -565,7 +565,6 @@ export default class Contactor extends EventEmmiter {
   static getAvatarByModel(model) {
 
     const modelOwner = config.getOpenaiModelOwner(model)
-    debugger;
     if (Object.keys(AVATAR_MAP).includes(modelOwner)) {
       return `${AVATAR_BASE_PATH}/${AVATAR_MAP[modelOwner]}`;
     }
