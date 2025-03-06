@@ -11,7 +11,7 @@ const AVATAR_MAP = {
   "Cohere": "cohere-color.svg",
   "Anthropic": "claude-color.svg",
   "Google": "gemini-color.svg", 
-  "X.AI": "grok-color.svg", 
+  "X.AI": "grok.svg", 
   "DeepSeek": "deepseek-color.svg",
   "智谱清言": "zhipu-color.svg",
   "豆包": "doubao-color.svg", 
