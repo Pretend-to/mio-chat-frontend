@@ -129,24 +129,29 @@ export default class Contactor extends EventEmmiter {
       if (!rawMessage) return;
 
       const lastMsgElm = rawMessage.content[rawMessage.content.length - 1];
-      const isFirstElement = ["blank", "tool_call"].includes(lastMsgElm.type);
-      const continuousCall =
-        lastMsgElm.type == "tool_call" && lastMsgElm.data.id !== tool_call.id;
-
       const msgElm = {
         type: "tool_call",
-        data: {
-          ...tool_call,
-          params:
-            tool_call.action == "pending"
-              ? (lastMsgElm.data.params += tool_call.params)
-              : tool_call.params,
-        },
+        data: tool_call,
       };
 
-      if (isFirstElement && !continuousCall)
-        rawMessage.content[rawMessage.content.length - 1] = msgElm;
-      else rawMessage.content.push(msgElm);
+      if (lastMsgElm.type == "blank") {
+        // 这种情况一定是第一条空白消息，直接更新成 toolCall 消息
+        rawMessage.content[0]=msgElm;
+      } else {
+        const previousCall = rawMessage.content.find(
+          (msgElm) => msgElm.data.id == tool_call.id,
+        );
+        if (previousCall) {
+          // 这种情况就是更新之前的 toolCall 消息
+          previousCall.data = {
+            ...tool_call,
+            // params: previousCall.data.params += tool_call.params
+          };
+        } else {
+          // 这种情况就是新增一条 toolCall 消息
+          rawMessage.content.push(msgElm);
+        }
+      }
 
       this.emit("updateMessage"); // 更新响应式数据
       this.emit("updateMessageSummary");
