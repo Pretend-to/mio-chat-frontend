@@ -38,6 +38,7 @@ export default {
       toupdate: false,
       seletedText: "",
       seletedImage: "",
+      retryList: [],
       showMenu: false,
       menuTop: 0,
       menuLeft: 0,
@@ -136,7 +137,7 @@ export default {
     console.log(contactor.options);
   },
   updated() {
-    if (this.toupdate && this.autoScroll) {
+    if (this.toupdate && this.autoScroll && this.retryList.length === 0) {
       this.toButtom();
       this.toupdate = false;
     }
@@ -358,7 +359,11 @@ export default {
       contactor.on(`completeMessage`, async (e) => {
         const messageIndex = e.index;
         const rawMessage = this.activeContactor.messageChain[messageIndex];
+        if(rawMessage.status === "retrying") {
+          this.retryList = this.retryList.filter((item) => item !== messageIndex);
+        }
         rawMessage.status = "completed";
+
         if (!e.error) {
           rawMessage.content.forEach((element, index) => {
             if (
@@ -382,8 +387,6 @@ export default {
             },
           ];
         }
-
-        this.$forceUpdate();
         this.toupdate = true;
         await this.activeContactor.loadName();
         await client.setLocalStorage(); //持久化存储
@@ -468,11 +471,17 @@ export default {
             }
             this.$message({ message: "消息已重新发送", type: "success" });
           } else {
+            const targetIndex =
+              message.role === "user"
+               ? this.validMessageIndex + 1
+                : this.validMessageIndex;
             if (message.role === "user") {
-              this.activeContactor.retryMessage(this.validMessageIndex + 1);
+              this.activeContactor.retryMessage(targetIndex);
             } else {
-              this.activeContactor.retryMessage(this.validMessageIndex);
+              this.activeContactor.retryMessage(targetIndex);
             }
+            message.status = "retrying";
+            this.retryList.push(targetIndex)
           }
           this.toButtom();
           break;
@@ -626,7 +635,7 @@ export default {
                 <MdPreview
                   v-else
                   preview-theme="github"
-                  :model-value="'未知的消息类型：\n```\n' + element + '\n```'"
+                  :model-value="'未知的消息类型：\n```\n' + JSON.stringify(element,null,2) + '\n```'"
                 />
               </div>
             </div>

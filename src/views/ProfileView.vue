@@ -4,7 +4,10 @@
       <div class="profile-container">
         <div class="base-info">
           <div class="base-info-avatar">
-            <img :src="activeContactor.avatar" />
+            <el-image
+              :src="activeContactor.avatar"
+              :preview-src-list="[activeContactor.avatar]"
+            />
           </div>
           <div class="base-info-content">
             <div class="name">{{ activeContactor.name }}</div>
@@ -251,7 +254,7 @@ export default {
     initContactor() {
       if (this.activeContactor.platform == "openai") {
         this.openaiSettings = this.getShownOpenAISettings(
-          this.activeContactor.options,
+          this.activeContactor.options
         );
         this.presetHistory = this.activeContactor.options.history;
         this.loadToolsList();
@@ -388,7 +391,7 @@ export default {
   height: 5.5rem;
 }
 
-.base-info-avatar img {
+.base-info-avatar .el-image {
   width: 100%;
   height: 100%;
   border-radius: 50%;
