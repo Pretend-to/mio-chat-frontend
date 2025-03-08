@@ -732,9 +732,8 @@ $icon-hover: #09f
             position: relative
             top: .2rem
 
-            @media screen and (max-width: $mobile) {
+            @media screen and (max-width: $mobile)
               display: none
-            }
 
 
             &:hover + .delay-num

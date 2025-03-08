@@ -41,7 +41,7 @@
             <div v-else-if="preset.model" class="preset-avatar model">
               <img :src="Contactor.getAvatarByModel(preset.model)" />
             </div>
-            <div v-else="!preset.model" class="preset-avatar">
+            <div v-else class="preset-avatar">
               {{ preset.name.slice(0, 2) }}
             </div>
             <div class="preset-info">
@@ -119,8 +119,10 @@ export default {
               : null; // 或者返回默认值
     },
   },
-  mounted() {
+  async mounted() {
     this.getAddHistory();
+
+    await this.loadSpecificType();
 
     if ("IntersectionObserver" in window) {
       const callback = (entries) => {
