@@ -31,6 +31,16 @@ const router = createRouter({
           name: "profile_view",
           component: () => import("../views/ProfileView.vue"),
         },
+        {
+          path: "/share/:id",
+          name: "share_view",
+          component: () => import("../views/ShareView.vue"),
+        },
+        {
+          path: "/preview/:id",
+          name: "preview_view",
+          component: () => import("../views/PreviewView.vue"),
+        },
       ],
     },
     {
@@ -54,7 +64,7 @@ router.beforeEach(async (to) => {
     // 检查用户是否已登录
     !everLogin &&
     // ❗️ 避免无限重定向
-    to.name !== "auth" 
+    to.name !== "auth"
   ) {
     console.log(
       `everLogin: ${everLogin} to.name!== auth: ${to.name !== "auth"}`,

@@ -38,7 +38,7 @@ export default class Config {
   getOpenaiModelOwner(model) {
     const group = this.openaiModels.find((modelGroup) =>
       modelGroup.models.includes(model),
-    )
+    );
     return group?.owner;
   }
 

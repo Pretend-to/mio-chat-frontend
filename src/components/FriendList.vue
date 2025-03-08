@@ -131,16 +131,16 @@ export default {
     mergeOptions(options) {
       let result = {};
       const defaultOptions = config.openaiDefaultConfig;
-      for(const key in defaultOptions){
-        if(options[key] === undefined){
-          if(key == "enable_tool_call"){
-            if(options.tools){
+      for (const key in defaultOptions) {
+        if (options[key] === undefined) {
+          if (key == "enable_tool_call") {
+            if (options.tools) {
               result[key] = true;
             }
             continue;
           }
           result[key] = defaultOptions[key];
-        }else{
+        } else {
           result[key] = options[key];
         }
       }
@@ -176,11 +176,15 @@ export default {
     <div id="friends" class="upsidebar">
       <div class="search">
         <i class="iconfont sousuo listicon"></i>
-        <input id="tosearch" type="text" placeholder="搜索" />
+        <input id="main-search" type="text" placeholder="搜索" />
       </div>
       <div class="bu-add">
-        <button id="addcont" @click="showAddOptions = !showAddOptions">
-          +
+        <button
+          id="addcont"
+          title="Add Bot"
+          @click="showAddOptions = !showAddOptions"
+        >
+          <i class="iconfont add"></i>
         </button>
         <div
           v-show="showAddOptions"
@@ -285,12 +289,11 @@ export default {
   display: flex;
   flex-direction: row;
   background-color: rgb(255, 255, 255);
-  flex: 0 0 3rem;
-  padding: 0.375rem 0.5em 0.5rem 0.5rem;
+  flex: 0 0 4rem;
   align-items: flex-end;
 }
 
-input#tosearch {
+#main-search {
   width: calc(100% - 1.125rem);
   margin-top: 0.1875rem;
   padding-left: 0.3125rem;
@@ -299,7 +302,7 @@ input#tosearch {
   border: 0rem;
 }
 
-input#tosearch:focus {
+#main-search:focus {
   outline: none;
   border: 0rem;
 }
@@ -314,18 +317,21 @@ button#searchButton {
 
 .search {
   flex-grow: 1;
+  flex-basis: 1rem;
   border-radius: 0.3125rem;
   background-color: rgb(245 245, 245);
-  height: 1.5625rem;
+  height: 2rem;
   display: flex;
-  padding: 0.125rem 0.25rem;
+  padding: 0rem 0.5rem;
   align-items: center;
+  margin: 0 0 0.5rem 0.5rem;
 }
 
 .bu-add {
-  width: 1.8125rem;
-  height: 1.8125rem;
-  margin-left: 0.5rem;
+  flex-basis: 2rem;
+  font-size: 1rem;
+  margin: 0.5rem;
+  height: 2rem;
   position: relative;
 }
 

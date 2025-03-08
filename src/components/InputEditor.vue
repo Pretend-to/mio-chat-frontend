@@ -73,13 +73,7 @@ export default {
       required: true,
     },
   },
-  emits: [
-    "toButtom",
-    "cleanHistory",
-    "cleanScreen",
-    "setModel",
-    "stroge",
-  ],
+  emits: ["toButtom", "cleanHistory", "cleanScreen", "setModel", "stroge"],
   data() {
     return {
       userInput: "",

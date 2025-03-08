@@ -1,24 +1,24 @@
 import Onebot from "./adapter/onebot.js";
 import Openai from "./adapter/openai.js";
 import EventEmmiter from "./event.js";
-import { config } from "@/lib/runtime.js"
+import { config } from "@/lib/runtime.js";
 
 const AVATAR_BASE_PATH =
   "https://registry.npmmirror.com/@lobehub/icons-static-svg/latest/files/icons";
 
 const AVATAR_MAP = {
-  "OpenAI": "openai.svg",
-  "Cohere": "cohere-color.svg",
-  "Anthropic": "claude-color.svg",
-  "Google": "gemini-color.svg", 
-  "X.AI": "grok.svg", 
-  "DeepSeek": "deepseek-color.svg",
-  "智谱清言": "zhipu-color.svg",
-  "豆包": "doubao-color.svg", 
+  OpenAI: "openai.svg",
+  Cohere: "cohere-color.svg",
+  Anthropic: "claude-color.svg",
+  Google: "gemini-color.svg",
+  "X.AI": "grok.svg",
+  DeepSeek: "deepseek-color.svg",
+  智谱清言: "zhipu-color.svg",
+  豆包: "doubao-color.svg",
   "月之暗面 (kimi)": "moonshot.svg",
-  "科大讯飞": "spark-color.svg", 
-  "通义千问": "qwen-color.svg", 
-  "腾讯混元": "hunyuan-color.svg"
+  科大讯飞: "spark-color.svg",
+  通义千问: "qwen-color.svg",
+  腾讯混元: "hunyuan-color.svg",
 };
 
 const avatarPolicy = ["MODEL", "CUSTOM"];
@@ -136,7 +136,7 @@ export default class Contactor extends EventEmmiter {
 
       if (lastMsgElm.type == "blank") {
         // 这种情况一定是第一条空白消息，直接更新成 toolCall 消息
-        rawMessage.content[0]=msgElm;
+        rawMessage.content[0] = msgElm;
       } else {
         const previousCall = rawMessage.content.find(
           (msgElm) => msgElm.data.id == tool_call.id,
@@ -200,7 +200,11 @@ export default class Contactor extends EventEmmiter {
     return start + fileElms.join("\n");
   }
 
-  _getValidOpenaiMessage(start = this.firstMessageIndex, end = this.messageChain.length, length = this.options.max_messages_num) {
+  _getValidOpenaiMessage(
+    start = this.firstMessageIndex,
+    end = this.messageChain.length,
+    length = this.options.max_messages_num,
+  ) {
     const cuttedMessageList = this.messageChain
       .slice(start, end)
       .slice(-length);
@@ -343,11 +347,13 @@ export default class Contactor extends EventEmmiter {
   async retryMessage(index) {
     const message = this.messageChain[index];
     if (message) {
-      message.content = [{
-        type: "blank",
-      }];
+      message.content = [
+        {
+          type: "blank",
+        },
+      ];
       this.updateLastUpdate();
-      const finalMessages = this._getValidOpenaiMessage(0,index);
+      const finalMessages = this._getValidOpenaiMessage(0, index);
       this.kernel.send(finalMessages, index, this.options);
       return true;
     }
@@ -568,8 +574,7 @@ export default class Contactor extends EventEmmiter {
   }
 
   static getAvatarByModel(model) {
-
-    const modelOwner = config.getOpenaiModelOwner(model)
+    const modelOwner = config.getOpenaiModelOwner(model);
     if (Object.keys(AVATAR_MAP).includes(modelOwner)) {
       return `${AVATAR_BASE_PATH}/${AVATAR_MAP[modelOwner]}`;
     }

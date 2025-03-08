@@ -58,7 +58,7 @@ export default {
       default: () => [],
     },
   },
-  emits: ['updatePresets'],
+  emits: ["updatePresets"],
   data() {
     const presetMessages = [...this.presetsHistory];
     return {
@@ -74,26 +74,26 @@ export default {
   methods: {
     delPresetMessage() {
       this.presetMessages.splice(this.hoveredIndex, 1);
-      this.$emit('updatePresets', this.presetMessages);
+      this.$emit("updatePresets", this.presetMessages);
     },
     addPresetMessage(role) {
-      if (role == 'system' && this.presetMessages.length > 0) {
-        this.$message.warning('系统消息必须是第一条消息');
+      if (role == "system" && this.presetMessages.length > 0) {
+        this.$message.warning("系统消息必须是第一条消息");
         return;
       }
       this.presetMessages.push({
         role,
-        content: '',
+        content: "",
       });
-      this.$emit('updatePresets', this.presetMessages);
+      this.$emit("updatePresets", this.presetMessages);
     },
     getMessageAvatar(role) {
-      return role == 'assistant' ? '🤖' : role == 'system' ? '⚙️' : '👤';
+      return role == "assistant" ? "🤖" : role == "system" ? "⚙️" : "👤";
     },
     handleMessageUpdate(index) {
       this.presetMessages[index].content =
         this.$refs[`message-${index}`][0].innerText;
-      this.$emit('updatePresets', this.presetMessages);
+      this.$emit("updatePresets", this.presetMessages);
     },
   },
 };

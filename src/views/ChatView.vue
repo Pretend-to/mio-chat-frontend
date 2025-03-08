@@ -359,8 +359,10 @@ export default {
       contactor.on(`completeMessage`, async (e) => {
         const messageIndex = e.index;
         const rawMessage = this.activeContactor.messageChain[messageIndex];
-        if(rawMessage.status === "retrying") {
-          this.retryList = this.retryList.filter((item) => item !== messageIndex);
+        if (rawMessage.status === "retrying") {
+          this.retryList = this.retryList.filter(
+            (item) => item !== messageIndex,
+          );
         }
         rawMessage.status = "completed";
 
@@ -371,7 +373,7 @@ export default {
               this.activeContactor.platform === "onebot"
             ) {
               const formatedMessage = this.separateTextAndImages(
-                element.data.text
+                element.data.text,
               );
               // 把 formatedMessage 里的元素展开到 index 这个位置
               rawMessage.content.splice(index, 1, ...formatedMessage);
@@ -402,7 +404,7 @@ export default {
     getReplyText(id) {
       let content = "";
       const message = this.activeContactor.messageChain.find(
-        (item) => item.id === id
+        (item) => item.id === id,
       );
       if (message) {
         message.content.forEach((element) => {
@@ -473,7 +475,7 @@ export default {
           } else {
             const targetIndex =
               message.role === "user"
-               ? this.validMessageIndex + 1
+                ? this.validMessageIndex + 1
                 : this.validMessageIndex;
             if (message.role === "user") {
               this.activeContactor.retryMessage(targetIndex);
@@ -481,13 +483,13 @@ export default {
               this.activeContactor.retryMessage(targetIndex);
             }
             message.status = "retrying";
-            this.retryList.push(targetIndex)
+            this.retryList.push(targetIndex);
           }
           this.toButtom();
           break;
         case "reply":
-        if (this.activeContactor.platform === "onebot") {
-            this.repliedMessageId = message.id
+          if (this.activeContactor.platform === "onebot") {
+            this.repliedMessageId = message.id;
             this.$message({ message: "已引用该消息", type: "success" });
           } else {
             this.userInput +=
@@ -503,7 +505,7 @@ export default {
         default:
           break;
       }
-    }
+    },
   },
 };
 </script>
@@ -518,23 +520,23 @@ export default {
         class="name-area"
         @click="$router.push(`/profile/${activeContactor.id}`)"
       >
-        {{ activeContactor.name }}
+        <div class="contactor-name">{{ activeContactor.name }}</div>
         <span :class="'delay-status ' + getDelayStatus"></span>
         <span class="delay-num">当前延迟: {{ currentDelay }} ms</span>
       </div>
-      <div class="options">
-        <div class="share" @click="toimg()">
+      <ul class="options">
+        <li class="share" @click="toimg()">
           <i class="iconfont icon-share"></i>
-        </div>
-      </div>
+        </li>
+      </ul>
     </div>
     <div id="main-messages-window" ref="chatWindow" class="message-window">
       <ContextMenu
-        type="message"
         v-show="showMenu"
+        type="message"
         :message="getseletedMessage()"
-        :seletedText
-        :seletedImage
+        :seleted-text
+        :seleted-image
         :style="getMenuStyle"
         @message-option="handleMessageOption"
         @close="showMenu = false"
@@ -635,7 +637,11 @@ export default {
                 <MdPreview
                   v-else
                   preview-theme="github"
-                  :model-value="'未知的消息类型：\n```\n' + JSON.stringify(element,null,2) + '\n```'"
+                  :model-value="
+                    '未知的消息类型：\n```\n' +
+                    JSON.stringify(element, null, 2) +
+                    '\n```'
+                  "
                 />
               </div>
             </div>
@@ -676,20 +682,20 @@ $icon-hover: #09f
         height: 100%
 
 .upside-bar
-    flex-basis: 3.75rem
+    flex-basis: 4rem
     flex-shrink: 0
-    height: 3.75rem
+    width: 100%
     display: flex
     align-items: flex-end
     justify-content: space-between
     border-bottom: 0.0625rem solid #ebebeb
 
-    @media (max-width: 600px)
-        background: #00a8ff linear-gradient(to right, #00d2f8, #00a8ff)
-
-        *
-            color: white
-            fill: white
+    @media (max-width: $mobile)
+      position: fixed
+      height: 4rem
+      z-index: 1000
+      background-color: hsla(0, 0%, 100%, 0.8)
+      backdrop-filter: blur(0.5rem)
 
     .return
         display: none
@@ -705,37 +711,75 @@ $icon-hover: #09f
     .name-area
         cursor: pointer
         position: relative
-        margin-left: 1.5rem
-        margin-bottom: 0.5rem
         display: flex
         align-items: center
+        flex-basis: 10rem
+        max-width: 20rem
+        justify-content: flex-start
+        margin: 0 0 .5rem 1rem
+
+        .contactor-name
+            text-overflow: ellipsis
+            white-space: nowrap
+            overflow: hidden
+            max-width: 10rem
+
+        .delay-status
+            width: .8rem
+            height: .8rem
+            border-radius: 50%
+            margin-left: .5rem
+            position: relative
+            top: .2rem
+
+
+            &:hover + .delay-num
+                display: inline-block
+
+            &.ultra
+                background-color: rgb(53, 233, 146)
+
+            &.low
+                background-color: rgb(255, 204, 0)
+
+            &.mid
+                background-color: rgb(255, 102, 102)
+
+            &.high
+                background-color: #ccc
+
+        .delay-num
+            display: none
+            position: absolute
+            font-size: 0.8rem
+            bottom: 0rem
+            background-color: #fff
+            border: 1px dashed #000
+            border-radius: 0.25rem
+            padding: 0.125rem 0.25rem
+            margin-left: 1rem
+            white-space: nowrap
 
     .options
-        flex-basis: 6rem
+        flex-basis: 10rem
         display: flex
-        height: 100%
-        flex-wrap: wrap
+        height: 2rem
+        flex-wrap: nowrap
         flex-direction: row-reverse
         align-items: flex-end
+        margin: 0 1rem .5rem 0
 
+        li
+            margin-left: 0.5rem
+            color: #000
+            font-weight: 580
 
-        .share
-            margin-bottom:.4rem
+            &:hover
+              color: $icon-hover
 
-            .iconfont
-                font-size: 1.1rem
-                margin-right: 1rem
+            i
+                font-size: 1.25rem
 
-                &:hover
-                    color: $icon-hover
-
-            @media (max-width: $mobile)
-                display: flex
-                align-items: flex-end
-                margin-bottom: .6rem
-
-                .iconfont
-                    font-size: 1.5rem
 
 .black-overlay
     position: fixed
@@ -836,39 +880,6 @@ $icon-hover: #09f
     mask-composite: subtract
     animation: l3 1s infinite linear
     position: absolute
-
-.delay-status
-    width: 0.5rem
-    height: 0.5rem
-    border-radius: 50%
-    margin-left: .3rem
-
-    &:hover + .delay-num
-        display: inline-block
-
-    &.ultra
-        background-color: rgb(53, 233, 146)
-
-    &.low
-        background-color: rgb(255, 204, 0)
-
-    &.mid
-        background-color: rgb(255, 102, 102)
-
-    &.high
-        background-color: #ccc
-
-.delay-num
-    display: none
-    position: absolute
-    font-size: 0.8rem
-    bottom: 0rem
-    background-color: #fff
-    border: 1px dashed #000
-    border-radius: 0.25rem
-    padding: 0.125rem 0.25rem
-    margin-left: 1rem
-    white-space: nowrap
 
 @keyframes l
     to

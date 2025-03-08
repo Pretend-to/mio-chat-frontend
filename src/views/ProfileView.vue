@@ -254,7 +254,7 @@ export default {
     initContactor() {
       if (this.activeContactor.platform == "openai") {
         this.openaiSettings = this.getShownOpenAISettings(
-          this.activeContactor.options
+          this.activeContactor.options,
         );
         this.presetHistory = this.activeContactor.options.history;
         this.loadToolsList();

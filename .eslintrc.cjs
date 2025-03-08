@@ -6,32 +6,28 @@ module.exports = {
     node: true,
   },
   extends: [
-    "plugin:vue/vue3-recommended", // 使用 recommended 规则集
+    "plugin:vue/vue3-recommended",
     "eslint:recommended",
-    "@vue/eslint-config-prettier", // 移除 skip-formatting
+    "@vue/eslint-config-prettier", // Uses eslint-config-prettier which disables ESLint rules that would conflict with prettier
   ],
   parserOptions: {
     ecmaVersion: "latest",
-    sourceType: "module", // 明确指定为 module
+    sourceType: "module",
   },
   rules: {
-    "no-unused-vars": "warn", // 警告未使用的变量
-    "no-console": process.env.NODE_ENV === "production" ? "warn" : "off", // 生产环境警告 console
-    semi: "off", // 关闭 semi 规则 (由 Prettier 处理)
-    endOfLine: "auto",
-
-    // Vue 规则
+    "no-unused-vars": "warn",
+    "no-console": process.env.NODE_ENV === "production" ? "warn" : "off",
+    semi: "off", // Let Prettier handle semicolons
     "vue/no-unused-components": "warn",
-    "vue/component-name-in-template-casing": ["warn", "PascalCase"], // 组件名称使用 PascalCase
-    "vue/multi-word-component-names": "off", // 关闭多单词组件名称的要求
+    "vue/component-name-in-template-casing": ["warn", "PascalCase"],
+    "vue/multi-word-component-names": "off",
   },
-
   ignorePatterns: ["node_modules/", "dist/", "**/dist/**"],
   overrides: [
     {
       files: ["*.vue"],
       rules: {
-        "no-unused-vars": "off", // 在 Vue 文件中关闭 no-unused-vars 规则
+        "no-unused-vars": "off", // Disable no-unused-vars in Vue files - often necessary due to template usage
       },
     },
   ],
