@@ -563,16 +563,28 @@ i:hover
   flex-basis: 11rem
   @media (max-width: $mobile)
     flex-basis: 7rem
+    width: 100%
+    flex-direction: column-reverse
+    position: fixed
+    bottom: 0
+    z-index: 1000
+    background-color: hsla(0, 0%, 100%, 0.8)
+    backdrop-filter: blur(0.5rem)
+
   .options
     display: flex
     border-top: 0.0625rem solid rgba(128, 128, 128, 0.502)
     padding: 0.25rem 0.5rem
+    @media (max-width: $mobile)
+      border: none
+      justify-content: space-around
 
 .bu-emoji
   position: relative
   white-space: nowrap
-  &:hover p.ho-emoji
-    display: block
+  @media screen and (min-width: $mobile)
+    &:hover p.ho-emoji
+      display: block
 
 emoji-picker
   position: absolute
@@ -604,7 +616,48 @@ i
     display: flex
     flex-direction: column
     align-items: end
-    border: 0 solid black
+
+    @media screen and (max-width: $mobile)
+      flex-direction: row
+      align-items: flex-end
+
+    .input-content
+      flex-wrap: wrap
+      display: flex
+      background-color: #f1f1f1
+      border: 0
+      flex-grow: 1
+      width: 100%
+
+      @media screen and (max-width: $mobile)
+        margin: 0.5rem 0.5rem 0.8rem 0
+        min-height: 2rem
+        background-color: #fff
+
+      .input-area
+        overflow-y: auto
+        max-height: 20rem
+        resize: none
+        font-size: 1rem
+        background-color: #f1f1f1
+        border: 0
+        flex-grow: 1
+        width: 100%
+        moz-user-select: -moz-none
+        -moz-user-select: none
+        -o-user-select: none
+        -khtml-user-select: none
+        -webkit-user-select: none
+        -ms-user-select: none
+        user-select: none
+        &:focus
+          border: 0
+          outline: none
+
+        @media screen and (max-width: $mobile)
+          border-radius: .5rem
+          background-color: transparent
+          margin: 0.2rem
 
     button
         white-space: nowrap
@@ -615,32 +668,8 @@ i
         padding: .25rem 1rem
         margin-bottom: .8rem
         margin-right: .5rem
-        cursor: pointer  /* Add cursor pointer */
+        cursor: pointer
 
-.input-content
-  flex-wrap: wrap
-  display: flex
-  background-color: #f1f1f1
-  border: 0
-  flex-grow: 1
-  width: 100%
-  .input-area
-    overflow-y: auto
-    max-height: 20rem
-    resize: none
-    font-size: 1rem
-    background-color: #f1f1f1
-    border: 0
-    flex-grow: 1
-    width: 100%
-    moz-user-select: -moz-none
-    -moz-user-select: none
-    -o-user-select: none
-    -khtml-user-select: none
-    -webkit-user-select: none
-    -ms-user-select: none
-    user-select: none
-    &:focus
-      border: 0
-      outline: none
+        @media screen and (max-width: $mobile)
+          height: 2rem
 </style>
