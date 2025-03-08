@@ -11,8 +11,16 @@
         <i class="iconfont smile" @click.prevent="ctrlEmojiPanel"></i>
       </div>
       <div class="bu-emoji">
-        <p class="ho-emoji">滑到底部</p>
-        <i class="iconfont download" @click="$emit('toButtom', 1)"></i>
+        <p class="ho-emoji">
+          {{ activeContactor.platform == "openai" ? "模型选择" : "工具选择" }}
+        </p>
+        <el-tree-select
+          id="wraper-selector"
+          v-model="selectedOption"
+          :data="extraOptions"
+          @change="activeBotTools"
+        />
+        <i class="iconfont robot"></i>
       </div>
       <div class="bu-emoji">
         <p class="ho-emoji">重置人格</p>
@@ -27,22 +35,8 @@
         <i class="iconfont upload" @click="uploadFile"></i>
       </div>
       <div class="bu-emoji">
-        <p class="ho-emoji">
-          {{ activeContactor.platform == "openai" ? "模型选择" : "工具选择" }}
-        </p>
-        <!-- <el-cascader
-          id="wraper-selector"
-          v-model="selectedOptions"
-          :options="extraOptions"
-          @change="activeBotTools"
-        /> -->
-        <el-tree-select
-          id="wraper-selector"
-          v-model="selectedOption"
-          :data="extraOptions"
-          @change="activeBotTools"
-        />
-        <i class="iconfont robot"></i>
+        <p class="ho-emoji">滑到底部</p>
+        <i class="iconfont down" @click="$emit('toButtom', 1)"></i>
       </div>
     </div>
     <div class="input-box">
