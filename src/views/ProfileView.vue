@@ -109,7 +109,7 @@
               >
                 <PresetsList
                   :presets-history="presetHistory"
-                  @updatePresets="updateOpenaiPresets"
+                  @update-presets="updateOpenaiPresets"
                 />
               </div>
             </div>

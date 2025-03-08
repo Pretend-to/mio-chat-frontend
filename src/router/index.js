@@ -32,11 +32,6 @@ const router = createRouter({
           component: () => import("../views/ProfileView.vue"),
         },
         {
-          path: "/share/:id",
-          name: "share_view",
-          component: () => import("../views/ShareView.vue"),
-        },
-        {
           path: "/preview/:id",
           name: "preview_view",
           component: () => import("../views/PreviewView.vue"),
