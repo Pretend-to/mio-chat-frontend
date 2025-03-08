@@ -299,5 +299,8 @@ export default {
     justify-content: space-around;
     align-items: center;
   }
+  .icon-back.active {
+    background-color: transparent;
+  }
 }
 </style>

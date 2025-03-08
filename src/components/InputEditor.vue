@@ -655,9 +655,9 @@ i
           outline: none
 
         @media screen and (max-width: $mobile)
-          border-radius: .5rem
           background-color: transparent
           margin: 0.2rem
+          caret-color: #14C1EB
 
     button
         white-space: nowrap
