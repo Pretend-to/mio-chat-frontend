@@ -95,16 +95,21 @@ export default {
     },
     resize(event) {
       if (this.isResizing) {
+        // debugger;
         let newWidth = this.startWidth + (event.clientX - this.startX);
-        const maxWidth = 500;
-        const minWidth = 176;
+        const remSize = document.documentElement.style.fontSize
+          ? parseFloat(document.documentElement.style.fontSize)
+          : 16;
+        const maxWidth = 20 * remSize;
+        const minWidth = 12 * remSize;
         newWidth =
           newWidth > maxWidth
             ? maxWidth
             : newWidth < minWidth
               ? minWidth
               : newWidth;
-        this.$refs.friendlists.style.flexBasis = newWidth + "px";
+        this.$refs.friendlists.style.minWidth = newWidth + "px";
+        this.$refs.friendlists.style.maxWidth = newWidth + "px";
       }
     },
     stopResize() {

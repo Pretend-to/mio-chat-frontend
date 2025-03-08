@@ -33,7 +33,7 @@ export default {
       client: client,
       extraOptions: [],
       wraperPresets: {},
-      selectedWraper: null,
+      selectedOption: null,
       currentDelay: 0,
       toupdate: false,
       seletedText: "",

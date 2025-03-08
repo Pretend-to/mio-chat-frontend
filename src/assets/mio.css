@@ -51,14 +51,14 @@ figure {
   font-size: 0.8rem;
 }
 
-.bu-emoji .el-cascader {
+.bu-emoji .el-select {
   position: absolute;
   right: 1.5rem;
   width: 1rem;
   opacity: 0%;
 }
 
-.bu-emoji .el-cascader:hover + i {
+.bu-emoji .el-select:hover + i {
   color: rgb(0, 153, 255);
 }
 

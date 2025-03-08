@@ -7,33 +7,39 @@
           ref="emojiPicker"
           @emoji-click="getemoji"
         ></emoji-picker>
-        <p id="ho-emoji">表情</p>
+        <p class="ho-emoji">表情</p>
         <i class="iconfont smile" @click.prevent="ctrlEmojiPanel"></i>
       </div>
       <div class="bu-emoji">
-        <p id="ho-emoji">滑到底部</p>
+        <p class="ho-emoji">滑到底部</p>
         <i class="iconfont download" @click="$emit('toButtom', 1)"></i>
       </div>
       <div class="bu-emoji">
-        <p id="ho-emoji">重置人格</p>
+        <p class="ho-emoji">重置人格</p>
         <i class="iconfont reset" @click="$emit('cleanHistory')"></i>
       </div>
       <div class="bu-emoji">
-        <p id="ho-emoji">清除记录</p>
+        <p class="ho-emoji">清除记录</p>
         <i class="iconfont shanchu" @click="$emit('cleanScreen')"></i>
       </div>
       <div class="bu-emoji">
-        <p id="ho-emoji">上传</p>
+        <p class="ho-emoji">上传</p>
         <i class="iconfont upload" @click="uploadFile"></i>
       </div>
       <div class="bu-emoji">
-        <p id="ho-emoji">
+        <p class="ho-emoji">
           {{ activeContactor.platform == "openai" ? "模型选择" : "工具选择" }}
         </p>
-        <el-cascader
+        <!-- <el-cascader
           id="wraper-selector"
           v-model="selectedOptions"
           :options="extraOptions"
+          @change="activeBotTools"
+        /> -->
+        <el-tree-select
+          id="wraper-selector"
+          v-model="selectedOption"
+          :data="extraOptions"
           @change="activeBotTools"
         />
         <i class="iconfont robot"></i>
@@ -77,9 +83,7 @@ export default {
   data() {
     return {
       userInput: "",
-      selectedWraper: null,
-      selectedModel: null,
-      selectedOptions: null,
+      selectedOption: null,
       cursorPosition: [],
       showemoji: false,
       openaiModels: null,
@@ -100,7 +104,7 @@ export default {
   },
   watch: {
     "$route.params.id"() {
-      this.loadSelectedArray();
+      this.loadSelected();
     },
   },
   created() {
@@ -340,10 +344,6 @@ export default {
         newSelection.addRange(newRange);
       }, 0);
     },
-    setModel() {
-      this.selectedModel = [...this.selectedOptions];
-      this.$emit("setModel", this.selectedModel[1]);
-    },
     initExtraOptions() {
       const models = client.config.getOpenaiModels();
       this.openaiModels = models.map((modelGroup) => {
@@ -359,36 +359,39 @@ export default {
         };
       });
       this.onebotPresets = config.onebotDefaultConfig.textwraper.options;
-      this.loadSelectedArray();
-    },
-    loadSelectedArray() {
-      if (this.activeContactor.platform == "openai") {
-        this.selectedModel = this.getOpenaiModelArray(
-          this.activeContactor.options.model,
-        );
-        this.selectedOptions = [...this.selectedModel];
-      } else {
-        this.selectedWraper = [""];
-        this.selectedOptions = [...this.selectedWraper];
-      }
+      this.loadSelected();
     },
     getOpenaiModelArray(model) {
       const owner = client.config.getOpenaiModelOwner(model);
       return [owner, model];
     },
     wrapText(rawText) {
-      if (!this.selectedWraper) return rawText;
-      const wraper = this.selectedWraper[this.selectedWraper.length - 1];
-      if (!wraper) return rawText;
+      if (!this.selectedOption) return rawText;
+      const preset = this.getOnebtPreset();
       const testText = "{xxx}";
-      const childrens = this.onebotPresets.find(
-        (item) => item.value == this.selectedWraper[0],
-      ).children;
-      const preset = childrens.find(
-        (child) => child.value == this.selectedWraper[1],
-      ).preset;
+      console.log(this.onebotPresets);
+
       const result = preset.replace(testText, rawText);
       return result;
+    },
+    getOnebtPreset() {
+      const preset = this.onebotPresets
+        .reduce((acc = [], item) => {
+          const arr = item.children ?? [item];
+          return [...acc, ...arr];
+        }, [])
+        .find((child) => child.value == this.selectedOption).preset;
+
+      return preset;
+    },
+    loadSelected() {
+      if (this.activeContactor.platform === "onebot") {
+        if (this.activeContactor.preset) {
+          this.selectedOption = this.activeContactor.preset;
+        }
+      } else {
+        this.selectedOption = this.activeContactor.options.model;
+      }
     },
     adjustTextareaHeight() {
       const textarea = this.textareaRef;
@@ -397,15 +400,8 @@ export default {
     },
     getWraperName() {
       if (this.activeContactor.platform === "onebot") {
-        if (!this.selectedWraper) return "";
-        const wraper = this.selectedWraper[this.selectedWraper.length - 1];
-        if (!wraper) return "";
-        const childrens = this.onebotPresets.find(
-          (item) => item.value == this.selectedWraper[0],
-        ).children;
-        const preset = childrens.find(
-          (child) => child.value == this.selectedWraper[1],
-        ).preset;
+        if (!this.selectedOption) return "";
+        const preset = this.getOnebtPreset();
         const name = preset.replace("#", "").replace("{xxx}", "");
         return name;
       } else {
@@ -518,21 +514,15 @@ export default {
     cleanScreen() {
       this.$emit("cleanScreen");
     },
-    async activeBotTools() {
-      this.selectedWraper = [...this.selectedOptions];
+    activeBotTools() {
       if (this.activeContactor.platform === "onebot") {
-        const testMessage = "text";
-        const testMessage2 = "test";
-        const wrappedMessage = this.wrapText(testMessage);
-        const wrappedMessage2 = this.wrapText(testMessage2);
-        if (wrappedMessage2 === wrappedMessage) {
-          this.userInput = this.textareaRef.value = wrappedMessage;
-          await this.send();
+        if (this.getOnebtPreset() && !this.getOnebtPreset().includes("xxx")) {
+          this.send();
         }
       } else {
-        this.setModel();
+        this.$emit("setModel", this.selectedOption);
         this.$message({
-          message: "已切换到 " + this.selectedModel[1] + " 模型",
+          message: "已切换到 " + this.selectedOption + " 模型",
           type: "success",
         });
       }
@@ -586,7 +576,8 @@ i:hover
 
 .bu-emoji
   position: relative
-  &:hover p#ho-emoji
+  white-space: nowrap
+  &:hover p.ho-emoji
     display: block
 
 emoji-picker
@@ -594,7 +585,7 @@ emoji-picker
   top: -25.75rem
   right: -20rem
 
-p#ho-emoji
+p.ho-emoji
     text-wrap: nowrap
     display: none
     font-size: .75rem
