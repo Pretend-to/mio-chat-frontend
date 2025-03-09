@@ -284,6 +284,13 @@ export default {
         const { previewImage, shareUrl } = shareResult;
         console.log(shareUrl);
         console.log(previewImage);
+        // 拼接完整链接
+        const originalUrl = document.location.origin;
+        // 复制链接到剪贴板
+        const clipboard = navigator.clipboard;
+        if (clipboard) {
+          clipboard.writeText(originalUrl + shareUrl);
+        }
       }
     },
     hasOpening() {
