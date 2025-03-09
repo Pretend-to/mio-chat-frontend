@@ -155,6 +155,7 @@ export default {
     async addBot(preset) {
       this.strogeAddHistory(preset);
       this.$emit("addBot", preset);
+      this.$message.success("添加成功");
     },
     strogeAddHistory(preset) {
       // 先检查现有列表中是否有重复项

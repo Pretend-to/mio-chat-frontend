@@ -119,7 +119,10 @@ export default class Client extends EventEmitter {
       const data = await res.json();
       if (data.code == 0) {
         contactor = data.data.contactor;
-        this.addConcator(contactor.platform, contactor);
+        // 检查是否已经存在
+        if (!this.getContactor(contactor.id)) {
+          this.addConcator(contactor.platform, contactor);
+        }
       }
       return true;
     } catch (error) {
