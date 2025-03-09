@@ -76,7 +76,7 @@ export default {
 </template>
 <style scoped>
 #app {
-  background-image: url(/static/background/default.jpg);
+  background-image: url(/static/background/default.png);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
