@@ -31,11 +31,6 @@ const router = createRouter({
           name: "profile_view",
           component: () => import("../views/ProfileView.vue"),
         },
-        {
-          path: "/preview/:id",
-          name: "preview_view",
-          component: () => import("../views/PreviewView.vue"),
-        },
       ],
     },
     {
@@ -65,8 +60,8 @@ router.beforeEach(async (to) => {
       `everLogin: ${everLogin} to.name!== auth: ${to.name !== "auth"}`,
     );
     ElMessage.warning("请先登录");
-    // 将用户重定向到登录页面
-    return { name: "auth" };
+    // 把原本要去的地址 完整的传递给 login?redirect=
+    return { name: "auth", query: { redirect: to.fullPath } };
   }
 });
 

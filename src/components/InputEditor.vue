@@ -360,21 +360,22 @@ export default {
       return [owner, model];
     },
     wrapText(rawText) {
-      if (!this.selectedOption) return rawText;
-      const preset = this.getOnebtPreset();
+      const preset = this.getOnebotPreset();
+      if (!this.selectedOption || !preset) return rawText;
       const testText = "{xxx}";
       console.log(this.onebotPresets);
 
       const result = preset.replace(testText, rawText);
       return result;
     },
-    getOnebtPreset() {
+    getOnebotPreset() {
+      console.log(this.onebotPresets);
       const preset = this.onebotPresets
         .reduce((acc = [], item) => {
           const arr = item.children ?? [item];
           return [...acc, ...arr];
         }, [])
-        .find((child) => child.value == this.selectedOption).preset;
+        .find((child) => child.value == this.selectedOption)?.preset;
 
       return preset;
     },
@@ -393,9 +394,9 @@ export default {
       textarea.style.height = textarea.scrollHeight + "px";
     },
     getWraperName() {
-      if (this.activeContactor.platform === "onebot") {
+      const preset = this.getOnebotPreset();
+      if (this.activeContactor.platform === "onebot" && preset) {
         if (!this.selectedOption) return "";
-        const preset = this.getOnebtPreset();
         const name = preset.replace("#", "").replace("{xxx}", "");
         return name;
       } else {
@@ -510,7 +511,7 @@ export default {
     },
     activeBotTools() {
       if (this.activeContactor.platform === "onebot") {
-        if (this.getOnebtPreset() && !this.getOnebtPreset().includes("xxx")) {
+        if (this.getOnebotPreset() && !this.getOnebotPreset().includes("xxx")) {
           this.send();
         }
       } else {

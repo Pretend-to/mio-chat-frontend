@@ -1,7 +1,7 @@
 <template>
   <div class="tool-call-bar">
     <div class="status-icon">
-      <span v-if="tool_call_success" class="call-success-icon">
+      <span v-if="toolCallSuccess" class="call-success-icon">
         <div class="checkmark-container">
           <svg
             class="checkmark"
@@ -12,12 +12,12 @@
           </svg>
         </div>
       </span>
-      <span v-else-if="tool_call_fail" class="call-fail-icon">❌</span>
+      <span v-else-if="toolCallFail" class="call-fail-icon">❌</span>
       <span v-else class="call-pend-icon"></span>
     </div>
     <div class="tool-info">
       <div>
-        <span class="tool-name">{{ tool_call.name }}</span>
+        <span class="tool-name">{{ toolCall.name }}</span>
       </div>
       <div class="tool-status">
         {{ call_status }}
@@ -51,14 +51,14 @@
         <div class="detail-params">
           <div class="detail-title">参数</div>
           <div class="detail-content">
-            {{ tool_call.params }}
+            {{ toolCall.params }}
           </div>
         </div>
 
         <div class="detail-result">
           <div class="detail-title">返回值</div>
           <div class="detail-content">
-            {{ tool_call.result }}
+            {{ toolCall.result }}
           </div>
         </div>
       </div>
@@ -69,8 +69,9 @@
 <script>
 export default {
   props: {
-    tool_call: {
+    toolCall: {
       type: Object,
+      required: true,
     },
   },
   data() {
@@ -79,24 +80,24 @@ export default {
     };
   },
   computed: {
-    tool_call_success() {
+    toolCallSuccess() {
       return (
-        this.tool_call.action === "finished" &&
-        this.tool_call?.result?.error === null
+        this.toolCall.action === "finished" &&
+        this.toolCall?.result?.error === null
       );
     },
-    tool_call_fail() {
+    toolCallFail() {
       return (
-        this.tool_call.action === "finished" &&
-        !this.tool_call?.result?.error !== null
+        this.toolCall.action === "finished" &&
+        !this.toolCall?.result?.error !== null
       );
     },
     call_status() {
-      if (this.tool_call.action == "started") return "开始运行";
-      if (this.tool_call.action == "pending") return "函数构建中";
-      if (this.tool_call.action == "running") return "函数运行中";
-      if (this.tool_call_success) return "函数运行成功";
-      if (this.tool_call_fail) return "函数运行失败";
+      if (this.toolCall.action == "started") return "开始运行";
+      if (this.toolCall.action == "pending") return "函数构建中";
+      if (this.toolCall.action == "running") return "函数运行中";
+      if (this.toolCallSuccess) return "函数运行成功";
+      if (this.toolCallFail) return "函数运行失败";
       else return "未知状态";
     },
   },

@@ -1,5 +1,11 @@
 <template>
-  <ul :class="{ 'window-controls': true, fullscreen: fullScreen }">
+  <ul
+    :class="{
+      'window-controls': true,
+      fullscreen: fullScreen,
+      preview: preview,
+    }"
+  >
     <li class="button" @click="waiting()">
       <span class="window-min">—</span>
     </li>
@@ -26,6 +32,19 @@ export default {
     },
   },
   emits: ["set-screen"],
+  data() {
+    return {
+      preview: false,
+    };
+  },
+  created() {
+    // 检查查询字符串中是否存在preview参数
+    const urlParams = new URLSearchParams(window.location.search);
+    const preview = urlParams.get("preview");
+    if (preview) {
+      this.preview = true;
+    }
+  },
   methods: {
     waiting() {
       this.$message({ message: "此功能尚未开放", type: "warning" });
@@ -45,6 +64,9 @@ export default {
     height: 2rem
     z-index: 100
     right: 0
+
+    &.preview
+        display: none
 
     &.fullscreen
         position: fixed

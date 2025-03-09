@@ -111,6 +111,46 @@ export default class Client extends EventEmitter {
     }
   }
 
+  async loadOriginalContactors(shareId) {
+    const path = `/api/share?id=${shareId}`;
+    let contactor = null;
+    try {
+      const res = await fetch(path);
+      const data = await res.json();
+      if (data.code == 0) {
+        contactor = data.data.contactor;
+        this.addConcator(contactor.platform, contactor);
+      }
+      return true;
+    } catch (error) {
+      console.error("Failed to load original contactors:", error);
+      return false;
+    }
+  }
+
+  async setOriginalContactor(id) {
+    const path = `/api/share/set`;
+    const body = {
+      contactor: this.getContactor(id),
+    };
+    try {
+      const res = await fetch(path, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.code == 0) {
+        return data.data;
+      }
+    } catch (error) {
+      console.error("Failed to set original contactor:", error);
+      return null;
+    }
+  }
+
   reset() {
     localforage.clear();
     localStorage.clear();
@@ -130,6 +170,10 @@ export default class Client extends EventEmitter {
 
   getContactors() {
     return this.contactList;
+  }
+
+  getContactor(id) {
+    return this.contactList.find((item) => item.id == id);
   }
 
   /**
@@ -268,11 +312,6 @@ export default class Client extends EventEmitter {
    * @param {number} id Contactor ID
    * @returns {Contactor} Contactor object or first contactor if not found
    */
-  getContactor(id) {
-    return (
-      this.contactList.find((item) => item.id == id) ?? this.contactList[0]
-    );
-  }
 
   async setDisplayInfo() {
     const res = await fetch("/api/base_info");

@@ -21,15 +21,50 @@ export default {
     ReasonBlock,
   },
   data() {
+    let preview = false;
+    let shareId = undefined;
+    let contactor = undefined;
+
+    // 获取当前页面的URL
+    const currentUrl = window.location.href;
+    // 创建一个URL对象
+    const url = new URL(currentUrl);
+    // 获取URL参数
+    const params = url.searchParams;
+    // 检查URL参数是否有preview参数
+    if (params.has("preview")) {
+      preview = true;
+    }
+    // 检查URL参数是否有shareId参数
+    if (params.has("shareId")) {
+      shareId = params.get("shareId");
+    }
+
     const currentId = parseInt(this.$route.params.id);
-    const contactor = client.getContactor(currentId);
+    try {
+      contactor = client.getContactor(currentId);
+      if (!contactor) {
+        throw new Error("找不到联系人");
+      }
+    } catch (e) {
+      const defaultId = client.contactList[0].id;
+      this.$router.push({
+        path: `/chat/${defaultId}`,
+        query: {
+          preview,
+          shareId,
+        },
+      });
+      contactor = client.getContactor(defaultId);
+    }
 
     return {
+      preview,
+      shareId,
       activeContactor: contactor,
       showwindow: true,
       showemoji: false,
       userInput: "",
-      todld: false,
       client: client,
       extraOptions: [],
       wraperPresets: {},
@@ -109,7 +144,7 @@ export default {
       }
     },
   },
-  mounted() {
+  async mounted() {
     console.log("ChatView mounted");
     document.addEventListener("click", () => {
       this.showMenu = false;
@@ -124,17 +159,31 @@ export default {
     console.log(this.activeContactor);
     this.toButtom();
 
-    const currentId = this.$route.params.id;
-    const contactor = client.getContactor(currentId);
-    this.initContactor(contactor);
+    this.initContactor(this.activeContactor);
 
     this.fullScreen = this.client.fullScreen;
 
     setInterval(() => {
       this.currentDelay = this.client.socket.delay;
     }, 3000);
+    console.log(this.shareId);
 
-    console.log(contactor.options);
+    if (this.shareId) {
+      const loadAble = await client.loadOriginalContactors(this.shareId);
+      if (loadAble) {
+        this.$router.push({
+          path: "/chat/" + this.shareId,
+          query: {
+            preview: this.preview,
+          },
+        });
+      } else {
+        this.$message({
+          message: "分享链接已失效",
+          type: "error",
+        });
+      }
+    }
   },
   updated() {
     if (this.toupdate && this.autoScroll && this.retryList.length === 0) {
@@ -208,10 +257,6 @@ export default {
       const rect = this.chatWindowRef.getBoundingClientRect();
       rect.height = this.chatWindowRef.scrollHeight;
 
-      console.log(rect);
-
-      // 获取当前浏览器真实缩放比例
-
       html2canvas(this.chatWindowRef, {
         windowHeight: rect.height * 1.2,
         width: rect.width,
@@ -226,6 +271,20 @@ export default {
         // 模拟点击下载
         link.click();
       });
+    },
+    async share() {
+      const shareResult = await client.setOriginalContactor(
+        this.activeContactor.id,
+      );
+      if (shareResult) {
+        this.$message({
+          message: "分享成功",
+          type: "success",
+        });
+        const { previewImage, shareUrl } = shareResult;
+        console.log(shareUrl);
+        console.log(previewImage);
+      }
     },
     hasOpening() {
       return this.activeContactor.options.opening ? true : false;
@@ -395,11 +454,13 @@ export default {
       });
     },
     disableContactor(contactor) {
-      contactor.active = false;
-      contactor.off(`updateMessage`);
-      contactor.off(`revMessage`);
-      contactor.off(`delMessage`);
-      contactor.off(`completeMessage`);
+      if (contactor) {
+        contactor.active = false;
+        contactor.off(`updateMessage`);
+        contactor.off(`revMessage`);
+        contactor.off(`delMessage`);
+        contactor.off(`completeMessage`);
+      }
     },
     getReplyText(id) {
       let content = "";
@@ -525,12 +586,19 @@ export default {
         <span class="delay-num">当前延迟: {{ currentDelay }} ms</span>
       </div>
       <ul class="options">
-        <li class="share" @click="toimg()">
+        <li class="share" @click="share()">
           <i class="iconfont icon-share"></i>
         </li>
       </ul>
     </div>
-    <div id="main-messages-window" ref="chatWindow" class="message-window">
+    <div
+      id="main-messages-window"
+      ref="chatWindow"
+      :class="{
+        'message-window': true,
+        preview: preview,
+      }"
+    >
       <ContextMenu
         v-show="showMenu"
         type="message"
@@ -632,7 +700,7 @@ export default {
                 </div>
                 <ToolCallBar
                   v-else-if="element.type === 'tool_call'"
-                  :tool_call="element.data"
+                  :tool-call="element.data"
                 />
                 <MdPreview
                   v-else
@@ -668,6 +736,14 @@ export default {
 <style lang="sass" scoped>
 $mobile: 600px
 $icon-hover: #09f
+
+.preview
+    position: fixed
+    top: 0
+    left: 0
+    width: 100vw
+    height: 100vh
+    z-index: 10000
 
 #chat-window
     z-index: 1

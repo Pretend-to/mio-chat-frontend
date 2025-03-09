@@ -45,7 +45,13 @@ const login = async (code) => {
         ElMessage.success(
           `成功以${result.is_admin ? "管理员身份" : "游客身份"}登录，欢迎使用!`,
         );
-        await router.push("/");
+        // 先看看url里有没有query
+        if (router.currentRoute.value.query.redirect) {
+          router.push(router.currentRoute.value.query.redirect);
+        } else {
+          router.push("/");
+        }
+
         // 删除回车触发login的监听
       }
     } catch (error) {
@@ -70,6 +76,11 @@ onUnmounted(() => {
 
 onMounted(() => {
   addEventListener("keydown", handleEnter);
+  // 看看query里有没有key
+  if (router.currentRoute.value.query) {
+    console.log(router.currentRoute.value.query);
+    login(router.currentRoute.value.query.key);
+  }
 });
 </script>
 
