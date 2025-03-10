@@ -621,6 +621,7 @@ i
     @media screen and (max-width: $mobile)
       flex-direction: row
       align-items: flex-end
+      flex-wrap: nowrap
 
     .input-content
       flex-wrap: wrap
@@ -633,6 +634,9 @@ i
       @media screen and (max-width: $mobile)
         margin: 0.5rem 0.5rem 0.8rem 0
         min-height: 2rem
+        flex-basis: calc( 100% - 4rem )
+        max-width: calc( 100% - 4rem )
+        flex-grow: 0
         background-color: #fff
 
       .input-area
@@ -673,4 +677,5 @@ i
 
         @media screen and (max-width: $mobile)
           height: 2rem
+          margin-right: 0rem
 </style>
