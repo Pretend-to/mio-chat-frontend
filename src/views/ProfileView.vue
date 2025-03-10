@@ -511,7 +511,7 @@ export default {
   background-color: #f2f2f2;
 }
 </style>
-<style lang="sass">
+<style scoped lang="sass">
 .delay-status
     display: inline-block
     width: 1rem
