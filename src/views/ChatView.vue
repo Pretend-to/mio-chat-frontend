@@ -24,6 +24,7 @@ export default {
     let preview = false;
     let shareId = undefined;
     let contactor = undefined;
+    let scroll = true;
 
     // 获取当前页面的URL
     const currentUrl = window.location.href;
@@ -38,6 +39,9 @@ export default {
     // 检查URL参数是否有shareId参数
     if (params.has("shareId")) {
       shareId = params.get("shareId");
+    }
+    if (params.has("scroll")) {
+      scroll = params.get("scroll") === "true";
     }
 
     const currentId = parseInt(this.$route.params.id);
@@ -59,6 +63,7 @@ export default {
     }
 
     return {
+      scroll,
       preview,
       shareId,
       activeContactor: contactor,
@@ -145,7 +150,6 @@ export default {
     },
   },
   async mounted() {
-    console.log("ChatView mounted");
     document.addEventListener("click", () => {
       this.showMenu = false;
       this.seletedText = "";
@@ -153,20 +157,14 @@ export default {
       // if( this.showemoji) this.showemoji = false;
     });
     this.chatWindowRef = this.$refs.chatWindow;
-    console.log(this.$refs);
     this.chatWindowRef.addEventListener("scroll", this.scrollHandler);
-
-    console.log(this.activeContactor);
-    this.toButtom();
-
+    if (!this.preview && this.scroll) this.toButtom();
+    this.scroll = true;
     this.initContactor(this.activeContactor);
-
     this.fullScreen = this.client.fullScreen;
-
     setInterval(() => {
       this.currentDelay = this.client.socket.delay;
     }, 3000);
-    console.log(this.shareId);
 
     if (this.shareId) {
       const loadAble = await client.loadOriginalContactors(this.shareId);
@@ -175,6 +173,7 @@ export default {
           path: "/chat/" + this.shareId,
           query: {
             preview: this.preview,
+            scroll: false,
           },
         });
       } else {
