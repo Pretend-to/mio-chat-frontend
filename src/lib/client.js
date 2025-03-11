@@ -176,6 +176,9 @@ export default class Client extends EventEmitter {
   }
 
   getContactor(id) {
+    if (id == this.admin_qq) {
+      return this.contactList.find((item) => item.platform == "onebot");
+    }
     return this.contactList.find((item) => item.id == id);
   }
 
