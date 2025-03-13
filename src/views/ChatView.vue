@@ -285,10 +285,16 @@ export default {
         console.log(previewImage);
         // 拼接完整链接
         const originalUrl = document.location.origin;
-        // 复制链接到剪贴板
-        const clipboard = navigator.clipboard;
-        if (clipboard) {
-          clipboard.writeText(originalUrl + shareUrl);
+        const url = originalUrl + shareUrl;
+        try {
+          // 复制链接到剪贴板
+          await navigator.clipboard.writeText(url);
+          this.$message({
+            message: "链接已复制到剪贴板",
+            type: "success",
+          });
+        } catch (error) {
+          console.error("复制链接到剪贴板失败:", error);
         }
       }
     },

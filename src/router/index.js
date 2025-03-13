@@ -61,7 +61,8 @@ router.beforeEach(async (to) => {
     );
     ElMessage.warning("请先登录");
     // 把原本要去的地址 完整的传递给 login?redirect=
-    return { name: "auth", query: { redirect: to.fullPath } };
+    const query = to.path === "/settings" ? null : { redirect: to.fullPath };
+    return { name: "auth", query };
   }
 });
 

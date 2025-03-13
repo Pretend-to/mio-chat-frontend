@@ -56,8 +56,11 @@ const login = async (code) => {
       }
     } catch (error) {
       ElMessage.error(error);
+    } finally {
+      // 移除激活图标
+      await nextTick(() => iconContainer.value.classList.remove("active"));
+      requesting.value = false;
     }
-    requesting.value = false;
   }
 };
 
@@ -77,9 +80,10 @@ onUnmounted(() => {
 onMounted(() => {
   addEventListener("keydown", handleEnter);
   // 看看query里有没有key
-  if (router.currentRoute.value.query) {
-    console.log(router.currentRoute.value.query);
-    login(router.currentRoute.value.query.key);
+  const query = new URLSearchParams(location.search);
+  const key = query.get("key");
+  if (key) {
+    login(key);
   }
 });
 </script>
