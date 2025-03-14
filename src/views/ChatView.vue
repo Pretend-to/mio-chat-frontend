@@ -681,6 +681,7 @@ export default {
                   :min-scale="0.2"
                   :preview-src-list="[element.data.file]"
                   :initial-index="4"
+                  loading="lazy"
                   fit="contain"
                 />
                 <MdPreview
