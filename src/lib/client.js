@@ -165,7 +165,7 @@ export default class Client extends EventEmitter {
     if (this.everLogin) {
       console.log("Detected cache, attempting automatic reconnection");
       this.isConnected = false;
-      await this.login(this.code);
+      this.login(this.code);
     } else {
       console.log("Not logged in before, please login first");
     }
