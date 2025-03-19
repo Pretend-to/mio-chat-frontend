@@ -1,6 +1,7 @@
 import Onebot from "./adapter/onebot.js";
 import Openai from "./adapter/openai.js";
 import EventEmmiter from "./event.js";
+import { numberString } from "../utils/generate.js";
 import { config } from "@/lib/runtime.js";
 
 const AVATAR_BASE_PATH =
@@ -331,16 +332,15 @@ export default class Contactor extends EventEmmiter {
       // 截取从this.firstMessageIndex到结尾的消息
       const finalMessages = this._getValidOpenaiMessage();
 
-      // 立即发生回复消息
-      this.revMessage({ content: [] });
+      const messageId = numberString(16);
 
-      const replyIndex = this.messageChain.length - 1;
+      this.revMessage({
+        id: messageId,
+      });
 
-      this.kernel.send(finalMessages, replyIndex, this.options);
+      this.kernel.send(finalMessages, messageId, this.options);
 
-      return Math.floor(Math.random() * 100000000)
-        .toString()
-        .padStart(8, "0");
+      return;
     }
   }
 

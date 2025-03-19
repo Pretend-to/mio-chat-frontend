@@ -203,7 +203,7 @@ export default class Socket extends EventEmitter {
     console.log("WebSocket开始流式获取补全数据");
     const request = {
       request_id: this.genRequestID(),
-      protocol: "openai",
+      protocol: "llm",
       type: "completions",
       data: data,
     };

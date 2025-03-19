@@ -6,6 +6,7 @@
 
 import Adapter from "./adapter.js";
 import { client, config } from "../runtime.js";
+import { numberString } from "../../utils/generate.js";
 
 export default class Openai extends Adapter {
   constructor(config) {
@@ -13,19 +14,16 @@ export default class Openai extends Adapter {
     this.settings = config.settings || {};
   }
 
-  convertMessage() {
+  convertMessage(message) {
     const webMessage = {
       role: "other",
       time: new Date().getTime(),
       content: [{ type: "blank", data: {} }],
       status: "pending",
-      id: this.genRequestID(),
+      id: numberString(16),
     };
-    return webMessage;
-  }
-
-  genRequestID() {
-    return Math.random().toString(36).substr(2, 9);
+    const mergedMessage = { ...webMessage, ...message };
+    return mergedMessage;
   }
 
   async getMessagesSummary(messageChain) {
@@ -35,7 +33,7 @@ export default class Openai extends Adapter {
       messages: [{ role: "user", content: query }],
     };
 
-    const response = await this.fetch(`/api/openai/completions`, messages);
+    const response = await this.fetch(`/api/llm/completions`, messages);
     const { chunk } = response;
     return chunk;
   }
@@ -72,13 +70,13 @@ export default class Openai extends Adapter {
         handler();
       }
     };
+
     const filterValidSettings = (settings) => {
       const validSettingKeys = [
         "top_p",
         "temperature",
         "stream",
         "model",
-        "tools",
         "frequency_penalty",
         "presence_penalty",
       ];

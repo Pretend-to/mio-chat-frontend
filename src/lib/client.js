@@ -175,11 +175,13 @@ export default class Client extends EventEmitter {
     return this.contactList;
   }
 
-  getContactor(id) {
-    if (id == this.admin_qq) {
+  getContactor(id, onebotId = null) {
+    if (onebotId) {
+      // TODO: 拓展 Onebot 协议功能，实现 IM
       return this.contactList.find((item) => item.platform == "onebot");
+    } else {
+      return this.contactList.find((item) => item.id == id);
     }
-    return this.contactList.find((item) => item.id == id);
   }
 
   /**
@@ -282,10 +284,12 @@ export default class Client extends EventEmitter {
       const type = data.type;
 
       if (type == "message") {
-        const contactor = this.getContactor(id);
+        const contactor = this.getContactor(id, 10000);
         if (contactor) {
           contactor.revMessage(content);
           this.setLocalStorage();
+        } else {
+          console.log("Contactor not found");
         }
       } else if (type == "del_msg") {
         const onebotContactors = this.contactList.filter(
