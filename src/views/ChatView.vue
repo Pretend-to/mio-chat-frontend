@@ -623,7 +623,7 @@ export default {
       />
       <div
         v-for="(item, index) of activeMessageChain"
-        :key="`${activeContactor.id}-${index}`"
+        :key="`${activeContactor.id}-${item.id}`"
         ref="message"
         class="message-container"
       >
