@@ -67,29 +67,36 @@ export default class Contactor extends EventEmmiter {
       const rawMessage = this.messageChain[index];
       if (!rawMessage) return;
 
-      const lastMsgElm = rawMessage.content[rawMessage.content.length - 1];
-      const isFirstElement = ["blank", "reason"].includes(lastMsgElm.type);
+      // 查找现有的 reason 块
+      const existingReasonIndex = rawMessage.content.findIndex(
+        (msgElm) => msgElm.type === "reason",
+      );
 
       const msgElm = {
         type: "reason",
         data: {
-          text: (lastMsgElm.type == "reason"
-            ? lastMsgElm.data.text
-            : ""
-          ).concat(reasoning_content),
-          startTime:
-            lastMsgElm.type !== "reason"
-              ? new Date().getTime()
-              : lastMsgElm.data.startTime,
+          text: reasoning_content,
+          startTime: new Date().getTime(),
           endTime: 0,
         },
       };
 
-      if (isFirstElement)
-        rawMessage.content[rawMessage.content.length - 1] = msgElm;
-      else rawMessage.content.push(msgElm);
+      if (existingReasonIndex !== -1) {
+        // 如果已存在 reason 块，更新其内容
+        msgElm.data.text =
+          rawMessage.content[existingReasonIndex].data.text + reasoning_content;
+        msgElm.data.startTime =
+          rawMessage.content[existingReasonIndex].data.startTime;
+        rawMessage.content[existingReasonIndex] = msgElm;
+      } else if (rawMessage.content[0].type === "blank") {
+        // 如果是 blank 状态，直接更新第一个元素
+        rawMessage.content[0] = msgElm;
+      } else {
+        // 其他情况，追加到末尾
+        rawMessage.content.push(msgElm);
+      }
 
-      this.emit("updateMessage"); // 更新响应式数据
+      this.emit("updateMessage");
       this.emit("updateMessageSummary");
     });
 
