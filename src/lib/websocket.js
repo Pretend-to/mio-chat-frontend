@@ -29,9 +29,16 @@ export default class Socket extends EventEmitter {
   getURL() {
     const url = new URL(window.location.href);
     const host = url.host;
-    return url.protocol === "https:"
-      ? `wss://${host}/api/gateway`
-      : `ws://${host}/api/gateway`;
+    // 临时改动：如果 host 以 cdn. 开头，删除 cdn.
+    if (host.startsWith("cdn.")) {
+      return url.protocol === "https:"
+        ? `wss://${host.slice(4)}/api/gateway`
+        : `ws://${host.slice(4)}/api/gateway`;
+    } else {
+      return url.protocol === "https:"
+        ? `wss://${host}/api/gateway`
+        : `ws://${host}/api/gateway`;
+    }
   }
 
   /**
