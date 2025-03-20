@@ -18,13 +18,6 @@ export default defineConfig(({ mode }) => {
       }),
       VueDevTools(),
       viteCompression({
-        algorithm: "brotliCompress",
-        verbose: true,
-        threshold: 10240,
-        ext: ".br",
-        disable: mode === "development",
-      }),
-      viteCompression({
         verbose: true,
         threshold: 10240,
         disable: mode === "development",
