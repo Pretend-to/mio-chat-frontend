@@ -5,8 +5,10 @@ import VueDevTools from "vite-plugin-vue-devtools";
 import viteCompression from "vite-plugin-compression";
 import viteImagemin from "vite-plugin-imagemin";
 import { visualizer } from "rollup-plugin-visualizer";
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+
   return {
     plugins: [
       vue({
@@ -17,13 +19,6 @@ export default defineConfig(({ mode }) => {
         },
       }),
       VueDevTools(),
-      viteCompression({
-        algorithm: "brotliCompress",
-        verbose: true,
-        threshold: 10240,
-        ext: ".br",
-        disable: mode === "development",
-      }),
       viteCompression({
         verbose: true,
         threshold: 10240,
@@ -87,9 +82,10 @@ export default defineConfig(({ mode }) => {
       host: "0.0.0.0",
       port: "1314",
       proxy: {
-        "/api/gateway": {
-          target: env.VITE_WS_URL || "ws://127.0.0.1:3080/",
+        "/socket.io": {
+          target: env.VITE_API_URL || "http://127.0.0.1:3080/",
           ws: true,
+          changeOrigin: true,
         },
         "/api": {
           target: env.VITE_API_URL || "http://127.0.0.1:3080/",
@@ -102,5 +98,8 @@ export default defineConfig(({ mode }) => {
       },
     },
     base: env.VITE_BASE_URL || "/",
+    define: {
+      "window.io": "io", // Define global variable io
+    },
   };
 });

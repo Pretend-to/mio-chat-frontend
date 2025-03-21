@@ -28,28 +28,75 @@ export default class Socket extends EventEmitter {
    */
   getURL() {
     const url = new URL(window.location.href);
-    const host = url.host;
-    return url.protocol === "https:"
-      ? `wss://${host}/api/gateway`
-      : `ws://${host}/api/gateway`;
+    return url.host;
   }
 
   /**
    * Connects to the WebSocket server.
    */
-  async connect() {
-    const params = { "mio-chat-id": this.id, "mio-chat-token": this.code };
-    const fullUrl = `${this.url}?${new URLSearchParams(params).toString()}`;
-    this.socket = new WebSocket(fullUrl);
-    console.log("WebSocket连接中...");
+  // async connect() {
+  //   const params = { "mio-chat-id": this.id, "mio-chat-token": this.code };
+  //   const fullUrl = `${this.url}?${new URLSearchParams(params).toString()}`;
+  //   this.socket = new WebSocket(fullUrl);
+  //   console.log("WebSocket连接中...");
 
-    this.socket.onopen = () => {
+  //   this.socket.onopen = () => {
+  //     this.available = true;
+  //     console.log("WebSocket连接成功");
+
+  //     // Sending heartbeat every 3 seconds
+  //     this.heartBeat = setInterval(async () => {
+  //       if (this.socket.readyState === WebSocket.OPEN) {
+  //         const res = await this.fetch("/api/system/heartbeat", {
+  //           timestamp: Date.now(),
+  //         });
+  //         const serverRevTime = res.revTime;
+  //         const cuurentTime = Date.now();
+  //         const delayTo = res.delay;
+  //         const delayBack = cuurentTime - serverRevTime;
+  //         this.delay = delayTo + delayBack;
+  //       }
+  //     }, 3000);
+  //   };
+
+  //   this.socket.onclose = () => {
+  //     this.available = false;
+  //     this.disconnect();
+  //     console.error("WebSocket连接断开，将在2秒后尝试重新连接...");
+  //     setTimeout(() => this.connect(), 2000); // Attempt to reconnect after 5 seconds
+  //   };
+
+  //   this.socket.onerror = (error) => {
+  //     console.error("WebSocket连接出错", error);
+  //   };
+
+  //   this.socket.onmessage = (event) => {
+  //     this.messageHandler(event.data);
+  //   };
+  // }
+
+  /**
+   * Connects to the SocketIO server.
+   */
+  async connect() {
+    this.socket = io(this.url, {
+      path: "/socket.io",
+      transports: ["websocket", "polling"],
+      auth: {
+        id: this.id,
+        token: this.code,
+      },
+      // 加上 reconnection 尝试限制，避免无限重试 WebSocket
+      reconnectionAttempts: 3, // 或者其他合适的次数
+    });
+    console.log("SocketIO连接中...");
+    this.socket.on("connect", () => {
       this.available = true;
-      console.log("WebSocket连接成功");
+      console.log("SocketIO连接成功");
 
       // Sending heartbeat every 3 seconds
       this.heartBeat = setInterval(async () => {
-        if (this.socket.readyState === WebSocket.OPEN) {
+        if (this.socket.connected) {
           const res = await this.fetch("/api/system/heartbeat", {
             timestamp: Date.now(),
           });
@@ -60,24 +107,40 @@ export default class Socket extends EventEmitter {
           this.delay = delayTo + delayBack;
         }
       }, 3000);
-    };
-
-    this.socket.onclose = () => {
+    });
+    this.socket.on("disconnect", () => {
       this.available = false;
       this.disconnect();
-      console.error("WebSocket连接断开，将在2秒后尝试重新连接...");
-      setTimeout(() => this.connect(), 2000); // Attempt to reconnect after 5 seconds
-    };
+      console.error("SocketIO连接断开");
+    });
+    this.socket.on("connect_error", (error) => {
+      console.error("SocketIO连接出错", error);
 
-    this.socket.onerror = (error) => {
-      console.error("WebSocket连接出错", error);
-    };
+      // 只有在初次连接错误时才强制切换到 polling
+      if (this.socket.io.engine.transport.name === "websocket") {
+        console.log("WebSocket 连接失败，尝试轮询...");
+        this.socket.disconnect(); // 断开连接
 
-    this.socket.onmessage = (event) => {
-      this.messageHandler(event.data);
-    };
+        // 重新连接，但排除 WebSocket
+        this.socket = io(this.url, {
+          path: "/socket.io",
+          transports: ["polling"],
+          auth: {
+            id: this.id,
+            token: this.code,
+          },
+        });
+      } else {
+        console.log("已经在轮询模式，放弃重连");
+        //已经是轮询模式，直接放弃重连
+        this.socket.disconnect();
+      }
+    });
+
+    this.socket.on("message", (message) => {
+      this.messageHandler(message);
+    });
   }
-
   /**
    * Disconnects the WebSocket connection.
    */
@@ -97,7 +160,7 @@ export default class Socket extends EventEmitter {
    */
   send(message) {
     if (this.available) {
-      this.socket.send(message);
+      this.socket.emit("message", message);
     } else {
       console.log("WebSocket连接不可用");
     }

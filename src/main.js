@@ -24,3 +24,17 @@ app.use(createPinia());
 app.use(router);
 
 app.mount("#app");
+
+// 注册 Service Worker
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/service-worker.v2.js") // 确保路径正确
+      .then((registration) => {
+        console.log("Service Worker registered: ", registration);
+      })
+      .catch((error) => {
+        console.log("Service Worker registration failed: ", error);
+      });
+  });
+}
