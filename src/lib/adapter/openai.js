@@ -38,11 +38,11 @@ export default class Openai extends Adapter {
     return chunk;
   }
 
-  async send(messages, index, settings) {
+  async send(messages, messageId, settings) {
     console.log("send message to openai");
 
     const emitEvent = (eventName, detail) => {
-      this.emit(eventName, { ...detail, index });
+      this.emit(eventName, { ...detail, messageId });
     };
 
     const handleUpdateChunk = (chunk) => {
@@ -53,16 +53,17 @@ export default class Openai extends Adapter {
         toolCall: (tool_call) => emitEvent("updateToolCall", { tool_call }),
       };
 
-      const handler = updateHandlers[chunk.type];
+      const data = chunk.data;
+      const handler = updateHandlers[data.type];
       if (handler) {
-        handler(chunk.content);
+        handler(data.content);
       }
     };
 
     const handleCompletionChunk = (chunk) => {
       const completionHandlers = {
-        completed: () => emitEvent("completeMessage", {}),
-        failed: () => emitEvent("failedMessage", { error: chunk.data.error }),
+        complete: () => emitEvent("completeMessage", {}),
+        failed: () => emitEvent("failedMessage", { error: chunk.data }),
       };
 
       const handler = completionHandlers[chunk.message];
@@ -81,10 +82,14 @@ export default class Openai extends Adapter {
         "presence_penalty",
       ];
 
+      const extraSettingKeys = ["tools", "provider"];
+
       return settings
         ? Object.fromEntries(
-            Object.entries(settings).filter(([key]) =>
-              validSettingKeys.includes(key),
+            Object.entries(settings).filter(
+              ([key]) =>
+                validSettingKeys.includes(key) ||
+                extraSettingKeys.includes(key),
             ),
           )
         : {};
@@ -105,9 +110,10 @@ export default class Openai extends Adapter {
       console.log("Data sent to OpenAI:", data);
 
       for await (const chunk of client.socket.streamCompletions(data)) {
+        console.log("Received chunk from OpenAI:", chunk);
         if (chunk.message === "update") {
           handleUpdateChunk(chunk);
-        } else if (["completed", "failed"].includes(chunk.message)) {
+        } else if (["complete", "failed"].includes(chunk.message)) {
           handleCompletionChunk(chunk);
           break;
         }

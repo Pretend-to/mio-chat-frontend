@@ -151,7 +151,9 @@ export default class Socket extends EventEmitter {
           });
           this.updateDelay(res);
         } catch (error) {
-          console.error("心跳检测失败", error);
+          if (this.connectionState === "failed") {
+            console.error("心跳检测失败", error);
+          }
         }
       }
     }, 3000);
@@ -198,7 +200,9 @@ export default class Socket extends EventEmitter {
   messageHandler(message) {
     try {
       const e = JSON.parse(message);
-      this.emit(e.request_id, e);
+      if (e.protocol === "llm") {
+        this.emit(e.request_id, e);
+      }
       if (e.protocol === "onebot") {
         this.emit("onebot_message", e);
       } else if (e.protocol === "system") {
@@ -277,6 +281,7 @@ export default class Socket extends EventEmitter {
 
     this.requests.push(request.request_id);
     this.sendMessage(request);
+    console.log("WebSocket发送请求", request);
 
     try {
       while (true) {
@@ -285,7 +290,7 @@ export default class Socket extends EventEmitter {
             if (data.message === "update") {
               resolve(data);
             } else if (
-              data.message === "completed" ||
+              data.message === "complete" ||
               data.message === "failed"
             ) {
               this.off(request.request_id);
