@@ -176,8 +176,15 @@ export default {
         this.handleFileUpload(file);
         return;
       }
-      const availableImageFormats = ["png", "jpg", "jpeg", "gif", "bmp"];
-      const availableDocFormats = ["docx", "pdf", "pptx", "xlsx"];
+      const availableImageFormats = [
+        "png",
+        "jpg",
+        "jpeg",
+        "webp",
+        "gif",
+        "bmp",
+      ];
+      const availableDocFormats = ["docx", "txt", "pdf", "pptx", "xlsx"];
       const fileInput = document.createElement("input");
       fileInput.type = "file";
       fileInput.accept = [...availableDocFormats, ...availableImageFormats]
@@ -369,7 +376,6 @@ export default {
       return result;
     },
     getOnebotPreset() {
-      console.log(this.onebotPresets);
       const preset = this.onebotPresets
         .reduce((acc = [], item) => {
           const arr = item.children ?? [item];

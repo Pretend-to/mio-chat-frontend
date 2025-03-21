@@ -669,6 +669,7 @@ export default {
                 />
                 <el-image
                   v-else-if="element.type === 'image'"
+                  :key="`${activeContactor.id}-${index}-${elmIndex}-${element.data.file}`"
                   :src="element.data.file"
                   :zoom-rate="1.2"
                   :max-scale="7"
@@ -691,6 +692,7 @@ export default {
                   v-else-if="element.type === 'file'"
                   :file-url="element.data.file"
                 />
+                <span v-else-if="element.type === 'at'" />
                 <ReasonBlock
                   v-else-if="element.type === 'reason'"
                   :end-time="element.data.endTime"
@@ -702,7 +704,7 @@ export default {
                   class="blank-message"
                   style="width: 10rem; height: 28.8px; position: relative"
                 >
-                  <span class="blank_loader"></span>
+                  <span class="blank-loader"></span>
                 </div>
                 <ToolCallBar
                   v-else-if="element.type === 'tool_call'"
@@ -1014,7 +1016,7 @@ $icon-hover: #09f
   }
 }
 
-.blank_loader {
+.blank-loader {
   width: 10%;
   height: 200%;
   position: absolute;

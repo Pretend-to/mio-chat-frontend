@@ -13,6 +13,7 @@ localforage.config({
 export default class Client extends EventEmitter {
   constructor(config) {
     super();
+    this.inited = false;
     this.everLogin = false; // Loaded from storage
     this.id = null; // Loaded from storage
     this.code = null; // Loaded from storage
@@ -20,7 +21,7 @@ export default class Client extends EventEmitter {
     this.contactList = []; // Loaded from storage
     this.socket = null; // Dynamic
     this.qq = null; // Web
-    this.botqq = null; // Web
+    this.bot_qq = null; // Web
     this.avatar = null; // Web
     this.onPhone = null; // Dynamic
     this.title = "Mio"; // Fixed
@@ -34,7 +35,7 @@ export default class Client extends EventEmitter {
    * @returns {object} Initialization information
    */
   async beforeInit() {
-    await this.setBaseInfo();
+    this.setBaseInfo();
     const localConfig = await this.getLocalStorage();
     await this.config.loadOnebotDefaultConfig();
 
@@ -46,7 +47,7 @@ export default class Client extends EventEmitter {
       this.id = this.genFakeId();
       this.code = null;
     }
-
+    this.inited = true;
     this.emit("loaded");
   }
 
@@ -57,7 +58,7 @@ export default class Client extends EventEmitter {
       name: "OneBot",
       namePolicy: 1,
       avatarPolicy: 1,
-      avatar: `/api/qava?q=${this.botqq}`,
+      avatar: `/api/qava?q=${this.bot_qq}`,
       title: "云崽",
       priority: 0,
       options: this.config.onebotDefaultConfig,
@@ -337,8 +338,14 @@ export default class Client extends EventEmitter {
 
     this.admin_qq = data.admin_qq;
     this.bot_qq = data.bot_qq;
+
     this.avatar = `/api/qava?q=${this.admin_qq}`;
     this.displaySettings = data;
+
+    const onebotContactor = this.getContactor(10000);
+    if (onebotContactor) {
+      onebotContactor.avatar = `/api/qava?q=${this.bot_qq}`;
+    }
 
     const keyWidth = 600;
     this.onPhone = window.innerWidth < keyWidth;

@@ -34,15 +34,11 @@ export default {
       this.beian = displayConfig.beian;
       document.title = displayConfig.title;
     }
+
+    window.addEventListener("resize", this.handleResize);
   },
-  mounted() {
-    client.on("device-change", (type) => {
-      if (type == "mobile") {
-        this.onPhone = true;
-      } else {
-        this.onPhone = false;
-      }
-    });
+  beforeUnmount() {
+    window.removeEventListener("resize", this.handleResize);
   },
   methods: {
     setWindowSize(fullScreen) {
@@ -50,6 +46,9 @@ export default {
       config.updateDisplayConfig({
         full_screen: fullScreen,
       });
+    },
+    handleResize() {
+      this.onPhone = window.innerWidth < 600;
     },
   },
 };

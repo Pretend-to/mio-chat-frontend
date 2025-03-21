@@ -29,7 +29,7 @@ app.mount("#app");
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
-      .register("/service-worker.v2.js") // 确保路径正确
+      .register("/service-worker.v3.js") // 确保路径正确
       .then((registration) => {
         console.log("Service Worker registered: ", registration);
       })

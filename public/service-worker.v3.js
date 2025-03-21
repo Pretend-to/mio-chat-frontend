@@ -1,24 +1,32 @@
 const CACHE_DATABASE_NAME = "my-cache-db";
 const CACHE_OBJECT_STORE_NAME = "responses";
-const CACHE_VERSION = 6; // 每次修改 Service Worker 文件时，更新此版本号！
+const CACHE_VERSION = 8; // 每次修改 Service Worker 文件时，更新此版本号！
 const MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 天的缓存有效期 (毫秒)
 const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // 每天清理一次 (毫秒)
 
 let db;
+let dbInitialized = false; // 添加一个标志来跟踪数据库是否已初始化
+let dbInitializationPromise; // 添加一个 Promise 来等待数据库初始化完成
 
 // 初始化 IndexedDB
 function initializeDatabase() {
-  return new Promise((resolve, reject) => {
+  if (dbInitializationPromise) {
+    return dbInitializationPromise; // 如果已经有初始化 Promise，则返回它
+  }
+
+  dbInitializationPromise = new Promise((resolve, reject) => {
     const request = indexedDB.open(CACHE_DATABASE_NAME, CACHE_VERSION);
 
     request.onerror = (event) => {
       console.error("IndexedDB error:", event);
+      dbInitializationPromise = null; // 重置 Promise
       reject(event);
     };
 
     request.onsuccess = (event) => {
       db = event.target.result;
       console.log("IndexedDB opened successfully");
+      dbInitialized = true; // 设置标志
       resolve();
     };
 
@@ -29,12 +37,18 @@ function initializeDatabase() {
       }
     };
   });
+
+  return dbInitializationPromise;
 }
 
 // 删除过期缓存
 function deleteExpiredCache() {
-  //console.log("Starting expired cache cleanup...");  //移除
+  //console.log("Starting expired cache cleanup..."); //移除
   return new Promise((resolve, reject) => {
+    if (!dbInitialized) {
+      reject("IndexedDB not initialized"); // 如果数据库未初始化，拒绝 Promise
+      return;
+    }
     const transaction = db.transaction([CACHE_OBJECT_STORE_NAME], "readwrite");
     const objectStore = transaction.objectStore(CACHE_OBJECT_STORE_NAME);
     const now = Date.now();
@@ -93,7 +107,6 @@ function deleteExpiredCache() {
         };
       }
     };
-
     request.onerror = (event) => {
       console.error("Error opening cursor:", event);
       reject(event);
@@ -123,7 +136,7 @@ self.addEventListener("activate", (event) => {
         );
       });
 
-      // 初始化数据库
+      // 初始化数据库 (确保即使在 install 中初始化了，activate 也再次初始化)
       await initializeDatabase();
 
       // 清理 IndexedDB 中的过期缓存
@@ -159,6 +172,10 @@ function generateCacheKey(request) {
 // 从 IndexedDB 获取缓存
 function getCachedResponse(cacheKey) {
   return new Promise((resolve, reject) => {
+    if (!dbInitialized) {
+      reject("IndexedDB not initialized"); // 如果数据库未初始化，拒绝 Promise
+      return;
+    }
     const transaction = db.transaction([CACHE_OBJECT_STORE_NAME], "readonly");
     const objectStore = transaction.objectStore(CACHE_OBJECT_STORE_NAME);
     const request = objectStore.get(cacheKey);
@@ -169,7 +186,7 @@ function getCachedResponse(cacheKey) {
         const { response, timestamp } = cachedData;
         const isExpired = Date.now() - timestamp > MAX_AGE;
         if (isExpired) {
-          //console.log(`Cache expired for ${cacheKey}`);  //移除
+          //console.log(`Cache expired for ${cacheKey}`); //移除
           deleteCachedResponse(cacheKey);
           resolve(null); // 返回 null，触发网络请求
         } else {
@@ -189,7 +206,7 @@ function getCachedResponse(cacheKey) {
           }
         }
       } else {
-        //console.log(`Cache miss for ${cacheKey}`);  //移除
+        //console.log(`Cache miss for ${cacheKey}`); //移除
         resolve(null);
       }
     };
@@ -204,6 +221,9 @@ function getCachedResponse(cacheKey) {
 // 将响应存储到 IndexedDB
 async function storeResponseInCache(cacheKey, response) {
   try {
+    if (!dbInitialized) {
+      throw new Error("IndexedDB not initialized"); // 如果数据库未初始化，抛出错误
+    }
     // 将 Response 的 body 转换为 ArrayBuffer
     const arrayBuffer = await response.clone().arrayBuffer();
 
@@ -246,6 +266,10 @@ async function storeResponseInCache(cacheKey, response) {
 // 删除过期缓存 (可选) - 这个函数可以用于手动删除缓存
 function deleteCachedResponse(cacheKey) {
   return new Promise((resolve, reject) => {
+    if (!dbInitialized) {
+      reject("IndexedDB not initialized"); // 如果数据库未初始化，拒绝 Promise
+      return;
+    }
     const transaction = db.transaction([CACHE_OBJECT_STORE_NAME], "readwrite");
     const objectStore = transaction.objectStore(CACHE_OBJECT_STORE_NAME);
     const request = objectStore.delete(cacheKey);
@@ -265,12 +289,29 @@ function deleteCachedResponse(cacheKey) {
 self.addEventListener("fetch", (event) => {
   event.respondWith(
     (async () => {
+      // 确保数据库已经初始化完成
+      if (!dbInitialized) {
+        console.warn("IndexedDB not yet initialized, waiting...");
+        try {
+          await initializeDatabase(); // 等待初始化完成
+          console.log("IndexedDB initialized after waiting.");
+        } catch (error) {
+          console.error("IndexedDB initialization failed:", error);
+          // 如果初始化失败，直接返回网络请求或者一个错误响应
+          return fetch(event.request); // 或者 return new Response(..., {status: 500});
+        }
+      }
+
       const request = event.request;
+
+      // 1. HTML 页面 (index.html)
       if (request.mode === "navigate" && request.destination === "document") {
-        // 确定是 HTML 页面的导航请求
         // 网络优先策略 for index.html
         try {
           const networkResponse = await fetch(request); // 尝试从网络获取
+          // 可以选择在这里更新 Cache API 中的 index.html 缓存 (可选)
+          const cache = await caches.open("html-cache");
+          await cache.put(request, networkResponse.clone());
           return networkResponse;
         } catch (error) {
           console.log("Network failed for index.html, fetching cache:", error);
@@ -282,32 +323,56 @@ self.addEventListener("fetch", (event) => {
           console.error("index.html fetch failed and no cache found.");
           throw error;
         }
-      } else {
-        // 其他资源的 IndexedDB 缓存策略
-        // (例如， JavaScript, CSS, 图片)
-        // 仅缓存 GET 请求
-        if (request.method !== "GET") {
-          return fetch(request);
+      }
+
+      // 2. API 请求 (通过 fetch 或 XMLHttpRequest 发起的)
+      // 不需要缓存 API 请求, 直接从网络获取
+      if (isAPIRequest(request)) {
+        console.log("Bypassing service worker for API request:", request.url);
+        return fetch(request); // 跳过 Service Worker 直接从网络获取
+      }
+      // 3. 静态资源文件 (js, css, images, fonts)
+      // (indexedDB缓存)
+
+      // 仅缓存 GET 请求
+      if (request.method !== "GET") {
+        return fetch(request);
+      }
+      const cacheKey = generateCacheKey(request);
+      try {
+        const cachedResponse = await getCachedResponse(cacheKey);
+        if (cachedResponse) {
+          return cachedResponse;
         }
-        const cacheKey = generateCacheKey(request);
-        try {
-          const cachedResponse = await getCachedResponse(cacheKey);
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          const networkResponse = await fetch(request);
-          // 检查响应状态码
-          if (!networkResponse || networkResponse.status !== 200) {
-            return networkResponse; // 不缓存非 200 响应
-          }
-          const responseClone = networkResponse.clone();
-          await storeResponseInCache(cacheKey, responseClone);
-          return networkResponse;
-        } catch (error) {
-          console.error("Fetch failed:", error);
-          throw error;
+        const networkResponse = await fetch(request);
+        // 检查响应状态码
+        if (!networkResponse || networkResponse.status !== 200) {
+          return networkResponse; // 不缓存非 200 响应
         }
+        const responseClone = networkResponse.clone();
+        await storeResponseInCache(cacheKey, responseClone);
+        return networkResponse;
+      } catch (error) {
+        console.error("Fetch failed:", error);
+        throw error;
       }
     })(),
   );
 });
+
+// Helper function to determine if the request is for an API
+function isAPIRequest(request) {
+  // 检查 URL 是否包含 "/api/" 或以 "/api/" 开头
+  const isApiUrl =
+    request.url.includes("/api/") || request.url.startsWith("/api/");
+
+  // 检查 Content-Type 头部，排除图片和字体
+  const contentType = request.headers.get("Content-Type");
+  const isImage = contentType && contentType.startsWith("image/");
+  const isFont =
+    contentType &&
+    (contentType.startsWith("font/") || contentType.includes("font-"));
+
+  //只有是/api/并且不是图片和字体，才认为是API请求
+  return isApiUrl && !isImage && !isFont;
+}

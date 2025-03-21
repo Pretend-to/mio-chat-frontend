@@ -339,7 +339,7 @@ export default class Contactor extends EventEmmiter {
       });
 
       this.kernel.send(finalMessages, messageId, this.options);
-
+      this.emit("updateMessageSummary");
       return;
     }
   }
@@ -511,6 +511,8 @@ export default class Contactor extends EventEmmiter {
           return "正在思考中...";
         case "reply":
           return ""; // 空字符串处理
+        case "nodes":
+          return "[转发消息]";
         default:
           return "[未知消息类型] " + element.type;
       }
