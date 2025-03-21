@@ -447,8 +447,8 @@ export default {
         }
 
         this.toupdate = true;
-        await this.activeContactor.loadName();
-        await client.setLocalStorage(); //持久化存储
+        this.activeContactor.loadName();
+        client.setLocalStorage(); //持久化存储
         console.log(e);
       });
     },

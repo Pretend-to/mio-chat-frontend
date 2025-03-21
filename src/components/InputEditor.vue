@@ -502,7 +502,6 @@ export default {
       const container = this.presend();
       // this.userInput = "";  // Already cleared in presend
       const message_id = await this.activeContactor.webSend(container); //发送消息
-      this.activeContactor.emit("updateMessageSummary");
       container.id = message_id;
       this.$emit("stroge");
       this.uploaded.images = [];

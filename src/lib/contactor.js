@@ -3,6 +3,7 @@ import Openai from "./adapter/openai.js";
 import EventEmmiter from "./event.js";
 import { numberString } from "../utils/generate.js";
 import { config } from "@/lib/runtime.js";
+import { reactive } from "vue";
 
 const AVATAR_BASE_PATH =
   "https://registry.npmmirror.com/@lobehub/icons-static-svg/latest/files/icons";
@@ -60,6 +61,9 @@ export default class Contactor extends EventEmmiter {
       this.platform == "onebot" ? new Onebot(config) : new Openai(config);
 
     if (this.platform == "openai") this.enableOpenaiListener();
+
+    // 使对象具有响应性
+    return reactive(this);
   }
 
   enableOpenaiListener() {
@@ -133,6 +137,8 @@ export default class Contactor extends EventEmmiter {
 
     this.kernel.on("updateToolCall", (e) => {
       const { tool_call, messageId } = e;
+      console.log(tool_call);
+
       const rawMessage = this.getMessageById(messageId);
       if (!rawMessage) return;
 
@@ -151,10 +157,10 @@ export default class Contactor extends EventEmmiter {
         );
         if (previousCall) {
           // 这种情况就是更新之前的 toolCall 消息
-          previousCall.data = {
-            ...tool_call,
-            // params: previousCall.data.params += tool_call.params
-          };
+          previousCall.data = tool_call;
+          if (tool_call.action == "pending") {
+            previousCall.data.params += tool_call.params;
+          }
         } else {
           // 这种情况就是新增一条 toolCall 消息
           rawMessage.content.push(msgElm);
@@ -327,15 +333,19 @@ export default class Contactor extends EventEmmiter {
 
     return finalMessages;
   }
+  updateMessageSummary() {
+    this.lastMessageSummary = this.getLastMessageSummary();
+  }
+
   /**
    * 从网页前端发来的消息
    */
   async webSend(message) {
     this.updateLastUpdate();
     this.messageChain.push(message);
+    this.updateMessageSummary();
     if (this.platform == "onebot") {
       const messageId = await this.kernel.send(this.id, message.content);
-      this.emit("updateMessageSummary");
       return messageId;
     } else {
       // 截取从this.firstMessageIndex到结尾的消息
@@ -348,7 +358,7 @@ export default class Contactor extends EventEmmiter {
       });
 
       this.kernel.send(finalMessages, messageId, this.options);
-      return messageId;
+      return numberString(16);
     }
   }
 
@@ -529,6 +539,7 @@ export default class Contactor extends EventEmmiter {
 
     const msg = message || this.messageChain[this.messageChain.length - 1];
     if (!msg) return "";
+    console.log(msg);
 
     return getMessageText(msg.content ? msg.content[0] : msg);
   }

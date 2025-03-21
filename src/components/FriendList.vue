@@ -229,7 +229,7 @@ export default {
     addReactiveListener() {
       this.contactorList.map((contactor) => {
         contactor.on("updateMessageSummary", () => {
-          contactor.lastMessageSummary = contactor.getLastMessageSummary();
+          contactor.updateMessageSummary();
         });
       });
     },
