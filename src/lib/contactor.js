@@ -334,7 +334,9 @@ export default class Contactor extends EventEmmiter {
     this.updateLastUpdate();
     this.messageChain.push(message);
     if (this.platform == "onebot") {
-      return await this.kernel.send(this.id, message.content);
+      const messageId = await this.kernel.send(this.id, message.content);
+      this.emit("updateMessageSummary");
+      return messageId;
     } else {
       // 截取从this.firstMessageIndex到结尾的消息
       const finalMessages = this._getValidOpenaiMessage();
@@ -346,8 +348,7 @@ export default class Contactor extends EventEmmiter {
       });
 
       this.kernel.send(finalMessages, messageId, this.options);
-      this.emit("updateMessageSummary");
-      return;
+      return messageId;
     }
   }
 
