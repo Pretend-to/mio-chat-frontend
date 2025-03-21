@@ -173,12 +173,10 @@
       </div>
     </div>
     <div class="action-bar">
-      <el-button
-        type="primary"
-        @click="$router.push(`/chat/${activeContactor.id}`)"
+      <el-button plain @click="$router.push(`/chat/${activeContactor.id}`)"
         >发送消息</el-button
       >
-      <el-button type="danger" @click="centerDialogVisible = true"
+      <el-button type="danger" plain @click="centerDialogVisible = true"
         >删除好友</el-button
       >
       <el-dialog v-model="centerDialogVisible" title="警告" width="300" center>
@@ -308,17 +306,17 @@ export default {
         model: "模型",
         max_messages_num: "最大历史消息数",
         stream: "流式响应",
-        temperature: "温度 (temperature)",
-        top_p: "核采样 (top_p)",
-        frequency_penalty: "频率惩罚度 (frequency_penalty)",
-        presence_penalty: "话题新鲜度 (presence_penalty)",
+        temperature: "温度",
+        top_p: "核采样",
+        frequency_penalty: "重复惩罚度",
+        presence_penalty: "话题新鲜度",
       };
       return shownNameMap[key];
     },
-    delContactor() {
+    async delContactor() {
       this.centerDialogVisible = false;
-      client.rmContactor(this.activeContactor.id);
-      this.$router.push("/contactors");
+      await client.rmContactor(this.activeContactor.id);
+      this.$router.push("/");
     },
   },
 };
@@ -329,8 +327,6 @@ export default {
   position: relative;
   flex-grow: 1;
   display: flex;
-  overflow-y: auto;
-  max-height: 100vh;
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
@@ -362,7 +358,7 @@ export default {
 }
 
 .profile-container {
-  margin: 2rem 0rem 6rem 0rem;
+  margin: 2rem 0rem 0rem 0rem;
   width: calc(100% - 8rem);
   min-width: 20rem;
   max-width: 30rem;
@@ -413,7 +409,7 @@ export default {
 }
 
 .block-content:last-child {
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 .block-content-item {
@@ -493,7 +489,7 @@ export default {
 }
 
 .action-bar {
-  position: absolute;
+  position: relative;
   background-color: #f2f2f2;
   bottom: 0px;
   left: 0px;
@@ -506,6 +502,7 @@ export default {
 }
 .profile-body {
   position: relative;
+  overflow-y: auto;
   flex-grow: 1;
   padding-top: 4rem;
   background-color: #f2f2f2;

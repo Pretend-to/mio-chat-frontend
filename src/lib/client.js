@@ -13,6 +13,7 @@ localforage.config({
 export default class Client extends EventEmitter {
   constructor(config) {
     super();
+    this.inited = false;
     this.everLogin = false; // Loaded from storage
     this.id = null; // Loaded from storage
     this.code = null; // Loaded from storage
@@ -20,7 +21,7 @@ export default class Client extends EventEmitter {
     this.contactList = []; // Loaded from storage
     this.socket = null; // Dynamic
     this.qq = null; // Web
-    this.botqq = null; // Web
+    this.bot_qq = null; // Web
     this.avatar = null; // Web
     this.onPhone = null; // Dynamic
     this.title = "Mio"; // Fixed
@@ -34,7 +35,7 @@ export default class Client extends EventEmitter {
    * @returns {object} Initialization information
    */
   async beforeInit() {
-    await this.setDisplayInfo();
+    this.setBaseInfo();
     const localConfig = await this.getLocalStorage();
     await this.config.loadOnebotDefaultConfig();
 
@@ -46,7 +47,7 @@ export default class Client extends EventEmitter {
       this.id = this.genFakeId();
       this.code = null;
     }
-
+    this.inited = true;
     this.emit("loaded");
   }
 
@@ -57,7 +58,7 @@ export default class Client extends EventEmitter {
       name: "OneBot",
       namePolicy: 1,
       avatarPolicy: 1,
-      avatar: `/api/qava?q=${this.botqq}`,
+      avatar: `/api/qava?q=${this.bot_qq}`,
       title: "云崽",
       priority: 0,
       options: this.config.onebotDefaultConfig,
@@ -96,7 +97,6 @@ export default class Client extends EventEmitter {
 
     const list = reactive(this.contactList);
     list.push(bot);
-
     await this.setLocalStorage();
     return bot;
   }
@@ -128,6 +128,25 @@ export default class Client extends EventEmitter {
     } catch (error) {
       console.error("Failed to load original contactors:", error);
       return false;
+    }
+  }
+
+  async shareContactor(id) {
+    const uploadResult = await this.setOriginalContactor(id);
+    if (uploadResult) {
+      const { previewImage, shareUrl } = uploadResult;
+      console.log(shareUrl);
+      console.log(previewImage);
+      // 拼接完整链接
+      const originalUrl = document.location.origin;
+      // 复制链接到剪贴板
+      const clipboard = navigator.clipboard;
+      if (clipboard) {
+        clipboard.writeText(originalUrl + shareUrl);
+      }
+      return uploadResult;
+    } else {
+      return null;
     }
   }
 
@@ -175,11 +194,13 @@ export default class Client extends EventEmitter {
     return this.contactList;
   }
 
-  getContactor(id) {
-    if (id == this.admin_qq) {
+  getContactor(id, onebotId = null) {
+    if (onebotId) {
+      // TODO: 拓展 Onebot 协议功能，实现 IM
       return this.contactList.find((item) => item.platform == "onebot");
+    } else {
+      return this.contactList.find((item) => item.id == id);
     }
-    return this.contactList.find((item) => item.id == id);
   }
 
   /**
@@ -215,7 +236,6 @@ export default class Client extends EventEmitter {
     this.everLogin = client.everLogin;
     this.id = client.id;
     this.code = client.code;
-    this.avatar = client.avatar;
 
     // If contact list exists, instantiate as contact objects
     if (client.contactList && client.contactList.length != 0) {
@@ -231,7 +251,15 @@ export default class Client extends EventEmitter {
    * Save user information to localStorage
    */
   async setLocalStorage() {
-    await localforage.setItem("client", JSON.stringify(this));
+    // await localforage.setItem("client", JSON.stringify(this));
+    const client = {
+      everLogin: this.everLogin,
+      id: this.id,
+      code: this.code,
+      contactList: this.contactList,
+    };
+    await localforage.setItem("client", JSON.stringify(client));
+    console.log("Client saved");
   }
 
   /**
@@ -247,9 +275,6 @@ export default class Client extends EventEmitter {
 
       socket.on("connect", async (info) => {
         console.log("Login successful");
-        this.qq = info.admin_qq;
-        this.avatar = `/api/qava?q=${this.qq}`;
-        this.botqq = info.bot_qq;
         this.default_model = info.default_model;
         this.everLogin = true;
         this.isConnected = true;
@@ -282,10 +307,12 @@ export default class Client extends EventEmitter {
       const type = data.type;
 
       if (type == "message") {
-        const contactor = this.getContactor(id);
+        const contactor = this.getContactor(id, 10000);
         if (contactor) {
           contactor.revMessage(content);
           this.setLocalStorage();
+        } else {
+          console.log("Contactor not found");
         }
       } else if (type == "del_msg") {
         const onebotContactors = this.contactList.filter(
@@ -319,7 +346,7 @@ export default class Client extends EventEmitter {
    * @returns {Contactor} Contactor object or first contactor if not found
    */
 
-  async setDisplayInfo() {
+  async setBaseInfo() {
     const res = await fetch("/api/base_info");
     const { data } = await res.json();
     const stored = this.config.getDisplayConfig();
@@ -330,22 +357,19 @@ export default class Client extends EventEmitter {
 
     this.admin_qq = data.admin_qq;
     this.bot_qq = data.bot_qq;
+
+    this.avatar = `/api/qava?q=${this.admin_qq}`;
     this.displaySettings = data;
+
+    const onebotContactor = this.getContactor(10000);
+    if (onebotContactor) {
+      onebotContactor.avatar = `/api/qava?q=${this.bot_qq}`;
+    }
 
     const keyWidth = 600;
     this.onPhone = window.innerWidth < keyWidth;
 
-    const handleResize = () => {
-      if (window.innerWidth < keyWidth && !this.onPhone) {
-        this.emit("device-change", "mobile");
-        this.onPhone = true;
-      } else if (window.innerWidth >= keyWidth && this.onPhone) {
-        this.emit("device-change", "desktop");
-        this.onPhone = false;
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
+    return null;
   }
 
   getDisplaySettings() {

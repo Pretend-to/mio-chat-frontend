@@ -6,6 +6,7 @@
 
 import Adapter from "./adapter.js";
 import { client, config } from "../runtime.js";
+import { numberString } from "../../utils/generate.js";
 
 export default class Openai extends Adapter {
   constructor(config) {
@@ -13,19 +14,16 @@ export default class Openai extends Adapter {
     this.settings = config.settings || {};
   }
 
-  convertMessage() {
+  convertMessage(message) {
     const webMessage = {
       role: "other",
       time: new Date().getTime(),
       content: [{ type: "blank", data: {} }],
       status: "pending",
-      id: this.genRequestID(),
+      id: numberString(16),
     };
-    return webMessage;
-  }
-
-  genRequestID() {
-    return Math.random().toString(36).substr(2, 9);
+    const mergedMessage = { ...webMessage, ...message };
+    return mergedMessage;
   }
 
   async getMessagesSummary(messageChain) {
@@ -35,70 +33,94 @@ export default class Openai extends Adapter {
       messages: [{ role: "user", content: query }],
     };
 
-    const response = await this.fetch(`/api/openai/completions`, messages);
+    const response = await this.fetch(`/api/llm/completions`, messages);
     const { chunk } = response;
     return chunk;
   }
 
-  async send(messages, index, settings) {
+  async send(messages, messageId, settings) {
     console.log("send message to openai");
 
-    if (!settings.enable_tool_call) settings.tools = [];
-
-    // Correct the spelling and add default value for model:
-    const validSettingKeys = [
-      "top_p",
-      "temperature",
-      "stream",
-      "model",
-      "tools",
-    ];
-
-    const validSettings = settings
-      ? Object.fromEntries(
-          Object.entries(settings).filter(([key]) =>
-            validSettingKeys.includes(key),
-          ),
-        )
-      : {};
-    const data = {
-      ...validSettings, // Use the filtered settings
-      messages,
+    const emitEvent = (eventName, detail) => {
+      this.emit(eventName, { ...detail, messageId });
     };
 
-    console.log(data);
-
-    for await (const chunk of client.socket.streamCompletions(data)) {
-      const chunkDataHandlers = {
-        reasoning_content: (data) =>
-          this.emit(`updateReasoning`, {
-            reasoning_content: data.reasoning_content,
-            index: index,
-          }),
-        chunk: (data) =>
-          this.emit(`updateMessage`, { chunk: data.chunk, index: index }),
-        tool_call: (data) =>
-          this.emit(`updateToolCall`, {
-            tool_call: data.tool_call,
-            index: index,
-          }),
+    const handleUpdateChunk = (chunk) => {
+      const updateHandlers = {
+        reasoningContent: (content) =>
+          emitEvent("updateReasoning", { reasoning_content: content }),
+        content: (content) => emitEvent("updateMessage", { chunk: content }),
+        toolCall: (tool_call) => emitEvent("updateToolCall", { tool_call }),
       };
 
-      for (const key in chunkDataHandlers) {
-        if (chunk.data && chunk.data[key]) {
-          chunkDataHandlers[key](chunk.data);
+      const data = chunk.data;
+      const handler = updateHandlers[data.type];
+      if (handler) {
+        handler(data.content);
+      }
+    };
+
+    const handleCompletionChunk = (chunk) => {
+      const completionHandlers = {
+        complete: () => emitEvent("completeMessage", {}),
+        failed: () => emitEvent("failedMessage", { error: chunk.data }),
+      };
+
+      const handler = completionHandlers[chunk.message];
+      if (handler) {
+        handler();
+      }
+    };
+
+    const filterValidSettings = (settings) => {
+      const validSettingKeys = [
+        "top_p",
+        "temperature",
+        "stream",
+        "model",
+        "frequency_penalty",
+        "presence_penalty",
+      ];
+
+      const extraSettingKeys = ["tools", "provider"];
+
+      return settings
+        ? Object.fromEntries(
+            Object.entries(settings).filter(
+              ([key]) =>
+                validSettingKeys.includes(key) ||
+                extraSettingKeys.includes(key),
+            ),
+          )
+        : {};
+    };
+
+    try {
+      // Apply settings defaults
+      const data = {
+        ...filterValidSettings(settings || {}), // Default to empty object
+        messages,
+      };
+
+      if (!settings?.enable_tool_call) {
+        // Use optional chaining
+        data.tools = [];
+      }
+
+      console.log("Data sent to OpenAI:", data);
+
+      for await (const chunk of client.socket.streamCompletions(data)) {
+        console.log("Received chunk from OpenAI:", chunk);
+        if (chunk.message === "update") {
+          handleUpdateChunk(chunk);
+        } else if (["complete", "failed"].includes(chunk.message)) {
+          handleCompletionChunk(chunk);
+          break;
         }
       }
-
-      const chunkMessageHandlers = {
-        completed: () => this.emit(`completeMessage`, { index: index }),
-        failed: () =>
-          this.emit(`failedMessage`, { error: chunk.data.error, index: index }),
-      };
-
-      if (chunk.message && chunkMessageHandlers[chunk.message]) {
-        chunkMessageHandlers[chunk.message]();
-      }
+    } catch (error) {
+      console.error("Error in send:", error);
+      emitEvent("failedMessage", { error: "Stream processing error" });
     }
   }
 

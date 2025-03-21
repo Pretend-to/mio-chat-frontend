@@ -3,6 +3,7 @@ export default class Config {
     this.localPresets = [];
     this.openaiDefaultConfig = {
       model: "gpt-4o-mini",
+      provider: "openai",
       stream: true,
       temperature: 1,
       top_p: 1,

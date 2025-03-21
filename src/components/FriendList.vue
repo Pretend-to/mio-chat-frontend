@@ -1,10 +1,12 @@
 <script>
 import { client, config } from "@/lib/runtime.js";
 import AddContactor from "@/components/AddContactor.vue";
+import ContextMenu from "@/components/ContextMenu.vue";
 
 export default {
   components: {
     AddContactor,
+    ContextMenu,
   },
   data() {
     let list = client.getContactors();
@@ -15,6 +17,10 @@ export default {
       contactorList: list,
       showAddOptions: false,
       showAddWindow: false,
+      showMenu: false,
+      menuX: 0,
+      menuY: 0,
+      selectedFriend: null,
     };
   },
   computed: {
@@ -151,7 +157,7 @@ export default {
       }
       return result;
     },
-    addPresetContactor(preset) {
+    async addPresetContactor(preset) {
       const contactor = {
         id: this.genFakeId(),
         namePolicy: 1,
@@ -162,13 +168,68 @@ export default {
         priority: 1,
         options: this.mergeOptions(preset),
       };
-      client.addConcator("openai", contactor);
+      await client.addConcator("openai", contactor);
       this.addReactiveListener();
     },
+    showFriendContextMenu(event, friend) {
+      this.selectedFriend = friend;
+      this.menuX = event.clientX;
+      this.menuY = event.clientY;
+      this.showMenu = true;
+
+      const closeMenu = () => {
+        this.showMenu = false;
+        document.removeEventListener("click", closeMenu);
+      };
+      document.addEventListener("click", closeMenu);
+    },
+
+    async handleFriendOption(option) {
+      switch (option) {
+        case "enter":
+          this.showChat(this.selectedFriend.id);
+          break;
+        case "priority":
+          this.selectedFriend.priority =
+            this.selectedFriend.priority === 0 ? 1 : 0;
+          client.setLocalStorage();
+          break;
+        case "share": {
+          const shareResult = await client.shareContactor(
+            this.selectedFriend.id,
+          );
+          if (shareResult) {
+            this.$message({
+              message: "分享链接已复制",
+              type: "success",
+            });
+          } else {
+            this.$message({
+              message: "分享失败",
+              type: "error",
+            });
+          }
+          break;
+        }
+        case "delete": {
+          let index;
+          index = this.contactorList.findIndex(
+            (c) => c.id === this.selectedFriend.id,
+          );
+          if (index !== -1) {
+            this.contactorList.splice(index, 1);
+            client.setLocalStorage();
+          }
+          break;
+        }
+      }
+      this.showMenu = false;
+    },
+
     addReactiveListener() {
       this.contactorList.map((contactor) => {
         contactor.on("updateMessageSummary", () => {
-          contactor.lastMessageSummary = contactor.getLastMessageSummary();
+          contactor.updateMessageSummary();
         });
       });
     },
@@ -214,6 +275,7 @@ export default {
         :key="index"
         class="lists"
         @click="showChat(item.id)"
+        @contextmenu.prevent="showFriendContextMenu($event, item)"
       >
         <div
           class="avatar"
@@ -234,6 +296,18 @@ export default {
       @close="showAddWindow = false"
       @add-bot="addPresetContactor"
     ></AddContactor>
+    <ContextMenu
+      v-if="showMenu"
+      type="friend"
+      :message="selectedFriend"
+      :style="{
+        position: 'fixed',
+        left: menuX + 'px',
+        top: menuY + 'px',
+      }"
+      @message-option="handleFriendOption"
+      @close="showMenu = false"
+    />
   </div>
 </template>
 

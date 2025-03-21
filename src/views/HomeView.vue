@@ -1,34 +1,54 @@
 <template>
   <div v-if="!onPhone" id="main">
     <friendlist></friendlist>
-    <router-view></router-view>
+    <router-view v-if="loaded"></router-view>
+    <blankView v-else></blankView>
   </div>
   <div v-else-if="pagePath === '/'" id="main-mobile">
-    <friendlist></friendlist>
+    <friendlist v-if="loaded"></friendlist>
+    <blankView v-else></blankView>
   </div>
   <div v-else id="main-mobile" class="mobile-chat">
-    <router-view></router-view>
+    <router-view v-if="loaded"></router-view>
+    <blankView v-else></blankView>
   </div>
 </template>
 
 <script>
 import friendlist from "@/components/FriendList.vue";
+import { client } from "@/lib/runtime.js";
+import blankView from "@/views/BlankView.vue";
 
 export default {
   components: {
     friendlist,
+    blankView,
   },
   data() {
     const onPhone = window.innerWidth < 600;
     return {
       onPhone,
       pagePath: this.$route.path,
+      loaded: false,
     };
   },
   watch: {
     $route: function (newVal) {
       this.pagePath = newVal.path;
     },
+  },
+  mounted() {
+    if (client.inited) {
+      this.loaded = true;
+    } else {
+      client.on(
+        "loaded",
+        () => {
+          this.loaded = true;
+        },
+        false,
+      );
+    }
   },
 };
 </script>

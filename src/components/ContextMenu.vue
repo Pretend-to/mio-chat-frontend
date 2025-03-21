@@ -1,33 +1,53 @@
 <template>
   <div id="message-menu">
-    <div v-if="seletedText" @click.stop="copySeletedText">
-      <i class="iconfont fuzhi"></i>
-      <span>复制选中</span>
-    </div>
-    <div @click.stop="copyText">
-      <i class="iconfont fuzhi"></i>
-      <span>复制消息</span>
-    </div>
-    <div v-if="seletedImage" @click.stop="copySeletedImage">
-      <i class="iconfont fuzhi"></i>
-      <span>复制图片</span>
-    </div>
-    <div v-if="seletedImage" @click.stop="saveSeletedImage">
-      <i class="iconfont fuzhi"></i>
-      <span>保存图片</span>
-    </div>
-    <div @click.stop="retryMessage">
-      <i class="iconfont reset"></i>
-      <span>重试消息</span>
-    </div>
-    <div @click.stop="replyMessage">
-      <i class="iconfont yinyong"></i>
-      <span>引用消息</span>
-    </div>
-    <div @click.stop="deleteMessage">
-      <i class="iconfont shanchu"></i>
-      <span>删除消息</span>
-    </div>
+    <template v-if="type === 'friend'">
+      <div @click.stop="enterChat">
+        <i class="iconfont chat"></i>
+        <span>进入对话</span>
+      </div>
+      <div @click.stop="togglePriority">
+        <i class="iconfont star"></i>
+        <span>{{ message.priority === 0 ? "取消置顶" : "置顶" }}</span>
+      </div>
+      <div @click.stop="shareBot">
+        <i class="iconfont icon-share"></i>
+        <span>分享</span>
+      </div>
+      <div @click.stop="deleteBot">
+        <i class="iconfont shanchu"></i>
+        <span>删除</span>
+      </div>
+    </template>
+    <template v-else>
+      <div v-if="seletedText" @click.stop="copySeletedText">
+        <i class="iconfont fuzhi"></i>
+        <span>复制选中</span>
+      </div>
+      <div @click.stop="copyText">
+        <i class="iconfont fuzhi"></i>
+        <span>复制消息</span>
+      </div>
+      <div v-if="seletedImage" @click.stop="copySeletedImage">
+        <i class="iconfont fuzhi"></i>
+        <span>复制图片</span>
+      </div>
+      <div v-if="seletedImage" @click.stop="saveSeletedImage">
+        <i class="iconfont fuzhi"></i>
+        <span>保存图片</span>
+      </div>
+      <div @click.stop="retryMessage">
+        <i class="iconfont reset"></i>
+        <span>重试消息</span>
+      </div>
+      <div @click.stop="replyMessage">
+        <i class="iconfont yinyong"></i>
+        <span>引用消息</span>
+      </div>
+      <div @click.stop="deleteMessage">
+        <i class="iconfont shanchu"></i>
+        <span>删除消息</span>
+      </div>
+    </template>
   </div>
 </template>
 <script>
@@ -99,6 +119,22 @@ export default {
     },
 
     deleteMessage() {
+      this.$emit("message-option", "delete");
+      this.$emit("close");
+    },
+    enterChat() {
+      this.$emit("message-option", "enter");
+      this.$emit("close");
+    },
+    togglePriority() {
+      this.$emit("message-option", "priority");
+      this.$emit("close");
+    },
+    shareBot() {
+      this.$emit("message-option", "share");
+      this.$emit("close");
+    },
+    deleteBot() {
       this.$emit("message-option", "delete");
       this.$emit("close");
     },

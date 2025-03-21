@@ -272,30 +272,17 @@ export default {
       });
     },
     async share() {
-      const shareResult = await client.setOriginalContactor(
-        this.activeContactor.id,
-      );
+      const shareResult = await client.shareContactor(this.activeContactor.id);
       if (shareResult) {
         this.$message({
-          message: "分享成功",
+          message: "分享链接已复制",
           type: "success",
         });
-        const { previewImage, shareUrl } = shareResult;
-        console.log(shareUrl);
-        console.log(previewImage);
-        // 拼接完整链接
-        const originalUrl = document.location.origin;
-        const url = originalUrl + shareUrl;
-        try {
-          // 复制链接到剪贴板
-          await navigator.clipboard.writeText(url);
-          this.$message({
-            message: "链接已复制到剪贴板",
-            type: "success",
-          });
-        } catch (error) {
-          console.error("复制链接到剪贴板失败:", error);
-        }
+      } else {
+        this.$message({
+          message: "分享失败",
+          type: "error",
+        });
       }
     },
     hasOpening() {
@@ -428,12 +415,10 @@ export default {
       });
 
       contactor.on(`completeMessage`, async (e) => {
-        const messageIndex = e.index;
-        const rawMessage = this.activeContactor.messageChain[messageIndex];
+        const messageId = e.messageId;
+        const rawMessage = this.activeContactor.getMessageById(messageId);
         if (rawMessage.status === "retrying") {
-          this.retryList = this.retryList.filter(
-            (item) => item !== messageIndex,
-          );
+          this.retryList = this.retryList.filter((item) => item !== messageId);
         }
         rawMessage.status = "completed";
 
@@ -460,9 +445,11 @@ export default {
             },
           ];
         }
+
         this.toupdate = true;
-        await this.activeContactor.loadName();
-        await client.setLocalStorage(); //持久化存储
+        this.activeContactor.loadName();
+        client.setLocalStorage(); //持久化存储
+        console.log(e);
       });
     },
     disableContactor(contactor) {
@@ -551,12 +538,12 @@ export default {
                 ? this.validMessageIndex + 1
                 : this.validMessageIndex;
             if (message.role === "user") {
-              this.activeContactor.retryMessage(targetIndex);
+              this.activeContactor.retryMessage(message.id);
             } else {
-              this.activeContactor.retryMessage(targetIndex);
+              this.activeContactor.retryMessage(message.id);
             }
             message.status = "retrying";
-            this.retryList.push(targetIndex);
+            this.retryList.push(message.id);
           }
           this.toButtom();
           break;
@@ -675,6 +662,7 @@ export default {
                 />
                 <el-image
                   v-else-if="element.type === 'image'"
+                  :key="`${activeContactor.id}-${index}-${elmIndex}-${element.data.file}`"
                   :src="element.data.file"
                   :zoom-rate="1.2"
                   :max-scale="7"
@@ -698,6 +686,7 @@ export default {
                   v-else-if="element.type === 'file'"
                   :file-url="element.data.file"
                 />
+                <span v-else-if="element.type === 'at'" />
                 <ReasonBlock
                   v-else-if="element.type === 'reason'"
                   :end-time="element.data.endTime"
@@ -709,7 +698,7 @@ export default {
                   class="blank-message"
                   style="width: 10rem; height: 28.8px; position: relative"
                 >
-                  <span class="blank_loader"></span>
+                  <span class="blank-loader"></span>
                 </div>
                 <ToolCallBar
                   v-else-if="element.type === 'tool_call'"
@@ -973,6 +962,22 @@ $icon-hover: #09f
     animation: l3 1s infinite linear
     position: absolute
 
+@keyframes move
+    0%
+        left: -20% // 开始位置
+    100%
+        left: 120% // 结束位置
+
+.blank-loader
+    width: 10%
+    height: 200%
+    position: absolute
+    background: linear-gradient(to right, rgb(255, 255, 255), rgb(0, 0, 0) 50%, transparent 50%, transparent)
+    top: -50%
+    transform: rotate(30deg)
+    filter: blur(5px)
+    animation: move 1s linear infinite // 每1s循环
+
 @keyframes l
     to
         transform: rotate(1turn)
@@ -1010,31 +1015,4 @@ $icon-hover: #09f
     .delay-status
         position: relative
         top: -.2rem
-</style>
-<style scoped>
-@keyframes move {
-  0% {
-    left: -20%; /* 开始位置 */
-  }
-  100% {
-    left: 120%; /* 结束位置 */
-  }
-}
-
-.blank_loader {
-  width: 10%;
-  height: 200%;
-  position: absolute;
-  background: linear-gradient(
-    to right,
-    rgb(255, 255, 255),
-    rgb(0, 0, 0) 50%,
-    transparent 50%,
-    transparent
-  );
-  top: -50%;
-  transform: rotate(30deg);
-  filter: blur(5px);
-  animation: move 1s linear infinite; /* 每1s循环 */
-}
 </style>

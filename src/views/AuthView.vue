@@ -13,7 +13,7 @@
       />
       <div class="controls">
         <button class="later" @click="login()">游客登录</button>
-        <button class="login" @click="login(accessCode)">Login</button>
+        <button class="login" @click="login(accessCode)">登录</button>
       </div>
     </div>
   </div>
@@ -80,10 +80,8 @@ onUnmounted(() => {
 onMounted(() => {
   addEventListener("keydown", handleEnter);
   // 看看query里有没有key
-  const query = new URLSearchParams(location.search);
-  const key = query.get("key");
-  if (key) {
-    login(key);
+  if (router.currentRoute.value.query.key) {
+    login(router.currentRoute.value.query.key);
   }
 });
 </script>
@@ -126,6 +124,7 @@ $baseColor: #1d93ab
                 color: $baseColor
 
         .title
+            white-space: nowrap
             font-size: 50px
             letter-spacing: 5px
             color: black

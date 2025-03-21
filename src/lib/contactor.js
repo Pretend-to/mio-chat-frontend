@@ -1,7 +1,9 @@
 import Onebot from "./adapter/onebot.js";
 import Openai from "./adapter/openai.js";
 import EventEmmiter from "./event.js";
+import { numberString } from "../utils/generate.js";
 import { config } from "@/lib/runtime.js";
+import { reactive } from "vue";
 
 const AVATAR_BASE_PATH =
   "https://registry.npmmirror.com/@lobehub/icons-static-svg/latest/files/icons";
@@ -59,12 +61,15 @@ export default class Contactor extends EventEmmiter {
       this.platform == "onebot" ? new Onebot(config) : new Openai(config);
 
     if (this.platform == "openai") this.enableOpenaiListener();
+
+    // 使对象具有响应性
+    return reactive(this);
   }
 
   enableOpenaiListener() {
     this.kernel.on("updateReasoning", (e) => {
-      const { reasoning_content, index } = e;
-      const rawMessage = this.messageChain[index];
+      const { reasoning_content, messageId } = e;
+      const rawMessage = this.getMessageById(messageId);
       if (!rawMessage) return;
 
       // 查找现有的 reason 块
@@ -101,8 +106,8 @@ export default class Contactor extends EventEmmiter {
     });
 
     this.kernel.on("updateMessage", (e) => {
-      const { chunk, index } = e;
-      const rawMessage = this.messageChain[index];
+      const { chunk, messageId } = e;
+      const rawMessage = this.getMessageById(messageId);
       if (!rawMessage) return;
 
       rawMessage.content.forEach((msgElm) => {
@@ -131,8 +136,10 @@ export default class Contactor extends EventEmmiter {
     });
 
     this.kernel.on("updateToolCall", (e) => {
-      const { tool_call, index } = e;
-      const rawMessage = this.messageChain[index];
+      const { tool_call, messageId } = e;
+      console.log(tool_call);
+
+      const rawMessage = this.getMessageById(messageId);
       if (!rawMessage) return;
 
       const lastMsgElm = rawMessage.content[rawMessage.content.length - 1];
@@ -150,10 +157,10 @@ export default class Contactor extends EventEmmiter {
         );
         if (previousCall) {
           // 这种情况就是更新之前的 toolCall 消息
-          previousCall.data = {
-            ...tool_call,
-            // params: previousCall.data.params += tool_call.params
-          };
+          previousCall.data = tool_call;
+          if (tool_call.action == "pending") {
+            previousCall.data.params += tool_call.params;
+          }
         } else {
           // 这种情况就是新增一条 toolCall 消息
           rawMessage.content.push(msgElm);
@@ -166,13 +173,13 @@ export default class Contactor extends EventEmmiter {
 
     this.kernel.on("completeMessage", (e) => {
       this.updateLastUpdate();
-      const messageIndex = e.index;
-      const rawMessage = this.messageChain[messageIndex];
+      const messageId = e.messageId;
+      const rawMessage = this.getMessageById(messageId);
       if (rawMessage) {
         this.emit("updateMessageSummary");
 
         this.emit("completeMessage", {
-          index: messageIndex,
+          messageId,
         });
       }
     });
@@ -180,14 +187,14 @@ export default class Contactor extends EventEmmiter {
     this.kernel.on("failedMessage", (e) => {
       console.error(e);
       this.updateLastUpdate();
-      const messageIndex = e.index;
-      const rawMessage = this.messageChain[messageIndex];
+      const messageId = e.messageId;
+      const rawMessage = this.getMessageById(messageId);
       if (rawMessage) {
         this.emit("updateMessageSummary");
 
         this.emit("completeMessage", {
           text: "请求发生错误！\n```json\n" + e.error + "\n```\n",
-          index: messageIndex,
+          messageId,
           error: true,
         });
       }
@@ -326,33 +333,37 @@ export default class Contactor extends EventEmmiter {
 
     return finalMessages;
   }
+  updateMessageSummary() {
+    this.lastMessageSummary = this.getLastMessageSummary();
+  }
+
   /**
    * 从网页前端发来的消息
    */
   async webSend(message) {
     this.updateLastUpdate();
     this.messageChain.push(message);
+    this.updateMessageSummary();
     if (this.platform == "onebot") {
-      return await this.kernel.send(this.id, message.content);
+      const messageId = await this.kernel.send(this.id, message.content);
+      return messageId;
     } else {
       // 截取从this.firstMessageIndex到结尾的消息
       const finalMessages = this._getValidOpenaiMessage();
 
-      // 立即发生回复消息
-      this.revMessage({ content: [] });
+      const messageId = numberString(16);
 
-      const replyIndex = this.messageChain.length - 1;
+      this.revMessage({
+        id: messageId,
+      });
 
-      this.kernel.send(finalMessages, replyIndex, this.options);
-
-      return Math.floor(Math.random() * 100000000)
-        .toString()
-        .padStart(8, "0");
+      this.kernel.send(finalMessages, messageId, this.options);
+      return numberString(16);
     }
   }
 
-  async retryMessage(index) {
-    const message = this.messageChain[index];
+  async retryMessage(id) {
+    const message = this.getMessageById(id);
     if (message) {
       message.content = [
         {
@@ -360,8 +371,9 @@ export default class Contactor extends EventEmmiter {
         },
       ];
       this.updateLastUpdate();
+      const index = this.messageChain.indexOf(message);
       const finalMessages = this._getValidOpenaiMessage(0, index);
-      this.kernel.send(finalMessages, index, this.options);
+      this.kernel.send(finalMessages, id, this.options);
       return true;
     }
   }
@@ -518,6 +530,8 @@ export default class Contactor extends EventEmmiter {
           return "正在思考中...";
         case "reply":
           return ""; // 空字符串处理
+        case "nodes":
+          return "[转发消息]";
         default:
           return "[未知消息类型] " + element.type;
       }
@@ -525,6 +539,7 @@ export default class Contactor extends EventEmmiter {
 
     const msg = message || this.messageChain[this.messageChain.length - 1];
     if (!msg) return "";
+    console.log(msg);
 
     return getMessageText(msg.content ? msg.content[0] : msg);
   }
@@ -535,6 +550,10 @@ export default class Contactor extends EventEmmiter {
 
   updateLastUpdate() {
     this.lastUpdate = new Date().getTime();
+  }
+
+  getMessageById(id) {
+    return this.messageChain.find((msg) => msg.id === id);
   }
 
   loadAvatar() {

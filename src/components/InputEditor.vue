@@ -176,8 +176,15 @@ export default {
         this.handleFileUpload(file);
         return;
       }
-      const availableImageFormats = ["png", "jpg", "jpeg", "gif", "bmp"];
-      const availableDocFormats = ["docx", "pdf", "pptx", "xlsx"];
+      const availableImageFormats = [
+        "png",
+        "jpg",
+        "jpeg",
+        "webp",
+        "gif",
+        "bmp",
+      ];
+      const availableDocFormats = ["docx", "txt", "pdf", "pptx", "xlsx"];
       const fileInput = document.createElement("input");
       fileInput.type = "file";
       fileInput.accept = [...availableDocFormats, ...availableImageFormats]
@@ -369,7 +376,6 @@ export default {
       return result;
     },
     getOnebotPreset() {
-      console.log(this.onebotPresets);
       const preset = this.onebotPresets
         .reduce((acc = [], item) => {
           const arr = item.children ?? [item];
@@ -496,7 +502,6 @@ export default {
       const container = this.presend();
       // this.userInput = "";  // Already cleared in presend
       const message_id = await this.activeContactor.webSend(container); //发送消息
-      this.activeContactor.emit("updateMessageSummary");
       container.id = message_id;
       this.$emit("stroge");
       this.uploaded.images = [];
