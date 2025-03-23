@@ -34,7 +34,9 @@ export default {
     const params = url.searchParams;
     // 检查URL参数是否有preview参数
     if (params.has("preview")) {
-      preview = true;
+      if (params.get("preview") === "true") {
+        preview = true;
+      }
     }
     // 检查URL参数是否有shareId参数
     if (params.has("shareId")) {

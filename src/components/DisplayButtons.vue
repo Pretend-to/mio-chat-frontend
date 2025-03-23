@@ -41,7 +41,7 @@ export default {
     // 检查查询字符串中是否存在preview参数
     const urlParams = new URLSearchParams(window.location.search);
     const preview = urlParams.get("preview");
-    if (preview) {
+    if (preview === "true") {
       this.preview = true;
     }
   },

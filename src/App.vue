@@ -8,7 +8,7 @@ export default {
     displayButtons,
   },
   data() {
-    const displayConfig = config.getDisplayConfig();
+    const displayConfig = config.getBaseConfig();
     const onPhone = window.innerWidth < 600;
     return {
       onPhone,
@@ -27,7 +27,7 @@ export default {
     },
   },
   created() {
-    const displayConfig = config.getDisplayConfig();
+    const displayConfig = config.getBaseConfig();
 
     if (displayConfig) {
       this.fullScreen = displayConfig.full_screen;
@@ -43,7 +43,7 @@ export default {
   methods: {
     setWindowSize(fullScreen) {
       this.fullScreen = fullScreen;
-      config.updateDisplayConfig({
+      config.updateBaseConfig({
         full_screen: fullScreen,
       });
     },

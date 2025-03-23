@@ -3,7 +3,6 @@ import Openai from "./adapter/openai.js";
 import EventEmmiter from "./event.js";
 import { numberString } from "../utils/generate.js";
 import { config } from "@/lib/runtime.js";
-import { reactive } from "vue";
 
 const AVATAR_BASE_PATH =
   "https://registry.npmmirror.com/@lobehub/icons-static-svg/latest/files/icons";
@@ -55,15 +54,32 @@ export default class Contactor extends EventEmmiter {
     this.active = false;
     this.lastUpdate = config.lastUpdate || new Date().getTime();
     this.createTime = config.createTime || new Date().getTime();
-    this.lastMessageSummary = this.getLastMessageSummary();
 
+    this.lastMessageSummary = this.getLastMessageSummary();
     this.kernel =
       this.platform == "onebot" ? new Onebot(config) : new Openai(config);
 
     if (this.platform == "openai") this.enableOpenaiListener();
+  }
 
-    // 使对象具有响应性
-    return reactive(this);
+  toJSON() {
+    // 存储的时候去掉ref
+    return {
+      platform: this.platform,
+      id: this.id,
+      options: this.options,
+      namePolicy: this.namePolicy,
+      avatarPolicy: this.avatarPolicy,
+      title: this.title,
+      name: this.name,
+      avatar: this.avatar,
+      priority: this.priority,
+      messageChain: this.messageChain,
+      active: this.active,
+      lastUpdate: this.lastUpdate,
+      createTime: this.createTime,
+      lastMessageSummary: this.lastMessageSummary,
+    };
   }
 
   enableOpenaiListener() {
@@ -600,7 +616,7 @@ export default class Contactor extends EventEmmiter {
   }
 
   static getAvatarByModel(model) {
-    const modelOwner = config.getOpenaiModelOwner(model);
+    const modelOwner = config.getModelOwner(model);
     if (Object.keys(AVATAR_MAP).includes(modelOwner)) {
       return `${AVATAR_BASE_PATH}/${AVATAR_MAP[modelOwner]}`;
     }

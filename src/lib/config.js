@@ -1,95 +1,197 @@
+const TOOL_CALL_MODEDS = {
+  AUTO: "auto",
+  ANY: "any",
+  NONE: "none",
+};
+const GEMINI_SAFETY_BLOCK_SETTINGS = {
+  NONE: "BLOCK_NONE",
+  LOW: "BLOCK_ONLY_HIGH",
+  MEDIUM: "BLOCK_MEDIUM_AND_ABOVE",
+  HIGH: "BLOCK_LOW_AND_ABOVE",
+  DEFAULT: "HARM_BLOCK_THRESHOLD_UNSPECIFIED",
+};
+const GEMINI_SAFETY_SETTINGS_TYPE = {
+  HARASSMENT: "HARM_CATEGORY_HARASSMENT",
+  HATE_SPEECH: "HARM_CATEGORY_HATE_SPEECH",
+  SEXUALLY_EXPLICIT: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+  DANGEROUS_CONTENT: "HARM_CATEGORY_DANGEROUS_CONTENT",
+  CIVIC_INTEGRITY: "HARM_CATEGORY_CIVIC_INTEGRITY",
+};
+
+const CONFIG_KEY = "config";
+
 export default class Config {
   constructor() {
     this.localPresets = [];
-    this.openaiDefaultConfig = {
-      model: "gpt-4o-mini",
-      provider: "openai",
-      stream: true,
-      temperature: 1,
-      top_p: 1,
-      frequency_penalty: 0,
-      presence_penalty: 0,
-      history: [],
-      tools: [],
-      enable_tool_call: false,
-      opening: "",
-      max_messages_num: 10,
-    };
-    this.openaiTools = [];
-    this.onebotDefaultConfig = null;
-    this.displayConfig = {};
-    this.loadOpenaiTools();
+    this.toolsConfig = {};
+    this.llmTools = [];
+    this.onebotConfig = null;
+    this.llmModels = []; // 初始化 llmModels
+    this.safetyConfig = {};
+    this.baseConfig = {};
+    this.LLMDefaultConfig = {};
+
+    this.initSafetyConfig(); // 放在 _loadStrogeConfig 前
+    this.initLLMDefaultConfig(); // 放在 _loadStrogeConfig 前
     this._loadStrogeConfig();
+    this.loadllmTools();
+    this.loadonebotConfig();
   }
 
-  setDisplayConfig(config) {
-    this.displayConfig = config;
-    localStorage.setItem("display_config", JSON.stringify(config));
+  // 统一设置 localStorage
+  _setLocalStorage(key, data) {
+    localStorage.setItem(key, JSON.stringify(data));
   }
 
-  setOpenaiModels(models) {
-    this.openaiModels = models;
-    this._saveStrogeConfig();
+  // 统一获取 localStorage
+  _getLocalStorage(key) {
+    const storedValue = localStorage.getItem(key);
+    return storedValue ? JSON.parse(storedValue) : null;
   }
 
-  getOpenaiModels() {
-    return this.openaiModels;
-  }
-
-  getOpenaiModelOwner(model) {
-    const group = this.openaiModels.find((modelGroup) =>
-      modelGroup.models.includes(model),
-    );
-    return group?.owner;
-  }
-
-  updateDisplayConfig(patch) {
-    this.displayConfig = {
-      ...this.displayConfig,
-      ...patch,
+  // 统一保存所有配置
+  _saveStrogeConfig() {
+    const configToSave = {
+      localPresets: this.localPresets,
+      toolsConfig: this.toolsConfig,
+      llmTools: this.llmTools,
+      onebotConfig: this.onebotConfig,
+      llmModels: this.llmModels,
+      baseConfig: this.baseConfig,
+      safetyConfig: this.safetyConfig,
+      LLMDefaultConfig: this.LLMDefaultConfig,
     };
-    localStorage.setItem("display_config", JSON.stringify(this.displayConfig));
+    this._setLocalStorage(CONFIG_KEY, configToSave);
   }
 
-  getDisplayConfig() {
-    const config = localStorage.getItem("display_config");
-    if (config) {
-      return JSON.parse(config);
-    }
-  }
-
-  updateOpenaiDefaultConfig(patch) {
-    this.openaiDefaultConfig = {
-      ...this.openaiDefaultConfig,
-      ...patch,
-    };
-    this._saveStrogeConfig();
-  }
-
-  async loadOpenaiTools() {
-    const res = await fetch("/api/openai/tools");
-    const data = await res.json();
-    this.openaiTools = Object.values(data.data.tools);
-    this._saveStrogeConfig();
-  }
-
-  async loadOnebotDefaultConfig() {
-    const onebotOptionsData = await fetch(`/api/onebot/plugins`);
-    const onebotOptionsJson = await onebotOptionsData.json();
-    this.onebotDefaultConfig = onebotOptionsJson.data.options;
-    this._saveStrogeConfig();
-  }
-
+  // 统一加载所有配置
   _loadStrogeConfig() {
-    const config = localStorage.getItem("config");
+    const config = this._getLocalStorage(CONFIG_KEY);
     if (config) {
-      Object.assign(this, JSON.parse(config));
+      Object.assign(this, config);
+      // 由于 Object.assign 不会触发 setter，手动赋值
+      // this.displayConfig = config.displayConfig || {};
+      // this.safetyConfig = config.safetyConfig || {};
+      // this.LLMDefaultConfig = config.LLMDefaultConfig || {};
     } else {
       this._saveStrogeConfig();
     }
   }
 
-  _saveStrogeConfig() {
-    localStorage.setItem("config", JSON.stringify(this));
+  // Display Config
+  setBaseConfig(config) {
+    this.baseConfig = config;
+    this._saveStrogeConfig();
+  }
+
+  updateBaseConfig(patch) {
+    this.baseConfig = {
+      ...this.displayConfig,
+      ...patch,
+    };
+    this._saveStrogeConfig();
+  }
+
+  getBaseConfig() {
+    return this.baseConfig;
+  }
+
+  // Llm Models
+  setLlmModels(models) {
+    this.llmModels = models;
+    this._saveStrogeConfig(); // 保存到总配置
+  }
+
+  getLlmModels() {
+    return this.llmModels;
+  }
+
+  // Llm Models
+  getModelOwner(model) {
+    const group = this.llmModels.find((modelGroup) =>
+      modelGroup.models.includes(model),
+    );
+    return group?.owner;
+  }
+
+  // Safety Config
+  initSafetyConfig() {
+    if (Object.keys(this.safetyConfig).length === 0) {
+      this.safetyConfig = {};
+      for (const key in GEMINI_SAFETY_SETTINGS_TYPE) {
+        this.safetyConfig[GEMINI_SAFETY_SETTINGS_TYPE[key]] =
+          GEMINI_SAFETY_BLOCK_SETTINGS.DEFAULT;
+      }
+    }
+  }
+
+  setSafetyConfig(safetyConfig) {
+    // 新增：手动设置 safetyConfig 并保存
+    this.safetyConfig = safetyConfig;
+    this._saveStrogeConfig();
+  }
+
+  getSafetyConfig() {
+    // 新增：获取 safetyConfig
+    return this.safetyConfig;
+  }
+
+  // OpenAI Default Config
+  initLLMDefaultConfig() {
+    if (Object.keys(this.LLMDefaultConfig).length === 0) {
+      this.LLMDefaultConfig = {
+        provider: "openai",
+        base: {
+          model: "gpt-4o-mini",
+          max_messages_num: 10,
+          stream: true,
+        },
+        chatParams: {
+          temperature: 1,
+          top_p: 1,
+          frequency_penalty: 0,
+          presence_penalty: 0,
+        },
+        toolCallSettings: {
+          mode: TOOL_CALL_MODEDS.AUTO,
+          avaliable: [],
+        },
+        presetSettings: {
+          opening: "",
+          history: [],
+        },
+        safetySettings: {
+          ...this.safetyConfig, //  使用当前的 safetyConfig
+        },
+      };
+    }
+  }
+
+  updateLLMDefaultConfig(patch) {
+    this.LLMDefaultConfig = {
+      ...this.LLMDefaultConfig,
+      ...patch,
+    };
+    this._saveStrogeConfig();
+  }
+
+  getLLMDefaultConfig() {
+    return JSON.parse(JSON.stringify(this.LLMDefaultConfig));
+  }
+
+  // llm Tools
+  async loadllmTools() {
+    const res = await fetch("/api/openai/tools");
+    const data = await res.json();
+    this.llmTools = Object.values(data.data.tools);
+    this._saveStrogeConfig();
+  }
+
+  // OneBot Config
+  async loadonebotConfig() {
+    const onebotOptionsData = await fetch(`/api/onebot/plugins`);
+    const onebotOptionsJson = await onebotOptionsData.json();
+    this.onebotConfig = onebotOptionsJson.data.options;
+    this._saveStrogeConfig();
   }
 }

@@ -214,7 +214,7 @@ export default {
       showPresetsDetail: false,
       showToolsDetail: false,
       presetHistory: contactor.options.history,
-      openaiTools: config.openaiTools,
+      llmTools: config.llmTools,
       toolsList: [],
     };
   },
@@ -260,7 +260,7 @@ export default {
     },
     loadToolsList() {
       const enabledTools = this.activeContactor.options.tools;
-      this.toolsList = this.openaiTools.map((tool) => {
+      this.toolsList = this.llmTools.map((tool) => {
         return {
           name: tool.name,
           description: tool.description,

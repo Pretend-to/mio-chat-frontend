@@ -47,9 +47,7 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to) => {
-  let everLogin = client.everLogin;
-
-  if (!everLogin) everLogin = await client.getLoginHistory();
+  const everLogin = client.everLogin();
   if (
     // 检查用户是否已登录
     !everLogin &&

@@ -10,10 +10,8 @@ const PageStatus = {
 export default {
   data() {
     return {
-      defaultAvatar: "/api/qava?q=1099834705",
-      processedImage: "",
+      processedImage: "/p/qava?q=1099834705",
       activePage: PageStatus.NONE,
-      adminAvatar: "",
     };
   },
   computed: {
@@ -54,7 +52,6 @@ export default {
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
         const img = new Image();
-        img.crossOrigin = "anonymous"; // 设置跨域属性
         img.src = imageUrl;
         img.onload = () => {
           canvas.width = img.width;
@@ -75,7 +72,9 @@ export default {
             resolve(url);
           }, "image/png");
         };
-        img.onerror = (error) => reject(error);
+        img.onerror = (error) => {
+          reject(error);
+        };
       });
     },
     async toChat() {
@@ -91,9 +90,9 @@ export default {
       this.$router.push({ name: "settings" });
     },
     async loadAvatar(adminId) {
-      this.adminAvatar = `/api/qava?q=${adminId}`;
+      const adminAvatar = `/p/qava?q=${adminId}`;
       try {
-        this.processedImage = await this.processImage(this.adminAvatar);
+        this.processedImage = await this.processImage(adminAvatar);
       } catch (error) {
         console.error("Error loading avatar:", error);
       }

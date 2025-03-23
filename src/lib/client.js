@@ -14,7 +14,6 @@ export default class Client extends EventEmitter {
   constructor(config) {
     super();
     this.inited = false;
-    this.everLogin = false; // Loaded from storage
     this.id = null; // Loaded from storage
     this.code = null; // Loaded from storage
     this.isConnected = false; // Dynamic
@@ -26,7 +25,6 @@ export default class Client extends EventEmitter {
     this.onPhone = null; // Dynamic
     this.title = "Mio"; // Fixed
     this.name = "user"; // Fixed
-    this.displaySettings = null; // Web
     this.config = config; // Parameter
   }
 
@@ -34,44 +32,45 @@ export default class Client extends EventEmitter {
    * Prepare initialization
    * @returns {object} Initialization information
    */
-  async beforeInit() {
-    this.setBaseInfo();
-    const localConfig = await this.getLocalStorage();
-    await this.config.loadOnebotDefaultConfig();
-
-    if (localConfig) {
-      localConfig.isConnected = false;
-      this.loadLocalStorage(localConfig);
+  async preInit() {
+    const localBaseInfo = this.config.getBaseConfig();
+    if (Object.keys(localBaseInfo).length === 0) {
+      await this.loadOriginBaseInfo();
     } else {
-      // First-time user
-      this.id = this.genFakeId();
-      this.code = null;
+      this.loadOriginBaseInfo();
+      this.loadBaseInfo(localBaseInfo);
     }
+
+    const localStroge = await this.getLocalStorage();
+    if (localStroge) {
+      this.loadLocalStorage(localStroge);
+    }
+
     this.inited = true;
     this.emit("loaded");
   }
 
-  async genDefaultConctor() {
+  genDefaultConctor() {
     // Create default OneBot contactor
-    const onebotDefaultConfig = {
+    const onebotConfig = {
       id: this.genFakeId(),
       name: "OneBot",
       namePolicy: 1,
       avatarPolicy: 1,
-      avatar: `/api/qava?q=${this.bot_qq}`,
+      avatar: `/p/qava?q=${this.bot_qq}`,
       title: "云崽",
       priority: 0,
-      options: this.config.onebotDefaultConfig,
+      options: {},
       lastUpdate: -Infinity,
     };
-    this.addConcator("onebot", onebotDefaultConfig);
+    this.addConcator("onebot", onebotConfig);
 
     // Update and create OpenAI contactor
-    this.config.updateOpenaiDefaultConfig({
+    this.config.updateLLMDefaultConfig({
       model: this.default_model,
     });
 
-    const openaiDefaultConfig = {
+    const LLMDefaultConfig = {
       id: this.genFakeId(),
       name: "MioBot",
       avatar: "/static/avatar/miobot.png",
@@ -80,14 +79,14 @@ export default class Client extends EventEmitter {
       title: "chat",
       priority: 0,
       lastUpdate: -Infinity,
-      options: { ...this.config.openaiDefaultConfig },
+      options: { ...this.config.LLMDefaultConfig },
     };
 
-    openaiDefaultConfig.options.tools = this.config.openaiTools.map(
+    LLMDefaultConfig.options.tools = this.config.llmTools.map(
       (tool) => tool.name,
     );
-    openaiDefaultConfig.options.enable_tool_call = true;
-    this.addConcator("openai", openaiDefaultConfig);
+    LLMDefaultConfig.options.enable_tool_call = true;
+    this.addConcator("openai", LLMDefaultConfig);
   }
 
   async addConcator(platform, config) {
@@ -179,9 +178,22 @@ export default class Client extends EventEmitter {
     window.location.reload();
   }
 
+  everLogin() {
+    const stroge = localStorage.getItem("everLogin");
+    if (stroge) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  setEverLogin() {
+    localStorage.setItem("everLogin", true);
+  }
+
   async init() {
-    await this.beforeInit();
-    if (this.everLogin) {
+    await this.preInit();
+    if (this.everLogin()) {
       console.log("Detected cache, attempting automatic reconnection");
       this.isConnected = false;
       this.login(this.code);
@@ -225,7 +237,15 @@ export default class Client extends EventEmitter {
    */
   async getLocalStorage() {
     const client = await localforage.getItem("client");
-    return client ? JSON.parse(client) : false;
+    if (client) {
+      const localConfig = JSON.parse(client);
+      return localConfig;
+    } else {
+      // First-time user
+      this.id = this.genFakeId();
+      this.code = null;
+      return null;
+    }
   }
 
   /**
@@ -233,7 +253,6 @@ export default class Client extends EventEmitter {
    * @param {object} client User information
    */
   loadLocalStorage(client) {
-    this.everLogin = client.everLogin;
     this.id = client.id;
     this.code = client.code;
 
@@ -253,7 +272,6 @@ export default class Client extends EventEmitter {
   async setLocalStorage() {
     // await localforage.setItem("client", JSON.stringify(this));
     const client = {
-      everLogin: this.everLogin,
       id: this.id,
       code: this.code,
       contactList: this.contactList,
@@ -276,20 +294,20 @@ export default class Client extends EventEmitter {
       socket.on("connect", async (info) => {
         console.log("Login successful");
         this.default_model = info.default_model;
-        this.everLogin = true;
         this.isConnected = true;
         this.socket = socket;
 
-        this.config.setOpenaiModels(info.models);
+        this.config.setLlmModels(info.models);
         this.addMsgListener();
-        this.config.updateOpenaiDefaultConfig({
+        this.config.updateLLMDefaultConfig({
           model: info.default_model,
         });
 
         if (this.contactList.length == 0) {
-          await this.genDefaultConctor();
+          this.genDefaultConctor();
         }
 
+        this.setEverLogin();
         this.setLocalStorage();
         resolve(info);
       });
@@ -341,44 +359,28 @@ export default class Client extends EventEmitter {
   }
 
   /**
-   * Get a contactor by ID
-   * @param {number} id Contactor ID
-   * @returns {Contactor} Contactor object or first contactor if not found
+   * Set base information
+   * @returns {Promise} Base information
    */
-
-  async setBaseInfo() {
+  async loadOriginBaseInfo() {
     const res = await fetch("/api/base_info");
     const { data } = await res.json();
-    const stored = this.config.getDisplayConfig();
+    this.config.setBaseConfig(data);
+    this.loadBaseInfo(data);
 
-    if (!stored) {
-      this.config.setDisplayConfig(data);
-    }
+    return data;
+  }
 
+  loadBaseInfo(data) {
     this.admin_qq = data.admin_qq;
     this.bot_qq = data.bot_qq;
 
-    this.avatar = `/api/qava?q=${this.admin_qq}`;
-    this.displaySettings = data;
+    this.avatar = `/p/qava?q=${this.admin_qq}`;
 
-    const onebotContactor = this.getContactor(10000);
+    const onebotContactor = this.getContactor(null, 10000);
     if (onebotContactor) {
-      onebotContactor.avatar = `/api/qava?q=${this.bot_qq}`;
+      onebotContactor.avatar = `/p/qava?q=${this.bot_qq}`;
     }
-
-    const keyWidth = 600;
-    this.onPhone = window.innerWidth < keyWidth;
-
-    return null;
-  }
-
-  getDisplaySettings() {
-    return this.displaySettings;
-  }
-
-  async getLoginHistory() {
-    const myclient = await this.getLocalStorage();
-    return myclient.everLogin;
   }
 
   /**

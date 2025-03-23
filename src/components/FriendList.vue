@@ -76,10 +76,8 @@ export default {
       }
     },
     async genBlankBot() {
-      const options = {
-        ...config.openaiDefaultConfig,
-      };
-      const openaiDefaultConfig = {
+      const options = config.getLLMDefaultConfig();
+      const blankConfig = {
         id: this.genFakeId(),
         title: options.default_model,
         avatarPolicy: 0,
@@ -89,7 +87,7 @@ export default {
       };
 
       this.showAddOptions = false;
-      await client.addConcator("openai", openaiDefaultConfig);
+      await client.addConcator("openai", blankConfig);
       this.addReactiveListener();
     },
     startResize(event) {
@@ -141,7 +139,7 @@ export default {
     },
     mergeOptions(options) {
       let result = {};
-      const defaultOptions = config.openaiDefaultConfig;
+      const defaultOptions = config.LLMDefaultConfig;
       for (const key in defaultOptions) {
         if (options[key] === undefined) {
           if (key == "enable_tool_call") {

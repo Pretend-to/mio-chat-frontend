@@ -346,7 +346,7 @@ export default {
       }, 0);
     },
     initExtraOptions() {
-      const models = client.config.getOpenaiModels();
+      const models = client.config.getLlmModels();
       this.openaiModels = models.map((modelGroup) => {
         return {
           value: modelGroup.owner,
@@ -359,11 +359,11 @@ export default {
           }),
         };
       });
-      this.onebotPresets = config.onebotDefaultConfig.textwraper.options;
+      this.onebotPresets = config.onebotConfig.textwraper.options;
       this.loadSelected();
     },
     getOpenaiModelArray(model) {
-      const owner = client.config.getOpenaiModelOwner(model);
+      const owner = client.config.getModelOwner(model);
       return [owner, model];
     },
     wrapText(rawText) {
