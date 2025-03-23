@@ -61,7 +61,7 @@ export default {
     </div>
     <div v-else class="mio-chat" :class="{ fullscreen: fullScreen }">
       <displayButtons :full-screen @set-screen="setWindowSize"></displayButtons>
-      <sideBar ref="sidebar"></sideBar>
+      <sideBar></sideBar>
       <router-view></router-view>
     </div>
   </div>

@@ -24,10 +24,11 @@ export default {
       }
     },
     async resetCache() {
-      const result = await client.resetCache();
-      if (result) {
-        this.$message.success("清理缓存成功");
-      }
+      await client.resetCache();
+      this.$message.success("清理缓存成功");
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     },
   },
 };
