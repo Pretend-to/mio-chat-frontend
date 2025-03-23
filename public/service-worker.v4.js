@@ -1,6 +1,6 @@
 const CACHE_DATABASE_NAME = "my-cache-db";
 const CACHE_OBJECT_STORE_NAME = "responses";
-const CACHE_VERSION = 9; // 每次修改 Service Worker 文件时，更新此版本号！
+const CACHE_VERSION = 10; // 每次修改 Service Worker 文件时，更新此版本号！
 const MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 天的缓存有效期 (毫秒)
 const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // 每天清理一次 (毫秒)
 
@@ -376,3 +376,25 @@ function isAPIRequest(request) {
   //只有是/api/并且不是图片和字体，才认为是API请求
   return isApiUrl && !isImage && !isFont;
 }
+
+self.addEventListener("message", (event) => {
+  if (event.data.type === "CLEAN_CACHE") {
+    console.log("收到主线程清除缓存的指令");
+    event.waitUntil(
+      deleteExpiredCache()
+        .then(() => {
+          console.log("缓存清除完成");
+          // 可选：向主线程发送确认消息
+          event.source.postMessage({ type: "CACHE_CLEANED" });
+        })
+        .catch((error) => {
+          console.error("清除缓存失败:", error);
+          // 可选：向主线程发送错误消息
+          event.source.postMessage({
+            type: "CACHE_CLEAN_FAILED",
+            error: error,
+          });
+        }),
+    );
+  }
+});

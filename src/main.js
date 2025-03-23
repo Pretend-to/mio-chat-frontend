@@ -10,7 +10,6 @@ import "md-editor-v3/lib/style.css";
 import "./assets/mio.css";
 
 import { createApp } from "vue";
-import { createPinia } from "pinia";
 
 import ElementPlus from "element-plus";
 
@@ -20,7 +19,6 @@ import router from "./router";
 const app = createApp(App);
 
 app.use(ElementPlus);
-app.use(createPinia());
 app.use(router);
 
 app.mount("#app");
@@ -29,7 +27,7 @@ app.mount("#app");
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
-      .register("/service-worker.v3.js") // 确保路径正确
+      .register("/service-worker.v4.js") // 确保路径正确
       .then((registration) => {
         console.log("Service Worker registered: ", registration);
       })

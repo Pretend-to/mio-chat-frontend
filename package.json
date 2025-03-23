@@ -16,7 +16,6 @@
     "html2canvas": "^1.4.1",
     "localforage": "^1.10.0",
     "md-editor-v3": "^5.3.2",
-    "pinia": "^2.1.7",
     "rollup-plugin-visualizer": "^5.14.0",
     "spark-md5": "^3.0.2",
     "vue": "^3.5.3",

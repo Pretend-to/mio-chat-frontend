@@ -172,10 +172,114 @@ export default class Client extends EventEmitter {
     }
   }
 
-  reset() {
+  async reset() {
     localforage.clear();
     localStorage.clear();
-    window.location.reload();
+    try {
+      await this.resetCache();
+    } catch (error) {
+      console.error("Failed to reset cache:", error);
+    }
+    return true;
+  }
+
+  resetCache() {
+    return new Promise((resolve, reject) => {
+      if ("serviceWorker" in navigator) {
+        // 确保只添加一次 message 监听器
+        if (!this.messageListenerAdded) {
+          navigator.serviceWorker.addEventListener("message", (event) => {
+            if (event.data.type === "CACHE_CLEANED") {
+              console.log("收到来自 Service Worker 的缓存清除成功消息");
+              resolve(true); // 清除成功，resolve Promise
+            } else if (event.data.type === "CACHE_CLEAN_FAILED") {
+              console.error(
+                "收到来自 Service Worker 的缓存清除失败消息:",
+                event.data.error,
+              );
+              reject(
+                new Error("Service Worker 缓存清除失败: " + event.data.error),
+              ); // 清除失败，reject Promise
+            }
+          });
+          this.messageListenerAdded = true; // 设置标志，避免重复添加
+        }
+
+        navigator.serviceWorker.ready
+          .then((registration) => {
+            console.log("向 Service Worker 发送清除缓存的消息");
+            // 1. 发送消息清理当前 Service Worker 的缓存
+            registration.active.postMessage({ type: "CLEAN_CACHE" });
+
+            // 2. 卸载所有已注册的 Service Worker
+            navigator.serviceWorker
+              .getRegistrations()
+              .then((registrations) => {
+                if (registrations && registrations.length > 0) {
+                  console.log(
+                    `找到 ${registrations.length} 个已注册的 Service Worker，正在卸载...`,
+                  );
+                  const unregisterPromises = registrations.map((reg) => {
+                    console.log(`正在卸载 Service Worker: ${reg.scope}`);
+                    return reg
+                      .unregister()
+                      .then((unregistered) => {
+                        if (unregistered) {
+                          console.log(`Service Worker ${reg.scope} 卸载成功`);
+                        } else {
+                          console.warn(`Service Worker ${reg.scope} 卸载失败`);
+                        }
+                        return unregistered;
+                      })
+                      .catch((error) => {
+                        console.error(
+                          `卸载 Service Worker ${reg.scope} 失败:`,
+                          error,
+                        );
+                        // 注意：这里不 reject Promise，因为我们希望继续尝试卸载其他的 Service Worker
+                        return false; // 返回 false 表示卸载失败
+                      });
+                  });
+
+                  // 等待所有卸载操作完成
+                  Promise.all(unregisterPromises)
+                    .then((results) => {
+                      const allUnregistered = results.every((result) => result); // 检查是否所有都卸载成功
+                      if (allUnregistered) {
+                        console.log("所有 Service Worker 卸载完成");
+                      } else {
+                        console.warn("部分 Service Worker 卸载失败");
+                      }
+                      //resolve(true); //清理和卸载都完成，resolve
+                    })
+                    .catch((error) => {
+                      console.error(
+                        "卸载 Service Worker 过程中发生错误:",
+                        error,
+                      );
+                      //reject(error); 卸载过程中出错，reject
+                    });
+                } else {
+                  console.log("没有找到已注册的 Service Worker");
+                  //resolve(true); // 没有需要卸载的，resolve
+                }
+              })
+              .catch((error) => {
+                console.error("获取 Service Worker 注册信息失败:", error);
+                //reject(error);  获取注册信息失败，reject
+              });
+            //无论卸载成功与否，最终都resolve，保证流程跑通，避免影响后续操作。
+            resolve(true); //清理和卸载都完成，resolve
+          })
+          .catch((error) => {
+            console.error("Service Worker ready failed:", error);
+            reject(error); // Service Worker 就绪失败，reject Promise
+          });
+      } else {
+        console.error("Service Worker 不可用");
+        reject(new Error("Service Worker 不可用")); // Service Worker 不可用，reject Promise
+      }
+    });
   }
 
   everLogin() {
