@@ -508,6 +508,19 @@ export default {
         this.seletedText = "";
       }
     },
+    toProfile() {
+      // this.$router.push({
+      //   name: "profile",
+      //   params: {
+      //     id: this.activeContactor.id,
+      //   },
+      // });
+      // 弹出维护提示
+      this.$message({
+        message: "此功能正在维护中",
+        type: "warning",
+      });
+    },
     scrollHandler() {
       this.showMenu = false;
       if (this.showemoji) this.showemoji = false;
@@ -578,10 +591,7 @@ export default {
       <div class="return" @click="tolist()">
         <i class="iconfont icon-return"></i>
       </div>
-      <div
-        class="name-area"
-        @click="$router.push(`/profile/${activeContactor.id}`)"
-      >
+      <div class="name-area" @click="toProfile">
         <div class="contactor-name">{{ activeContactor.name }}</div>
         <span :class="'delay-status ' + getDelayStatus"></span>
         <span class="delay-num">当前延迟: {{ currentDelay }} ms</span>
@@ -625,7 +635,7 @@ export default {
               v-if="item.role === 'other'"
               :src="activeContactor.avatar"
               :alt="activeContactor.name"
-              @click="$router.push(`/profile/${activeContactor.id}`)"
+              @click="toProfile"
             />
             <img v-else :src="client.avatar" :alt="client.name" />
           </div>
