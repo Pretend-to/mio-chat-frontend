@@ -26,11 +26,11 @@ const router = createRouter({
           name: "chat_view",
           component: ChatView,
         },
-        {
-          path: "/profile/:id",
-          name: "profile_view",
-          component: () => import("../views/ProfileView.vue"),
-        },
+        // {
+        //   path: "/profile/:id",
+        //   name: "profile_view",
+        //   component: () => import("../views/ProfileView.vue"),
+        // },
       ],
     },
     {

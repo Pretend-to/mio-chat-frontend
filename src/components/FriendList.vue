@@ -137,22 +137,30 @@ export default {
         return parseInt(randomNumStr);
       }
     },
+    manageAddMenu() {
+      // this.showAddOptions = !this.showAddOptions;
+      // 弹出维护提示
+      this.$message({
+        message: "抱歉，此功能正在维护",
+        type: "warning",
+      });
+    },
     mergeOptions(options) {
       let result = {};
-      const defaultOptions = config.LLMDefaultConfig;
-      for (const key in defaultOptions) {
-        if (options[key] === undefined) {
-          if (key == "enable_tool_call") {
-            if (options.tools) {
-              result[key] = true;
-            }
-            continue;
-          }
-          result[key] = defaultOptions[key];
-        } else {
-          result[key] = options[key];
-        }
-      }
+      const defaultOptions = config.getLLMDefaultConfig();
+      // for (const key in defaultOptions) {
+      //   if (options[key] === undefined) {
+      //     if (key == "enable_tool_call") {
+      //       if (options.tools) {
+      //         result[key] = true;
+      //       }
+      //       continue;
+      //     }
+      //     result[key] = defaultOptions[key];
+      //   } else {
+      //     result[key] = options[key];
+      //   }
+      // }
       return result;
     },
     async addPresetContactor(preset) {
@@ -243,11 +251,7 @@ export default {
         <input id="main-search" type="text" placeholder="搜索" />
       </div>
       <div class="bu-add">
-        <button
-          id="addcont"
-          title="Add Bot"
-          @click="showAddOptions = !showAddOptions"
-        >
+        <button id="addcont" title="Add Bot" @click="manageAddMenu">
           <i class="iconfont add"></i>
         </button>
         <div
