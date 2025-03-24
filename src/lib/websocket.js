@@ -1,6 +1,7 @@
 import EventEmitter from "./event.js";
 import { randomString } from "../utils/generate.js";
 import RetryManager from "./retry-manager.js";
+import io from "socket.io-client";
 
 /**
  * WebSocket Connection Class
@@ -29,8 +30,11 @@ export default class Socket extends EventEmitter {
     });
     this.connectionState = "disconnected";
     this.hasSuccessfulWebSocket = false;
+    this.pendingRequests = new Set(); // 用于跟踪正在处理的 request_id
+    this.reconnectDelay = 5000; // 重连延迟，单位毫秒
+    this.maxHeartbeatFails = 3; // 最大心跳失败次数
+    this.heartbeatFails = 0; // 当前心跳失败次数
   }
-
   /**
    * 获取WebSocket URL
    * @returns {String} WebSocket URL
@@ -60,6 +64,7 @@ export default class Socket extends EventEmitter {
       this.hasSuccessfulWebSocket = true;
     }
     this.retryManager.reset();
+    this.heartbeatFails = 0;
     console.log("SocketIO连接成功");
     this.startHeartbeat();
   }
@@ -100,12 +105,11 @@ export default class Socket extends EventEmitter {
   switchToPolling() {
     console.log("WebSocket 连接失败，切换到轮询模式...");
     this.disconnect();
-    const socket = io(this.url, {
+    this.socket = io(this.url, {
       path: "/socket.io",
       transports: ["polling"],
       auth: { id: this.id, token: this.code },
     });
-    this.socket = socket;
     this.initEventListeners();
   }
 
@@ -115,14 +119,19 @@ export default class Socket extends EventEmitter {
   async attemptReconnect() {
     if (this.connectionState === "reconnecting") return;
     this.connectionState = "reconnecting";
-
-    try {
-      await this.retryManager.retry(() => this.connect());
-    } catch (error) {
-      console.error("重连失败，已达到最大重试次数", error);
-      this.connectionState = "failed";
-      this.emit("reconnect_failed");
-    }
+    this.stopHeartbeat(); // 确保停止心跳
+    setTimeout(async () => {
+      // 延迟重连
+      try {
+        await this.retryManager.retry(() => this.connect());
+      } catch (error) {
+        console.error("重连失败，已达到最大重试次数", error);
+        this.connectionState = "failed";
+        this.emit("reconnect_failed");
+      } finally {
+        this.connectionState = "disconnected"; // 重连尝试结束后更新状态
+      }
+    }, this.reconnectDelay);
   }
 
   /**
@@ -134,6 +143,8 @@ export default class Socket extends EventEmitter {
       transports: ["websocket", "polling"],
       auth: { id: this.id, token: this.code },
       reconnectionAttempts: 0, // 禁用socket.io的自动重连，使用我们自己的重连机制
+      pingTimeout: 5000, // 如果服务器在5秒内没有响应ping，则认为连接已断开
+      pingInterval: 10000, // 每10秒发送一次ping
     });
     console.log("SocketIO连接中...");
     this.initEventListeners();
@@ -143,17 +154,37 @@ export default class Socket extends EventEmitter {
    * 启动心跳检测
    */
   startHeartbeat() {
+    if (this.heartBeat) {
+      clearInterval(this.heartBeat); // 清除之前的心跳，避免重复
+    }
+
     this.heartBeat = setInterval(async () => {
       if (this.socket?.connected) {
         try {
           const res = await this.fetch("/api/system/heartbeat", {
             timestamp: Date.now(),
           });
+          console.log("心跳检测成功", res);
           this.updateDelay(res);
+          this.heartbeatFails = 0; // 重置失败计数器
         } catch (error) {
-          if (this.connectionState === "failed") {
-            console.error("心跳检测失败", error);
-          }
+          this.heartbeatFails++;
+          // console.error(
+          //   `心跳检测失败 ${this.heartbeatFails}/${this.maxHeartbeatFails}`,
+          //   error,
+          // );
+
+          // if (
+          //   this.heartbeatFails >= this.maxHeartbeatFails &&
+          //   !this.socket?.connected
+          // ) {
+          //   console.error("多次心跳检测失败，触发重连");
+          //   this.stopHeartbeat();
+          //   this.handleDisconnect(); // 模拟断开连接
+          // }
+          // if (this.connectionState === "failed") {
+          //   console.error("心跳检测失败,连接已失败", error);
+          // }
         }
       }
     }, 3000);
@@ -209,6 +240,7 @@ export default class Socket extends EventEmitter {
         if (e.type === "login") this.emit("connect", e.data);
         this.emit("system_message", e);
       }
+      this.pendingRequests.delete(e.request_id); // 移除 request_id
     } catch (error) {
       console.error("JSON解析失败:", error);
     }
@@ -219,10 +251,21 @@ export default class Socket extends EventEmitter {
    * @param {Object} message - 要发送的消息对象
    */
   sendMessage(message) {
-    if (this.available) {
-      this.socket.emit("message", JSON.stringify(message));
-    } else {
+    if (!this.available) {
       console.log("SocketIO 连接不可用");
+      return;
+    }
+
+    if (this.pendingRequests.has(message.request_id)) {
+      console.warn(`重复的 request_id: ${message.request_id}, 请求被阻止`);
+      return;
+    }
+
+    this.pendingRequests.add(message.request_id);
+    this.socket.emit("message", JSON.stringify(message));
+
+    if (message.type !== "heartbeat") {
+      console.log("WebSocket发送请求", message);
     }
   }
 
@@ -243,22 +286,22 @@ export default class Socket extends EventEmitter {
         data: data,
       };
 
-      this.requests.push(request.request_id);
-
       const timeOut = new Promise((_, reject) => {
-        setTimeout(() => reject("timeout"), 60000);
+        setTimeout(() => {
+          this.pendingRequests.delete(request.request_id); // 超时时移除
+          reject("timeout");
+        }, 60000);
       });
 
       const response = new Promise((resolve) => {
         this.on(request.request_id, (res) => {
-          this.requests.splice(this.requests.indexOf(request.request_id), 1);
+          this.pendingRequests.delete(request.request_id); // 收到响应时移除
           resolve(res.data);
         });
       });
 
       Promise.race([timeOut, response]).then(resolve).catch(reject);
-
-      this.sendMessage(request);
+      this.sendMessage(request); // 使用 sendMessage 发送请求
       if (request.type !== "heartbeat") {
         console.log("WebSocket发送请求", url, request);
       }
@@ -271,18 +314,14 @@ export default class Socket extends EventEmitter {
    * @returns {AsyncGenerator<any>} - 补全数据生成器
    */
   async *streamCompletions(data) {
-    console.log("WebSocket开始流式获取补全数据");
     const request = {
       request_id: randomString(16),
       protocol: "llm",
       type: "completions",
       data: data,
     };
-
-    this.requests.push(request.request_id);
     this.sendMessage(request);
     console.log("WebSocket发送请求", request);
-
     try {
       while (true) {
         const chunk = await new Promise((resolve, reject) => {
@@ -294,6 +333,7 @@ export default class Socket extends EventEmitter {
               data.message === "failed"
             ) {
               this.off(request.request_id);
+              this.pendingRequests.delete(request.request_id);
               reject({ done: true, data: data });
             }
           });
@@ -307,6 +347,8 @@ export default class Socket extends EventEmitter {
         return;
       }
       throw e;
+    } finally {
+      this.pendingRequests.delete(request.request_id); // 确保退出时删除
     }
   }
 }

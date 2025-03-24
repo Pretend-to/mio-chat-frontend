@@ -45,7 +45,7 @@
                   :model-value="message.data.text"
                 />
                 <el-image
-                  v-else-if="message.type === 'image'"
+                  v-if="message.type === 'image'"
                   :key="index"
                   style="margin: 8px 0; max-width: 20rem; border-radius: 1rem"
                   :src="message.data.file"
@@ -80,7 +80,6 @@ export default {
   components: {
     MdPreview,
   },
-  // ForwardMsg.vue
   props: {
     messages: {
       type: Array,
@@ -115,7 +114,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 #forward-msg-preview {
   width: 15rem;
   display: flex;

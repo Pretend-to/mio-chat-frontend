@@ -102,7 +102,7 @@ export default {
     },
   },
   created() {
-    this.initExtraOptions();
+    this.loadSelected();
   },
   mounted() {
     this.textareaRef = this.$refs.textarea;
@@ -176,14 +176,7 @@ export default {
         this.handleFileUpload(file);
         return;
       }
-      const availableImageFormats = [
-        "png",
-        "jpg",
-        "jpeg",
-        "webp",
-        "gif",
-        "bmp",
-      ];
+      const availableImageFormats = ["png", "jpg", "jpeg", "webp"];
       const availableDocFormats = ["docx", "txt", "pdf", "pptx", "xlsx"];
       const fileInput = document.createElement("input");
       fileInput.type = "file";
@@ -346,7 +339,9 @@ export default {
       }, 0);
     },
     initExtraOptions() {
-      const models = client.config.getLlmModels();
+      const { provider } = this.activeContactor.options;
+      console.log(provider);
+      const models = client.config.getLlmModels(provider);
       this.openaiModels = models.map((modelGroup) => {
         return {
           value: modelGroup.owner,
@@ -360,7 +355,6 @@ export default {
         };
       });
       this.onebotPresets = config.onebotConfig.textwraper.options;
-      this.loadSelected();
     },
     getOpenaiModelArray(model) {
       const owner = client.config.getModelOwner(model);
@@ -391,7 +385,8 @@ export default {
           this.selectedOption = this.activeContactor.preset;
         }
       } else {
-        this.selectedOption = this.activeContactor.options.model;
+        this.initExtraOptions();
+        this.selectedOption = this.activeContactor.options.base.model;
       }
     },
     adjustTextareaHeight() {
@@ -423,6 +418,9 @@ export default {
       const endPos = this.cursorPosition[1];
       const textBeforeCursor = this.userInput.substring(0, startPos);
       const textAfterCursor = this.userInput.substring(endPos);
+
+      console.log(`前面的：${textBeforeCursor}，后面的：${textAfterCursor}`);
+
       this.userInput = textBeforeCursor + unicode + textAfterCursor;
       inputer.innerHTML = this.userInput;
       // 移动光标位置到表情符号之后
@@ -431,6 +429,11 @@ export default {
         range.setEnd(inputer.firstChild, startPos + unicode.length);
         sel.removeAllRanges();
         sel.addRange(range);
+        //更新光标位置
+        this.cursorPosition = [
+          startPos + unicode.length,
+          startPos + unicode.length,
+        ];
       }, 0);
       this.ctrlEmojiPanel();
     },
@@ -470,7 +473,7 @@ export default {
       };
 
       ImageSrcs.forEach((imgUrl) => {
-        container.content.push({
+        container.content.unshift({
           type: "image",
           data: {
             file: imgUrl,

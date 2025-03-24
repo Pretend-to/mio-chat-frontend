@@ -28,15 +28,21 @@ const namePolicy = ["MODEL", "CUSTOM", "SUMMARY"];
 
 export default class Contactor extends EventEmmiter {
   /**
-   * Constructor of Contactor class
-   * @param {string} platform - Platform of contactor
-   * @param {object} config - Configuration of contactor
-   * @param {string} config.id - ID of the contactor
-   * @param {string} config.name - Name of the contactor
-   * @param {string} config.avatar - Avatar of the contactor
-   * @param {string} config.title - Title of the contactor
-   * @param {object} config.options - Options of the contactor
-   * @param {number} config.priority - Priority of the contactor,from 0 to 1, 0 means highest priority
+   * Contactor 构造函数
+   * @param {string} platform - 平台 (e.g., "onebot", "openai")
+   * @param {object} config - 配置对象
+   * @param {string} config.id - ID
+   * @param {string} config.name - 名称
+   * @param {string} config.avatar - 头像 URL
+   * @param {string} config.title - 标题
+   * @param {object} config.options - 选项
+   * @param {number} config.priority - 优先级 (0 最高)
+   * @param {number} config.namePolicy - 名称策略 (默认 0)
+   * @param {number} config.avatarPolicy - 头像策略 (默认 0)
+   * @param {number} config.firstMessageIndex - 首条消息索引 (默认 0)
+   * @param {array} config.messageChain - 消息链 (默认 [])
+   * @param {number} config.lastUpdate - 最后更新时间 (默认当前时间)
+   * @param {number} config.createTime - 创建时间 (默认当前时间)
    */
   constructor(platform, config) {
     super();
@@ -49,21 +55,25 @@ export default class Contactor extends EventEmmiter {
     this.name = config.name;
     this.avatar = config.avatar;
     this.priority = config.priority;
-    this.firstMessageIndex = 0;
+    this.firstMessageIndex = config.firstMessageIndex || 0;
     this.messageChain = config.messageChain || [];
     this.active = false;
-    this.lastUpdate = config.lastUpdate || new Date().getTime();
-    this.createTime = config.createTime || new Date().getTime();
-
+    this.lastUpdate = config.lastUpdate || Date.now(); // 使用 Date.now()
+    this.createTime = config.createTime || Date.now(); // 使用 Date.now()
     this.lastMessageSummary = this.getLastMessageSummary();
     this.kernel =
-      this.platform == "onebot" ? new Onebot(config) : new Openai(config);
+      platform === "onebot" ? new Onebot(config) : new Openai(config); // 简化条件判断
 
-    if (this.platform == "openai") this.enableOpenaiListener();
+    if (platform === "openai") {
+      this.enableOpenaiListener();
+    }
   }
 
+  /**
+   * 将 Contactor 对象转换为 JSON 格式
+   * @returns {object} - 包含 Contactor 属性的 JSON 对象
+   */
   toJSON() {
-    // 存储的时候去掉ref
     return {
       platform: this.platform,
       id: this.id,
@@ -79,6 +89,7 @@ export default class Contactor extends EventEmmiter {
       lastUpdate: this.lastUpdate,
       createTime: this.createTime,
       lastMessageSummary: this.lastMessageSummary,
+      firstMessageIndex: this.firstMessageIndex,
     };
   }
 
@@ -277,17 +288,18 @@ export default class Contactor extends EventEmmiter {
           formatedMsg.role = "tool";
           formatedMsg.content = JSON.stringify(elm.data.result);
           formatedMsg.tool_call_id = elm.data.id;
+          formatedMsg.name = elm.data.name;
           subArray.push({ ...formatedMsg });
 
           formatedMsg.role = role;
         } else if (role == "user" || role == "assistant") {
-          if (elm.type == "text") {
-            formatedMsg.content = elm.data.text;
-            formatedMsg._content_type = "text";
-            subArray.push(formatedMsg);
-          } else if (elm.type == "image") {
+          if (elm.type == "image") {
             formatedMsg.content = elm.data.file;
             formatedMsg._content_type = "image";
+            subArray.push(formatedMsg);
+          } else if (elm.type == "text") {
+            formatedMsg.content = elm.data.text;
+            formatedMsg._content_type = "text";
             subArray.push(formatedMsg);
           } else if (elm.type == "file") {
             fileList.push(elm.data.file);
@@ -316,18 +328,18 @@ export default class Contactor extends EventEmmiter {
         message = {
           role: "user",
           content: [
-            ...textElm.map((elm) => {
-              return {
-                type: "text",
-                text: elm.content + filePrompt,
-              };
-            }),
             ...imageElm.map((elm) => {
               return {
                 type: "image_url",
                 image_url: {
                   url: elm.content,
                 },
+              };
+            }),
+            ...textElm.map((elm) => {
+              return {
+                type: "text",
+                text: elm.content + filePrompt,
               };
             }),
           ],
@@ -343,8 +355,10 @@ export default class Contactor extends EventEmmiter {
       }
     });
 
-    if (this.options.history) {
-      finalMessages = this.options.history.concat(finalMessages);
+    const presetHistory = this.options.presetSettings.history;
+
+    if (presetHistory) {
+      finalMessages = presetHistory.concat(finalMessages);
     }
 
     return finalMessages;

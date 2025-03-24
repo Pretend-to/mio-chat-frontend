@@ -31,7 +31,4 @@ module.exports = {
       },
     },
   ],
-  globals: {
-    io: "readonly",
-  },
 };

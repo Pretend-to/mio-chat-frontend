@@ -89,6 +89,7 @@ export default {
       autoScroll: false,
       fullScreen: false,
       chatWindowRef: null,
+      clearMessageTip: "以上的对话记录已清除",
     };
   },
   computed: {
@@ -214,7 +215,7 @@ export default {
           elm.scrollTop = elm.scrollHeight;
         }
         if (clicked) this.$message("已滑至底部");
-      }, 20);
+      }, 1);
     },
     cleanScreen() {
       this.activeContactor.messageChain = [];
@@ -231,6 +232,23 @@ export default {
         message: "上下文信息已清除，之后的请求将不再记录上文记录",
         type: "success",
       });
+      this.activeContactor.makeSystemMessage(this.clearMessageTip);
+      // 持久化
+      client.setLocalStorage();
+    },
+
+    delSystemMessage(index) {
+      const message = this.activeContactor.messageChain[index];
+      // 判断是否是清除提示
+      if (
+        message.content[0].type === "text" &&
+        message.content[0].data.text === this.clearMessageTip
+      ) {
+        this.activeContactor.firstMessageIndex = 0;
+      }
+      this.activeContactor.messageChain.splice(index, 1);
+      // 持久化
+      client.setLocalStorage();
     },
 
     isValidInput(input) {
@@ -248,7 +266,7 @@ export default {
     },
 
     async setModel(name) {
-      this.activeContactor.options.model = name;
+      this.activeContactor.options.base.model = name;
       this.activeContactor.title = name;
       this.activeContactor.loadAvatar();
       await client.setLocalStorage(); //持久化存储
@@ -509,17 +527,17 @@ export default {
       }
     },
     toProfile() {
-      // this.$router.push({
-      //   name: "profile",
-      //   params: {
-      //     id: this.activeContactor.id,
-      //   },
-      // });
-      // 弹出维护提示
-      this.$message({
-        message: "此功能正在维护中",
-        type: "warning",
+      this.$router.push({
+        name: "profile_view",
+        params: {
+          id: this.activeContactor.id,
+        },
       });
+      // 弹出维护提示
+      // this.$message({
+      //   message: "此功能正在维护中",
+      //   type: "warning",
+      // });
     },
     scrollHandler() {
       this.showMenu = false;
@@ -716,7 +734,7 @@ export default {
                   v-else-if="element.type === 'tool_call'"
                   :tool-call="element.data"
                 />
-                <MdPreview
+                <!-- <MdPreview
                   v-else
                   preview-theme="github"
                   :model-value="
@@ -724,12 +742,17 @@ export default {
                     JSON.stringify(element, null, 2) +
                     '\n```'
                   "
-                />
+                /> -->
               </div>
             </div>
           </div>
           <div v-else class="system-message">
-            {{ item.content[0].data.text }}
+            <div class="system-message-content">
+              {{ item.content[0].data.text }}
+            </div>
+            <div class="system-message-button">
+              <i class="iconfont close" @click="delSystemMessage(index)"></i>
+            </div>
           </div>
         </div>
       </div>
@@ -777,7 +800,7 @@ $icon-hover: #09f
     width: 100%
     display: flex
     align-items: flex-end
-    justify-content: space-between
+    justify-content: flex-start
     border-bottom: 0.0625rem solid #ebebeb
 
     @media (max-width: $mobile)
@@ -804,7 +827,7 @@ $icon-hover: #09f
         display: flex
         align-items: center
         flex-basis: 10rem
-        max-width: 20rem
+        flex-grow: 1
         justify-content: flex-start
         margin: 0 0 .5rem 1rem
 

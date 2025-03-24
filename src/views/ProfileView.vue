@@ -17,16 +17,30 @@
               在线
             </div>
           </div>
+          <div class="base-info-provider">
+            <el-select
+              v-model="llmProvider"
+              style="width: 10rem"
+              @change="switchLLMProvider"
+            >
+              <el-option
+                v-for="item in llmProviders"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
+          </div>
         </div>
         <div class="info-blocks">
           <div
             v-if="activeContactor.platform == 'openai'"
             class="openai-settings"
           >
-            <div class="block-title">OpenAI 基本配置</div>
+            <div class="block-title">LLM 基本配置</div>
             <div class="block-content">
               <div
-                v-for="(value, key) in openaiSettings"
+                v-for="(_, key) in llmGeneralKeys"
                 :key="key"
                 class="block-content-item"
               >
@@ -34,44 +48,44 @@
                 <div class="item-content">
                   <el-input
                     v-if="['model', 'max_messages_num'].includes(key)"
-                    v-model="openaiSettings[key]"
-                    @change="updateOpenaiOptions"
+                    v-model="llmGeneralKeys[key]"
+                    @change="updateLLMOptions"
                   ></el-input>
                   <el-switch
                     v-else-if="['stream', 'enable_tool_call'].includes(key)"
-                    v-model="openaiSettings[key]"
-                    @change="updateOpenaiOptions"
+                    v-model="llmGeneralKeys[key]"
+                    @change="updateLLMOptions"
                   ></el-switch>
                   <el-slider
                     v-else-if="['temperature'].includes(key)"
-                    v-model="openaiSettings[key]"
+                    v-model="llmGeneralKeys[key]"
                     :step="sliderTypeARange[2]"
                     :min="sliderTypeARange[0]"
                     :max="sliderTypeARange[1]"
-                    @change="updateOpenaiOptions"
+                    @change="updateLLMOptions"
                   />
                   <el-slider
                     v-else-if="['top_p'].includes(key)"
-                    v-model="openaiSettings[key]"
+                    v-model="llmGeneralKeys[key]"
                     :step="sliderTypeBRange[2]"
                     :min="sliderTypeBRange[0]"
                     :max="sliderTypeBRange[1]"
-                    @change="updateOpenaiOptions"
+                    @change="updateLLMOptions"
                   />
                   <el-slider
                     v-else-if="
                       ['frequency_penalty', 'presence_penalty'].includes(key)
                     "
-                    v-model="openaiSettings[key]"
+                    v-model="llmGeneralKeys[key]"
                     :step="sliderTypeCRange[2]"
                     :min="sliderTypeCRange[0]"
                     :max="sliderTypeCRange[1]"
-                    @change="updateOpenaiOptions"
+                    @change="updateLLMOptions"
                   />
                 </div>
               </div>
             </div>
-            <div class="block-title">OpenAI 预设配置</div>
+            <div class="block-title">LLM 预设配置</div>
             <div class="block-content">
               <div class="block-content-item">
                 <div class="item-title">预设历史记录</div>
@@ -113,8 +127,26 @@
                 />
               </div>
             </div>
-            <div class="block-title">OpenAI 工具配置</div>
+            <div class="block-title">LLM 工具调用配置</div>
             <div class="block-content">
+              <div class="block-content-item">
+                <div class="item-title">工具调用模式</div>
+                <div class="item-content">
+                  <el-select
+                    v-model="llmToolCallMode"
+                    placeholder="AUTO"
+                    style="width: 10rem"
+                    @change="switchToolCallMode"
+                  >
+                    <el-option
+                      v-for="item in toolCallModes"
+                      :key="item.value"
+                      :label="item.label"
+                      :value="item.value"
+                    />
+                  </el-select>
+                </div>
+              </div>
               <div class="block-content-item">
                 <div class="item-title">工具函数列表</div>
                 <div class="item-content">
@@ -169,7 +201,6 @@
             </div>
           </div>
         </div>
-        <div class="extra-info"></div>
       </div>
     </div>
     <div class="action-bar">
@@ -202,20 +233,30 @@ export default {
   data() {
     const currentId = parseInt(this.$route.params.id);
     const contactor = client.getContactor(currentId);
+    const options = JSON.parse(JSON.stringify(contactor.options));
+    const toolCallModes = config.getToolCallModes();
+    const providers = config.getLLMProviders();
 
     return {
-      activeContactor: contactor,
-      openaiSettings: this.getShownOpenAISettings(contactor.options),
+      llmProviders: providers,
+      toolCallModes: toolCallModes,
       currentDelay: 0,
-      centerDialogVisible: false,
+      activeContactor: contactor,
+      options: options,
+      llmProvider: options.provider,
+      llmBaseSettings: options.base,
+      llmChatParams: options.chatParams,
+      llmToolCallMode: options.toolCallSettings.mode,
+      llmToolCallList: options.toolCallSettings.tools,
       sliderTypeARange: [0, 2, 0.1],
       sliderTypeBRange: [0, 1, 0.1],
       sliderTypeCRange: [-2, 2, 0.1],
       showPresetsDetail: false,
       showToolsDetail: false,
-      presetHistory: contactor.options.history,
-      llmTools: config.llmTools,
+      presetHistory: options.presetSettings.history,
+      allLLMTools: config.llmTools,
       toolsList: [],
+      centerDialogVisible: false,
     };
   },
   computed: {
@@ -235,6 +276,10 @@ export default {
       this.initContactor();
     },
   },
+  beforeMount() {
+    this.loadToolsList();
+    this.loadGeneralSettings();
+  },
   mounted() {
     this.initContactor();
 
@@ -243,24 +288,28 @@ export default {
     }, 3000);
   },
   methods: {
+    loadGeneralSettings() {
+      this.llmGeneralKeys = {
+        ...this.llmBaseSettings,
+        ...this.llmChatParams,
+      };
+    },
     handleToolConfig() {
-      this.activeContactor.options.tools = this.toolsList
+      this.activeContactor.options.toolCallSettings.tools = this.toolsList
         .filter((tool) => tool.enabled)
         .map((tool) => tool.name);
       client.setLocalStorage(); //持久化存储
     },
     initContactor() {
       if (this.activeContactor.platform == "openai") {
-        this.openaiSettings = this.getShownOpenAISettings(
-          this.activeContactor.options,
-        );
-        this.presetHistory = this.activeContactor.options.history;
+        this.options = JSON.parse(JSON.stringify(this.activeContactor.options));
+        this.loadGeneralSettings();
         this.loadToolsList();
       }
     },
     loadToolsList() {
-      const enabledTools = this.activeContactor.options.tools;
-      this.toolsList = this.llmTools.map((tool) => {
+      const enabledTools = this.llmToolCallList;
+      this.toolsList = this.allLLMTools.map((tool) => {
         return {
           name: tool.name,
           description: tool.description,
@@ -268,41 +317,34 @@ export default {
         };
       });
     },
-    async updateOpenaiPresets(presets) {
-      this.activeContactor.options.history = presets;
-      await client.setLocalStorage(); //持久化存储
+    updateOpenaiPresets(presets) {
+      this.activeContactor.options.presetSettings.history = presets;
       this.$message({
         message: "预设历史记录已更新",
         type: "success",
       });
-    },
-    updateOpenaiOptions() {
-      this.activeContactor.options = {
-        ...this.activeContactor.options,
-        ...this.openaiSettings,
-      };
       client.setLocalStorage(); //持久化存储
     },
-    getShownOpenAISettings(options) {
-      const shownKeys = [
-        "model",
-        "max_messages_num",
-        "stream",
-        "enable_tool_call",
-        "temperature",
-        "top_p",
-        "frequency_penalty",
-        "presence_penalty",
-      ];
-      const shownSettings = {};
-      shownKeys.map((key) => {
-        shownSettings[key] = options[key];
-      });
-      return shownSettings;
+    updateLLMOptions() {
+      this.activeContactor.options.base = {
+        stream: this.llmGeneralKeys.stream,
+        model: this.llmGeneralKeys.model,
+        max_messages_num: this.llmGeneralKeys.max_messages_num,
+      };
+
+      this.activeContactor.options.chatParams = {
+        temperature: this.llmGeneralKeys.temperature,
+        top_p: this.llmGeneralKeys.top_p,
+        frequency_penalty: this.llmGeneralKeys.frequency_penalty,
+        presence_penalty: this.llmGeneralKeys.presence_penalty,
+      };
+
+      this.initContactor();
+      client.setLocalStorage(); //持久化存储
     },
     getShownKey(key) {
       const shownNameMap = {
-        enable_tool_call: "工具调用",
+        mode: "工具调用",
         model: "模型",
         max_messages_num: "最大历史消息数",
         stream: "流式响应",
@@ -317,6 +359,18 @@ export default {
       this.centerDialogVisible = false;
       await client.rmContactor(this.activeContactor.id);
       this.$router.push("/");
+    },
+    switchToolCallMode() {
+      this.activeContactor.options.toolCallSettings.mode = this.llmToolCallMode;
+      client.setLocalStorage(); //持久化存储
+    },
+    switchLLMProvider() {
+      this.activeContactor.options.provider = this.llmProvider;
+      const model = config.getDefaultModel(this.llmProvider);
+      this.activeContactor.options.base.model = model;
+      console.log("切换了llm provider", this.llmProvider);
+      console.log("切换了llm model", model);
+      client.setLocalStorage(); //持久化存储
     },
   },
 };
@@ -336,6 +390,14 @@ export default {
   width: 100%;
   display: flex;
   flex-direction: column;
+}
+
+.base-info-provider {
+  flex-grow: 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding-right: 2rem;
 }
 
 .item-extra-content {
@@ -361,7 +423,7 @@ export default {
   margin: 2rem 0rem 0rem 0rem;
   width: calc(100% - 8rem);
   min-width: 20rem;
-  max-width: 30rem;
+  max-width: 40rem;
   display: flex;
   flex-direction: column;
 }
@@ -378,6 +440,7 @@ export default {
   display: flex;
   padding-bottom: 1rem;
   border-bottom: 1px solid #88888888;
+  flex-wrap: wrap;
 }
 
 .base-info-avatar {

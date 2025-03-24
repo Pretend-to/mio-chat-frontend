@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import { client } from "@/lib/runtime.js";
 import { ElMessage } from "element-plus";
 import ChatView from "../views/ChatView.vue";
+import HomeView from "../views/HomeView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -9,7 +10,7 @@ const router = createRouter({
     {
       path: "/",
       name: "home",
-      component: () => import("../views/HomeView.vue"),
+      component: HomeView,
       children: [
         {
           path: "/",
@@ -26,11 +27,11 @@ const router = createRouter({
           name: "chat_view",
           component: ChatView,
         },
-        // {
-        //   path: "/profile/:id",
-        //   name: "profile_view",
-        //   component: () => import("../views/ProfileView.vue"),
-        // },
+        {
+          path: "/profile/:id",
+          name: "profile_view",
+          component: () => import("../views/ProfileView.vue"),
+        },
       ],
     },
     {

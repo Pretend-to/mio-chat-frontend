@@ -65,10 +65,9 @@ export default class Client extends EventEmitter {
     };
     this.addConcator("onebot", onebotConfig);
 
-    // Update and create OpenAI contactor
-    this.config.updateLLMDefaultConfig({
-      model: this.default_model,
-    });
+    const options = this.config.getLLMDefaultConfig();
+    const allTools = this.config.llmTools.map((tool) => tool.name);
+    options.toolCallSettings.tools = allTools;
 
     const LLMDefaultConfig = {
       id: this.genFakeId(),
@@ -79,13 +78,9 @@ export default class Client extends EventEmitter {
       title: "chat",
       priority: 0,
       lastUpdate: -Infinity,
-      options: { ...this.config.LLMDefaultConfig },
+      options,
     };
 
-    LLMDefaultConfig.options.tools = this.config.llmTools.map(
-      (tool) => tool.name,
-    );
-    LLMDefaultConfig.options.enable_tool_call = true;
     this.addConcator("openai", LLMDefaultConfig);
   }
 
@@ -184,43 +179,44 @@ export default class Client extends EventEmitter {
   }
 
   async resetCache() {
-    const CACHE_DATABASE_NAME = "my-cache-db";
-
-    if (!("indexedDB" in window)) {
-      console.error("IndexedDB is not available in this browser.");
-      throw new Error("IndexedDB is not available.");
-    }
-
     try {
-      // 1. Delete the IndexedDB database
-      await new Promise((resolve, reject) => {
-        const request = window.indexedDB.deleteDatabase(CACHE_DATABASE_NAME);
-
-        request.onsuccess = () => {
-          console.log(
-            `IndexedDB database "${CACHE_DATABASE_NAME}" deleted successfully.`,
+      // 2. Send a message to the active Service Worker to clear its cache
+      if (navigator.serviceWorker.controller) {
+        console.log(
+          "Sending message to active Service Worker to clear cache...",
+        );
+        await new Promise((resolve, reject) => {
+          const messageChannel = new MessageChannel();
+          messageChannel.port1.onmessage = (event) => {
+            if (event.data.type === "IDB_CACHE_CLEARED") {
+              console.log("Service Worker cache cleared successfully.");
+              resolve();
+            } else if (event.data.type === "IDB_CACHE_CLEAR_FAILED") {
+              console.error(
+                "Service Worker cache clear failed:",
+                event.data.error,
+              );
+              reject(event.data.error);
+            } else {
+              reject(new Error("Unknown message from Service Worker"));
+            }
+          };
+          messageChannel.port1.onerror = (error) => {
+            console.error("Message port error:", error);
+            reject(error);
+          };
+          navigator.serviceWorker.controller.postMessage(
+            { type: "CLEAR_IDB_CACHE" },
+            [messageChannel.port2],
           );
-          resolve();
-        };
+        });
+      } else {
+        console.log(
+          "No active Service Worker found. Skipping cache clear message.",
+        );
+      }
 
-        request.onerror = () => {
-          console.error(
-            `Error deleting IndexedDB database "${CACHE_DATABASE_NAME}":`,
-            request.error,
-          );
-          reject(request.error);
-        };
-
-        request.onblocked = () => {
-          // This usually happens if a tab is open that's using the database.
-          console.warn(
-            `IndexedDB database "${CACHE_DATABASE_NAME}" is blocked. Close other tabs using this database and try again.`,
-          );
-          reject(new Error("IndexedDB database is blocked."));
-        };
-      });
-
-      // 2. Unregister all service workers
+      // 1. Unregister all service workers
       const registrations = await navigator.serviceWorker.getRegistrations();
       if (registrations && registrations.length > 0) {
         console.log(
@@ -244,7 +240,7 @@ export default class Client extends EventEmitter {
               `Failed to unregister Service Worker ${registration.scope}:`,
               error,
             );
-            // We don't reject here, to attempt to unregister other SWs.  Log it, though.
+            // We don't reject here, to attempt to unregister other SWs. Log it, though.
           }
         }
         console.log(
@@ -376,20 +372,13 @@ export default class Client extends EventEmitter {
 
       socket.on("connect", async (info) => {
         console.log("Login successful");
-        this.default_model = info.default_model;
         this.isConnected = true;
         this.socket = socket;
-
         this.config.setLlmModels(info.models);
         this.addMsgListener();
-        this.config.updateLLMDefaultConfig({
-          model: info.default_model,
-        });
-
         if (this.contactList.length == 0) {
           this.genDefaultConctor();
         }
-
         this.setEverLogin();
         this.setLocalStorage();
         resolve(info);

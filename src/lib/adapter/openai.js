@@ -72,45 +72,17 @@ export default class Openai extends Adapter {
       }
     };
 
-    const filterValidSettings = (settings) => {
-      const validSettingKeys = [
-        "top_p",
-        "temperature",
-        "stream",
-        "model",
-        "frequency_penalty",
-        "presence_penalty",
-      ];
-
-      const extraSettingKeys = ["tools", "provider"];
-
-      return settings
-        ? Object.fromEntries(
-            Object.entries(settings).filter(
-              ([key]) =>
-                validSettingKeys.includes(key) ||
-                extraSettingKeys.includes(key),
-            ),
-          )
-        : {};
-    };
-
     try {
       // Apply settings defaults
       const data = {
-        ...filterValidSettings(settings || {}), // Default to empty object
+        settings, // Default to empty object
         messages,
       };
 
-      if (!settings?.enable_tool_call) {
-        // Use optional chaining
-        data.tools = [];
-      }
-
-      console.log("Data sent to OpenAI:", data);
+      console.log("Data sent to LLM:", data);
 
       for await (const chunk of client.socket.streamCompletions(data)) {
-        console.log("Received chunk from OpenAI:", chunk);
+        console.log("Received chunk from LLM:", chunk);
         if (chunk.message === "update") {
           handleUpdateChunk(chunk);
         } else if (["complete", "failed"].includes(chunk.message)) {

@@ -1,7 +1,7 @@
 const TOOL_CALL_MODEDS = {
-  AUTO: "auto",
-  ANY: "any",
-  NONE: "none",
+  AUTO: "AUTO",
+  ANY: "ANY",
+  NONE: "NONE",
 };
 const GEMINI_SAFETY_BLOCK_SETTINGS = {
   NONE: "BLOCK_NONE",
@@ -78,10 +78,31 @@ export default class Config {
     }
   }
 
+  getLLMProviders() {
+    return this.baseConfig.llm_providers.map((provider) => ({
+      value: provider,
+      label: provider,
+    }));
+  }
+
   // Display Config
   setBaseConfig(config) {
     this.baseConfig = config;
     this._saveStrogeConfig();
+
+    const { llm_providers, default_model } = config;
+
+    const defaultProvider = llm_providers[0];
+
+    this.updateLLMDefaultConfig(null, {
+      // provider: defaultProvider,
+      provider: "gemini",
+    });
+
+    // 设定一下默认的模型
+    this.updateLLMDefaultConfig("base", {
+      model: default_model[defaultProvider],
+    });
   }
 
   updateBaseConfig(patch) {
@@ -92,8 +113,20 @@ export default class Config {
     this._saveStrogeConfig();
   }
 
+  getToolCallModes() {
+    const values = Object.values(TOOL_CALL_MODEDS);
+    return values.map((value) => ({
+      value,
+      label: value,
+    }));
+  }
+
   getBaseConfig() {
     return this.baseConfig;
+  }
+
+  getDefaultModel(provider) {
+    return this.baseConfig.default_model[provider];
   }
 
   // Llm Models
@@ -102,8 +135,12 @@ export default class Config {
     this._saveStrogeConfig(); // 保存到总配置
   }
 
-  getLlmModels() {
-    return this.llmModels;
+  getLlmModels(provider) {
+    return this.llmModels[provider];
+  }
+
+  getDefaultLLMModel() {
+    return this.baseConfig.default_model;
   }
 
   // Llm Models
@@ -154,7 +191,7 @@ export default class Config {
         },
         toolCallSettings: {
           mode: TOOL_CALL_MODEDS.AUTO,
-          avaliable: [],
+          tools: [],
         },
         presetSettings: {
           opening: "",
@@ -167,11 +204,19 @@ export default class Config {
     }
   }
 
-  updateLLMDefaultConfig(patch) {
-    this.LLMDefaultConfig = {
-      ...this.LLMDefaultConfig,
-      ...patch,
-    };
+  updateLLMDefaultConfig(type, patch) {
+    if (type) {
+      this.LLMDefaultConfig[type] = {
+        ...this.LLMDefaultConfig[type],
+        ...patch,
+      };
+    } else {
+      this.LLMDefaultConfig = {
+        ...this.LLMDefaultConfig,
+        ...patch,
+      };
+    }
+
     this._saveStrogeConfig();
   }
 

@@ -102,8 +102,5 @@ export default defineConfig(({ mode }) => {
       },
     },
     base: env.VITE_BASE_URL || "/",
-    define: {
-      "window.io": "io", // Define global variable io
-    },
   };
 });
