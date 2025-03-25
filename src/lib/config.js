@@ -92,11 +92,10 @@ export default class Config {
 
     const { llm_providers, default_model } = config;
 
-    const defaultProvider = llm_providers[0];
+    const defaultProvider = llm_providers.slice(-1)[0];
 
     this.updateLLMDefaultConfig(null, {
-      // provider: defaultProvider,
-      provider: "gemini",
+      provider: defaultProvider,
     });
 
     // 设定一下默认的模型
@@ -143,12 +142,26 @@ export default class Config {
     return this.baseConfig.default_model;
   }
 
-  // Llm Models
-  getModelOwner(model) {
-    const group = this.llmModels.find((modelGroup) =>
+  getSafetySettingsParams() {
+    return GEMINI_SAFETY_BLOCK_SETTINGS;
+  }
+
+  isModelAvailable(provider, model) {
+    const group = this.llmModels[provider].find((modelGroup) =>
       modelGroup.models.includes(model),
     );
-    return group?.owner;
+    return group !== undefined;
+  }
+
+  // Llm Models
+  getModelOwner(model) {
+    for (const provider in this.llmModels) {
+      const group = this.llmModels[provider].find((modelGroup) =>
+        modelGroup.models.includes(model),
+      );
+      if (group) return group.owner;
+    }
+    return undefined;
   }
 
   // Safety Config

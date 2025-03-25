@@ -88,9 +88,6 @@ export default class Socket extends EventEmitter {
     if (this.socket?.io?.engine?.transport?.name === "websocket") {
       if (!this.hasSuccessfulWebSocket) {
         this.switchToPolling();
-      } else {
-        console.log("之前WebSocket连接成功过，继续尝试WebSocket重连");
-        this.attemptReconnect();
       }
     } else {
       this.connectionState = "failed";

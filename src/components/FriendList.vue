@@ -9,12 +9,8 @@ export default {
     ContextMenu,
   },
   data() {
-    let list = client.getContactors();
-    const onPhone = window.innerWidth < 600;
-
     return {
-      onPhone,
-      contactorList: list,
+      contactorList: [],
       showAddOptions: false,
       showAddWindow: false,
       showMenu: false,
@@ -30,18 +26,19 @@ export default {
       );
     },
   },
-  mounted() {
-    this.addReactiveListener();
-  },
-  beforeCreate() {
+  created() {
     if (client.getContactors().length == 0) {
       client.on(
         "loaded",
         () => {
           this.contactorList = client.getContactors();
+          this.addReactiveListener();
         },
         false,
       );
+    } else {
+      this.contactorList = client.getContactors();
+      this.addReactiveListener();
     }
   },
   methods: {
@@ -77,6 +74,7 @@ export default {
     },
     async genBlankBot() {
       const options = config.getLLMDefaultConfig();
+      console.log(options);
       const blankConfig = {
         id: this.genFakeId(),
         title: options.default_model,
@@ -138,30 +136,32 @@ export default {
       }
     },
     manageAddMenu() {
-      // this.showAddOptions = !this.showAddOptions;
-      // 弹出维护提示
-      this.$message({
-        message: "抱歉，此功能正在维护",
-        type: "warning",
-      });
+      this.showAddOptions = !this.showAddOptions;
     },
     mergeOptions(options) {
-      let result = {};
       const defaultOptions = config.getLLMDefaultConfig();
-      // for (const key in defaultOptions) {
-      //   if (options[key] === undefined) {
-      //     if (key == "enable_tool_call") {
-      //       if (options.tools) {
-      //         result[key] = true;
-      //       }
-      //       continue;
-      //     }
-      //     result[key] = defaultOptions[key];
-      //   } else {
-      //     result[key] = options[key];
-      //   }
-      // }
-      return result;
+      if (options.history)
+        defaultOptions.presetSettings.history = options.history;
+      if (options.tools) defaultOptions.toolCallSettings.tools = options.tools;
+      if (options.opening)
+        defaultOptions.presetSettings.opening = options.opening;
+
+      // 检查预设里的模型是否存在
+      if (options.model) {
+        const modelAvailable = config.isModelAvailable(
+          defaultOptions.provider,
+          options.model,
+        );
+        if (modelAvailable) {
+          defaultOptions.base.model = options.model;
+        } else {
+          this.$message({
+            message: "预设模型不存在, 已使用默认模型",
+            type: "error",
+          });
+        }
+      }
+      return defaultOptions;
     },
     async addPresetContactor(preset) {
       const contactor = {
@@ -233,9 +233,12 @@ export default {
     },
 
     addReactiveListener() {
+      console.log("addReactiveListener");
       this.contactorList.map((contactor) => {
         contactor.on("updateMessageSummary", () => {
-          contactor.updateMessageSummary();
+          console.log("updateMessageSummary");
+          contactor.lastMessageSummary = contactor.getLastMessageSummary();
+          this.$forceUpdate();
         });
       });
     },
@@ -244,7 +247,7 @@ export default {
 </script>
 
 <template>
-  <div id="friendlists" ref="friendlists" :class="onPhone ? 'mobile' : ''">
+  <div id="friendlists" ref="friendlists">
     <div id="friends" class="upsidebar">
       <div class="search">
         <i class="iconfont sousuo listicon"></i>
@@ -254,11 +257,7 @@ export default {
         <button id="addcont" title="Add Bot" @click="manageAddMenu">
           <i class="iconfont add"></i>
         </button>
-        <div
-          v-show="showAddOptions"
-          id="add-options"
-          :style="{ left: onPhone ? '-6rem' : '0px' }"
-        >
+        <div v-show="showAddOptions" id="add-options">
           <ul>
             <li>
               <button @click="genBlankBot">新建空白Bot</button>
@@ -319,6 +318,7 @@ export default {
   top: 2.5rem;
   background-color: white;
   width: 8rem;
+  left: 0;
   height: 3rem;
   border: 0.0625rem solid rgba(161, 154, 154, 0.626);
   border-radius: 0.3125rem;
@@ -357,12 +357,6 @@ export default {
   right: 0;
   top: 0;
   height: 100%;
-}
-#friendlists.mobile {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-width: none;
 }
 
 .upsidebar {
@@ -519,5 +513,18 @@ button#addcont {
 
 .people {
   overflow-y: auto;
+}
+
+@media screen and (max-width: 600px) {
+  #friendlists {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: none;
+  }
+
+  #add-options {
+    left: -6rem;
+  }
 }
 </style>

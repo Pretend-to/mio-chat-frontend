@@ -589,7 +589,7 @@ export default class Contactor extends EventEmmiter {
   loadAvatar() {
     let avatar = "/static/avatar/miobot.png";
     if (avatarPolicy[this.avatarPolicy] == "MODEL") {
-      const model = this.options.model;
+      const model = this.options.base.model;
       avatar = Contactor.getAvatarByModel(model);
     } else if (avatarPolicy[this.avatarPolicy] == "CUSTOM") {
       avatar = this.avatar;

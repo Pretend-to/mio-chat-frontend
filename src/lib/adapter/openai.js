@@ -28,12 +28,15 @@ export default class Openai extends Adapter {
 
   async getMessagesSummary(messageChain) {
     const query = `请你根据以下对话的内容\n${JSON.stringify(messageChain)}\n，总结出一个简短的对话主题,不得超出10个字。`;
+    const settings = config.getLLMDefaultConfig();
+    settings.base.stream = false;
     const messages = {
-      model: config.LLMDefaultConfig.model,
+      settings,
       messages: [{ role: "user", content: query }],
     };
 
     const response = await this.fetch(`/api/llm/completions`, messages);
+    // debugger;
     const { content } = response;
     return content;
   }

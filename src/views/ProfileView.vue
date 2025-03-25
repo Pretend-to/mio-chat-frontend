@@ -37,166 +37,233 @@
             v-if="activeContactor.platform == 'openai'"
             class="openai-settings"
           >
-            <div class="block-title">LLM 基本配置</div>
-            <div class="block-content">
-              <div
-                v-for="(_, key) in llmGeneralKeys"
-                :key="key"
-                class="block-content-item"
-              >
-                <div class="item-title">{{ getShownKey(key) }}</div>
-                <div class="item-content">
-                  <el-input
-                    v-if="['model', 'max_messages_num'].includes(key)"
-                    v-model="llmGeneralKeys[key]"
-                    @change="updateLLMOptions"
-                  ></el-input>
-                  <el-switch
-                    v-else-if="['stream', 'enable_tool_call'].includes(key)"
-                    v-model="llmGeneralKeys[key]"
-                    @change="updateLLMOptions"
-                  ></el-switch>
-                  <el-slider
-                    v-else-if="['temperature'].includes(key)"
-                    v-model="llmGeneralKeys[key]"
-                    :step="sliderTypeARange[2]"
-                    :min="sliderTypeARange[0]"
-                    :max="sliderTypeARange[1]"
-                    @change="updateLLMOptions"
-                  />
-                  <el-slider
-                    v-else-if="['top_p'].includes(key)"
-                    v-model="llmGeneralKeys[key]"
-                    :step="sliderTypeBRange[2]"
-                    :min="sliderTypeBRange[0]"
-                    :max="sliderTypeBRange[1]"
-                    @change="updateLLMOptions"
-                  />
-                  <el-slider
-                    v-else-if="
-                      ['frequency_penalty', 'presence_penalty'].includes(key)
-                    "
-                    v-model="llmGeneralKeys[key]"
-                    :step="sliderTypeCRange[2]"
-                    :min="sliderTypeCRange[0]"
-                    :max="sliderTypeCRange[1]"
-                    @change="updateLLMOptions"
-                  />
-                </div>
-              </div>
-            </div>
-            <div class="block-title">LLM 预设配置</div>
-            <div class="block-content">
-              <div class="block-content-item">
-                <div class="item-title">预设历史记录</div>
-                <div class="item-content">
-                  <button
-                    :class="{
-                      active: showPresetsDetail,
-                      'extra-info-button': true,
-                    }"
-                    @click="showPresetsDetail = !showPresetsDetail"
-                  >
-                    <svg
-                      t="1731677922196"
-                      class="icon"
-                      viewBox="0 0 1024 1024"
-                      version="1.1"
-                      xmlns="http://www.w3.org/2000/svg"
-                      p-id="5948"
-                      width="16"
-                      height="16"
-                    >
-                      <path
-                        d="M778.965749 128.759549l-383.064442 383.063419 388.097062 388.096039-0.070608 0.033769c12.709463 13.137205 20.529569 31.024597 20.529569 50.731428 0 40.376593-32.736589 73.112158-73.115228 73.112158-19.705807 0-37.591153-7.819083-50.730405-20.528546l-0.034792 0.035816L241.890654 564.622498l0.035816-0.035816c-13.779841-13.281491-22.3838-31.915897-22.3838-52.585659 0-0.071631 0-0.106424 0-0.178055 0-0.072655 0-0.10847 0-0.144286 0-20.669762 8.603959-39.341007 22.3838-52.622498l-0.035816-0.034792L680.573835 20.337187l0.180102 0.179079c13.139252-12.5662 30.950919-20.313651 50.587142-20.313651 40.378639 0 73.115228 32.736589 73.115228 73.114205C804.455283 95.485725 794.567076 115.334795 778.965749 128.759549z"
-                        p-id="5949"
-                      ></path>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              <div
-                :class="{
-                  hidden: !showPresetsDetail,
-                  'block-content-item': true,
-                }"
-              >
-                <PresetsList
-                  :presets-history="presetHistory"
-                  @update-presets="updateOpenaiPresets"
-                />
-              </div>
-            </div>
-            <div class="block-title">LLM 工具调用配置</div>
-            <div class="block-content">
-              <div class="block-content-item">
-                <div class="item-title">工具调用模式</div>
-                <div class="item-content">
-                  <el-select
-                    v-model="llmToolCallMode"
-                    placeholder="AUTO"
-                    style="width: 10rem"
-                    @change="switchToolCallMode"
-                  >
-                    <el-option
-                      v-for="item in toolCallModes"
-                      :key="item.value"
-                      :label="item.label"
-                      :value="item.value"
+            <div class="settings-block">
+              <div class="block-title">LLM 基本配置</div>
+              <div class="block-content">
+                <div
+                  v-for="(_, key) in llmGeneralKeys"
+                  :key="key"
+                  class="block-content-item"
+                >
+                  <div class="item-title">{{ getShownKey(key) }}</div>
+                  <div class="item-content">
+                    <el-input
+                      v-if="['model', 'max_messages_num'].includes(key)"
+                      v-model="llmGeneralKeys[key]"
+                    ></el-input>
+                    <el-switch
+                      v-else-if="['stream'].includes(key)"
+                      v-model="llmGeneralKeys[key]"
+                    ></el-switch>
+                    <el-slider
+                      v-else-if="['temperature'].includes(key)"
+                      v-model="llmGeneralKeys[key]"
+                      :step="sliderTypeARange[2]"
+                      :min="sliderTypeARange[0]"
+                      :max="sliderTypeARange[1]"
                     />
-                  </el-select>
+                    <el-slider
+                      v-else-if="['top_p'].includes(key)"
+                      v-model="llmGeneralKeys[key]"
+                      :step="sliderTypeBRange[2]"
+                      :min="sliderTypeBRange[0]"
+                      :max="sliderTypeBRange[1]"
+                    />
+                    <el-slider
+                      v-else-if="
+                        ['frequency_penalty', 'presence_penalty'].includes(key)
+                      "
+                      v-model="llmGeneralKeys[key]"
+                      :step="sliderTypeCRange[2]"
+                      :min="sliderTypeCRange[0]"
+                      :max="sliderTypeCRange[1]"
+                    />
+                  </div>
                 </div>
               </div>
-              <div class="block-content-item">
-                <div class="item-title">工具函数列表</div>
-                <div class="item-content">
-                  <button
-                    :class="{
-                      active: showToolsDetail,
-                      'extra-info-button': true,
-                    }"
-                    @click="showToolsDetail = !showToolsDetail"
-                  >
-                    <svg
-                      t="1731677922196"
-                      class="icon"
-                      viewBox="0 0 1024 1024"
-                      version="1.1"
-                      xmlns="http://www.w3.org/2000/svg"
-                      p-id="5948"
-                      width="16"
-                      height="16"
+            </div>
+
+            <div class="settings-block">
+              <div class="block-title">LLM 预设配置</div>
+              <div class="block-content">
+                <div class="block-content-item">
+                  <div class="item-title">预设历史记录</div>
+                  <div class="item-content">
+                    <button
+                      :class="{
+                        active: showPresetsDetail,
+                        'extra-info-button': true,
+                      }"
+                      @click="showPresetsDetail = !showPresetsDetail"
                     >
-                      <path
-                        d="M778.965749 128.759549l-383.064442 383.063419 388.097062 388.096039-0.070608 0.033769c12.709463 13.137205 20.529569 31.024597 20.529569 50.731428 0 40.376593-32.736589 73.112158-73.115228 73.112158-19.705807 0-37.591153-7.819083-50.730405-20.528546l-0.034792 0.035816L241.890654 564.622498l0.035816-0.035816c-13.779841-13.281491-22.3838-31.915897-22.3838-52.585659 0-0.071631 0-0.106424 0-0.178055 0-0.072655 0-0.10847 0-0.144286 0-20.669762 8.603959-39.341007 22.3838-52.622498l-0.035816-0.034792L680.573835 20.337187l0.180102 0.179079c13.139252-12.5662 30.950919-20.313651 50.587142-20.313651 40.378639 0 73.115228 32.736589 73.115228 73.114205C804.455283 95.485725 794.567076 115.334795 778.965749 128.759549z"
-                        p-id="5949"
-                      ></path>
-                    </svg>
-                  </button>
+                      <svg
+                        t="1731677922196"
+                        class="icon"
+                        viewBox="0 0 1024 1024"
+                        version="1.1"
+                        xmlns="http://www.w3.org/2000/svg"
+                        p-id="5948"
+                        width="16"
+                        height="16"
+                      >
+                        <path
+                          d="M778.965749 128.759549l-383.064442 383.063419 388.097062 388.096039-0.070608 0.033769c12.709463 13.137205 20.529569 31.024597 20.529569 50.731428 0 40.376593-32.736589 73.112158-73.115228 73.112158-19.705807 0-37.591153-7.819083-50.730405-20.528546l-0.034792 0.035816L241.890654 564.622498l0.035816-0.035816c-13.779841-13.281491-22.3838-31.915897-22.3838-52.585659 0-0.071631 0-0.106424 0-0.178055 0-0.072655 0-0.10847 0-0.144286 0-20.669762 8.603959-39.341007 22.3838-52.622498l-0.035816-0.034792L680.573835 20.337187l0.180102 0.179079c13.139252-12.5662 30.950919-20.313651 50.587142-20.313651 40.378639 0 73.115228 32.736589 73.115228 73.114205C804.455283 95.485725 794.567076 115.334795 778.965749 128.759549z"
+                          p-id="5949"
+                        ></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div
+                  :class="{
+                    hidden: !showPresetsDetail,
+                    'block-content-item': true,
+                  }"
+                >
+                  <PresetsList
+                    :presets-history="presetHistory"
+                    @update-presets="updateOpenaiPresets"
+                  />
                 </div>
               </div>
-              <div
-                :class="{
-                  hidden: !showToolsDetail,
-                  'block-content-item': true,
-                }"
-              >
-                <ul id="tools-list">
-                  <li
-                    v-for="(tool, index) in toolsList"
-                    :key="index"
-                    class="block-content-item"
-                    :title="tool.description"
-                  >
-                    <div class="item-title">{{ tool.name }}</div>
-                    <div class="item-content">
-                      <el-switch
-                        v-model="tool.enabled"
-                        @change="handleToolConfig"
-                      ></el-switch>
-                    </div>
-                  </li>
-                </ul>
+            </div>
+
+            <div class="settings-block">
+              <div class="block-title">LLM 工具调用配置</div>
+              <div class="block-content">
+                <div class="block-content-item">
+                  <div class="item-title">工具调用模式</div>
+                  <div class="item-content">
+                    <el-select
+                      v-model="llmToolCallMode"
+                      placeholder="AUTO"
+                      style="width: 10rem"
+                      @change="switchToolCallMode"
+                    >
+                      <el-option
+                        v-for="item in toolCallModes"
+                        :key="item.value"
+                        :label="item.label"
+                        :value="item.value"
+                      />
+                    </el-select>
+                  </div>
+                </div>
+                <div class="block-content-item">
+                  <div class="item-title">工具函数列表</div>
+                  <div class="item-content">
+                    <button
+                      :class="{
+                        active: showToolsDetail,
+                        'extra-info-button': true,
+                      }"
+                      @click="showToolsDetail = !showToolsDetail"
+                    >
+                      <svg
+                        t="1731677922196"
+                        class="icon"
+                        viewBox="0 0 1024 1024"
+                        version="1.1"
+                        xmlns="http://www.w3.org/2000/svg"
+                        p-id="5948"
+                        width="16"
+                        height="16"
+                      >
+                        <path
+                          d="M778.965749 128.759549l-383.064442 383.063419 388.097062 388.096039-0.070608 0.033769c12.709463 13.137205 20.529569 31.024597 20.529569 50.731428 0 40.376593-32.736589 73.112158-73.115228 73.112158-19.705807 0-37.591153-7.819083-50.730405-20.528546l-0.034792 0.035816L241.890654 564.622498l0.035816-0.035816c-13.779841-13.281491-22.3838-31.915897-22.3838-52.585659 0-0.071631 0-0.106424 0-0.178055 0-0.072655 0-0.10847 0-0.144286 0-20.669762 8.603959-39.341007 22.3838-52.622498l-0.035816-0.034792L680.573835 20.337187l0.180102 0.179079c13.139252-12.5662 30.950919-20.313651 50.587142-20.313651 40.378639 0 73.115228 32.736589 73.115228 73.114205C804.455283 95.485725 794.567076 115.334795 778.965749 128.759549z"
+                          p-id="5949"
+                        ></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div
+                  :class="{
+                    hidden: !showToolsDetail,
+                    'block-content-item': true,
+                  }"
+                >
+                  <ul id="tools-list" class="sub-items">
+                    <li
+                      v-for="(tool, index) in toolsList"
+                      :key="index"
+                      class="block-content-item"
+                      :title="tool.description"
+                    >
+                      <div class="item-title">{{ tool.name }}</div>
+                      <div class="item-content">
+                        <el-switch
+                          v-model="tool.enabled"
+                          @change="handleToolConfig"
+                        ></el-switch>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="llmProvider == 'gemini'" class="settings-block">
+              <div class="block-title">Gimini 额外设置</div>
+              <div class="block-content">
+                <div class="block-content-item">
+                  <div class="item-title">过滤等级设置</div>
+                  <div class="item-content">
+                    <button
+                      :class="{
+                        active: showSafetySettings,
+                        'extra-info-button': true,
+                      }"
+                      @click="showSafetySettings = !showSafetySettings"
+                    >
+                      <svg
+                        t="1731677922196"
+                        class="icon"
+                        viewBox="0 0 1024 1024"
+                        version="1.1"
+                        xmlns="http://www.w3.org/2000/svg"
+                        p-id="5948"
+                        width="16"
+                        height="16"
+                      >
+                        <path
+                          d="M778.965749 128.759549l-383.064442 383.063419 388.097062 388.096039-0.070608 0.033769c12.709463 13.137205 20.529569 31.024597 20.529569 50.731428 0 40.376593-32.736589 73.112158-73.115228 73.112158-19.705807 0-37.591153-7.819083-50.730405-20.528546l-0.034792 0.035816L241.890654 564.622498l0.035816-0.035816c-13.779841-13.281491-22.3838-31.915897-22.3838-52.585659 0-0.071631 0-0.106424 0-0.178055 0-0.072655 0-0.10847 0-0.144286 0-20.669762 8.603959-39.341007 22.3838-52.622498l-0.035816-0.034792L680.573835 20.337187l0.180102 0.179079c13.139252-12.5662 30.950919-20.313651 50.587142-20.313651 40.378639 0 73.115228 32.736589 73.115228 73.114205C804.455283 95.485725 794.567076 115.334795 778.965749 128.759549z"
+                          p-id="5949"
+                        ></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div
+                  :class="{
+                    hidden: !showSafetySettings,
+                    'block-content-item': true,
+                  }"
+                >
+                  <ul id="safety-settings" class="sub-items">
+                    <li
+                      v-for="(value, key) of geminiSafetySettings"
+                      :key="key"
+                      class="block-content-item"
+                    >
+                      <div class="item-title">{{ getShownKey(key) }}</div>
+                      <div class="item-content">
+                        <el-select
+                          v-model="geminiSafetySettings[key]"
+                          style="width: 10rem"
+                          @change="switchSafetySettings(key)"
+                        >
+                          <el-option
+                            v-for="item in safetySimpleValue"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value"
+                          />
+                        </el-select>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
@@ -234,10 +301,22 @@ export default {
     const currentId = parseInt(this.$route.params.id);
     const contactor = client.getContactor(currentId);
     const options = JSON.parse(JSON.stringify(contactor.options));
+    console.log(options);
     const toolCallModes = config.getToolCallModes();
     const providers = config.getLLMProviders();
+    const safetyParams = config.getSafetySettingsParams();
+
+    const safetySimpleValue = Object.keys(safetyParams).map((key) => ({
+      value: key,
+      label: key,
+    }));
+
+    const geminiSafetySettings = this.safeSimplify(options.safetySettings);
 
     return {
+      safetyParams,
+      geminiSafetySettings,
+      safetySimpleValue: safetySimpleValue,
       llmProviders: providers,
       toolCallModes: toolCallModes,
       currentDelay: 0,
@@ -251,11 +330,13 @@ export default {
       sliderTypeARange: [0, 2, 0.1],
       sliderTypeBRange: [0, 1, 0.1],
       sliderTypeCRange: [-2, 2, 0.1],
+      showSafetySettings: false,
       showPresetsDetail: false,
       showToolsDetail: false,
       presetHistory: options.presetSettings.history,
       allLLMTools: config.llmTools,
       toolsList: [],
+      llmGeneralKeys: {},
       centerDialogVisible: false,
     };
   },
@@ -274,6 +355,13 @@ export default {
     "$route.params.id"(newVal) {
       this.activeContactor = client.getContactor(newVal);
       this.initContactor();
+    },
+    llmGeneralKeys: {
+      handler() {
+        console.log("update");
+        this.setGeneralSettings();
+      },
+      deep: true,
     },
   },
   beforeMount() {
@@ -294,6 +382,50 @@ export default {
         ...this.llmChatParams,
       };
     },
+    safeSimplify(raw) {
+      const result = {};
+      const simplifyMethod = new Map();
+      const table = config.getSafetySettingsParams();
+      Object.keys(table).forEach((key) => {
+        simplifyMethod.set(table[key], key);
+      });
+
+      Object.keys(raw).forEach((key) => {
+        result[key] = simplifyMethod.get(raw[key]);
+      });
+
+      return result;
+    },
+    setGeneralSettings() {
+      const {
+        model,
+        stream,
+        max_messages_num,
+        temperature,
+        top_p,
+        frequency_penalty,
+        presence_penalty,
+      } = this.llmGeneralKeys;
+      this.activeContactor.options.base = {
+        model,
+        stream,
+        max_messages_num,
+      };
+      this.activeContactor.options.chatParams = {
+        temperature,
+        top_p,
+        frequency_penalty,
+        presence_penalty,
+      };
+      // 持久化
+      client.setLocalStorage();
+    },
+    switchSafetySettings(key) {
+      const simplifiedValue = this.geminiSafetySettings[key];
+      const originalValue = this.safetyParams[simplifiedValue];
+      this.activeContactor.options.safetySettings[key] = originalValue;
+      client.setLocalStorage(); //持久化存储
+    },
     handleToolConfig() {
       this.activeContactor.options.toolCallSettings.tools = this.toolsList
         .filter((tool) => tool.enabled)
@@ -301,11 +433,20 @@ export default {
       client.setLocalStorage(); //持久化存储
     },
     initContactor() {
-      if (this.activeContactor.platform == "openai") {
-        this.options = JSON.parse(JSON.stringify(this.activeContactor.options));
-        this.loadGeneralSettings();
-        this.loadToolsList();
-      }
+      // 更新所有配置，不仅仅是openai平台
+      this.options = JSON.parse(JSON.stringify(this.activeContactor.options));
+      this.llmProvider = this.options.provider;
+      this.llmBaseSettings = this.options.base;
+      this.llmChatParams = this.options.chatParams;
+      this.llmToolCallMode = this.options.toolCallSettings.mode;
+      this.llmToolCallList = this.options.toolCallSettings.tools;
+      this.presetHistory = this.options.presetSettings.history;
+      this.geminiSafetySettings = this.safeSimplify(
+        this.options.safetySettings,
+      );
+
+      this.loadGeneralSettings();
+      this.loadToolsList();
     },
     loadToolsList() {
       const enabledTools = this.llmToolCallList;
@@ -325,23 +466,6 @@ export default {
       });
       client.setLocalStorage(); //持久化存储
     },
-    updateLLMOptions() {
-      this.activeContactor.options.base = {
-        stream: this.llmGeneralKeys.stream,
-        model: this.llmGeneralKeys.model,
-        max_messages_num: this.llmGeneralKeys.max_messages_num,
-      };
-
-      this.activeContactor.options.chatParams = {
-        temperature: this.llmGeneralKeys.temperature,
-        top_p: this.llmGeneralKeys.top_p,
-        frequency_penalty: this.llmGeneralKeys.frequency_penalty,
-        presence_penalty: this.llmGeneralKeys.presence_penalty,
-      };
-
-      this.initContactor();
-      client.setLocalStorage(); //持久化存储
-    },
     getShownKey(key) {
       const shownNameMap = {
         mode: "工具调用",
@@ -352,6 +476,11 @@ export default {
         top_p: "核采样",
         frequency_penalty: "重复惩罚度",
         presence_penalty: "话题新鲜度",
+        HARM_CATEGORY_HARASSMENT: "骚扰",
+        HARM_CATEGORY_HATE_SPEECH: "仇恨言论",
+        HARM_CATEGORY_SEXUALLY_EXPLICIT: "色情",
+        HARM_CATEGORY_DANGEROUS_CONTENT: "危险内容",
+        HARM_CATEGORY_CIVIC_INTEGRITY: "公民诚信",
       };
       return shownNameMap[key];
     },
@@ -365,12 +494,12 @@ export default {
       client.setLocalStorage(); //持久化存储
     },
     switchLLMProvider() {
-      this.activeContactor.options.provider = this.llmProvider;
       const model = config.getDefaultModel(this.llmProvider);
-      this.activeContactor.options.base.model = model;
-      console.log("切换了llm provider", this.llmProvider);
-      console.log("切换了llm model", model);
-      client.setLocalStorage(); //持久化存储
+      this.llmGeneralKeys.model = model;
+
+      this.activeContactor.options.provider = this.llmProvider;
+
+      this.setGeneralSettings();
     },
   },
 };
@@ -386,7 +515,7 @@ export default {
   align-items: center;
 }
 
-#tools-list {
+.sub-items {
   width: 100%;
   display: flex;
   flex-direction: column;
