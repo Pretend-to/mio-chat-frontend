@@ -38,7 +38,7 @@ export default class Openai extends Adapter {
     const response = await this.fetch(`/api/llm/completions`, messages);
     // debugger;
     const { content } = response;
-    return content;
+    return content || "未命名会话";
   }
 
   async send(messages, messageId, settings) {

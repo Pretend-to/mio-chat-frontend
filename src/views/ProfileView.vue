@@ -17,7 +17,10 @@
               在线
             </div>
           </div>
-          <div v-if="activeContactor.platform === 'openai'"  class="base-info-provider">
+          <div
+            v-if="activeContactor.platform === 'openai'"
+            class="base-info-provider"
+          >
             <el-select
               v-model="llmProvider"
               style="width: 10rem"
@@ -311,7 +314,6 @@ export default {
       label: key,
     }));
 
-
     return {
       safetyParams,
       geminiSafetySettings: {},
@@ -442,13 +444,14 @@ export default {
       this.presetHistory = this.options.presetSettings?.history;
 
       if (this.options.provider === "gemini") {
-        this.geminiSafetySettings = this.safeSimplify(this.options.safetySettings);
+        this.geminiSafetySettings = this.safeSimplify(
+          this.options.safetySettings,
+        );
       }
       if (this.activeContactor.platform === "openai") {
         this.loadGeneralSettings();
         this.loadToolsList();
       }
-      
     },
     loadToolsList() {
       const enabledTools = this.llmToolCallList;
