@@ -17,7 +17,7 @@
               在线
             </div>
           </div>
-          <div class="base-info-provider">
+          <div v-if="activeContactor.platform === 'openai'"  class="base-info-provider">
             <el-select
               v-model="llmProvider"
               style="width: 10rem"
@@ -311,11 +311,10 @@ export default {
       label: key,
     }));
 
-    const geminiSafetySettings = this.safeSimplify(options.safetySettings);
 
     return {
       safetyParams,
-      geminiSafetySettings,
+      geminiSafetySettings: {},
       safetySimpleValue: safetySimpleValue,
       llmProviders: providers,
       toolCallModes: toolCallModes,
@@ -325,15 +324,15 @@ export default {
       llmProvider: options.provider,
       llmBaseSettings: options.base,
       llmChatParams: options.chatParams,
-      llmToolCallMode: options.toolCallSettings.mode,
-      llmToolCallList: options.toolCallSettings.tools,
+      llmToolCallMode: options.toolCallSettings?.mode,
+      llmToolCallList: options.toolCallSettings?.tools,
       sliderTypeARange: [0, 2, 0.1],
       sliderTypeBRange: [0, 1, 0.1],
       sliderTypeCRange: [-2, 2, 0.1],
       showSafetySettings: false,
       showPresetsDetail: false,
       showToolsDetail: false,
-      presetHistory: options.presetSettings.history,
+      presetHistory: options.presetSettings?.history,
       allLLMTools: config.llmTools,
       toolsList: [],
       llmGeneralKeys: {},
@@ -438,15 +437,18 @@ export default {
       this.llmProvider = this.options.provider;
       this.llmBaseSettings = this.options.base;
       this.llmChatParams = this.options.chatParams;
-      this.llmToolCallMode = this.options.toolCallSettings.mode;
-      this.llmToolCallList = this.options.toolCallSettings.tools;
-      this.presetHistory = this.options.presetSettings.history;
-      this.geminiSafetySettings = this.safeSimplify(
-        this.options.safetySettings,
-      );
+      this.llmToolCallMode = this.options.toolCallSettings?.mode;
+      this.llmToolCallList = this.options.toolCallSettings?.tools;
+      this.presetHistory = this.options.presetSettings?.history;
 
-      this.loadGeneralSettings();
-      this.loadToolsList();
+      if (this.options.provider === "gemini") {
+        this.geminiSafetySettings = this.safeSimplify(this.options.safetySettings);
+      }
+      if (this.activeContactor.platform === "openai") {
+        this.loadGeneralSettings();
+        this.loadToolsList();
+      }
+      
     },
     loadToolsList() {
       const enabledTools = this.llmToolCallList;
