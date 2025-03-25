@@ -81,7 +81,7 @@ export default {
       cursorPosition: [],
       showemoji: false,
       openaiModels: null,
-      onebotPresets: null,
+      onebotPresets: [],
       host: "",
       uploaded: { files: [], images: [] }, // Keep original data structure
       isPasting: false,
@@ -149,6 +149,7 @@ export default {
     // 添加paste事件监听器
     this.textareaRef.addEventListener("paste", this.handlePaste);
     this.host = window.location.origin;
+    this.onebotPresets = config.onebotConfig.textwraper.options;
   },
   unmounted() {
     this.textareaRef.removeEventListener("input", this.adjustTextareaHeight);
@@ -338,9 +339,8 @@ export default {
         newSelection.addRange(newRange);
       }, 0);
     },
-    initExtraOptions() {
+    initLLMExtraOptions() {
       const { provider } = this.activeContactor.options;
-      console.log(provider);
       const models = client.config.getLlmModels(provider);
       this.openaiModels = models.map((modelGroup) => {
         return {
@@ -354,7 +354,6 @@ export default {
           }),
         };
       });
-      this.onebotPresets = config.onebotConfig.textwraper.options;
     },
     getOpenaiModelArray(model) {
       const owner = client.config.getModelOwner(model);
@@ -385,7 +384,7 @@ export default {
           this.selectedOption = this.activeContactor.preset;
         }
       } else {
-        this.initExtraOptions();
+        this.initLLMExtraOptions();
         this.selectedOption = this.activeContactor.options.base.model;
       }
     },

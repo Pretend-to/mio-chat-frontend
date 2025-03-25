@@ -457,6 +457,9 @@ export default {
           enabled: enabledTools.includes(tool.name),
         };
       });
+      if (this.toolsList.length === 0) {
+        console.debug("没有可用的工具");
+      }
     },
     updateOpenaiPresets(presets) {
       this.activeContactor.options.presetSettings.history = presets;

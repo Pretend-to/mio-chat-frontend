@@ -69,10 +69,6 @@ export default class Config {
     const config = this._getLocalStorage(CONFIG_KEY);
     if (config) {
       Object.assign(this, config);
-      // 由于 Object.assign 不会触发 setter，手动赋值
-      // this.displayConfig = config.displayConfig || {};
-      // this.safetyConfig = config.safetyConfig || {};
-      // this.LLMDefaultConfig = config.LLMDefaultConfig || {};
     } else {
       this._saveStrogeConfig();
     }

@@ -119,7 +119,7 @@ export default {
             : "ultra";
     },
     activeMessageChain() {
-      return this.activeContactor.options.opening
+      return this.activeContactor.options.presetSettings?.opening
         ? [
             {
               role: "other",
@@ -127,7 +127,7 @@ export default {
                 {
                   type: "text",
                   data: {
-                    text: this.activeContactor.options.opening,
+                    text: this.activeContactor.options.presetSettings.opening,
                   },
                 },
               ],
@@ -306,7 +306,7 @@ export default {
       }
     },
     hasOpening() {
-      return this.activeContactor.options.opening ? true : false;
+      return this.activeContactor.options.presetSettings.opening ? true : false;
     },
     getFullMessages() {
       return this.hasOpening()
@@ -317,7 +317,7 @@ export default {
                 {
                   type: "text",
                   data: {
-                    text: this.activeContactor.options.opening,
+                    text: this.activeContactor.options.presetSettings.opening,
                   },
                 },
               ],
