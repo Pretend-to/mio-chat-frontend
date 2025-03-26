@@ -29,6 +29,7 @@ export default class Socket extends EventEmitter {
    */
   getURL() {
     const url = new URL(window.location.href);
+    // 保持原样，因为 io() 知道如何处理 host
     return url.host;
   }
 
@@ -36,8 +37,18 @@ export default class Socket extends EventEmitter {
    * Initializes WebSocket event listeners.
    */
   initEventListeners() {
+    if (!this.socket) return; // Safety check
+
+    // --- 清理旧监听器 (如果需要重新附加) ---
+    // 这对于确保在重新连接时不重复添加监听器很重要
+    // Socket.IO v3+ 的 off() 或 removeAllListeners()
+    this.socket.off("connect");
+    this.socket.off("disconnect");
+    this.socket.off("connect_error");
+    this.socket.off("message");
+    // --- 重新附加监听器 ---
     this.socket.on("connect", () => this.handleConnect());
-    this.socket.on("disconnect", () => this.handleDisconnect());
+    this.socket.on("disconnect", (reason) => this.handleDisconnect(reason)); // Pass reason
     this.socket.on("connect_error", (error) => this.handleConnectError(error));
     this.socket.on("message", (message) => this.messageHandler(message));
   }
@@ -47,15 +58,22 @@ export default class Socket extends EventEmitter {
    */
   handleConnect() {
     this.available = true;
-    console.log("SocketIO connected successfully");
+    this.hasAttemptedPollingFallback = false; // Reset fallback flag on successful connect
+    this.isAttemptingWebSocket = false; // Reset attempt flag
+    const transport = this.socket.io?.engine?.transport?.name || "unknown";
+    console.log(`SocketIO connected successfully via: ${transport}`);
   }
 
   /**
    * Handles the disconnect event.
+   * @param {String} reason - The reason for disconnection
    */
-  handleDisconnect() {
+  handleDisconnect(reason) {
     this.available = false;
-    console.error("SocketIO disconnected");
+    console.error(`SocketIO disconnected. Reason: ${reason}`);
+    // 如果是 'io server disconnect' 或 'io client disconnect'，可能不需要自动重连或回退
+    // 如果是 'transport close' 或 'transport error'，Socket.IO 的 reconnection 机制会尝试处理
+    // 这里我们主要依赖 connect_error 来处理初始连接失败的回退
   }
 
   /**
@@ -63,25 +81,88 @@ export default class Socket extends EventEmitter {
    * @param {Error} error - The error object
    */
   handleConnectError(error) {
-    console.error("SocketIO connection error", error);
+    console.error(`SocketIO connection error: ${error.message}`, error);
+    // error 对象可能包含 transport 信息，例如 error.transport
+    console.log(
+      `Error occurred during ${this.isAttemptingWebSocket ? "WebSocket" : "Polling"} attempt.`,
+    );
+
+    // --- 手动回退逻辑 ---
+    // 1. 检查是否是 WebSocket 尝试失败
+    // 2. 检查是否 *已经* 尝试过回退到 Polling (防止无限循环)
+    if (this.isAttemptingWebSocket && !this.hasAttemptedPollingFallback) {
+      console.log(
+        "WebSocket connection failed. Attempting fallback to Polling...",
+      );
+      this.hasAttemptedPollingFallback = true; // Mark that we are now trying polling
+      this.isAttemptingWebSocket = false; // No longer attempting WebSocket initially
+
+      // 清理当前的 socket 实例
+      if (this.socket) {
+        this.socket.disconnect(); // 或 .close()
+        this.socket = null;
+      }
+
+      // 延迟一小段时间再尝试 Polling，避免立即重试可能遇到的瞬时问题
+      setTimeout(() => {
+        // 发起只使用 Polling 的新连接
+        this._connectWithTransport(["polling"]);
+      }, 500); // 延迟 500ms (可调整)
+    } else if (!this.isAttemptingWebSocket) {
+      // Polling 尝试也失败了
+      console.error("Polling connection attempt also failed.");
+      this.available = false;
+      // 这里可以决定是否彻底放弃，或者依赖 Socket.IO 的 reconnection 机制（如果开启）
+      // 如果 Socket.IO 的 reconnection 开启，它会继续尝试用 polling 重连
+    } else {
+      // 如果 isAttemptingWebSocket 为 true 但 hasAttemptedPollingFallback 也为 true
+      // 理论上不应该发生，但作为保险
+      console.warn("Unexpected state in handleConnectError.");
+      this.available = false;
+    }
   }
 
   /**
-   * Connects to the SocketIO server.
+   * Internal connect method allowing transport specification.
+   * @param {String[]} transports - Array of transports to use.
    */
-  async connect() {
+  _connectWithTransport(transports) {
+    console.log(
+      `Attempting to connect using transports: ${transports.join(", ")}...`,
+    );
+    // 确保清理可能存在的旧 socket
+    if (this.socket) {
+      this.socket.disconnect();
+    }
+
     this.socket = io(this.url, {
       path: "/socket.io",
-      transports: ["websocket", "polling"],
+      transports: transports, // <-- 使用指定的 transports
       auth: { id: this.id, token: this.code },
-      reconnection: true, // Enable auto-reconnection
-      reconnectionAttempts: 10, // Max reconnection attempts
-      reconnectionDelay: 1000, // Initial reconnection delay
-      reconnectionDelayMax: 30000, // Max reconnection delay
-      timeout: 20000, // Connection timeout
+      reconnection: true, // 保持开启，让 Socket.IO 处理后续的重连尝试
+      reconnectionAttempts: 5, // 可以为 polling 设置不同的重试次数
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
+      timeout: 15000, // 可以为 polling 调整超时
+      // 重要：强制新的连接尝试，而不是升级现有连接（如果适用）
+      // 对于 polling，这通常不是问题，但加上无妨
+      forceNew: true,
     });
-    console.log("SocketIO connecting...");
-    this.initEventListeners();
+
+    this.initEventListeners(); // 为新的 socket 实例初始化事件监听
+  }
+
+  /**
+   * Connects to the SocketIO server, starting with WebSocket.
+   */
+  async connect() {
+    if (this.socket && this.socket.connected) {
+      console.log("Already connected.");
+      return;
+    }
+    this.isAttemptingWebSocket = true; // Mark that we are starting with WebSocket
+    this.hasAttemptedPollingFallback = false; // Reset fallback state
+    this._connectWithTransport(["websocket"]); // Start with WebSocket only
   }
 
   /**
@@ -89,10 +170,12 @@ export default class Socket extends EventEmitter {
    */
   disconnect() {
     if (this.socket) {
-      this.socket.close();
-      this.socket = null;
+      this.socket.disconnect(); // 使用 disconnect 更优雅
+      // socket 实例会在 disconnect 事件后由库内部清理或重用（如果重连）
+      // 我们可以在 handleDisconnect 中或这里设置 this.socket = null，取决于你的状态管理需求
+      // this.socket = null; // 如果希望彻底断开后清理引用
       this.available = false;
-      console.log("WebSocket disconnected");
+      console.log("Manual disconnection initiated.");
     }
   }
 
@@ -101,6 +184,7 @@ export default class Socket extends EventEmitter {
    * @param {String} message - The received message
    */
   messageHandler(message) {
+    // ... (你的 messageHandler 逻辑保持不变) ...
     try {
       const e = JSON.parse(message);
       if (e.protocol === "llm") {
@@ -114,7 +198,7 @@ export default class Socket extends EventEmitter {
       }
       this.pendingRequests.delete(e.request_id); // Remove request_id
     } catch (error) {
-      console.error("JSON parsing failed:", error);
+      console.error("JSON parsing failed:", error, "Received:", message); // Log received message on error
     }
   }
 
@@ -123,19 +207,40 @@ export default class Socket extends EventEmitter {
    * @param {Object} message - The message object to send
    */
   sendMessage(message) {
-    if (!this.available) {
-      console.log("SocketIO connection unavailable");
-      return;
+    // 在发送前检查连接状态
+    // 注意：即使 available 为 true，socket 也可能在发送瞬间断开
+    // Socket.IO 客户端通常会缓存消息并在重连后发送，但要了解这个行为
+    if (!this.socket || !this.socket.connected) {
+      // 使用 socket.connected 更准确
+      console.warn("SocketIO not connected. Message sending skipped.", message);
+      // 可以考虑将消息放入队列稍后重试，但这会增加复杂性
+      this.pendingRequests.delete(message.request_id); // 如果不发送，也应该移除 pending 状态
+      return Promise.reject(new Error("Socket not connected")); // 让调用者知道失败了
     }
+
+    // --- 原有的 pendingRequest 检查逻辑 ---
     if (this.pendingRequests.has(message.request_id)) {
       console.warn(
         `Duplicate request_id: ${message.request_id}, request blocked`,
       );
-      return;
+      // 考虑是否应该 reject Promise 或返回特定错误
+      return Promise.reject(
+        new Error(`Duplicate request_id: ${message.request_id}`),
+      );
     }
     this.pendingRequests.add(message.request_id);
-    this.socket.emit("message", JSON.stringify(message));
-    console.log("WebSocket sending request", message);
+    // --- 发送消息 ---
+    try {
+      this.socket.emit("message", JSON.stringify(message));
+      console.log("WebSocket sending request", message);
+      // 注意：emit 是异步的，但通常不返回 Promise
+      // 如果需要确认服务器收到，需要服务器发送回执
+      return Promise.resolve(); // 表示发送尝试已发出
+    } catch (error) {
+      console.error("Error sending message:", error);
+      this.pendingRequests.delete(message.request_id); // 发送失败，移除 pending 状态
+      return Promise.reject(error); // 传递错误
+    }
   }
 
   /**
