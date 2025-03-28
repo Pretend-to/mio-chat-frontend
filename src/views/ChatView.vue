@@ -306,7 +306,9 @@ export default {
       }
     },
     hasOpening() {
-      return this.activeContactor.options.presetSettings?.opening ? true : false;
+      return this.activeContactor.options.presetSettings?.opening
+        ? true
+        : false;
     },
     getFullMessages() {
       return this.hasOpening()

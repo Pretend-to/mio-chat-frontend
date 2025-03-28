@@ -8,7 +8,7 @@ const GEMINI_SAFETY_BLOCK_SETTINGS = {
   LOW: "BLOCK_ONLY_HIGH",
   MEDIUM: "BLOCK_MEDIUM_AND_ABOVE",
   HIGH: "BLOCK_LOW_AND_ABOVE",
-  DEFAULT: "HARM_BLOCK_THRESHOLD_UNSPECIFIED",
+  DEFAULT: "BLOCK_NONE",
 };
 const GEMINI_SAFETY_SETTINGS_TYPE = {
   HARASSMENT: "HARM_CATEGORY_HARASSMENT",
@@ -31,9 +31,9 @@ export default class Config {
     this.baseConfig = {};
     this.LLMDefaultConfig = {};
 
-    this.initSafetyConfig(); // 放在 _loadStrogeConfig 前
-    this.initLLMDefaultConfig(); // 放在 _loadStrogeConfig 前
     this._loadStrogeConfig();
+
+    this.initLLMDefaultConfig();
     this.loadllmTools();
     this.loadonebotConfig();
   }
@@ -51,6 +51,7 @@ export default class Config {
 
   // 统一保存所有配置
   _saveStrogeConfig() {
+    // debugger;
     const configToSave = {
       localPresets: this.localPresets,
       toolsConfig: this.toolsConfig,
@@ -162,13 +163,32 @@ export default class Config {
 
   // Safety Config
   initSafetyConfig() {
-    if (Object.keys(this.safetyConfig).length === 0) {
+    const init = () => {
+      // 初始化 safetyConfig
       this.safetyConfig = {};
       for (const key in GEMINI_SAFETY_SETTINGS_TYPE) {
         this.safetyConfig[GEMINI_SAFETY_SETTINGS_TYPE[key]] =
           GEMINI_SAFETY_BLOCK_SETTINGS.DEFAULT;
       }
+    };
+    if (Object.keys(this.safetyConfig).length === 0) {
+      init();
+    } else {
+      const hasIncrorectKeys = Object.keys(this.safetyConfig).some(
+        (key) => !Object.keys(GEMINI_SAFETY_SETTINGS_TYPE).includes(key),
+      );
+      const hasIncrorectValues = Object.values(this.safetyConfig).some(
+        (value) => !Object.values(GEMINI_SAFETY_BLOCK_SETTINGS).includes(value),
+      );
+      if (hasIncrorectKeys || hasIncrorectValues) {
+        init();
+        // 更新 llmDefaultConfig 中的 safetySettings
+        this.LLMDefaultConfig.safetySettings = {
+          ...this.safetyConfig,
+        };
+      }
     }
+    debugger;
   }
 
   setSafetyConfig(safetyConfig) {
@@ -184,6 +204,7 @@ export default class Config {
 
   // OpenAI Default Config
   initLLMDefaultConfig() {
+    this.initSafetyConfig();
     if (Object.keys(this.LLMDefaultConfig).length === 0) {
       this.LLMDefaultConfig = {
         provider: "openai",

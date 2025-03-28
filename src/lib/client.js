@@ -86,6 +86,7 @@ export default class Client extends EventEmitter {
 
   async addConcator(platform, config) {
     const bot = new Contactor(platform, config);
+    debugger;
     bot.loadName();
     bot.loadAvatar();
 
