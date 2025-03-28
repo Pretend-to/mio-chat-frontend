@@ -188,7 +188,6 @@ export default class Config {
         };
       }
     }
-    debugger;
   }
 
   setSafetyConfig(safetyConfig) {
