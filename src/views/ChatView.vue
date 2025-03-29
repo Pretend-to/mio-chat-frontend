@@ -960,6 +960,8 @@ $icon-hover: #09f
 .button#close:hover svg path
     fill: #fff
 
+.inner-content
+    display: flex
 
 .voice-box
     display: flex

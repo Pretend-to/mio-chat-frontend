@@ -170,6 +170,7 @@ export default {
 .tool-info {
   flex-grow: 1;
   display: flex;
+  max-width: 12rem;
   flex-direction: column;
   justify-content: space-evenly;
 }
@@ -197,12 +198,16 @@ button.extra-info-button:hover svg {
 
 .tool-name {
   font-weight: bolder;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tool-call-bar {
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
   max-width: 20rem;
+  flex-basis: 15rem;
   height: 4rem;
   background-color: #f5f5f5;
   border-radius: 5px;
