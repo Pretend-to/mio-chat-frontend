@@ -213,6 +213,7 @@ export default class Contactor extends EventEmmiter {
 
     this.kernel.on("failedMessage", (e) => {
       console.error(e);
+      const error = JSON.stringify(e.error, null, 2);
       this.updateLastUpdate();
       const messageId = e.messageId;
       const rawMessage = this.getMessageById(messageId);
@@ -220,12 +221,16 @@ export default class Contactor extends EventEmmiter {
         this.emit("updateMessageSummary");
 
         this.emit("completeMessage", {
-          text: "请求发生错误！\n```json\n" + e.error + "\n```\n",
+          text: "请求发生错误！\n```json\n" + error + "\n```\n",
           messageId,
           error: true,
         });
       }
     });
+  }
+
+  handleLLMMessageEvent(e) {
+    this.kernel.handleMessageEvent(e);
   }
 
   /**

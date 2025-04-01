@@ -418,6 +418,18 @@ export default class Client extends EventEmitter {
         }
       }
     });
+
+    this.socket.on("llm_message", (e) => {
+      const data = e.data;
+      const { metaData } = data;
+      if (metaData.contactorId) {
+        const contactor = this.getContactor(metaData.contactorId);
+        if (contactor) {
+          contactor.handleLLMMessageEvent(e);
+          // this.setLocalStorage();
+        }
+      }
+    });
   }
 
   /**

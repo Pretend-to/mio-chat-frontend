@@ -11,7 +11,7 @@ import { numberString } from "../../utils/generate.js";
 export default class Openai extends Adapter {
   constructor(config) {
     super();
-    this.settings = config.settings || {};
+    this.id = config.id;
   }
 
   convertMessage(message) {
@@ -41,14 +41,17 @@ export default class Openai extends Adapter {
     return content || "未命名会话";
   }
 
-  async send(messages, messageId, settings) {
-    console.log("send message to openai");
+  handleMessageEvent(chunk) {
+    const data = chunk.data;
+
+    const messageId = data.metaData.messageId;
 
     const emitEvent = (eventName, detail) => {
       this.emit(eventName, { ...detail, messageId });
     };
 
-    const handleUpdateChunk = (chunk) => {
+    console.log("Received chunk from LLM:", chunk);
+    if (chunk.message === "update") {
       const updateHandlers = {
         reasoningContent: (content) =>
           emitEvent("updateReasoning", { reasoning_content: content }),
@@ -61,9 +64,7 @@ export default class Openai extends Adapter {
       if (handler) {
         handler(data.content);
       }
-    };
-
-    const handleCompletionChunk = (chunk) => {
+    } else if (["complete", "failed"].includes(chunk.message)) {
       const completionHandlers = {
         complete: () => emitEvent("completeMessage", {}),
         failed: () => emitEvent("failedMessage", { error: chunk.data }),
@@ -73,33 +74,38 @@ export default class Openai extends Adapter {
       if (handler) {
         handler();
       }
-    };
+    }
+  }
+
+  async send(messages, messageId, settings) {
+    console.log("send message to openai");
+
+    // const emitEvent = (eventName, detail) => {
+    //   this.emit(eventName, { ...detail, messageId });
+    // };
+
+    // const handleUpdateChunk = (chunk) => ;
+
+    // const handleCompletionChunk = (chunk) => ;
 
     try {
+      const metaData = {
+        contactorId: this.id,
+        messageId,
+      };
       // Apply settings defaults
       const data = {
         settings, // Default to empty object
         messages,
+        metaData,
       };
 
       console.log("Data sent to LLM:", data);
 
-      for await (const chunk of client.socket.streamCompletions(data)) {
-        console.log("Received chunk from LLM:", chunk);
-        if (chunk.message === "update") {
-          handleUpdateChunk(chunk);
-        } else if (["complete", "failed"].includes(chunk.message)) {
-          handleCompletionChunk(chunk);
-          break;
-        }
-      }
+      client.socket.streamCompletions(data);
     } catch (error) {
       console.error("Error in send:", error);
-      emitEvent("failedMessage", { error: "Stream processing error" });
+      this.emit("failedMessage", { error: "消息发送失败", messageId });
     }
-  }
-
-  updateSettings(settings) {
-    this.settings = settings;
   }
 }
