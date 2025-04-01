@@ -258,12 +258,13 @@ export default class Socket extends EventEmitter {
         protocol: pathArray[1],
         type: pathArray[2],
         id: pathArray[3],
-        data: {
-          ...data,
-          metaData: {
-            contactorId: this.id,
-          },
-        },
+        // data: {
+        //   ...data,
+        //   metaData: {
+        //     contactorId: this.id,
+        //   },
+        // },
+        data: data,
       };
       const timeOut = new Promise((_, reject) => {
         setTimeout(() => {
