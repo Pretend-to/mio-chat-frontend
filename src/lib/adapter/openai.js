@@ -97,12 +97,11 @@ export default class Openai extends Adapter {
       const data = {
         settings, // Default to empty object
         messages,
-        metaData,
       };
 
       console.log("Data sent to LLM:", data);
 
-      client.socket.streamCompletions(data);
+      client.socket.streamCompletions(data, metaData);
     } catch (error) {
       console.error("Error in send:", error);
       this.emit("failedMessage", { error: "消息发送失败", messageId });

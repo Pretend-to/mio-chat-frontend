@@ -265,6 +265,9 @@ export default class Socket extends EventEmitter {
         //   },
         // },
         data: data,
+        metaData: {
+          contactorId: this.id,
+        },
       };
       const timeOut = new Promise((_, reject) => {
         setTimeout(() => {
@@ -289,13 +292,14 @@ export default class Socket extends EventEmitter {
    * @param {Object} data - Completion request data
    * @returns {AsyncGenerator<any>} - Completion data generator
    */
-  streamCompletions(data) {
+  streamCompletions(data, metaData) {
     const request_id = randomString(16);
     const request = {
       request_id,
       protocol: "llm",
       type: "completions",
       data: data,
+      metaData,
     };
     this.sendMessage(request);
     console.log("WebSocket sending request", request);
