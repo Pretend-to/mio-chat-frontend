@@ -12,30 +12,6 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
-      VitePWA({
-        registerType: "autoUpdate",
-        manifest: {
-          name: "Mio Chat",
-          short_name: "Mio",
-          description: "A modern chat application powered by AI",
-          theme_color: "transparent",
-          background_color: "transparent",
-          icons: [
-            {
-              src: "/static/icons/192x192.png",
-              sizes: "192x192",
-              type: "image/png",
-              purpose: "any maskable",
-            },
-            {
-              src: "/static/icons/512x512.png",
-              sizes: "512x512",
-              type: "image/png",
-              purpose: "any maskable",
-            },
-          ],
-        },
-      }),
       vue({
         template: {
           compilerOptions: {
