@@ -188,7 +188,7 @@ export default class Socket extends EventEmitter {
     try {
       const e = JSON.parse(message);
       if (e.protocol === "llm") {
-        // this.emit(e.request_id, e);
+        this.emit(e.request_id, e);
         this.emit("llm_message", e);
       }
       if (e.protocol === "onebot") {
@@ -258,12 +258,6 @@ export default class Socket extends EventEmitter {
         protocol: pathArray[1],
         type: pathArray[2],
         id: pathArray[3],
-        // data: {
-        //   ...data,
-        //   metaData: {
-        //     contactorId: this.id,
-        //   },
-        // },
         data: data,
         metaData: {
           contactorId: this.id,
@@ -281,7 +275,12 @@ export default class Socket extends EventEmitter {
           resolve(res.data);
         });
       });
-      Promise.race([timeOut, response]).then(resolve).catch(reject);
+      Promise.race([timeOut, response])
+        .then(resolve)
+        .catch(reject)
+        .finally(() => {
+          this.off(request.request_id);
+        });
       this.sendMessage(request); // Use sendMessage to send the request
       console.log("WebSocket sending request", url, request);
     });
@@ -303,42 +302,5 @@ export default class Socket extends EventEmitter {
     };
     this.sendMessage(request);
     console.log("WebSocket sending request", request);
-
-    // 使用新的 setStreamCompletionsCallback 方法
-    // for await (const chunk of this.setStreamCompletionsCallback(request_id)) {
-    //   yield chunk;
-    // }
   }
-
-  // async *setStreamCompletionsCallback(request_id) {
-  //   try {
-  //     while (true) {
-  //       const chunk = await new Promise((resolve, reject) => {
-  //         this.on(request_id, (data) => {
-  //           console.log("WebSocket received chunk", data);
-  //           if (data.message === "update") {
-  //             resolve(data);
-  //           } else if (
-  //             data.message === "complete" ||
-  //             data.message === "failed"
-  //           ) {
-  //             this.off(request_id);
-  //             this.pendingRequests.delete(request_id);
-  //             reject({ done: true, data: data });
-  //           }
-  //         });
-  //       });
-  //       yield chunk;
-  //     }
-  //   } catch (e) {
-  //     if (e.done) {
-  //       console.log("WebSocket stream completions finished", e.data.message);
-  //       yield e.data;
-  //       return;
-  //     }
-  //     throw e;
-  //   } finally {
-  //     this.pendingRequests.delete(request_id); // Ensure removal on exit
-  //   }
-  // }
 }

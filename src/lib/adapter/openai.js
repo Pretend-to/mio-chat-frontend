@@ -27,7 +27,7 @@ export default class Openai extends Adapter {
   }
 
   async getMessagesSummary(messageChain) {
-    const query = `请你根据以下对话的内容\n${JSON.stringify(messageChain)}\n，总结出一个简短的对话主题,不得超出10个字。`;
+    const query = `请你根据以下对话的内容\n${JSON.stringify(messageChain)}\n，总结出一个简短的对话主题,你的回答必须只包含对话主题，不要包含其他内容`;
     const settings = config.getLLMDefaultConfig();
     settings.base.stream = false;
     const messages = {
