@@ -82,8 +82,7 @@ export default {
   computed: {
     toolCallSuccess() {
       return (
-        this.toolCall.action === "finished" &&
-        this.toolCall?.result?.error === null
+        this.toolCall.action === "finished" && this.toolCall?.result?.error
       );
     },
     toolCallFail() {
