@@ -213,7 +213,15 @@ export default class Contactor extends EventEmmiter {
 
     this.kernel.on("failedMessage", (e) => {
       console.error(e);
-      const error = JSON.stringify(e.error, null, 2);
+      // case 1: e.error.message 为json字符串，需要解析
+      if (typeof e.error.message === "string") {
+        try {
+          e.error.message = JSON.parse(e.error.message);
+        } catch (error) {
+          console.error("Failed to parse error message:", error);
+        }
+      }
+      const error = JSON.stringify(e.error.message, null, 2);
       this.updateLastUpdate();
       const messageId = e.messageId;
       const rawMessage = this.getMessageById(messageId);
