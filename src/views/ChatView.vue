@@ -232,6 +232,18 @@ export default {
         message: "上下文信息已清除，之后的请求将不再记录上文记录",
         type: "success",
       });
+      // 先看看之前有没有清除提示
+      for (let i = this.activeContactor.messageChain.length - 1; i >= 0; i--) {
+        const message = this.activeContactor.messageChain[i];
+        // role 为 "mio_system"
+        if (
+          message.role === "mio_system" &&
+          message.content[0].type === "text" &&
+          message.content[0].data.text === this.clearMessageTip
+        ) {
+          this.activeContactor.messageChain.splice(i, 1);
+        }
+      }
       this.activeContactor.makeSystemMessage(this.clearMessageTip);
       // 持久化
       client.setLocalStorage();
@@ -267,7 +279,6 @@ export default {
 
     async setModel(name) {
       this.activeContactor.options.base.model = name;
-      this.activeContactor.title = name;
       this.activeContactor.loadAvatar();
       await client.setLocalStorage(); //持久化存储
     },
@@ -916,6 +927,8 @@ $icon-hover: #09f
     transform: translate(-50%, -50%)
     max-height: 75%
     max-width: 50%
+.inner-content
+  display: flex
 
 .background img
     position: absolute

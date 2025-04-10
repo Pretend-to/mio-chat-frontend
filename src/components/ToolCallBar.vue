@@ -51,7 +51,7 @@
         <div class="detail-params">
           <div class="detail-title">参数</div>
           <div class="detail-content">
-            {{ toolCall.params }}
+            {{ toolCall.parameters }}
           </div>
         </div>
 
@@ -167,16 +167,21 @@ export default {
 
 .tool-info {
   flex-grow: 1;
+  flex-basis: 1rem;
+  flex-shrink: 1;
   display: flex;
   flex-direction: column;
   justify-content: space-evenly;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .extra-info {
-  flex-basis: 2.5rem;
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 0 0.5rem;
 }
 
 button.extra-info-button {
@@ -195,13 +200,17 @@ button.extra-info-button:hover svg {
 
 .tool-name {
   font-weight: bolder;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tool-call-bar {
+  max-width: 100%;
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
-  width: 15rem;
   height: 4rem;
+  flex-wrap: nowrap;
   background-color: #f5f5f5;
   border-radius: 5px;
   display: flex;
@@ -212,10 +221,9 @@ button.extra-info-button:hover svg {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-basis: 4rem;
   height: 100%;
   border-radius: 50%;
-  background-color: #f5f5f5;
+  padding: 0 0.5rem;
 }
 
 .call-pend-icon {

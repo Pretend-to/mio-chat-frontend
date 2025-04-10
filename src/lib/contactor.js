@@ -183,11 +183,21 @@ export default class Contactor extends EventEmmiter {
           (msgElm) => msgElm.data.id == tool_call.id,
         );
         if (previousCall) {
-          // 这种情况就是更新之前的 toolCall 消息
-          previousCall.data = tool_call;
+          // // 这种情况就是更新之前的 toolCall 消息
+          // previousCall.data.action = tool_call.action;
+          // previousCall.data.result = tool_call.result;
+          // if (tool_call.action == "pending") {
+          //   previousCall.data.parameters += tool_call.parameters;
+          // }
+          const updatedCall = JSON.parse(JSON.stringify(previousCall));
+          updatedCall.data.action = tool_call.action;
+          updatedCall.data.result = tool_call.result;
           if (tool_call.action == "pending") {
-            previousCall.data.params += tool_call.params;
+            updatedCall.data.parameters += tool_call.parameters;
           }
+          const index = rawMessage.content.indexOf(previousCall);
+          rawMessage.content[index] = updatedCall;
+          console.log(JSON.stringify(updatedCall, null, 2));
         } else {
           // 这种情况就是新增一条 toolCall 消息
           rawMessage.content.push(msgElm);
@@ -290,7 +300,7 @@ export default class Contactor extends EventEmmiter {
               id: elm.data.id,
               function: {
                 name: elm.data.name,
-                arguments: elm.data.params,
+                arguments: elm.data.parameters,
               },
               type: "function",
             },
@@ -607,6 +617,8 @@ export default class Contactor extends EventEmmiter {
     } else if (avatarPolicy[this.avatarPolicy] == "CUSTOM") {
       avatar = this.avatar;
     }
+
+    this.title = this.options.base.model;
     this.avatar = avatar;
     return avatar;
   }

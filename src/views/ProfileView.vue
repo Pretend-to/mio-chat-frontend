@@ -508,6 +508,8 @@ export default {
       this.activeContactor.options.provider = this.llmProvider;
 
       this.setGeneralSettings();
+
+      this.activeContactor.loadAvatar();
     },
   },
 };
@@ -621,7 +623,7 @@ export default {
   width: 100%;
   justify-content: space-between;
   min-height: 2.5rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .block-content-item::after {

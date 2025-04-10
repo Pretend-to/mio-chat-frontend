@@ -27,7 +27,7 @@ export default class Openai extends Adapter {
   }
 
   async getMessagesSummary(messageChain) {
-    const query = `请你根据以下对话的内容\n${JSON.stringify(messageChain)}\n，总结出一个简短的对话主题,你的回答必须只包含对话主题，不要包含其他内容`;
+    const query = `请你根据以下对话的内容\n${JSON.stringify(messageChain)}\n，总结出一个简短的对话主题,你的回答必须只包含对话主题，不要包含任何其他内容，包括句号。`;
     const settings = config.getLLMDefaultConfig();
     settings.base.stream = false;
     const messages = {
@@ -79,14 +79,6 @@ export default class Openai extends Adapter {
 
   async send(messages, messageId, settings) {
     console.log("send message to openai");
-
-    // const emitEvent = (eventName, detail) => {
-    //   this.emit(eventName, { ...detail, messageId });
-    // };
-
-    // const handleUpdateChunk = (chunk) => ;
-
-    // const handleCompletionChunk = (chunk) => ;
 
     try {
       const metaData = {
