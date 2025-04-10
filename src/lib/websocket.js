@@ -140,7 +140,7 @@ export default class Socket extends EventEmitter {
       transports: transports, // <-- 使用指定的 transports
       auth: { id: this.id, token: this.code },
       reconnection: true, // 保持开启，让 Socket.IO 处理后续的重连尝试
-      reconnectionAttempts: 5, // 可以为 polling 设置不同的重试次数
+      reconnectionAttempts: Infinity, // 可以为 polling 设置不同的重试次数
       reconnectionDelay: 2000,
       reconnectionDelayMax: 10000,
       timeout: 15000, // 可以为 polling 调整超时
