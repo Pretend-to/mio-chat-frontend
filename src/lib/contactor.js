@@ -618,7 +618,10 @@ export default class Contactor extends EventEmmiter {
       avatar = this.avatar;
     }
 
-    this.title = this.options.base.model;
+    if (this.platform == "openai") {
+      this.title = this.options.base.model;
+    }
+
     this.avatar = avatar;
     return avatar;
   }

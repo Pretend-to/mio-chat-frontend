@@ -167,7 +167,7 @@ export default {
 
 .tool-info {
   flex-grow: 1;
-  flex-basis: 1rem;
+  flex-basis: 10rem;
   flex-shrink: 1;
   display: flex;
   flex-direction: column;
@@ -175,13 +175,15 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  margin-right: 0.5rem;
 }
 
 .extra-info {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 0 0.5rem;
+  flex-basis: 3rem;
+  min-width: 3rem;
 }
 
 button.extra-info-button {
@@ -223,7 +225,7 @@ button.extra-info-button:hover svg {
   justify-content: center;
   height: 100%;
   border-radius: 50%;
-  padding: 0 0.5rem;
+  min-width: 4rem;
 }
 
 .call-pend-icon {

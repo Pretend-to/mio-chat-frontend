@@ -99,6 +99,14 @@ export default class Config {
     this.updateLLMDefaultConfig("base", {
       model: default_model[defaultProvider],
     });
+
+    if (this.baseConfigCallback) {
+      this.baseConfigCallback(config);
+    }
+  }
+
+  setBaseConfigCallback(callback) {
+    this.baseConfigCallback = callback;
   }
 
   updateBaseConfig(patch) {

@@ -168,8 +168,8 @@ export default {
       }
       // 添加新项目到数组的最前面
       this.recentPresets.unshift(preset);
-      // 检查数组长度并保持在小于或等于6
-      if (this.recentPresets.length > 6) {
+      // 检查数组长度并保持在小于或等于 10
+      if (this.recentPresets.length > 10) {
         this.recentPresets.pop(); // 移除最后一个元素，即最旧的元素
       }
       // 更新到 localStorage
@@ -459,6 +459,7 @@ export default {
   align-items: center;
   border-bottom: 1px solid #f1f1f1;
   font-size: 0.8rem;
+  padding-left: 1rem;
 }
 
 .close-icon {

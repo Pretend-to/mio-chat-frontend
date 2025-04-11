@@ -28,11 +28,16 @@ export default {
   },
   created() {
     const displayConfig = config.getBaseConfig();
-
-    if (displayConfig) {
+    if (Object.keys(displayConfig).length > 0) {
       this.fullScreen = displayConfig.full_screen;
       this.beian = displayConfig.beian;
       document.title = displayConfig.title;
+    } else {
+      config.setBaseConfigCallback((data) => {
+        this.fullScreen = data.full_screen;
+        this.beian = data.beian;
+        document.title = data.title;
+      });
     }
 
     window.addEventListener("resize", this.handleResize);
