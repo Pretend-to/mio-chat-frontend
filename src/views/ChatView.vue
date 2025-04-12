@@ -446,6 +446,7 @@ export default {
       contactor.on("updateMessage", () => {
         this.$forceUpdate();
         this.toupdate = true;
+        client.setLocalStorage(); //持久化存储
       });
 
       contactor.on(`completeMessage`, async (e) => {

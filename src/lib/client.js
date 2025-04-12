@@ -3,6 +3,7 @@ import Contactor from "./contactor.js";
 import localforage from "localforage";
 import EventEmitter from "./event.js";
 import { reactive } from "vue";
+import _ from "lodash";
 import UploadWorker from "../worker/fileUpload.js?worker";
 
 // Configure localforage
@@ -26,6 +27,8 @@ export default class Client extends EventEmitter {
     this.title = "Mio"; // Fixed
     this.name = "user"; // Fixed
     this.config = config; // Parameter
+
+    this.setLocalStorage = _.debounce(this.setLocalStorage.bind(this), 500); // 防抖时间设置为 1000 毫秒 (1 秒)
   }
 
   /**
