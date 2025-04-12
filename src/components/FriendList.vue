@@ -25,6 +25,9 @@ export default {
         b.priority - a.priority == -1 ? 1 : b.lastUpdate - a.lastUpdate,
       );
     },
+    avaliableProvideres() {
+      return config.getLLMProviders().map((item) => item.value);
+    },
   },
   created() {
     if (client.getContactors().length == 0) {
@@ -72,9 +75,8 @@ export default {
         return item.priority == 0 ? "important" : "";
       }
     },
-    async genBlankBot() {
-      const options = config.getLLMDefaultConfig();
-      console.log(options);
+    async genBotByProvider(provider) {
+      const options = config.getLLMDefaultConfig(provider);
       const blankConfig = {
         id: this.genFakeId(),
         title: options.default_model,
@@ -146,15 +148,22 @@ export default {
       if (options.opening)
         defaultOptions.presetSettings.opening = options.opening;
 
-      // 检查预设里的模型是否存在
       if (options.model) {
-        const modelAvailable = config.isModelAvailable(
-          defaultOptions.provider,
-          options.model,
+        // 先获取可用的 provider 列表
+        const availableProviders = config
+          .getLLMProviders()
+          .map((item) => item.value);
+        // 看看哪个 provider 里面有这个 model
+        const provider = availableProviders.find((provider) =>
+          config.isModelAvailable(provider, options.model),
         );
-        if (modelAvailable) {
+        if (provider) {
+          // 如果找到了 provider，就使用这个 provider
+          defaultOptions.provider = provider;
           defaultOptions.base.model = options.model;
         } else {
+          // 如果没有找到 provider，就使用默认的 provider
+          defaultOptions.base.model = options.model;
           this.$message({
             message: "预设模型不存在, 已使用默认模型",
             type: "error",
@@ -259,8 +268,10 @@ export default {
         </button>
         <div v-show="showAddOptions" id="add-options">
           <ul>
-            <li>
-              <button @click="genBlankBot">新建空白Bot</button>
+            <li v-for="(provider, index) in avaliableProvideres" :key="index">
+              <button @click="genBotByProvider(provider)">
+                新建 {{ provider }} Bot
+              </button>
             </li>
             <li>
               <button @click="genBotByPreset">从预设新建Bot</button>
@@ -319,7 +330,6 @@ export default {
   background-color: white;
   width: 8rem;
   left: 0;
-  height: 3rem;
   border: 0.0625rem solid rgba(161, 154, 154, 0.626);
   border-radius: 0.3125rem;
   z-index: 2;
@@ -327,8 +337,10 @@ export default {
 #add-options li {
   display: flex;
   flex-direction: row-reverse;
-  margin-left: 0.5rem;
-  margin-right: 0.5rem;
+  padding: 0.1rem 0.5rem;
+}
+#add-options li:hover {
+  background-color: #f5f5f5;
 }
 #add-options ul {
   display: flex;

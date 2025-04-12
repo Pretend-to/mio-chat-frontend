@@ -257,8 +257,20 @@ export default class Config {
     this._saveStrogeConfig();
   }
 
-  getLLMDefaultConfig() {
-    return JSON.parse(JSON.stringify(this.LLMDefaultConfig));
+  getLLMDefaultConfig(provider) {
+    const copiedConfig = JSON.parse(JSON.stringify(this.LLMDefaultConfig));
+    if (!provider || provider === this.LLMDefaultConfig.provider) {
+      return copiedConfig;
+    } else {
+      const { default_model } = this.baseConfig;
+      if (default_model[provider]) {
+        copiedConfig.provider = provider;
+        copiedConfig.base.model = default_model[provider];
+        return copiedConfig;
+      } else {
+        return copiedConfig;
+      }
+    }
   }
 
   // llm Tools

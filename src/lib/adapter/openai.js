@@ -80,23 +80,22 @@ export default class Openai extends Adapter {
   async send(messages, messageId, settings) {
     console.log("send message to openai");
 
-    try {
-      const metaData = {
-        contactorId: this.id,
-        messageId,
-      };
-      // Apply settings defaults
-      const data = {
-        settings, // Default to empty object
-        messages,
-      };
+    const metaData = {
+      contactorId: this.id,
+      messageId,
+    };
+    // Apply settings defaults
+    const data = {
+      settings, // Default to empty object
+      messages,
+    };
 
-      console.log("Data sent to LLM:", data);
+    console.log("Data sent to LLM:", data);
 
-      client.socket.streamCompletions(data, metaData);
-    } catch (error) {
-      console.error("Error in send:", error);
-      this.emit("failedMessage", { error: "消息发送失败", messageId });
+    if (!client.socket) {
+      throw new Error("WebSocket connection not established.");
     }
+
+    client.socket.streamCompletions(data, metaData);
   }
 }

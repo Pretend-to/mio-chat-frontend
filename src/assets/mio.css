@@ -86,3 +86,26 @@ figure {
 .message-body#user a {
   color: #ffffff;
 }
+
+#message-loading-icon {
+  width: 1rem;
+  height: 1rem;
+  position: relative;
+  display: inline-block;
+  border-radius: 50%; /* 创建圆形 */
+  background-color: #000000; /* 黑色背景 */
+  animation: loading-scale 0.5s infinite alternate; /* 使用缩放动画 */
+  transform-origin: center; /* 从中心点缩放 */
+  bottom: -3px;
+  left: 1px;
+  z-index: 100;
+}
+
+@keyframes loading-scale {
+  from {
+    transform: scale(0.8); /* 初始大小：1rem (对应1)*/
+  }
+  to {
+    transform: scale(0.5); /* 最终大小：0.6rem (0.6/1.25=0.48) */
+  }
+}

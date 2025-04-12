@@ -90,6 +90,7 @@ export default {
       fullScreen: false,
       chatWindowRef: null,
       clearMessageTip: "以上的对话记录已清除",
+      loadingIcon: "<span id='message-loading-icon'></span>",
     };
   },
   computed: {
@@ -165,9 +166,9 @@ export default {
     this.scroll = true;
     this.initContactor(this.activeContactor);
     this.fullScreen = this.client.fullScreen;
-    setInterval(() => {
-      this.currentDelay = this.client.socket.delay;
-    }, 3000);
+    // setInterval(() => {
+    //   this.currentDelay = this.client.socket.delay;
+    // }, 3000);
 
     if (this.shareId) {
       const loadAble = await client.loadOriginalContactors(this.shareId);
@@ -583,13 +584,16 @@ export default {
               message.role === "user"
                 ? this.validMessageIndex + 1
                 : this.validMessageIndex;
-            if (message.role === "user") {
-              this.activeContactor.retryMessage(message.id);
-            } else {
-              this.activeContactor.retryMessage(message.id);
-            }
-            message.status = "retrying";
-            this.retryList.push(message.id);
+
+            const validMessage = this.activeContactor.messageChain[targetIndex];
+            // if (message.role === "user") {
+            //   this.activeContactor.retryMessage(message.id);
+            // } else {
+            //   this.activeContactor.retryMessage(message.id);
+            // }
+            this.activeContactor.retryMessage(validMessage.id);
+            validMessage.status = "retrying";
+            this.retryList.push(validMessage.id);
           }
           this.toButtom();
           break;
@@ -701,7 +705,12 @@ export default {
                   :no-img-zoom-in="false"
                   preview-theme="github"
                   :code-foldable="false"
-                  :model-value="element.data.text"
+                  :model-value="
+                    ['pending', 'retrying'].includes(item.status) &&
+                    item.content.length - 1 === elmIndex
+                      ? element.data.text + loadingIcon
+                      : element.data.text
+                  "
                 />
                 <el-image
                   v-else-if="element.type === 'image'"

@@ -397,21 +397,27 @@ export default class Contactor extends EventEmmiter {
     this.updateLastUpdate();
     this.messageChain.push(message);
     this.updateMessageSummary();
-    if (this.platform == "onebot") {
-      const messageId = await this.kernel.send(this.id, message.content);
-      return messageId;
-    } else {
-      // 截取从this.firstMessageIndex到结尾的消息
-      const finalMessages = this._getValidOpenaiMessage();
+    try {
+      if (this.platform == "onebot") {
+        const messageId = await this.kernel.send(this.id, message.content);
 
-      const messageId = numberString(16);
+        return messageId;
+      } else {
+        // 截取从this.firstMessageIndex到结尾的消息
+        const finalMessages = this._getValidOpenaiMessage();
 
-      this.revMessage({
-        id: messageId,
-      });
+        const messageId = numberString(16);
+        await this.kernel.send(finalMessages, messageId, this.options);
 
-      this.kernel.send(finalMessages, messageId, this.options);
-      return numberString(16);
+        this.revMessage({
+          id: messageId,
+        });
+
+        return numberString(16);
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+      throw error;
     }
   }
 

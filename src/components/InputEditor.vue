@@ -502,12 +502,15 @@ export default {
     async send() {
       this.$emit("toButtom");
       const container = this.presend();
-      // this.userInput = "";  // Already cleared in presend
-      const message_id = await this.activeContactor.webSend(container); //发送消息
-      container.id = message_id;
-      this.$emit("stroge");
-      this.uploaded.images = [];
-      this.uploaded.files = [];
+      try {
+        const message_id = await this.activeContactor.webSend(container); //发送消息
+        container.id = message_id;
+        this.$emit("stroge");
+        this.uploaded.images = [];
+        this.uploaded.files = [];
+      } catch (error) {
+        this.$message.error("发送消息失败");
+      }
     },
     getSafeText(text) {
       // return text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
