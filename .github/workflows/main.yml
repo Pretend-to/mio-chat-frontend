@@ -3,29 +3,26 @@ on:
   push:
     branches:
       - master
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
+        with:
+          fetch-depth: 0 # 获取所有提交历史，以便获取最新提交信息
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: "20"
-
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
           path: |
             **/node_modules
           key: ${{ runner.os }}-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
-
       - name: Install pnpm
         run: npm install -g pnpm
-
       - name: Install dependencies
         run: |
           pnpm install
@@ -33,7 +30,6 @@ jobs:
             echo "Dependencies installation failed"
             exit 1
           fi
-
       - name: Build the project
         run: |
           pnpm run build
@@ -41,7 +37,6 @@ jobs:
             echo "Build failed"
             exit 1
           fi
-
       - name: Clone Mio Chat Backend repository
         run: |
           git clone https://x-access-token:${{ secrets.GH_SECRET }}@github.com/Pretend-to/mio-chat-backend.git
@@ -49,19 +44,22 @@ jobs:
             echo "Clone failed"
             exit 1
           fi
-
       - name: Copy dist files
         run: |
           if [ -d "./dist" ]; then
             rm -rf ./mio-chat-backend/dist/
-            cp -r ./dist/ ./mio-chat-backend/
+            cp -r ./dist/ ./mio-chat-backend/dist/
             echo "Files copied successfully"
             ls -la ./mio-chat-backend/dist/
           else
             echo "Error: dist directory not found"
             exit 1
           fi
-
+      - name: Get latest commit message
+        id: get_commit_message
+        run: |
+          LATEST_COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+          echo "::set-output name=message::$LATEST_COMMIT_MESSAGE"
       - name: Commit and push changes
         run: |
           cd mio-chat-backend
@@ -73,7 +71,8 @@ jobs:
             exit 0
           else
             git add .
-            git commit -m "update: 更新前端"
+            COMMIT_MESSAGE="feat: update frontend\n\n前端最新提交信息：${{ steps.get_commit_message.outputs.message }}"
+            git commit -m "$COMMIT_MESSAGE"
             git push https://x-access-token:${{ secrets.GH_SECRET }}@github.com/Pretend-to/mio-chat-backend.git HEAD:master
             echo "Changes pushed successfully"
           fi
