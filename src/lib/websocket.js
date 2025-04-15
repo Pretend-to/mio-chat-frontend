@@ -81,7 +81,7 @@ export default class Socket extends EventEmitter {
    * @param {Error} error - The error object
    */
   handleConnectError(error) {
-    console.error(`SocketIO connection error: ${error.message}`, error);
+    this.emit("connect_error", error);
     // error 对象可能包含 transport 信息，例如 error.transport
     console.log(
       `Error occurred during ${this.isAttemptingWebSocket ? "WebSocket" : "Polling"} attempt.`,

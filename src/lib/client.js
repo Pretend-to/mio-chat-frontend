@@ -53,20 +53,22 @@ export default class Client extends EventEmitter {
     this.emit("loaded");
   }
 
-  genDefaultConctor() {
-    // Create default OneBot contactor
-    const onebotConfig = {
-      id: this.genFakeId(),
-      name: "OneBot",
-      namePolicy: 1,
-      avatarPolicy: 1,
-      avatar: `/p/qava?q=${this.bot_qq}`,
-      title: "云崽",
-      priority: 0,
-      options: {},
-      lastUpdate: -Infinity,
-    };
-    this.addConcator("onebot", onebotConfig);
+  genDefaultConctor(info) {
+    if (info.onebot_enabled) {
+      // Create default OneBot contactor
+      const onebotConfig = {
+        id: this.genFakeId(),
+        name: "OneBot",
+        namePolicy: 1,
+        avatarPolicy: 1,
+        avatar: `/p/qava?q=${this.bot_qq}`,
+        title: "云崽",
+        priority: 0,
+        options: {},
+        lastUpdate: -Infinity,
+      };
+      this.addConcator("onebot", onebotConfig);
+    }
 
     const options = this.config.getLLMDefaultConfig();
     const allTools = this.config.llmTools.map((tool) => tool.name);
@@ -75,7 +77,7 @@ export default class Client extends EventEmitter {
     const LLMDefaultConfig = {
       id: this.genFakeId(),
       name: "MioBot",
-      avatar: "/static/avatar/miobot.png",
+      avatar: "/p/ava/miobot.png",
       namePolicy: 1,
       avatarPolicy: 1,
       title: "chat",
@@ -370,7 +372,7 @@ export default class Client extends EventEmitter {
   async login(code) {
     this.code = code;
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const socket = new Socket(this.id, this.code);
 
       socket.on("connect", async (info) => {
@@ -380,11 +382,17 @@ export default class Client extends EventEmitter {
         this.config.setLlmModels(info.models);
         this.addMsgListener();
         if (this.contactList.length == 0) {
-          this.genDefaultConctor();
+          this.genDefaultConctor(info);
         }
         this.setEverLogin();
         this.setLocalStorage();
         resolve(info);
+      });
+
+      socket.on("connect_error", (error) => {
+        console.log("Login failed", error);
+        this.isConnected = false;
+        reject(error.message);
       });
 
       socket.connect();

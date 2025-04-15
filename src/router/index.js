@@ -4,6 +4,8 @@ import { ElMessage } from "element-plus";
 import ChatView from "../views/ChatView.vue";
 import HomeView from "../views/HomeView.vue";
 import ProfileView from "../views/ProfileView.vue";
+import SettingsView from "../views/SettingsView.vue";
+import AuthView from "../views/AuthView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -38,12 +40,12 @@ const router = createRouter({
     {
       path: "/auth",
       name: "auth",
-      component: () => import("../views/AuthView.vue"),
+      component: AuthView,
     },
     {
       path: "/settings",
       name: "settings",
-      component: () => import("../views/SettingsView.vue"),
+      component: SettingsView,
     },
   ],
 });
