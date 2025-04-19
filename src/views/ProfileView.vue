@@ -264,7 +264,6 @@ export default {
     const currentId = parseInt(this.$route.params.id);
     const contactor = client.getContactor(currentId);
     const options = JSON.parse(JSON.stringify(contactor.options));
-    console.log(options);
     const toolCallModes = config.getToolCallModes();
     const providers = config.getLLMProviders();
     const safetyParams = config.getSafetySettingsParams();
@@ -522,6 +521,7 @@ export default {
   transition: transform 0.3s ease;
 }
 .profile-container {
+  overflow-y: auto;
   margin: 2rem 0rem 0rem 0rem;
   width: calc(100% - 8rem);
   min-width: 20rem;
@@ -536,6 +536,7 @@ export default {
   padding-bottom: 1rem;
   border-bottom: 1px solid #88888888;
   flex-wrap: wrap;
+  margin-bottom: 2rem;
 }
 .base-info-avatar {
   margin-top: 1rem;
@@ -654,7 +655,6 @@ export default {
   position: relative;
   overflow-y: auto;
   flex-grow: 1;
-  padding-top: 4rem;
   background-color: #f2f2f2;
 }
 

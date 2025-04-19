@@ -59,6 +59,11 @@ export default {
   flex-grow: 1;
   display: flex;
   width: calc(100% - 4.5rem);
+  background-color: #f2f2f2;
+}
+
+#main > .profile-body {
+  margin-top: 4rem;
 }
 
 #main-mobile {

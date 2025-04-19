@@ -359,6 +359,7 @@ export default {
   max-width: 14rem;
   flex-direction: column;
   position: relative;
+  background-color: #fff;
 }
 
 .resizer {
