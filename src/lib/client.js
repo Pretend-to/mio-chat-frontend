@@ -71,7 +71,13 @@ export default class Client extends EventEmitter {
     }
 
     const options = this.config.getLLMDefaultConfig();
-    const allTools = this.config.llmTools.map((tool) => tool.name);
+    // const allTools = Object.values(this.config.llmTools).map((tool) => (
+    //   ...Object.keys(tool)
+    // ));
+    const allTools = [];
+    for (const key in this.config.llmTools) {
+      allTools.push(...Object.keys(this.config.llmTools[key]));
+    }
     options.toolCallSettings.tools = allTools;
 
     const LLMDefaultConfig = {

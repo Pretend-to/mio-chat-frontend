@@ -85,7 +85,6 @@
                 </div>
               </div>
             </div>
-
             <div class="settings-block">
               <div class="block-title">LLM 预设配置</div>
               <div class="block-content">
@@ -99,35 +98,22 @@
                       }"
                       @click="showPresetsDetail = !showPresetsDetail"
                     >
-                      <svg
-                        t="1731677922196"
-                        class="icon"
-                        viewBox="0 0 1024 1024"
-                        version="1.1"
-                        xmlns="http://www.w3.org/2000/svg"
-                        p-id="5948"
-                        width="16"
-                        height="16"
-                      >
-                        <path
-                          d="M778.965749 128.759549l-383.064442 383.063419 388.097062 388.096039-0.070608 0.033769c12.709463 13.137205 20.529569 31.024597 20.529569 50.731428 0 40.376593-32.736589 73.112158-73.115228 73.112158-19.705807 0-37.591153-7.819083-50.730405-20.528546l-0.034792 0.035816L241.890654 564.622498l0.035816-0.035816c-13.779841-13.281491-22.3838-31.915897-22.3838-52.585659 0-0.071631 0-0.106424 0-0.178055 0-0.072655 0-0.10847 0-0.144286 0-20.669762 8.603959-39.341007 22.3838-52.622498l-0.035816-0.034792L680.573835 20.337187l0.180102 0.179079c13.139252-12.5662 30.950919-20.313651 50.587142-20.313651 40.378639 0 73.115228 32.736589 73.115228 73.114205C804.455283 95.485725 794.567076 115.334795 778.965749 128.759549z"
-                          p-id="5949"
-                        ></path>
-                      </svg>
+                      <i class="iconfont icon-return"></i>
                     </button>
                   </div>
                 </div>
-                <div
-                  :class="{
-                    hidden: !showPresetsDetail,
-                    'block-content-item': true,
-                  }"
-                >
-                  <PresetsList
-                    :presets-history="presetHistory"
-                    @update-presets="updateOpenaiPresets"
-                  />
-                </div>
+                <transition name="expand-slide">
+                  <div
+                    v-show="showPresetsDetail"
+                    class="block-content-item"
+                    style="overflow: hidden"
+                  >
+                    <PresetsList
+                      :presets-history="presetHistory"
+                      @update-presets="updateOpenaiPresets"
+                    />
+                  </div>
+                </transition>
               </div>
             </div>
 
@@ -152,56 +138,44 @@
                     </el-select>
                   </div>
                 </div>
-                <div class="block-content-item">
-                  <div class="item-title">工具函数列表</div>
+                <div
+                  v-for="(plugin, index) in allLLMTools"
+                  :key="index"
+                  class="block-content-item parent-item"
+                >
+                  <div class="item-title">{{ plugin.name }}</div>
                   <div class="item-content">
                     <button
                       :class="{
-                        active: showToolsDetail,
+                        active: !plugin.collapsed,
                         'extra-info-button': true,
                       }"
-                      @click="showToolsDetail = !showToolsDetail"
+                      @click="plugin.collapsed = !plugin.collapsed"
                     >
-                      <svg
-                        t="1731677922196"
-                        class="icon"
-                        viewBox="0 0 1024 1024"
-                        version="1.1"
-                        xmlns="http://www.w3.org/2000/svg"
-                        p-id="5948"
-                        width="16"
-                        height="16"
-                      >
-                        <path
-                          d="M778.965749 128.759549l-383.064442 383.063419 388.097062 388.096039-0.070608 0.033769c12.709463 13.137205 20.529569 31.024597 20.529569 50.731428 0 40.376593-32.736589 73.112158-73.115228 73.112158-19.705807 0-37.591153-7.819083-50.730405-20.528546l-0.034792 0.035816L241.890654 564.622498l0.035816-0.035816c-13.779841-13.281491-22.3838-31.915897-22.3838-52.585659 0-0.071631 0-0.106424 0-0.178055 0-0.072655 0-0.10847 0-0.144286 0-20.669762 8.603959-39.341007 22.3838-52.622498l-0.035816-0.034792L680.573835 20.337187l0.180102 0.179079c13.139252-12.5662 30.950919-20.313651 50.587142-20.313651 40.378639 0 73.115228 32.736589 73.115228 73.114205C804.455283 95.485725 794.567076 115.334795 778.965749 128.759549z"
-                          p-id="5949"
-                        ></path>
-                      </svg>
+                      <i class="iconfont icon-return"></i>
                     </button>
                   </div>
-                </div>
-                <div
-                  :class="{
-                    hidden: !showToolsDetail,
-                    'block-content-item': true,
-                  }"
-                >
-                  <ul id="tools-list" class="sub-items">
-                    <li
-                      v-for="(tool, index) in toolsList"
-                      :key="index"
-                      class="block-content-item"
-                      :title="tool.description"
+                  <transition name="expand-slide">
+                    <div
+                      v-show="!plugin.collapsed"
+                      class="item-hidden-content plugin-tools-container"
                     >
-                      <div class="item-title">{{ tool.name }}</div>
-                      <div class="item-content">
-                        <el-switch
-                          v-model="tool.enabled"
-                          @change="handleToolConfig"
-                        ></el-switch>
+                      <div
+                        v-for="(tool, toolIndex) in plugin.tools"
+                        :key="toolIndex"
+                        class="block-content-item child-item"
+                        :title="tool.description"
+                      >
+                        <div class="item-title">{{ tool.name }}</div>
+                        <div class="item-content">
+                          <el-switch
+                            v-model="tool.enabled"
+                            @change="handleToolConfig"
+                          ></el-switch>
+                        </div>
                       </div>
-                    </li>
-                  </ul>
+                    </div>
+                  </transition>
                 </div>
               </div>
             </div>
@@ -219,21 +193,7 @@
                       }"
                       @click="showSafetySettings = !showSafetySettings"
                     >
-                      <svg
-                        t="1731677922196"
-                        class="icon"
-                        viewBox="0 0 1024 1024"
-                        version="1.1"
-                        xmlns="http://www.w3.org/2000/svg"
-                        p-id="5948"
-                        width="16"
-                        height="16"
-                      >
-                        <path
-                          d="M778.965749 128.759549l-383.064442 383.063419 388.097062 388.096039-0.070608 0.033769c12.709463 13.137205 20.529569 31.024597 20.529569 50.731428 0 40.376593-32.736589 73.112158-73.115228 73.112158-19.705807 0-37.591153-7.819083-50.730405-20.528546l-0.034792 0.035816L241.890654 564.622498l0.035816-0.035816c-13.779841-13.281491-22.3838-31.915897-22.3838-52.585659 0-0.071631 0-0.106424 0-0.178055 0-0.072655 0-0.10847 0-0.144286 0-20.669762 8.603959-39.341007 22.3838-52.622498l-0.035816-0.034792L680.573835 20.337187l0.180102 0.179079c13.139252-12.5662 30.950919-20.313651 50.587142-20.313651 40.378639 0 73.115228 32.736589 73.115228 73.114205C804.455283 95.485725 794.567076 115.334795 778.965749 128.759549z"
-                          p-id="5949"
-                        ></path>
-                      </svg>
+                      <i class="iconfont icon-return"></i>
                     </button>
                   </div>
                 </div>
@@ -314,6 +274,20 @@ export default {
       label: key,
     }));
 
+    const allLLMTools = [];
+    for (const key in config.llmTools) {
+      const toolsObject = config.llmTools[key];
+      const toolsList = Object.keys(toolsObject).map((toolKey) => ({
+        enabled: false,
+        ...toolsObject[toolKey],
+      }));
+      allLLMTools.push({
+        name: key,
+        tools: toolsList,
+        collapsed: true,
+      });
+    }
+
     return {
       safetyParams,
       geminiSafetySettings: {},
@@ -335,8 +309,7 @@ export default {
       showPresetsDetail: false,
       showToolsDetail: false,
       presetHistory: options.presetSettings?.history,
-      allLLMTools: config.llmTools,
-      toolsList: [],
+      allLLMTools: allLLMTools,
       llmGeneralKeys: {},
       centerDialogVisible: false,
     };
@@ -428,9 +401,13 @@ export default {
       client.setLocalStorage(); //持久化存储
     },
     handleToolConfig() {
-      this.activeContactor.options.toolCallSettings.tools = this.toolsList
-        .filter((tool) => tool.enabled)
-        .map((tool) => tool.name);
+      const adcivedTools = this.allLLMTools
+        .filter((plugin) => plugin.tools.some((tool) => tool.enabled))
+        .map((plugin) =>
+          plugin.tools.filter((tool) => tool.enabled).map((tool) => tool.name),
+        )
+        .flat();
+      this.activeContactor.options.toolCallSettings.tools = adcivedTools;
       client.setLocalStorage(); //持久化存储
     },
     initContactor() {
@@ -455,16 +432,13 @@ export default {
     },
     loadToolsList() {
       const enabledTools = this.llmToolCallList;
-      this.toolsList = this.allLLMTools.map((tool) => {
-        return {
-          name: tool.name,
-          description: tool.description,
-          enabled: enabledTools.includes(tool.name),
-        };
+      this.allLLMTools = this.allLLMTools.map((plugin) => {
+        plugin.tools = plugin.tools.map((tool) => {
+          tool.enabled = enabledTools.includes(tool.name);
+          return tool;
+        });
+        return plugin;
       });
-      if (this.toolsList.length === 0) {
-        console.debug("没有可用的工具");
-      }
     },
     updateOpenaiPresets(presets) {
       this.activeContactor.options.presetSettings.history = presets;
@@ -524,13 +498,11 @@ export default {
   justify-content: flex-start;
   align-items: center;
 }
-
 .sub-items {
   width: 100%;
   display: flex;
   flex-direction: column;
 }
-
 .base-info-provider {
   flex-grow: 1;
   display: flex;
@@ -538,26 +510,17 @@ export default {
   align-items: center;
   padding-right: 2rem;
 }
-
-.item-extra-content {
-  width: 100%;
-  max-height: 0px;
-}
-
 .block-content-item.hidden {
   min-height: 0px;
   max-height: 0px;
 }
-
 .extra-info-button.active {
   transform: rotate(-90deg);
 }
-
 .item-content button {
   background-color: transparent;
   transition: transform 0.3s ease;
 }
-
 .profile-container {
   margin: 2rem 0rem 0rem 0rem;
   width: calc(100% - 8rem);
@@ -566,14 +529,7 @@ export default {
   display: flex;
   flex-direction: column;
 }
-
-.profile-container > * {
-  width: 100%;
-  flex-basis: 1rem;
-}
-
 .base-info {
-  /* border: 1px solid #000000; */
   background-color: #fff;
   border-radius: 0.5rem;
   display: flex;
@@ -581,24 +537,20 @@ export default {
   border-bottom: 1px solid #88888888;
   flex-wrap: wrap;
 }
-
 .base-info-avatar {
   margin-top: 1rem;
   margin-left: 1rem;
   flex-basis: 5.5rem;
   height: 5.5rem;
 }
-
 .base-info-avatar .el-image {
   width: 100%;
   height: 100%;
   border-radius: 50%;
 }
-
 .block-title {
   font-size: 0.8rem;
 }
-
 .block-content {
   margin-top: 0.5rem;
   margin-bottom: 1rem;
@@ -609,11 +561,9 @@ export default {
   border-radius: 0.5rem;
   flex-direction: column;
 }
-
 .block-content:last-child {
   margin-bottom: 2rem;
 }
-
 .block-content-item {
   max-height: 50rem;
   overflow-y: auto;
@@ -625,31 +575,39 @@ export default {
   min-height: 2.5rem;
   flex-wrap: nowrap;
 }
-
+.block-content-item.parent-item {
+  flex-wrap: wrap;
+}
+.child-item {
+  width: calc(100% - 1rem);
+  padding-left: 1rem;
+}
+.item-hidden-content {
+  width: 100%;
+}
+.plugin-tools-container {
+  max-height: 20rem; /* 限制最大高度，具体值可调 */
+  overflow-y: auto; /* 超出时显示垂直滚动条 */
+  -webkit-overflow-scrolling: touch; /* iOS 滚动优化 */
+}
 .block-content-item::after {
   content: "";
-  /* 必须要有 content 属性 */
   position: absolute;
   bottom: 0;
-  /* 定位到元素底部 */
   left: 5%;
-  /* 距离左边的长度，可以根据需要调整 */
   width: 90%;
-  /* 短一些的边框长度 */
   height: 1px;
-  /* 边框的高度 */
   background-color: rgba(145, 145, 145, 0.155);
-  /* 边框的颜色 */
 }
-
 .item-title {
   font-size: 0.8rem;
   margin-left: 1rem;
+  height: 2.5rem;
   display: flex;
+  flex-grow: 1;
   align-items: center;
   justify-content: flex-start;
 }
-
 .item-content {
   transform: scale(0.9);
   flex-basis: 10rem;
@@ -658,38 +616,28 @@ export default {
   justify-content: flex-end;
   margin-right: 1.5rem;
 }
-
 .base-info-content {
   margin-left: 1.5rem;
   margin-top: 1rem;
   display: flex;
   flex-direction: column;
 }
-
 .base-info-content .name {
   font-size: 1.25rem;
 }
-
 .base-info-content .id {
   margin-top: 0.25rem;
   font-size: 0.75rem;
   color: dimgrey;
 }
-
 .base-info-content .status {
   margin-top: 0.25rem;
 }
-
-.info-blocks > * {
-  margin-top: 1rem;
-}
-
 .info-blocks {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
-
 .action-bar {
   position: relative;
   background-color: #f2f2f2;
@@ -709,28 +657,41 @@ export default {
   padding-top: 4rem;
   background-color: #f2f2f2;
 }
+
+/* 自定义动画 */
+.expand-slide-enter-active,
+.expand-slide-leave-active {
+  transition:
+    max-height 0.4s cubic-bezier(0.78, 0.14, 0.15, 0.86),
+    opacity 0.4s;
+}
+.expand-slide-enter-from,
+.expand-slide-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+.expand-slide-enter-to,
+.expand-slide-leave-from {
+  max-height: 20rem;
+  opacity: 1;
+}
 </style>
 <style scoped lang="sass">
 .delay-status
+  display: inline-block
+  width: 1rem
+  height: 1rem
+  border-radius: 50%
+  transform: translateY(.25rem)
+  margin-right: .25rem
+  &:hover + .delay-num
     display: inline-block
-    width: 1rem
-    height: 1rem
-    border-radius: 50%
-    transform: translateY(.25rem)
-    margin-right: .25rem
-
-    &:hover + .delay-num
-        display: inline-block
-
-    &.ultra
-        background-color: rgb(53, 233, 146)
-
-    &.low
-        background-color: rgb(255, 204, 0)
-
-    &.mid
-        background-color: rgb(255, 102, 102)
-
-    &.high
-        background-color: #ccc
+  &.ultra
+    background-color: rgb(53, 233, 146)
+  &.low
+    background-color: rgb(255, 204, 0)
+  &.mid
+    background-color: rgb(255, 102, 102)
+  &.high
+    background-color: #ccc
 </style>

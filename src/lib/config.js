@@ -277,7 +277,7 @@ export default class Config {
   async loadllmTools() {
     const res = await fetch("/api/openai/tools");
     const data = await res.json();
-    this.llmTools = Object.values(data.data.tools);
+    this.llmTools = data.data.tools;
     this._saveStrogeConfig();
   }
 
