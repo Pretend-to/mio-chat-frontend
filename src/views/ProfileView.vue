@@ -90,7 +90,7 @@
               <div class="block-content">
                 <div class="block-content-item">
                   <div class="item-title">预设历史记录</div>
-                  <div class="item-content">
+                  <div class="item-content flod-button">
                     <button
                       :class="{
                         active: showPresetsDetail,
@@ -144,7 +144,7 @@
                   class="block-content-item parent-item"
                 >
                   <div class="item-title">{{ plugin.name }}</div>
-                  <div class="item-content">
+                  <div class="item-content flod-button">
                     <button
                       :class="{
                         active: !plugin.collapsed,
@@ -185,7 +185,7 @@
               <div class="block-content">
                 <div class="block-content-item">
                   <div class="item-title">过滤等级设置</div>
-                  <div class="item-content">
+                  <div class="item-content flod-button">
                     <button
                       :class="{
                         active: showSafetySettings,
@@ -608,6 +608,11 @@ export default {
   flex-grow: 1;
   align-items: center;
   justify-content: flex-start;
+  min-width: 0;
+  max-width: calc(100% - 5rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .item-content {
   transform: scale(0.9);
@@ -616,6 +621,9 @@ export default {
   align-items: center;
   justify-content: flex-end;
   margin-right: 1.5rem;
+}
+.item-content.flod-button {
+  flex-basis: 2rem;
 }
 .base-info-content {
   margin-left: 1.5rem;
