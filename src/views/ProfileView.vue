@@ -608,7 +608,6 @@ export default {
   flex-grow: 1;
   align-items: center;
   justify-content: flex-start;
-  min-width: 0;
   max-width: calc(100% - 5rem);
   white-space: nowrap;
   overflow: hidden;
