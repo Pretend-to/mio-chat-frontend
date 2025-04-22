@@ -223,15 +223,12 @@ export default {
             document.getElementById("main-messages-window");
           if (!elm) return;
 
-          // 使用平滑滚动
+          // 使用平滑滚动 or 立即滚动
           elm.scrollTo({
             top: elm.scrollHeight,
-            behavior: "smooth", // 关键：启用平滑滚动
+            behavior: clicked ? "smooth" : "instant",
           });
-
-          if (clicked) this.$message("已滑至底部");
         };
-
         scrollToBottom();
       }, 1);
     },
