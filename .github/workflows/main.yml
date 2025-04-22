@@ -71,7 +71,7 @@ jobs:
             exit 0
           else
             git add .
-            COMMIT_MESSAGE="feat: update frontend\n\n前端最新提交信息：${{ steps.get_commit_message.outputs.message }}"
+            COMMIT_MESSAGE="feat: update frontend：${{ steps.get_commit_message.outputs.message }}"
             git commit -m "$COMMIT_MESSAGE"
             git push https://x-access-token:${{ secrets.GH_SECRET }}@github.com/Pretend-to/mio-chat-backend.git HEAD:master
             echo "Changes pushed successfully"

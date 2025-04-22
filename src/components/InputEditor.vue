@@ -18,7 +18,9 @@
           id="wraper-selector"
           v-model="selectedOption"
           :data="extraOptions"
-          @change="activeBotTools"
+          accordion
+          placement="top-start"
+          @node-click="currentChange"
         />
         <i class="iconfont robot"></i>
       </div>
@@ -27,16 +29,27 @@
         <i class="iconfont reset" @click="$emit('cleanHistory')"></i>
       </div>
       <div class="bu-emoji">
-        <p class="ho-emoji">清除记录</p>
-        <i class="iconfont shanchu" @click="$emit('cleanScreen')"></i>
-      </div>
-      <div class="bu-emoji">
         <p class="ho-emoji">上传</p>
         <i class="iconfont upload" @click="uploadFile"></i>
       </div>
       <div class="bu-emoji">
-        <p class="ho-emoji">滑到底部</p>
-        <i class="iconfont down" @click="$emit('toButtom', 1)"></i>
+        <p class="ho-emoji">清除记录</p>
+        <el-popconfirm
+          class="box-item"
+          title="此操作不可撤销"
+          confirm-button-text="确定"
+          cancel-button-text="取消"
+          placement="top"
+          @confirm="$emit('cleanScreen')"
+        >
+          <template #reference>
+            <i class="iconfont shanchu"></i>
+          </template>
+        </el-popconfirm>
+      </div>
+      <div class="bu-emoji">
+        <p class="ho-emoji">更多</p>
+        <i class="iconfont more" @click="unsupportedTip"></i>
       </div>
     </div>
     <div class="input-box">
@@ -160,6 +173,9 @@ export default {
     this.textareaRef = null;
   },
   methods: {
+    unsupportedTip() {
+      this.$message.warning("功能暂未开放");
+    },
     handleDroppedFile(file) {
       if (file.type.startsWith("image/")) {
         this.handleUploadImage(file);
@@ -340,20 +356,27 @@ export default {
       }, 0);
     },
     initLLMExtraOptions() {
-      const { provider } = this.activeContactor.options;
-      const models = client.config.getLlmModels(provider);
-      this.openaiModels = models.map((modelGroup) => {
-        return {
-          value: modelGroup.owner,
-          label: modelGroup.owner,
-          children: modelGroup.models.map((model) => {
-            return {
-              value: model,
-              label: model,
-            };
-          }),
-        };
-      });
+      const allModels = client.config.getLlmModels();
+      this.openaiModels = Object.entries(allModels).map(
+        ([provider, models]) => {
+          return {
+            value: provider,
+            label: provider,
+            children: models.map((modelGroup) => {
+              return {
+                value: modelGroup.owner,
+                label: modelGroup.owner,
+                children: modelGroup.models.map((model) => {
+                  return {
+                    value: model,
+                    label: model,
+                  };
+                }),
+              };
+            }),
+          };
+        },
+      );
     },
     getOpenaiModelArray(model) {
       const owner = client.config.getModelOwner(model);
@@ -519,17 +542,42 @@ export default {
     cleanScreen() {
       this.$emit("cleanScreen");
     },
-    activeBotTools() {
-      if (this.activeContactor.platform === "onebot") {
-        if (this.getOnebotPreset() && !this.getOnebotPreset().includes("xxx")) {
-          this.send();
+    currentChange(data, event) {
+      if (event.level === 3) {
+        // 检查父节点是否存在
+        if (!event.parent || !event.parent.parent) {
+          console.error("父节点不存在!");
+          return; // 提前退出，避免后续报错
         }
-      } else {
-        this.$emit("setModel", this.selectedOption);
+        const selectedValues = [
+          event.parent.parent.data.value, // 假设父节点的 data 属性包含 value
+          event.parent.data.value, // 假设父节点的 data 属性包含 value
+          data.value,
+        ];
+
         this.$message({
-          message: "已切换到 " + this.selectedOption + " 模型",
+          message: "已切换到 " + selectedValues[2] + " 模型",
           type: "success",
         });
+
+        // 查看 provider 协议是否变化
+        const seletedProvider = selectedValues[0];
+        if (seletedProvider !== this.activeContactor.options?.provider) {
+          this.$message({
+            message: "已切换到 " + seletedProvider + " 协议",
+            type: "success",
+          });
+        }
+        this.$emit("setModel", selectedValues);
+      } else if (event.level === 2) {
+        if (this.activeContactor.platform === "onebot") {
+          if (
+            this.getOnebotPreset() &&
+            !this.getOnebotPreset().includes("xxx")
+          ) {
+            this.send();
+          }
+        }
       }
     },
     isValidInput(input) {

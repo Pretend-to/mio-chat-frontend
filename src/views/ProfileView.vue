@@ -180,7 +180,10 @@
               </div>
             </div>
 
-            <div v-if="llmProvider == 'gemini'" class="settings-block">
+            <div
+              v-if="['gemini', 'vertex'].includes(llmProvider)"
+              class="settings-block"
+            >
               <div class="block-title">Gimini 额外设置</div>
               <div class="block-content">
                 <div class="block-content-item">

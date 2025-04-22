@@ -89,6 +89,9 @@ export default {
       autoScroll: false,
       fullScreen: false,
       chatWindowRef: null,
+      prevScrollTop: 0,
+      showRollDown: false,
+      inputBarTop: 0,
       clearMessageTip: "以上的对话记录已清除",
       loadingIcon: "<span id='message-loading-icon'></span>",
     };
@@ -169,6 +172,11 @@ export default {
     // setInterval(() => {
     //   this.currentDelay = this.client.socket.delay;
     // }, 3000);
+    // 获取.input-bar在页面内距离页面底端的距离
+    const element = document.querySelector(".input-bar");
+    if (element) {
+      this.inputBarTop = element.offsetTop;
+    }
 
     if (this.shareId) {
       const loadAble = await client.loadOriginalContactors(this.shareId);
@@ -209,13 +217,22 @@ export default {
     },
     toButtom(clicked) {
       setTimeout(() => {
-        if (this.chatWindowRef) {
-          this.chatWindowRef.scrollTop = this.chatWindowRef.scrollHeight;
-        } else {
-          const elm = document.getElementById("main-messages-window");
-          elm.scrollTop = elm.scrollHeight;
-        }
-        if (clicked) this.$message("已滑至底部");
+        const scrollToBottom = () => {
+          const elm =
+            this.chatWindowRef ||
+            document.getElementById("main-messages-window");
+          if (!elm) return;
+
+          // 使用平滑滚动
+          elm.scrollTo({
+            top: elm.scrollHeight,
+            behavior: "smooth", // 关键：启用平滑滚动
+          });
+
+          if (clicked) this.$message("已滑至底部");
+        };
+
+        scrollToBottom();
       }, 1);
     },
     cleanScreen() {
@@ -278,8 +295,11 @@ export default {
       this.$router.push({ name: "home" });
     },
 
-    async setModel(name) {
-      this.activeContactor.options.base.model = name;
+    async setModel(list) {
+      const provider = list[0];
+      const model = list[2];
+      this.activeContactor.options.provider = provider;
+      this.activeContactor.options.base.model = model;
       this.activeContactor.loadAvatar();
       await client.setLocalStorage(); //持久化存储
     },
@@ -555,12 +575,34 @@ export default {
       // });
     },
     scrollHandler() {
-      this.showMenu = false;
-      if (this.showemoji) this.showemoji = false;
+      // 获取当前的 scrollTop
+      const currentScrollTop = this.chatWindowRef.scrollTop;
 
-      const scrollHeight = this.getChatwindowScrollheight();
+      // 判断滚动方向
+      // 如果当前 scrollTop 大于上一次的 scrollTop，说明是向下滑动
+      const isScrollingDown = currentScrollTop > this.prevScrollTop;
+      // 如果当前 scrollTop 小于上一次的 scrollTop，说明是向上滑动
+      const isScrollingUp = currentScrollTop < this.prevScrollTop;
+      // 如果相等，通常意味着没有实际的滚动位移，或者是一些内部事件
 
-      this.autoScroll = scrollHeight > 300 ? false : true;
+      // 更新上一次的 scrollTop 为当前值，为下一次滚动做准备
+      this.prevScrollTop = currentScrollTop;
+
+      // --- 你原有的逻辑 (现在你可以根据需要使用 isScrollingDown 或 isScrollingUp) ---
+      this.showMenu = false; // 隐藏菜单
+      if (this.showemoji) this.showemoji = false; // 隐藏表情
+
+      const scrollHeight = this.getChatwindowScrollheight(); // 获取总滚动高度
+
+      this.autoScroll = scrollHeight > 100 ? false : true;
+
+      const isAtBottom = scrollHeight <= 200 - 1; // 留一个小的容差，避免浮点数问题
+
+      if (isScrollingDown && !this.autoScroll && !isAtBottom) {
+        this.showRollDown = true;
+      } else if (isScrollingUp || this.autoScroll || isAtBottom) {
+        this.showRollDown = false;
+      }
     },
     getseletedMessage() {
       return this.activeContactor.messageChain[this.validMessageIndex];
@@ -646,6 +688,14 @@ export default {
         preview: preview,
       }"
     >
+      <div
+        v-if="showRollDown"
+        id="roll-buttom-button"
+        :style="{ top: inputBarTop - 36 + 'px' }"
+        @click="toButtom(true)"
+      >
+        <i class="iconfont down1"></i>
+      </div>
       <ContextMenu
         v-show="showMenu"
         type="message"
@@ -929,6 +979,29 @@ $icon-hover: #09f
     background-color: rgba(0, 0, 0, 0.4)
     z-index: 1001
 /* z-index 属性设置元素的堆叠顺序。*/
+
+#roll-buttom-button
+    position: fixed
+    right: 0.5rem
+    cursor: pointer
+    display: flex
+    z-index: 1000
+    background-color: #fff
+    width: 4rem
+    height: 1.5rem
+    border-radius: 0.75rem
+    align-items: center
+    justify-content: center
+    box-shadow: 0 0 0.25rem rgba(0, 0, 0, 0.2)
+    transition: background-color 0.3s ease, transform 0.3s ease
+    &:hover
+        background-color: #f0f0f0
+        transform: scale(1.1)
+
+    &:hover
+        color: $icon-hover
+    i
+        font-size: 1rem
 
 #theimg
     position: fixed

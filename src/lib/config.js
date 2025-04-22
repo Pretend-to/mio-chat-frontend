@@ -140,6 +140,9 @@ export default class Config {
   }
 
   getLlmModels(provider) {
+    if (!provider) {
+      return this.llmModels;
+    }
     return this.llmModels[provider];
   }
 
