@@ -379,6 +379,7 @@ export default {
   background-color: rgb(255, 255, 255);
   flex: 0 0 4rem;
   align-items: flex-end;
+  -webkit-app-region: drag
 }
 
 #main-search {

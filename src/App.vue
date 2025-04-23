@@ -15,6 +15,7 @@ export default {
       client: client,
       fullScreen: displayConfig?.full_screen || false,
       beian: displayConfig?.beian || "",
+      isTauri: !!(window.__TAURI__ || window.__TAURI_INTERNALS__), 
     };
   },
   computed: {
@@ -59,12 +60,12 @@ export default {
 };
 </script>
 <template>
-  <div id="app">
+  <div id="app" :class="{ 'browser': !isTauri }">
     <div v-if="onPhone" class="mio-chat-mobile">
       <router-view></router-view>
       <sideBar v-if="!onPrivate"></sideBar>
     </div>
-    <div v-else class="mio-chat" :class="{ fullscreen: fullScreen }">
+    <div v-else class="mio-chat" :class="{ 'fullscreen': fullScreen || isTauri }">
       <displayButtons :full-screen @set-screen="setWindowSize"></displayButtons>
       <sideBar></sideBar>
       <router-view></router-view>
@@ -80,10 +81,12 @@ export default {
 </template>
 <style scoped>
 #app {
-  background-image: url(/static/background/default.png);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+}
+#app.browser {
+  background-image: url(/static/background/default.png);
 }
 #app::before {
   content: "";

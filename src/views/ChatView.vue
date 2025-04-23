@@ -853,6 +853,7 @@ $icon-hover: #09f
     align-items: flex-end
     justify-content: flex-start
     border-bottom: 0.0625rem solid #ebebeb
+    -webkit-app-region: drag
 
     @media (max-width: $mobile)
       position: fixed

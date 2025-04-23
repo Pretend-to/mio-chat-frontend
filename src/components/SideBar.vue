@@ -150,11 +150,11 @@ export default {
 <style scoped>
 #sidebar {
   display: flex;
-  flex-basis: 4.5rem;
+  flex-basis: 3.8rem;
   flex-direction: column;
   background-color: hsla(0, 0%, 100%, 0.8);
-  backdrop-filter: blur(0.5rem);
-  /* 添加模糊效果，值可以根据需要调整 */
+  backdrop-filter: blur(10px);
+  -webkit-app-region: drag;
 }
 .options {
   display: flex;
@@ -164,9 +164,12 @@ export default {
   flex-grow: 1;
   /* margin: 1.2rem 1.2rem; */
 }
+
+.logo img {
+  width: 2.5rem;
+}
 .up-half,
 .down-half {
-  width: 50%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -174,7 +177,6 @@ export default {
   justify-content: center;
 }
 .icon-back {
-  width: 2.5rem;
   height: 2.5rem;
   display: flex;
   justify-content: center;
@@ -183,8 +185,10 @@ export default {
   border-radius: 0.5rem;
 }
 .icon-back.active {
+  padding: 0 .5rem;
   background-color: rgba(113, 113, 113, 0.1);
 }
+
 .icon-back i,
 .down-half i {
   margin: 0.5rem 0rem;
