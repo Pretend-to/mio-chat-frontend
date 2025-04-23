@@ -469,36 +469,26 @@ export default {
       contactor.on(`completeMessage`, async (e) => {
         const messageId = e.messageId;
         const rawMessage = this.activeContactor.getMessageById(messageId);
-        if (rawMessage.status === "retrying") {
+
+        if (this.retryList.includes(messageId)) {
           this.retryList = this.retryList.filter((item) => item !== messageId);
         }
-        rawMessage.status = "completed";
 
-        if (!e.error) {
-          rawMessage.content.forEach((element, index) => {
-            if (
-              element.type === "text" &&
-              this.activeContactor.platform === "onebot"
-            ) {
-              const formatedMessage = this.separateTextAndImages(
-                element.data.text,
-              );
-              // 把 formatedMessage 里的元素展开到 index 这个位置
-              rawMessage.content.splice(index, 1, ...formatedMessage);
-            }
-          });
-        } else {
-          rawMessage.content = [
-            {
-              type: "text",
-              data: {
-                text: e.text,
-              },
-            },
-          ];
-        }
+        rawMessage.content.forEach((element, index) => {
+          if (
+            element.type === "text" &&
+            this.activeContactor.platform === "onebot"
+          ) {
+            const formatedMessage = this.separateTextAndImages(
+              element.data.text,
+            );
+            // 把 formatedMessage 里的元素展开到 index 这个位置
+            rawMessage.content.splice(index, 1, ...formatedMessage);
+          }
+        });
 
         this.toupdate = true;
+        this.$forceUpdate();
         this.activeContactor.loadName();
         client.setLocalStorage(); //持久化存储
         console.log(e);
@@ -804,15 +794,6 @@ export default {
                   v-else-if="element.type === 'tool_call'"
                   :tool-call="element.data"
                 />
-                <!-- <MdPreview
-                  v-else
-                  preview-theme="github"
-                  :model-value="
-                    '未知的消息类型：\n```\n' +
-                    JSON.stringify(element, null, 2) +
-                    '\n```'
-                  "
-                /> -->
               </div>
             </div>
           </div>

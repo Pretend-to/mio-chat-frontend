@@ -206,6 +206,8 @@ export default class Contactor extends EventEmmiter {
       const messageId = e.messageId;
       const rawMessage = this.getMessageById(messageId);
       if (rawMessage) {
+        rawMessage.status = "completed";
+
         this.emit("updateMessageSummary");
 
         this.emit("completeMessage", {
@@ -217,24 +219,44 @@ export default class Contactor extends EventEmmiter {
     this.kernel.on("failedMessage", (e) => {
       console.error(e);
       // case 1: e.error.message 为json字符串，需要解析
-      if (typeof e.error.message === "string") {
+      if (typeof e.error === "string") {
         try {
           e.error.message = JSON.parse(e.error.message);
         } catch (error) {
           console.error("Failed to parse error message:", error);
         }
       }
-      const error = JSON.stringify(e.error.message, null, 2);
+      const error = JSON.stringify(e.error, null, 2);
+
       this.updateLastUpdate();
       const messageId = e.messageId;
       const rawMessage = this.getMessageById(messageId);
       if (rawMessage) {
+        const errorMessage =
+          "Error : LLM 响应失败！\n```json\n " + error + "\n```";
+        const errElem = {
+          type: "text",
+          data: {
+            text: errorMessage,
+          },
+        };
+
+        const withBlank = rawMessage.content.some(
+          (elm) => elm.type === "blank",
+        );
+
+        if (withBlank) {
+          rawMessage.content[0] = errElem;
+        } else {
+          rawMessage.content.push(errElem);
+        }
+
+        rawMessage.status = "completed";
+
         this.emit("updateMessageSummary");
 
         this.emit("completeMessage", {
-          text: "请求发生错误！\n```json\n" + error + "\n```\n",
           messageId,
-          error: true,
         });
       }
     });

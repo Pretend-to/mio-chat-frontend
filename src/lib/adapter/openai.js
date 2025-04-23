@@ -46,6 +46,8 @@ export default class Openai extends Adapter {
 
     const messageId = data.metaData.messageId;
 
+    delete data.metaData;
+
     const emitEvent = (eventName, detail) => {
       this.emit(eventName, { ...detail, messageId });
     };
