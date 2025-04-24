@@ -578,7 +578,6 @@ export default {
   display: flex;
   width: 100%;
   justify-content: space-between;
-  min-height: 2.5rem;
   flex-wrap: nowrap;
 }
 .block-content-item.parent-item {

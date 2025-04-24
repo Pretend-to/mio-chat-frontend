@@ -244,6 +244,34 @@ export default class Config {
     }
   }
 
+  getVerifiedLLMConfig(config) {
+    const verifiedConfig = {
+      ...config,
+      toolCallSettings: {
+        ...config.toolCallSettings,
+        tools: this.getValidTools(config.toolCallSettings.tools),
+      },
+    };
+    return verifiedConfig;
+  }
+
+  getValidTools(tools) {
+    const validToolNames = [];
+    const availableTools = [];
+    Object.values(this.llmTools).forEach((plugin) => {
+      availableTools.push(...Object.keys(plugin));
+    });
+
+    for (const tool of tools) {
+      for (const validToolName of availableTools) {
+        if (validToolName.includes(tool)) {
+          validToolNames.push(validToolName);
+        }
+      }
+    }
+    return validToolNames;
+  }
+
   updateLLMDefaultConfig(type, patch) {
     if (type) {
       this.LLMDefaultConfig[type] = {

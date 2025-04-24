@@ -185,7 +185,7 @@ export default {
   border-radius: 0.5rem;
 }
 .icon-back.active {
-  padding: 0 .5rem;
+  padding: 0 0.5rem;
   background-color: rgba(113, 113, 113, 0.1);
 }
 

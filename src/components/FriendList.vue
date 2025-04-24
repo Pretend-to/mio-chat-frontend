@@ -144,7 +144,10 @@ export default {
       const defaultOptions = config.getLLMDefaultConfig();
       if (options.history)
         defaultOptions.presetSettings.history = options.history;
-      if (options.tools) defaultOptions.toolCallSettings.tools = options.tools;
+      if (options.tools)
+        defaultOptions.toolCallSettings.tools = config.getValidTools(
+          options.tools,
+        );
       if (options.opening)
         defaultOptions.presetSettings.opening = options.opening;
 
@@ -379,7 +382,7 @@ export default {
   background-color: rgb(255, 255, 255);
   flex: 0 0 4rem;
   align-items: flex-end;
-  -webkit-app-region: drag
+  -webkit-app-region: drag;
 }
 
 #main-search {

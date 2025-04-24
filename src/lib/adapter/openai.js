@@ -82,6 +82,8 @@ export default class Openai extends Adapter {
   async send(messages, messageId, settings) {
     console.log("send message to openai");
 
+    settings = config.getVerifiedLLMConfig(settings);
+
     const metaData = {
       contactorId: this.id,
       messageId,
