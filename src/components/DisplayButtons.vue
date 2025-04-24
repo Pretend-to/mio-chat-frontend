@@ -7,25 +7,35 @@
     }"
     data-tauri-drag-region="true"
   >
-    <li class="button" @click="minimizeWindow" data-tauri-drag-region>
+    <li class="button" data-tauri-drag-region @click="minimizeWindow">
       <span class="window-min">—</span>
     </li>
-    <li v-if="fullScreen" class="button" @click="configFullScreen(false)" data-tauri-drag-region>
+    <li
+      v-if="fullScreen"
+      class="button"
+      data-tauri-drag-region
+      @click="configFullScreen(false)"
+    >
       <span class="window-inmax">
         <i class="iconfont chuangkouhua"></i>
       </span>
     </li>
-    <li v-else class="button" @click="configFullScreen(true)" data-tauri-drag-region>
+    <li
+      v-else
+      class="button"
+      data-tauri-drag-region
+      @click="configFullScreen(true)"
+    >
       <span class="window-max">▢</span>
     </li>
-    <li id="close" class="button" @click="closeWindow" data-tauri-drag-region>
+    <li id="close" class="button" data-tauri-drag-region @click="closeWindow">
       <span class="window-close">&times;</span>
     </li>
   </ul>
 </template>
 
 <script>
-import { Window } from "@tauri-apps/api/window"
+import { Window } from "@tauri-apps/api/window";
 
 let mainWindow = null;
 
@@ -50,7 +60,7 @@ export default {
       this.preview = true;
     }
     if (this.isTauri) {
-      mainWindow = new Window('main');
+      mainWindow = new Window("main");
     }
   },
   methods: {

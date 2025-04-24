@@ -166,7 +166,9 @@
                         class="block-content-item child-item"
                         :title="tool.description"
                       >
-                        <div class="item-title">{{ tool.name }}</div>
+                        <div class="item-title">
+                          {{ tool.name.split("-_-")[0] }}
+                        </div>
                         <div class="item-content">
                           <el-switch
                             v-model="tool.enabled"

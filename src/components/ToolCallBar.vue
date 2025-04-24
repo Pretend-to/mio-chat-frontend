@@ -17,7 +17,7 @@
     </div>
     <div class="tool-info">
       <div>
-        <span class="tool-name">{{ toolCall.name }}</span>
+        <span class="tool-name">{{ toolCall.name.split("-_-")[0] }}</span>
       </div>
       <div class="tool-status">
         {{ call_status }}
