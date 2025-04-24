@@ -346,7 +346,14 @@ export default class Contactor extends EventEmmiter {
       });
       if (fileList.length > 0) {
         const textElm = subArray.filter((elm) => elm._content_type == "text");
-        textElm[0].content = textElm[0].content + this._getFilePrompt(fileList);
+        // 没有就创建一个
+        if (textElm.length == 0) {
+          subArray.push({
+            role: "user",
+            content: this._getFilePrompt(fileList),
+            _content_type: "text",
+          });
+        }
       }
       return subArray;
     });
@@ -405,13 +412,25 @@ export default class Contactor extends EventEmmiter {
     this.lastMessageSummary = this.getLastMessageSummary();
   }
 
+  getBaseUserContainer() {
+    const userContainer = {
+      role: "user",
+      time: new Date().getTime(),
+      status: "completed",
+      id: numberString(16),
+      content: [],
+    };
+    return userContainer;
+  }
+
   /**
    * 从网页前端发来的消息
    */
-  async webSend(message) {
+  async webSend(message, toServer = true) {
     this.updateLastUpdate();
     this.messageChain.push(message);
     this.updateMessageSummary();
+    if (!toServer) return;
     try {
       if (this.platform == "onebot") {
         const messageId = await this.kernel.send(this.id, message.content);
@@ -436,6 +455,11 @@ export default class Contactor extends EventEmmiter {
     }
   }
 
+  insertMessage(message, index) {
+    this.messageChain.splice(index, 0, message);
+    this.updateMessageSummary();
+  }
+
   async retryMessage(id) {
     const message = this.getMessageById(id);
     if (message) {
@@ -451,6 +475,8 @@ export default class Contactor extends EventEmmiter {
       return true;
     }
   }
+
+  as;
 
   /**
    * 接收到消息

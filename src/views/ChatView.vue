@@ -615,12 +615,26 @@ export default {
                 ? this.validMessageIndex + 1
                 : this.validMessageIndex;
 
-            const validMessage = this.activeContactor.messageChain[targetIndex];
+            let validMessage = this.activeContactor.messageChain[targetIndex];
             // if (message.role === "user") {
             //   this.activeContactor.retryMessage(message.id);
             // } else {
             //   this.activeContactor.retryMessage(message.id);
             // }
+            if (!validMessage || validMessage.role !== "other") {
+              // 是用户发送且下一条消息被删除,先插入一条空消息
+              const baseContainer = this.activeContactor.getBaseUserContainer();
+              baseContainer.role = "other";
+              this.activeContactor.insertMessage(baseContainer, targetIndex);
+              validMessage = baseContainer;
+            }
+            if (validMessage.status === "retrying") {
+              this.$message({
+                message: "该消息正在重试中",
+                type: "warning",
+              });
+              return;
+            }
             this.activeContactor.retryMessage(validMessage.id);
             validMessage.status = "retrying";
             this.retryList.push(validMessage.id);

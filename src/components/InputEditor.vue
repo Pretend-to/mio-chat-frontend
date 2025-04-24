@@ -226,13 +226,21 @@ export default {
       try {
         const upload = await client.uploadFile(file);
         this.$message.success("文件上传成功");
-        this.uploaded.files.push(
-          `${upload.data.url}?size=${file.size}&name=${file.name}`,
-        );
+        const fileUrl = `${upload.data.url}?size=${file.size}&name=${file.name}`;
+        const container = this.activeContactor.getBaseUserContainer();
+        container.content.push({
+          type: "file",
+          data: {
+            file: this.host + fileUrl,
+          },
+        });
+        this.activeContactor.webSend(container, false);
       } catch (error) {
         console.error("文件上传失败:", error);
         this.$message.error("文件上传失败，请稍后再试");
       }
+      this.$emit("stroge");
+      this.$emit("toButtom");
     },
     handleUploadImage(file) {
       const maxSizeMB = 5;
@@ -480,33 +488,19 @@ export default {
       this.userInput = this.textareaRef.innerHTML = ""; // Clear the textarea
       this.adjustTextareaHeight();
 
-      const container = {
-        role: "user",
-        time: new Date().getTime(),
-        status: "completed",
-        content: [
-          {
-            type: "text",
-            data: {
-              text: wrappedMessage,
-            },
-          },
-        ],
-      };
+      const container = this.activeContactor.getBaseUserContainer();
+      container.content.push({
+        type: "text",
+        data: {
+          text: wrappedMessage,
+        },
+      });
 
       ImageSrcs.forEach((imgUrl) => {
         container.content.unshift({
           type: "image",
           data: {
             file: imgUrl,
-          },
-        });
-      });
-      this.uploaded.files.forEach((file) => {
-        container.content.push({
-          type: "file",
-          data: {
-            file: this.host + file,
           },
         });
       });

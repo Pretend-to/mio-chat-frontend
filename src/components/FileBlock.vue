@@ -84,7 +84,7 @@ export default {
   padding: 8px;
   border-radius: 5px;
   background-color: #f5f5f5;
-  margin-bottom: 8px;
+  margin: 0.5rem 0;
   width: 12rem;
   position: relative;
 }
