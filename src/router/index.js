@@ -6,6 +6,7 @@ import HomeView from "../views/HomeView.vue";
 import ProfileView from "../views/ProfileView.vue";
 import SettingsView from "../views/SettingsView.vue";
 import AuthView from "../views/AuthView.vue";
+import BlankView from "../views/BlankView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -18,12 +19,12 @@ const router = createRouter({
         {
           path: "/",
           name: "blank",
-          component: () => import("../views/BlankView.vue"),
+          component: BlankView,
         },
         {
           path: "/contactors",
           name: "contactors",
-          component: () => import("../views/BlankView.vue"),
+          component: BlankView,
         },
         {
           path: "/chat/:id",
