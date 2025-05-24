@@ -15,7 +15,7 @@ export default {
       client: client,
       fullScreen: displayConfig?.full_screen || false,
       beian: displayConfig?.beian || "",
-      isTauri: !!(window.__TAURI__ || window.__TAURI_INTERNALS__), 
+      isTauri: !!(window.__TAURI__ || window.__TAURI_INTERNALS__),
     };
   },
   computed: {
@@ -60,12 +60,16 @@ export default {
 };
 </script>
 <template>
-  <div id="app" :class="{ 'browser': !isTauri }">
-    <div v-if="onPhone" class="mio-chat-mobile">
+  <div id="mio-chat" :class="{ browser: !isTauri }">
+    <div v-if="onPhone" class="app-mobile">
       <router-view></router-view>
       <sideBar v-if="!onPrivate"></sideBar>
     </div>
-    <div v-else class="mio-chat" :class="{ 'fullscreen': fullScreen || isTauri }">
+    <div
+      v-else
+      class="app-desktop"
+      :class="{ fullscreen: fullScreen || isTauri }"
+    >
       <displayButtons :full-screen @set-screen="setWindowSize"></displayButtons>
       <sideBar></sideBar>
       <router-view></router-view>
@@ -80,15 +84,21 @@ export default {
   >
 </template>
 <style scoped>
-#app {
+#mio-chat {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
 }
-#app.browser {
+#mio-chat.browser {
   background-image: url(/static/background/default.png);
 }
-#app::before {
+#mio-chat.browser::before {
   content: "";
   position: absolute;
   top: 0;
@@ -98,7 +108,7 @@ export default {
   background-color: rgba(0, 0, 0, 0.5);
   /* 黑色蒙版，可调整透明度 */
 }
-.mio-chat {
+.app-desktop {
   position: relative;
   width: 60rem;
   height: 85%;
@@ -111,13 +121,13 @@ export default {
   margin: 5rem 5rem;
   min-width: 35rem;
 }
-.mio-chat.fullscreen {
+.app-desktop.fullscreen {
   width: 100%;
   height: 100%;
   border-radius: 0rem;
   margin: 0rem;
 }
-.mio-chat-mobile {
+.app-mobile {
   width: 100%;
   height: 100%;
   z-index: 1;

@@ -48,7 +48,6 @@ export default class Contactor extends EventEmmiter {
     super();
     this.platform = platform;
     this.id = config.id;
-    this.options = config.options;
     this.namePolicy = config.namePolicy || 0;
     this.avatarPolicy = config.avatarPolicy || 0;
     this.title = config.title;
@@ -61,6 +60,7 @@ export default class Contactor extends EventEmmiter {
     this.lastUpdate = config.lastUpdate || Date.now(); // 使用 Date.now()
     this.createTime = config.createTime || Date.now(); // 使用 Date.now()
     this.lastMessageSummary = this.getLastMessageSummary();
+    this.options = this.loadOptions(config.options);
     this.kernel =
       platform === "onebot" ? new Onebot(config) : new Openai(config); // 简化条件判断
 
@@ -264,6 +264,14 @@ export default class Contactor extends EventEmmiter {
 
   handleLLMMessageEvent(e) {
     this.kernel.handleMessageEvent(e);
+  }
+
+  loadOptions(options) {
+    if (this.platform === "openai") {
+      return config.getVerifiedLLMConfig(options);
+    } else {
+      return options || {};
+    }
   }
 
   /**

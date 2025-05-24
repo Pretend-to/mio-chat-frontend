@@ -616,11 +616,6 @@ export default {
                 : this.validMessageIndex;
 
             let validMessage = this.activeContactor.messageChain[targetIndex];
-            // if (message.role === "user") {
-            //   this.activeContactor.retryMessage(message.id);
-            // } else {
-            //   this.activeContactor.retryMessage(message.id);
-            // }
             if (!validMessage || validMessage.role !== "other") {
               // 是用户发送且下一条消息被删除,先插入一条空消息
               const baseContainer = this.activeContactor.getBaseUserContainer();

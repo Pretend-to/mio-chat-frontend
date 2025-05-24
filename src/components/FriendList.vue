@@ -22,7 +22,7 @@ export default {
   computed: {
     sortedList() {
       return [...this.contactorList].sort((a, b) =>
-        b.priority - a.priority == -1 ? 1 : b.lastUpdate - a.lastUpdate,
+        b.priority < a.priority ? 1 : b.lastUpdate - a.lastUpdate,
       );
     },
     avaliableProvideres() {

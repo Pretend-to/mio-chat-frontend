@@ -17,234 +17,94 @@
               在线
             </div>
           </div>
-          <div
-            v-if="activeContactor.platform === 'openai'"
-            class="base-info-provider"
-          >
-            <el-select
-              v-model="llmProvider"
-              style="width: 10rem"
-              @change="switchLLMProvider"
-            >
-              <el-option
-                v-for="item in llmProviders"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-              />
-            </el-select>
+          <!-- LLM Provider select is now inside ContactorSettings -->
+        </div>
+
+        <div class="info-blocks">
+          <div class="settings-block">
+            <div class="block-title">Bot 基本配置</div>
+            <div class="block-content">
+              <div class="block-content-item">
+                <div class="item-title">昵称</div>
+                <div class="item-content">
+                  <el-input
+                    v-model="basicInfo.name"
+                    :disabled="basicInfo.namePolicy !== 1"
+                  ></el-input>
+                </div>
+              </div>
+              <div class="block-content-item">
+                <div class="item-title">头像</div>
+                <div class="item-content">
+                  <el-input
+                    :value="getAvatarValue"
+                    :disabled="basicInfo.avatarPolicy !== 1"
+                  ></el-input>
+                </div>
+              </div>
+              <div v-if="!isOnebot" class="block-content-item">
+                <div class="item-title">头像策略</div>
+                <div class="item-content">
+                  <el-select v-model="basicInfo.avatarPolicy">
+                    <el-option
+                      v-for="item in avatarPolicyList"
+                      :key="item.value"
+                      :label="item.label"
+                      :value="item.value"
+                    />
+                  </el-select>
+                </div>
+              </div>
+              <div v-if="!isOnebot" class="block-content-item">
+                <div class="item-title">昵称策略</div>
+                <div class="item-content">
+                  <el-select
+                    v-model="basicInfo.namePolicy"
+                    @change="updateContactorName"
+                  >
+                    <el-option
+                      v-for="item in namePolicyList"
+                      :key="item.value"
+                      :label="item.label"
+                      :value="item.value"
+                    />
+                  </el-select>
+                </div>
+              </div>
+              <div class="block-content-item">
+                <div class="item-title">会话置顶</div>
+                <div class="item-content">
+                  <el-switch v-model="basicInfo.priority"> </el-switch>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+
         <div class="info-blocks">
-          <div
-            v-if="activeContactor.platform == 'openai'"
-            class="openai-settings"
-          >
-            <div class="settings-block">
-              <div class="block-title">LLM 基本配置</div>
-              <div class="block-content">
-                <div
-                  v-for="(_, key) in llmGeneralKeys"
-                  :key="key"
-                  class="block-content-item"
-                >
-                  <div class="item-title">{{ getShownKey(key) }}</div>
-                  <div class="item-content">
-                    <el-input
-                      v-if="['model', 'max_messages_num'].includes(key)"
-                      v-model="llmGeneralKeys[key]"
-                    ></el-input>
-                    <el-switch
-                      v-else-if="['stream'].includes(key)"
-                      v-model="llmGeneralKeys[key]"
-                    ></el-switch>
-                    <el-slider
-                      v-else-if="['temperature'].includes(key)"
-                      v-model="llmGeneralKeys[key]"
-                      :step="sliderTypeARange[2]"
-                      :min="sliderTypeARange[0]"
-                      :max="sliderTypeARange[1]"
-                    />
-                    <el-slider
-                      v-else-if="['top_p'].includes(key)"
-                      v-model="llmGeneralKeys[key]"
-                      :step="sliderTypeBRange[2]"
-                      :min="sliderTypeBRange[0]"
-                      :max="sliderTypeBRange[1]"
-                    />
-                    <el-slider
-                      v-else-if="
-                        ['frequency_penalty', 'presence_penalty'].includes(key)
-                      "
-                      v-model="llmGeneralKeys[key]"
-                      :step="sliderTypeCRange[2]"
-                      :min="sliderTypeCRange[0]"
-                      :max="sliderTypeCRange[1]"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="settings-block">
-              <div class="block-title">LLM 预设配置</div>
-              <div class="block-content">
-                <div class="block-content-item">
-                  <div class="item-title">预设历史记录</div>
-                  <div class="item-content">
-                    <button
-                      :class="{
-                        active: showPresetsDetail,
-                        'extra-info-button': true,
-                      }"
-                      @click="showPresetsDetail = !showPresetsDetail"
-                    >
-                      <i class="iconfont icon-return"></i>
-                    </button>
-                  </div>
-                </div>
-                <transition name="expand-slide">
-                  <div
-                    v-show="showPresetsDetail"
-                    class="block-content-item"
-                    style="overflow: hidden"
-                  >
-                    <PresetsList
-                      :presets-history="presetHistory"
-                      @update-presets="updateOpenaiPresets"
-                    />
-                  </div>
-                </transition>
-              </div>
-            </div>
-
-            <div class="settings-block">
-              <div class="block-title">LLM 工具调用配置</div>
-              <div class="block-content">
-                <div class="block-content-item">
-                  <div class="item-title">工具调用模式</div>
-                  <div class="item-content">
-                    <el-select
-                      v-model="llmToolCallMode"
-                      placeholder="AUTO"
-                      style="width: 10rem"
-                      @change="switchToolCallMode"
-                    >
-                      <el-option
-                        v-for="item in toolCallModes"
-                        :key="item.value"
-                        :label="item.label"
-                        :value="item.value"
-                      />
-                    </el-select>
-                  </div>
-                </div>
-                <div
-                  v-for="(plugin, index) in allLLMTools"
-                  :key="index"
-                  class="block-content-item parent-item"
-                >
-                  <div class="item-title">{{ plugin.name }}</div>
-                  <div class="item-content">
-                    <button
-                      :class="{
-                        active: !plugin.collapsed,
-                        'extra-info-button': true,
-                      }"
-                      @click="plugin.collapsed = !plugin.collapsed"
-                    >
-                      <i class="iconfont icon-return"></i>
-                    </button>
-                  </div>
-                  <transition name="expand-slide">
-                    <div
-                      v-show="!plugin.collapsed"
-                      class="item-hidden-content plugin-tools-container"
-                    >
-                      <div
-                        v-for="(tool, toolIndex) in plugin.tools"
-                        :key="toolIndex"
-                        class="block-content-item child-item"
-                        :title="tool.description"
-                      >
-                        <div class="item-title">
-                          {{ tool.name.split("-_-")[0] }}
-                        </div>
-                        <div class="item-content">
-                          <el-switch
-                            v-model="tool.enabled"
-                            @change="handleToolConfig"
-                          ></el-switch>
-                        </div>
-                      </div>
-                    </div>
-                  </transition>
-                </div>
-              </div>
-            </div>
-
-            <div
-              v-if="['gemini', 'vertex'].includes(llmProvider)"
-              class="settings-block"
-            >
-              <div class="block-title">Gimini 额外设置</div>
-              <div class="block-content">
-                <div class="block-content-item">
-                  <div class="item-title">过滤等级设置</div>
-                  <div class="item-content">
-                    <button
-                      :class="{
-                        active: showSafetySettings,
-                        'extra-info-button': true,
-                      }"
-                      @click="showSafetySettings = !showSafetySettings"
-                    >
-                      <i class="iconfont icon-return"></i>
-                    </button>
-                  </div>
-                </div>
-                <div
-                  :class="{
-                    hidden: !showSafetySettings,
-                    'block-content-item': true,
-                  }"
-                >
-                  <ul id="safety-settings" class="sub-items">
-                    <li
-                      v-for="(value, key) of geminiSafetySettings"
-                      :key="key"
-                      class="block-content-item"
-                    >
-                      <div class="item-title">{{ getShownKey(key) }}</div>
-                      <div class="item-content">
-                        <el-select
-                          v-model="geminiSafetySettings[key]"
-                          style="width: 10rem"
-                          @change="switchSafetySettings(key)"
-                        >
-                          <el-option
-                            v-for="item in safetySimpleValue"
-                            :key="item.value"
-                            :label="item.label"
-                            :value="item.value"
-                          />
-                        </el-select>
-                      </div>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ContactorSettings
+            v-if="!isOnebot"
+            v-model:model-value="options"
+            :active-contactor-platform="activeContactor.platform"
+            :llm-providers-list="llmProviders"
+            :tool-call-modes-list="toolCallModes"
+            :all-llm-tools-data="allLLMTools"
+            :safety-settings-params="safetyParams"
+            :safety-simple-value-options="safetySimpleValue"
+            :presets-history-data="options.presetSettings?.history"
+            @provider-changed="handleProviderSwitched"
+            @update-presets="handleUpdateOpenaiPresets"
+          />
         </div>
       </div>
     </div>
     <div class="action-bar">
-      <el-button plain @click="$router.push(`/chat/${activeContactor.id}`)"
-        >发送消息</el-button
-      >
-      <el-button type="danger" plain @click="centerDialogVisible = true"
-        >删除好友</el-button
-      >
+      <el-button plain @click="$router.push(`/chat/${activeContactor.id}`)">
+        发送消息
+      </el-button>
+      <el-button type="danger" plain @click="centerDialogVisible = true">
+        删除好友
+      </el-button>
       <el-dialog v-model="centerDialogVisible" title="警告" width="300" center>
         <span> 确认要删除此好友吗？该操作不可逆。 </span>
         <template #footer>
@@ -257,32 +117,33 @@
     </div>
   </div>
 </template>
+
 <script>
 import { client, config } from "@/lib/runtime.js";
-import PresetsList from "@/components/PresetsList.vue";
+import ContactorSettings from "@/components/ContactorSettings.vue"; // Import the new component
 
 export default {
   components: {
-    PresetsList,
+    ContactorSettings, // Register the new component
   },
   data() {
     const currentId = parseInt(this.$route.params.id);
     const contactor = client.getContactor(currentId);
-    const options = JSON.parse(JSON.stringify(contactor.options));
+
     const toolCallModes = config.getToolCallModes();
     const providers = config.getLLMProviders();
     const safetyParams = config.getSafetySettingsParams();
-
     const safetySimpleValue = Object.keys(safetyParams).map((key) => ({
       value: key,
       label: key,
     }));
 
+    // Initial construction of allLLMTools remains here as it depends on global config
     const allLLMTools = [];
     for (const key in config.llmTools) {
       const toolsObject = config.llmTools[key];
       const toolsList = Object.keys(toolsObject).map((toolKey) => ({
-        enabled: false,
+        enabled: false, // Initial state, child component will sync with options
         ...toolsObject[toolKey],
       }));
       allLLMTools.push({
@@ -291,31 +152,32 @@ export default {
         collapsed: true,
       });
     }
+    const avatarPolicyList = [
+      { value: 0, label: "跟随模型" },
+      { value: 1, label: "自定义" },
+    ];
+    const namePolicyList = [
+      { value: 0, label: "跟随模型" },
+      { value: 1, label: "自定义" },
+      { value: 2, label: "对话摘要" },
+    ];
 
     return {
-      safetyParams,
-      geminiSafetySettings: {},
-      safetySimpleValue: safetySimpleValue,
+      activeContactor: contactor,
+      options: null, // Will be initialized in initContactor
+      currentDelay: 0,
+      centerDialogVisible: false,
+      avatarPolicyList: avatarPolicyList,
+      namePolicyList: namePolicyList,
+      isOnebot: contactor.platform === "onebot",
+
+      // Static config passed as props
       llmProviders: providers,
       toolCallModes: toolCallModes,
-      currentDelay: 0,
-      activeContactor: contactor,
-      options: options,
-      llmProvider: options.provider,
-      llmBaseSettings: options.base,
-      llmChatParams: options.chatParams,
-      llmToolCallMode: options.toolCallSettings?.mode,
-      llmToolCallList: options.toolCallSettings?.tools,
-      sliderTypeARange: [0, 2, 0.1],
-      sliderTypeBRange: [0, 1, 0.1],
-      sliderTypeCRange: [-2, 2, 0.1],
-      showSafetySettings: false,
-      showPresetsDetail: false,
-      showToolsDetail: false,
-      presetHistory: options.presetSettings?.history,
-      allLLMTools: allLLMTools,
-      llmGeneralKeys: {},
-      centerDialogVisible: false,
+      safetyParams: safetyParams,
+      safetySimpleValue: safetySimpleValue,
+      allLLMTools: allLLMTools, // This structure is passed to child
+      basicInfo: null,
     };
   },
   computed: {
@@ -328,232 +190,125 @@ export default {
             ? "low"
             : "ultra";
     },
+    getAvatarValue() {
+      return this.basicInfo.avatarPolicy === 1
+        ? this.basicInfo.avatar
+        : "跟随模型";
+    },
+    getAvatarPolicyValue() {
+      return this.basicInfo.avatarPolicy === 1 ? "自定义" : "跟随模型";
+    },
   },
   watch: {
     "$route.params.id"(newVal) {
-      this.activeContactor = client.getContactor(newVal);
+      const newId = parseInt(newVal);
+      this.activeContactor = client.getContactor(newId);
+      if (this.activeContactor) {
+        this.isOnebot = this.activeContactor.platform === "onebot";
+      }
       this.initContactor();
     },
-    llmGeneralKeys: {
-      handler() {
-        console.log("update");
-        this.setGeneralSettings();
+    options: {
+      handler(newOptions) {
+        if (newOptions && this.activeContactor) {
+          // Sync back to the source of truth
+          this.activeContactor.options = JSON.parse(JSON.stringify(newOptions));
+          client.setLocalStorage();
+        }
+      },
+      deep: true,
+    },
+    basicInfo: {
+      handler(newInfo) {
+        if (newInfo && this.activeContactor) {
+          // Sync back to the source of truth
+          this.activeContactor.name = newInfo.name;
+          this.activeContactor.avatar = newInfo.avatar;
+          this.activeContactor.namePolicy = newInfo.namePolicy;
+          this.activeContactor.avatarPolicy = newInfo.avatarPolicy;
+          this.activeContactor.priority = newInfo.priority ? 0 : 1;
+          client.setLocalStorage();
+        }
       },
       deep: true,
     },
   },
-  beforeMount() {
-    this.loadToolsList();
-    this.loadGeneralSettings();
+  created() {
+    // Use created instead of beforeMount for data initialization
+    this.initContactor();
   },
   mounted() {
-    this.initContactor();
-
-    setInterval(() => {
+    this.delayInterval = setInterval(() => {
       this.currentDelay = client.socket.delay;
     }, 3000);
   },
+  beforeUnmount() {
+    if (this.delayInterval) {
+      clearInterval(this.delayInterval);
+    }
+  },
   methods: {
-    loadGeneralSettings() {
-      this.llmGeneralKeys = {
-        ...this.llmBaseSettings,
-        ...this.llmChatParams,
-      };
-    },
-    safeSimplify(raw) {
-      const result = {};
-      const simplifyMethod = new Map();
-      const table = config.getSafetySettingsParams();
-      Object.keys(table).forEach((key) => {
-        simplifyMethod.set(table[key], key);
-      });
-
-      Object.keys(raw).forEach((key) => {
-        result[key] = simplifyMethod.get(raw[key]);
-      });
-
-      return result;
-    },
-    setGeneralSettings() {
-      const {
-        model,
-        stream,
-        max_messages_num,
-        temperature,
-        top_p,
-        frequency_penalty,
-        presence_penalty,
-      } = this.llmGeneralKeys;
-      this.activeContactor.options.base = {
-        model,
-        stream,
-        max_messages_num,
-      };
-      this.activeContactor.options.chatParams = {
-        temperature,
-        top_p,
-        frequency_penalty,
-        presence_penalty,
-      };
-      // 持久化
-      client.setLocalStorage();
-    },
-    switchSafetySettings(key) {
-      const simplifiedValue = this.geminiSafetySettings[key];
-      const originalValue = this.safetyParams[simplifiedValue];
-      this.activeContactor.options.safetySettings[key] = originalValue;
-      client.setLocalStorage(); //持久化存储
-    },
-    handleToolConfig() {
-      const adcivedTools = this.allLLMTools
-        .filter((plugin) => plugin.tools.some((tool) => tool.enabled))
-        .map((plugin) =>
-          plugin.tools.filter((tool) => tool.enabled).map((tool) => tool.name),
-        )
-        .flat();
-      this.activeContactor.options.toolCallSettings.tools = adcivedTools;
-      client.setLocalStorage(); //持久化存储
-    },
     initContactor() {
-      // 更新所有配置，不仅仅是openai平台
+      // Deep clone options to avoid direct mutation of contactor's options by child
+      // The watcher on `this.options` will handle persisting changes.
       this.options = JSON.parse(JSON.stringify(this.activeContactor.options));
-      this.llmProvider = this.options.provider;
-      this.llmBaseSettings = this.options.base;
-      this.llmChatParams = this.options.chatParams;
-      this.llmToolCallMode = this.options.toolCallSettings?.mode;
-      this.llmToolCallList = this.options.toolCallSettings?.tools;
-      this.presetHistory = this.options.presetSettings?.history;
 
-      if (this.options.provider === "gemini") {
-        this.geminiSafetySettings = this.safeSimplify(
-          this.options.safetySettings,
-        );
-      }
-      if (this.activeContactor.platform === "openai") {
-        this.loadGeneralSettings();
-        this.loadToolsList();
-      }
-    },
-    loadToolsList() {
-      const enabledTools = this.llmToolCallList;
-      this.allLLMTools = this.allLLMTools.map((plugin) => {
-        plugin.tools = plugin.tools.map((tool) => {
-          tool.enabled = enabledTools.includes(tool.name);
-          return tool;
-        });
-        return plugin;
-      });
-    },
-    updateOpenaiPresets(presets) {
-      this.activeContactor.options.presetSettings.history = presets;
-      this.$message({
-        message: "预设历史记录已更新",
-        type: "success",
-      });
-      client.setLocalStorage(); //持久化存储
-    },
-    getShownKey(key) {
-      const shownNameMap = {
-        mode: "工具调用",
-        model: "模型",
-        max_messages_num: "最大历史消息数",
-        stream: "流式响应",
-        temperature: "温度",
-        top_p: "核采样",
-        frequency_penalty: "重复惩罚度",
-        presence_penalty: "话题新鲜度",
-        HARM_CATEGORY_HARASSMENT: "骚扰",
-        HARM_CATEGORY_HATE_SPEECH: "仇恨言论",
-        HARM_CATEGORY_SEXUALLY_EXPLICIT: "色情",
-        HARM_CATEGORY_DANGEROUS_CONTENT: "危险内容",
-        HARM_CATEGORY_CIVIC_INTEGRITY: "公民诚信",
+      const { name, avatar, namePolicy, avatarPolicy, priority } =
+        this.activeContactor;
+      this.basicInfo = {
+        name,
+        avatar,
+        namePolicy,
+        avatarPolicy,
+        priority: priority === 1 ? false : true,
       };
-      return shownNameMap[key];
+
+      // If contactor platform is onebot, tool call related options might need to be forced
+      if (this.activeContactor.platform === "onebot") {
+        if (this.options.toolCallSettings) {
+          this.options.toolCallSettings.mode = "none";
+          this.options.toolCallSettings.tools = [];
+        }
+      }
+      // The child component `ContactorSettings` will use this.options
+      // to initialize its internal state.
+    },
+    handleUpdateOpenaiPresets(presets) {
+      if (this.options && this.options.presetSettings) {
+        this.options.presetSettings.history = presets;
+        // The watcher on `this.options` will trigger saving
+        this.$message({
+          message: "预设历史记录已更新",
+          type: "success",
+        });
+      }
     },
     async delContactor() {
       this.centerDialogVisible = false;
       await client.rmContactor(this.activeContactor.id);
       this.$router.push("/");
     },
-    switchToolCallMode() {
-      this.activeContactor.options.toolCallSettings.mode = this.llmToolCallMode;
-      client.setLocalStorage(); //持久化存储
-    },
-    switchLLMProvider() {
-      const model = config.getDefaultModel(this.llmProvider);
-      this.llmGeneralKeys.model = model;
-
-      this.activeContactor.options.provider = this.llmProvider;
-
-      this.setGeneralSettings();
-
+    handleProviderSwitched(newProvider) {
+      // This event is specifically for actions parent needs to take,
+      // like reloading avatar, that are outside the 'options' object.
       this.activeContactor.loadAvatar();
+      // The options object (including provider and default model)
+      // would have already been updated by the child component via v-model.
+    },
+    getBaseInfoShownValue(value) {
+      const table = {};
+    },
+    updateContactorName() {
+      if (this.basicInfo.namePolicy === 0) {
+        this.basicInfo.name = this.activeContactor.options.base.model;
+      }
     },
   },
 };
 </script>
 
-<style scoped>
-#profile {
-  position: relative;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
-}
-.sub-items {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-}
-.base-info-provider {
-  flex-grow: 1;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  padding-right: 2rem;
-}
-.block-content-item.hidden {
-  min-height: 0px;
-  max-height: 0px;
-}
-.extra-info-button.active {
-  transform: rotate(-90deg);
-}
-.item-content button {
-  background-color: transparent;
-  transition: transform 0.3s ease;
-}
-.profile-container {
-  overflow-y: auto;
-  margin: 2rem 0rem 0rem 0rem;
-  width: calc(100% - 8rem);
-  min-width: 20rem;
-  max-width: 40rem;
-  display: flex;
-  flex-direction: column;
-}
-.base-info {
-  background-color: #fff;
-  border-radius: 0.5rem;
-  display: flex;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #88888888;
-  flex-wrap: wrap;
-  margin-bottom: 2rem;
-}
-.base-info-avatar {
-  margin-top: 1rem;
-  margin-left: 1rem;
-  flex-basis: 5.5rem;
-  height: 5.5rem;
-}
-.base-info-avatar .el-image {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-}
+<style>
+/* Copied from parent for .settings-block, .block-title etc. */
 .block-title {
   font-size: 0.8rem;
 }
@@ -571,7 +326,7 @@ export default {
   margin-bottom: 2rem;
 }
 .block-content-item {
-  max-height: 50rem;
+  max-height: 50rem; /* Ensure this is sufficient for PresetsList */
   overflow-y: auto;
   transition: max-height 0.5s ease;
   position: relative;
@@ -590,10 +345,23 @@ export default {
 .item-hidden-content {
   width: 100%;
 }
+/* Styles specific to settings can be moved here or kept in parent if generic enough */
+.settings-container {
+  width: 100%;
+}
+.base-info-provider {
+  /* Copied from parent, ensure it's styled correctly in context */
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding-right: 2rem;
+  margin-bottom: 1rem; /* Added margin for spacing */
+}
+
 .plugin-tools-container {
-  max-height: 20rem; /* 限制最大高度，具体值可调 */
-  overflow-y: auto; /* 超出时显示垂直滚动条 */
-  -webkit-overflow-scrolling: touch; /* iOS 滚动优化 */
+  max-height: 20rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .block-content-item::after {
   content: "";
@@ -625,11 +393,93 @@ export default {
   justify-content: flex-end;
   margin-right: 1.5rem;
 }
-
 .el-input,
 .el-slider,
 .el-select {
   width: 10rem;
+}
+.sub-items {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding-left: 0; /* Reset ul default padding */
+  list-style: none; /* Reset ul default list-style */
+}
+.extra-info-button.active {
+  transform: rotate(-90deg);
+}
+.item-content button {
+  background-color: transparent;
+  border: none; /* Ensure button is clean */
+  cursor: pointer; /* Add cursor pointer */
+  transition: transform 0.3s ease;
+}
+.block-content-item.hidden {
+  /* This style seems unused, but keeping for now */
+  min-height: 0px;
+  max-height: 0px;
+}
+/* 自定义动画 - Kept in parent as it's a general utility transition */
+.expand-slide-enter-active,
+.expand-slide-leave-active {
+  transition:
+    max-height 0.4s cubic-bezier(0.78, 0.14, 0.15, 0.86),
+    opacity 0.4s;
+}
+.expand-slide-enter-from,
+.expand-slide-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+.expand-slide-enter-to,
+.expand-slide-leave-from {
+  max-height: 20rem; /* Adjust if necessary for PresetsList or other content */
+  opacity: 1;
+}
+</style>
+
+<style scoped>
+/* Styles from original component that are general layout */
+#profile {
+  position: relative;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+}
+/* .sub-items and other specific styles are now in ContactorSettings.vue or can be if specific to it */
+/* Keep .base-info-provider here if it's also used for other things, or move if only for provider select */
+/* Moved to child: .base-info-provider */
+
+.profile-container {
+  overflow-y: auto;
+  margin: 2rem 0rem 0rem 0rem;
+  width: calc(100% - 8rem);
+  min-width: 20rem;
+  max-width: 40rem;
+  display: flex;
+  flex-direction: column;
+}
+.base-info {
+  background-color: #fff;
+  border-radius: 0.5rem;
+  display: flex;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #88888888;
+  flex-wrap: wrap;
+  margin-bottom: 2rem; /* This was on base-info, now applies before info-blocks */
+}
+.base-info-avatar {
+  margin-top: 1rem;
+  margin-left: 1rem;
+  flex-basis: 5.5rem;
+  height: 5.5rem;
+}
+.base-info-avatar .el-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
 }
 .base-info-content {
   margin-left: 1.5rem;
@@ -671,26 +521,10 @@ export default {
   flex-grow: 1;
   background-color: #f2f2f2;
 }
-
-/* 自定义动画 */
-.expand-slide-enter-active,
-.expand-slide-leave-active {
-  transition:
-    max-height 0.4s cubic-bezier(0.78, 0.14, 0.15, 0.86),
-    opacity 0.4s;
-}
-.expand-slide-enter-from,
-.expand-slide-leave-to {
-  max-height: 0;
-  opacity: 0;
-}
-.expand-slide-enter-to,
-.expand-slide-leave-from {
-  max-height: 20rem;
-  opacity: 1;
-}
 </style>
+
 <style scoped lang="sass">
+/* SASS styles remain in parent */
 .delay-status
   display: inline-block
   width: 1rem
