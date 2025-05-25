@@ -44,6 +44,7 @@
                   <el-input 
                     v-else
                     v-model="basicInfo.avatar"
+                    :disabled="isOnebot"
                   ></el-input>
                 </div>
               </div>
@@ -194,11 +195,6 @@ export default {
           : this.currentDelay > 100
             ? "low"
             : "ultra";
-    },
-    getAvatarValue() {
-      return this.basicInfo.avatarPolicy === 1
-        ? this.basicInfo.avatar
-        : "跟随模型";
     },
     getAvatarPolicyValue() {
       return this.basicInfo.avatarPolicy === 1 ? "自定义" : "跟随模型";
