@@ -17,7 +17,7 @@
     </div>
     <div class="tool-info">
       <div>
-        <span class="tool-name">{{ toolCall.name.split("_id")[0] }}</span>
+        <span class="tool-name">{{ toolCall.name.split("_mid_")[0] }}</span>
       </div>
       <div class="tool-status">
         {{ call_status }}
