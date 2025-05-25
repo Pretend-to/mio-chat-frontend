@@ -36,9 +36,14 @@
               <div class="block-content-item">
                 <div class="item-title">头像</div>
                 <div class="item-content">
-                  <el-input
-                    :value="getAvatarValue"
-                    :disabled="basicInfo.avatarPolicy !== 1"
+                  <el-input 
+                    v-if="basicInfo.avatarPolicy !== 1"
+                    :value="'跟随模型'"
+                    :disabled="true"
+                  ></el-input>
+                  <el-input 
+                    v-else
+                    v-model="basicInfo.avatar"
                   ></el-input>
                 </div>
               </div>
@@ -303,6 +308,9 @@ export default {
         this.basicInfo.name = this.activeContactor.options.base.model;
       }
     },
+    updateAvatar() {
+      
+    }
   },
 };
 </script>
