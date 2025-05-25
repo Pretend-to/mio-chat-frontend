@@ -12,8 +12,8 @@ importers:
         specifier: ^2.5.0
         version: 2.5.0
       element-plus:
-        specifier: ^2.7.1
-        version: 2.9.8(vue@3.5.13)
+        specifier: ^2.9.11
+        version: 2.9.11(vue@3.5.13)
       emoji-picker-element:
         specifier: ^1.21.3
         version: 1.26.3
@@ -1448,8 +1448,8 @@ packages:
   electron-to-chromium@1.5.140:
     resolution: {integrity: sha512-o82Rj+ONp4Ip7Cl1r7lrqx/pXhbp/lh9DpKcMNscFJdh8ebyRofnc7Sh01B4jx403RI0oqTBvlZ7OBIZLMr2+Q==}
 
-  element-plus@2.9.8:
-    resolution: {integrity: sha512-srViUaUdfblBKGMeuEPiXxxKlH5aUmKqEwmhb/At9Sj91DbU6od/jYN1955cTnzt3wTSA7GfnZF7UiRX9sdRHg==}
+  element-plus@2.9.11:
+    resolution: {integrity: sha512-x4L/6YC8de4JtuE3vpaEugJdQIeHQaHtIYKyk67IeF6dTIiVax45aX4nWOygnh+xX+0gTvL6xO+9BZhPA3G82w==}
     peerDependencies:
       vue: ^3.2.0
 
@@ -5024,7 +5024,7 @@ snapshots:
 
   electron-to-chromium@1.5.140: {}
 
-  element-plus@2.9.8(vue@3.5.13):
+  element-plus@2.9.11(vue@3.5.13):
     dependencies:
       '@ctrl/tinycolor': 3.6.1
       '@element-plus/icons-vue': 2.3.1(vue@3.5.13)

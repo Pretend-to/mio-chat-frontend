@@ -172,11 +172,15 @@ export default {
     // setInterval(() => {
     //   this.currentDelay = this.client.socket.delay;
     // }, 3000);
-    // 获取.input-bar在页面内距离页面底端的距离
+    // 获取.input-bar在页面中的高度，给inputBarTop赋值
     const element = document.querySelector(".input-bar");
     if (element) {
-      this.inputBarTop = element.offsetTop;
+      // 获取页面高度
+      const pageHeight = window.innerHeight;
+      this.inputBarTop = pageHeight - element.offsetTop;
+      console.log(this.inputBarTop);
     }
+
 
     if (this.shareId) {
       const loadAble = await client.loadOriginalContactors(this.shareId);
@@ -687,7 +691,7 @@ export default {
       <div
         v-if="showRollDown"
         id="roll-buttom-button"
-        :style="{ top: inputBarTop - 36 + 'px' }"
+        :style="{ bottom: inputBarTop + 24 + 'px' }"
         @click="toButtom(true)"
       >
         <i class="iconfont down1"></i>
