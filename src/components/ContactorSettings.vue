@@ -160,7 +160,7 @@
                   :title="tool.description"
                 >
                   <div class="item-title">
-                    {{ tool.name.split("-_-")[0] }}
+                    {{ tool.name.split("_id")[0] }}
                   </div>
                   <div class="item-content">
                     <el-switch

@@ -128,8 +128,11 @@ export default class Client extends EventEmitter {
         if (!this.getContactor(contactor.id)) {
           this.addConcator(contactor.platform, contactor);
         }
+        return true;
+      } else {
+        console.error("Failed to load original contactors:", data.message);
+        return false;
       }
-      return true;
     } catch (error) {
       console.error("Failed to load original contactors:", error);
       return false;
