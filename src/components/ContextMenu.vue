@@ -234,7 +234,7 @@ export default {
         display: grid
         grid-template-columns: repeat(auto-fit, minmax(60px, 1fr))
         padding: 0.5rem
-        max-width: 20rem
+        max-width: 16rem
         background-color: rgba(40, 44, 52, 0.85)
         border-radius: 1rem
 
