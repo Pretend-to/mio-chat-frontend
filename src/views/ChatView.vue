@@ -98,19 +98,31 @@ export default {
   },
   computed: {
     getMenuStyle() {
-      // return { top: this.menuTop + "px", left: this.menuLeft + "px" };
-      // 长度超出屏幕宽度，就向左移动
-      console.log(this.menuLeft);
-      if (this.menuLeft + 110 > window.innerWidth) {
+      // 判断屏幕宽度是否小于768px
+      if (window.innerWidth < 768) {
+        const basicHeight = 160;
+        // 检查向上是否超出屏幕高度
+        if (this.menuTop - basicHeight < 0) {
+          return {
+            top: basicHeight + "px",
+          };
+        }
         return {
-          top: this.menuTop + "px",
-          left: this.menuLeft - 110 + "px",
+          bottom: window.innerHeight - this.menuTop + 16 + "px",
         };
       } else {
-        return {
-          top: this.menuTop + "px",
-          left: this.menuLeft + "px",
-        };
+        // 长度超出屏幕宽度，就向左移动
+        if (this.menuLeft + 110 > window.innerWidth) {
+          return {
+            top: this.menuTop + "px",
+            left: this.menuLeft - 110 + "px",
+          };
+        } else {
+          return {
+            top: this.menuTop + "px",
+            left: this.menuLeft + "px",
+          };
+        }
       }
     },
     getDelayStatus() {

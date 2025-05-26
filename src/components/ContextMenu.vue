@@ -89,7 +89,6 @@ export default {
         console.error("保存选择图片失败：", error);
       }
     },
-
     copyText() {
       let text = "";
       this.message.content.forEach((element) => {
@@ -102,22 +101,18 @@ export default {
       this.copyTextToClipboard(text);
       this.$emit("close");
     },
-
     copySeletedText() {
       this.copyTextToClipboard(this.seletedText);
       this.$emit("close");
     },
-
     retryMessage() {
       this.$emit("message-option", "retry");
       this.$emit("close");
     },
-
     replyMessage() {
       this.$emit("message-option", "reply");
       this.$emit("close");
     },
-
     deleteMessage() {
       this.$emit("message-option", "delete");
       this.$emit("close");
@@ -138,7 +133,6 @@ export default {
       this.$emit("message-option", "delete");
       this.$emit("close");
     },
-
     // 封装复制文本到剪贴板的函数
     async copyTextToClipboard(text) {
       let textarea;
@@ -169,19 +163,16 @@ export default {
         const blob = await response.blob();
         const img = new Image();
         const url = URL.createObjectURL(blob);
-
         img.onload = async () => {
           const canvas = document.createElement("canvas");
           canvas.width = img.width;
           canvas.height = img.height;
           const ctx = canvas.getContext("2d");
           ctx.drawImage(img, 0, 0);
-
           // 使用 Promise 包装 toBlob
           const pngBlob = await new Promise((resolve) => {
             canvas.toBlob(resolve, "image/png");
           });
-
           if (pngBlob) {
             const item = new ClipboardItem({ "image/png": pngBlob });
             await navigator.clipboard.write([item]); // 使用 await
@@ -222,7 +213,6 @@ export default {
   },
 };
 </script>
-
 <style lang="sass" scoped>
 #message-menu
     position: fixed
@@ -234,7 +224,23 @@ export default {
     border-radius: 0.5rem
     padding: .5rem
     z-index: 9999
+    -webkit-user-select: none
+    -moz-user-select: none
+    -ms-user-select: none
+    user-select: none
+    
+    // 移动端样式 - 横向网格布局
+    @media (max-width: 768px)
+        display: grid
+        grid-template-columns: repeat(auto-fit, minmax(60px, 1fr))
+        padding: 0.5rem
+        max-width: 20rem
+        background-color: rgba(40, 44, 52, 0.85)
+        border-radius: 1rem
 
+        left: 50%
+        transform: translateX(-50%)
+        
     @keyframes pop-up
         0%
             transform: scale(1)
@@ -242,7 +248,7 @@ export default {
             transform: scale(1.2)
         100%
             transform: scale(1)
-
+            
     & div
         margin: 0.4rem 0
         padding: .2rem .4rem
@@ -251,23 +257,54 @@ export default {
         justify-content: space-between
         align-items: center
         cursor: pointer
-
+        
+        // 移动端单个菜单项样式
+        @media (max-width: 768px)
+            margin: 0
+            flex-direction: column
+            justify-content: center
+            align-items: center
+            text-align: center
+            border-radius: 0.8rem
+            padding: 0rem 0rem
+            min-height: 3rem
+            background-color: transparent
+            transition: background-color 0.2s ease
+            
     & div:hover
         background-color: hsla(0, 0%, 90%, .88)
-
+        
+        // 移动端悬停效果
+        @media (max-width: 768px)
+            background-color: rgba(255, 255, 255, 0.1)
+            
     & div:hover > i
         animation: pop-up 0.5s ease-in-out 1 forwards
-
+        
     & i
         position: absolute
         display: flex
         justify-content: center
         align-items: center
         transform-origin: center
-
-
+        
+        // 移动端图标样式
+        @media (max-width: 768px)
+            position: static
+            font-size: 1rem
+            margin-bottom: 0.3rem
+            color: rgba(255, 255, 255, 0.9)
+            
     & span
         font-size: 0.8rem
         color: rgb(120, 124, 127)
         margin-left: 1.8rem
+        
+        // 移动端文字样式
+        @media (max-width: 768px)
+            margin-left: 0
+            font-size: 0.7rem
+            color: rgba(255, 255, 255, 0.8)
+            line-height: 1.2
+            word-break: break-all
 </style>
