@@ -51,7 +51,9 @@
               <div v-if="!isOnebot" class="block-content-item">
                 <div class="item-title">头像策略</div>
                 <div class="item-content">
-                  <el-select v-model="basicInfo.avatarPolicy">
+                  <el-select v-model="basicInfo.avatarPolicy"
+                  @change="updateContactorAvatar"
+                  >
                     <el-option
                       v-for="item in avatarPolicyList"
                       :key="item.value"
@@ -304,8 +306,10 @@ export default {
         this.basicInfo.name = this.activeContactor.options.base.model;
       }
     },
-    updateAvatar() {
-      
+    updateContactorAvatar() {
+      const { avatarPolicy } = this.basicInfo;
+      this.activeContactor.avatarPolicy = avatarPolicy;
+      this.basicInfo.avatar = this.activeContactor.loadAvatar();
     }
   },
 };
