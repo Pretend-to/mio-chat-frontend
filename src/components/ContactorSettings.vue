@@ -426,6 +426,7 @@ export default {
         imageGeneration: "图像生成",
         google_search: "联网搜索",
         code_execution: "代码执行",
+        url_context: "网页解析",
       };
       return shownNameMap[key] || key;
     },

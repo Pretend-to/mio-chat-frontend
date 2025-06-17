@@ -316,6 +316,7 @@ export default class Config {
           internalTools: {
             google_search: false,
             code_execution: false,
+            url_context: false,
           },
           safetySettings: {
             // 使用固定的默认安全设置结构
