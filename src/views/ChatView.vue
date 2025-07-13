@@ -43,7 +43,7 @@ export default {
       shareId = params.get("shareId");
     }
     if (params.has("scroll")) {
-      scroll = params.get("scroll") === "true";
+      scroll = params.get("scroll") || "true";
     }
 
     const currentId = parseInt(this.$route.params.id);
@@ -539,6 +539,9 @@ export default {
         }
       }
     },
+    imageLoaded() {
+      this.scroll && this.toButtom();
+    },
     showMessageMenu(event, messageIndex) {
       // 确定右击的元素类型
       if (event.target.tagName.toLowerCase() === "img") {
@@ -784,6 +787,7 @@ export default {
                   :min-scale="0.2"
                   :preview-src-list="[element.data.file]"
                   :initial-index="4"
+                  @load="imageLoaded"
                   loading="lazy"
                   fit="contain"
                 />

@@ -645,9 +645,12 @@ export default class Contactor extends EventEmmiter {
       }
     };
 
-    const msg = message || this.messageChain[this.messageChain.length - 1];
+    let msg = message || this.messageChain[this.messageChain.length - 1]
     if (!msg) return "";
-    console.log(msg);
+    msg = JSON.parse(JSON.stringify(msg));
+    if (msg.type === "node") {
+      msg = msg.data
+    }
 
     return getMessageText(msg.content ? msg.content[0] : msg);
   }

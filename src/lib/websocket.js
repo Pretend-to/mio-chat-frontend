@@ -197,6 +197,7 @@ export default class Socket extends EventEmitter {
         if (e.type === "login") this.emit("connect", e.data);
         this.emit("system_message", e);
       }
+      this.emit(e.request_id, e)
       this.pendingRequests.delete(e.request_id); // Remove request_id
     } catch (error) {
       console.error("JSON parsing failed:", error, "Received:", message); // Log received message on error

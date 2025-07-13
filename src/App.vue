@@ -56,6 +56,12 @@ export default {
     handleResize() {
       this.onPhone = window.innerWidth < 600;
     },
+    closeApp() {
+      this.$message({
+        message: "浏览器端暂不支持关闭",
+        type: "warning",
+      });
+    }
   },
 };
 </script>
@@ -70,7 +76,7 @@ export default {
       class="app-desktop"
       :class="{ fullscreen: fullScreen || isTauri }"
     >
-      <displayButtons :full-screen @set-screen="setWindowSize"></displayButtons>
+      <displayButtons :full-screen @close="closeApp" @set-screen="setWindowSize"></displayButtons>
       <sideBar></sideBar>
       <router-view></router-view>
     </div>

@@ -7,7 +7,7 @@
     <div id="forward-msg-head">转发的聊天消息</div>
     <div id="forward-msg-body">
       <div
-        v-for="(message, index) in messages"
+        v-for="(message, index) in messages.slice(0, 2)"
         id="forward-msg-summary"
         :key="index"
       >
@@ -17,9 +17,10 @@
     <div id="forward-msg-foot">查看{{ messages.length }}条转发消息</div>
   </div>
   <div v-if="showBox" id="forward-msg-box" :class="onPhone ? 'on-phone' : ''">
-    <div class="head">
-      <span>转发消息</span>
-      <span class="close" @click="showBox = false">&times;</span>
+    <div class="forward-msg-head">
+      <div class="forward-msg-title">转发的聊天消息</div>
+      <displayButtons class="cfg-btns" @close="showBox = false" />
+      <!-- <span class="close" @click="showBox = false">&times;</span> -->
     </div>
     <div class="body">
       <div
@@ -27,41 +28,50 @@
         :key="index"
         class="message-container"
       >
-        <div id="other" class="message-body">
+        <div v-if="message.type === 'node'" id="other" class="message-body">
           <div class="avatar">
-            <img :src="contactor.avatar" :alt="contactor.name" />
+            <img :src="`/p/qava/?q=${message.data.uin}`" :alt="message.data.name" />
           </div>
           <div class="msg">
             <div class="wholename">
               <div class="title">{{ contactor.title }}</div>
-              <div class="name">{{ contactor.name }}</div>
+              <div class="name">{{ message.data.name }}</div>
             </div>
-            <div class="content">
+            <div
+              v-for="(elm,index) of message.data.content" 
+              :key="index"
+              class="content"
+            >
               <div>
                 <MdPreview
-                  v-if="message.type === 'text'"
+                  v-if="elm.type === 'text'"
                   preview-theme="github"
                   editor-id="preview-only"
-                  :model-value="message.data.text"
+                  :model-value="elm.data.text"
                 />
                 <el-image
-                  v-if="message.type === 'image'"
+                  v-else-if="elm.type === 'image'"
                   :key="index"
                   style="margin: 8px 0; max-width: 20rem; border-radius: 1rem"
-                  :src="message.data.file"
+                  :src="elm.data.file"
                   :zoom-rate="1.2"
                   :preview-teleported="true"
                   :max-scale="7"
                   :min-scale="0.2"
-                  :preview-src-list="[message.data.file]"
+                  :preview-src-list="[elm.data.file]"
                   :initial-index="4"
                   fit="cover"
+                />
+                <ForwardMsg
+                  v-else-if="elm.type === 'nodes'"
+                  :contactor="activeContactor"
+                  :messages="elm.data.messages"
                 />
                 <MdPreview
                   v-else
                   preview-theme="github"
                   editor-id="preview-only"
-                  :model-value="`尚未支持的消息类型：${message.type}`"
+                  :model-value="`尚未支持的消息类型：${elm.type}`"
                 />
               </div>
             </div>
@@ -75,10 +85,13 @@
 <script>
 import { MdPreview } from "md-editor-v3";
 import { client } from "@/lib/runtime.js";
+import displayButtons from "@/components/DisplayButtons.vue";
 
 export default {
+  name: "ForwardMsg",
   components: {
     MdPreview,
+    displayButtons,
   },
   props: {
     messages: {
@@ -119,7 +132,7 @@ export default {
   width: 15rem;
   display: flex;
   flex-direction: column;
-  padding: 0.5rem;
+  padding: 0.2rem 0.5rem;
 }
 
 #forward-msg-preview.on-phone {
@@ -149,8 +162,13 @@ export default {
   color: rgb(150, 150, 150);
 }
 
+.cfg-btns {
+  transform: scale(0.8);
+  transform-origin: top right;
+}
+
 #forward-msg-box {
-  border: 1px solid black;
+  border: 1px solid rgb(199, 199, 199);
   position: fixed;
   top: 50%;
   left: 50%;
@@ -161,6 +179,7 @@ export default {
   background-color: rgb(241, 241, 241);
   border-radius: 0.25rem;
   overflow: hidden;
+  box-shadow: 0 0 1rem rgba(0, 0, 0, 0.1);
 }
 
 .message-body > .avatar {
@@ -186,14 +205,16 @@ export default {
   overflow: hidden;
 }
 
-.head {
+.forward-msg-head {
+  position: relative;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  height: 2rem;
+  height: 1.5rem;
   padding-left: 1rem;
   border-bottom: 1px solid #ccc;
   color: black;
+  font-size: .8rem;
 }
 
 .close {

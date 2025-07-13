@@ -46,7 +46,7 @@ export default {
       default: false,
     },
   },
-  emits: ["set-screen"],
+  emits: ["set-screen","close"],
   data() {
     return {
       preview: false,
@@ -99,7 +99,8 @@ export default {
           this.waiting(); // 获取 mainWindow 失败则提示
         }
       } else {
-        this.waiting(); // Web 环境
+        // this.waiting(); // Web 环境
+        this.$emit("close");
       }
     },
 
@@ -140,7 +141,8 @@ export default {
           this.waiting(); // 获取 mainWindow 失败则提示
         }
       } else {
-        this.waiting(); // Web 环境
+        // this.waiting(); // Web 环境
+        this.$emit("close");
       }
     },
   },
