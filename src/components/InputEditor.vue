@@ -2,11 +2,7 @@
   <div class="input-bar">
     <div class="options">
       <div class="bu-emoji">
-        <emoji-picker
-          v-show="showemoji"
-          ref="emojiPicker"
-          @emoji-click="getemoji"
-        ></emoji-picker>
+        <emoji-picker v-show="showemoji" ref="emojiPicker" @emoji-click="getemoji"></emoji-picker>
         <p class="ho-emoji">表情</p>
         <i class="iconfont smile" @click.prevent="ctrlEmojiPanel"></i>
       </div>
@@ -14,14 +10,8 @@
         <p class="ho-emoji">
           {{ activeContactor.platform == "openai" ? "模型选择" : "工具选择" }}
         </p>
-        <el-tree-select
-          id="wraper-selector"
-          v-model="selectedOption"
-          :data="extraOptions"
-          accordion
-          placement="top-start"
-          @node-click="currentChange"
-        />
+        <el-tree-select id="wraper-selector" v-model="selectedOption" :data="extraOptions" accordion
+          placement="top-start" @node-click="currentChange" />
         <i class="iconfont robot"></i>
       </div>
       <div class="bu-emoji">
@@ -34,14 +24,8 @@
       </div>
       <div class="bu-emoji">
         <p class="ho-emoji">清除记录</p>
-        <el-popconfirm
-          class="box-item"
-          title="此操作不可撤销"
-          confirm-button-text="确定"
-          cancel-button-text="取消"
-          placement="top"
-          @confirm="$emit('cleanScreen')"
-        >
+        <el-popconfirm class="box-item" title="此操作不可撤销" confirm-button-text="确定" cancel-button-text="取消" placement="top"
+          @confirm="$emit('cleanScreen')">
           <template #reference>
             <i class="iconfont shanchu"></i>
           </template>
@@ -54,22 +38,11 @@
     </div>
     <div class="input-box">
       <div class="input-content">
-        <div
-          ref="textarea"
-          class="input-area"
-          :v-html="userInput"
-          contenteditable="true"
-          placeholder="按 Ctrl + Enter 以发送消息"
-          @keydown="handleKeyDown"
-          @input="handleInput"
-          @click="updateCursorPosition"
-        ></div>
+        <div ref="textarea" class="input-area" :v-html="userInput" contenteditable="true"
+          placeholder="按 Ctrl + Enter 以发送消息" @keydown="handleKeyDown" @input="handleInput"
+          @click="updateCursorPosition"></div>
       </div>
-      <button
-        id="sendButton"
-        :disabled="!userInput || !isValidInput(userInput)"
-        @click.prevent="send"
-      >
+      <button id="sendButton" :disabled="!userInput || !isValidInput(userInput)" @click.prevent="send">
         发送{{ getWraperName() ? ` | ${getWraperName()}` : "" }}
       </button>
     </div>
@@ -78,6 +51,7 @@
 
 <script>
 import { client, config } from "@/lib/runtime.js";
+import { debounce } from "@/utils/tools.js"
 
 export default {
   props: {
@@ -160,7 +134,7 @@ export default {
       this.isPasting = false;
     };
     // 添加paste事件监听器
-    this.textareaRef.addEventListener("paste", this.handlePaste);
+    this.textareaRef.addEventListener("paste", debounce(this.handlePaste, 100));
     this.host = window.location.origin;
     this.onebotPresets = config.onebotConfig.textwraper.options;
   },
