@@ -141,39 +141,97 @@ export default {
         this.uploadFile(file);
       }
     },
+    // 把纯文本转换成可在contenteditable正确显示换行和空格的HTML
+    textToHtml(text) {
+      const escaped = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+
+      // 换行符变成 <br>，空格用&nbsp;保留
+      return escaped
+        .replace(/  /g, "&nbsp;&nbsp;") // 连续空格至少保留两个才需要转换，单个空格是正常空格
+        .replace(/\n/g, "<br>");
+    },
+
+    // 在光标处插入HTML片段（带换行和空格）
+    insertHtmlAtCursor(html) {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) {
+        // 没有光标选区，追加到末尾
+        this.textareaRef.innerHTML += html;
+        this.setCursorToEnd(this.textareaRef);
+        return;
+      }
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+
+      // 使用临时容器把html转成节点
+      const tempEl = document.createElement("div");
+      tempEl.innerHTML = html;
+
+      const frag = document.createDocumentFragment();
+      while (tempEl.firstChild) {
+        frag.appendChild(tempEl.firstChild);
+      }
+
+      range.insertNode(frag);
+
+      // 设置光标移动到插入节点后面
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    },
+
+    // 粘贴事件处理：文本转html插入，图片异步队列上传
     handlePaste(e) {
       e.preventDefault();
       const clipboardData = e.clipboardData || window.clipboardData;
       const items = clipboardData.items;
+      let pastedText = "";
       const imageFiles = [];
-      let pastedText = '';
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        if (item.type.indexOf('image') !== -1) {
+        if (item.type.indexOf("image") !== -1) {
           imageFiles.push(item.getAsFile());
-        } else if (item.type === 'text/plain') {
-          pastedText += clipboardData.getData('text/plain');
+        } else if (item.type === "text/plain") {
+          pastedText += clipboardData.getData("text/plain");
         }
       }
 
-      // 防长文本卡死
-      if (pastedText && pastedText.length > 2000) {
-        this.$message.warning(`检测到长文本(${pastedText.length}字)，已作为文件处理`);
-        const blob = new Blob([pastedText], { type: "text/plain;charset=utf-8" });
-        const file = new File([blob], `pasted-${Date.now()}.txt`, { type: "text/plain" });
-        this.handleFileUpload(file);
-      } else if (pastedText) {
-        document.execCommand('insertText', false, pastedText);
+      if (pastedText) {
+        const html = this.textToHtml(pastedText);
+        this.insertHtmlAtCursor(html);
       }
 
-      // 图片处理（异步队列）
       if (imageFiles.length) {
         this.$message.info(`检测到 ${imageFiles.length} 张图片，正在处理...`);
         setTimeout(() => {
           this.processImageQueue(imageFiles);
         }, 0);
       }
+    },
+
+    // 表情插入调用统一插入html方法，防止换行空格丢失
+    getemoji(e) {
+      const unicode = e.detail.unicode;
+      // 直接插unicode字符对应的html文本（一般没换行空格）
+      this.insertHtmlAtCursor(this.textToHtml(unicode));
+      this.ctrlEmojiPanel();
+    },
+
+    // 光标移动到内容最后函数
+    setCursorToEnd(element) {
+      element.focus();
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
     },
 
     // 顺序处理图片，防止堆积卡顿
@@ -407,18 +465,6 @@ export default {
       } else {
         return "";
       }
-    },
-    getemoji(e) {
-      const unicode = e.detail.unicode;
-      const selection = window.getSelection();
-      if (!selection.rangeCount) return;
-      const range = selection.getRangeAt(0);
-      range.deleteContents();
-      range.insertNode(document.createTextNode(unicode));
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
-      this.ctrlEmojiPanel();
     },
     updateCursorPosition() {
       const selection = window.getSelection();
