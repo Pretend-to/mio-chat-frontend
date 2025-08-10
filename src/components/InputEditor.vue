@@ -143,7 +143,6 @@ export default {
     },
     handlePaste(e) {
       e.preventDefault();
-
       const clipboardData = e.clipboardData || window.clipboardData;
       const items = clipboardData.items;
       const imageFiles = [];
@@ -152,19 +151,23 @@ export default {
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         if (item.type.indexOf('image') !== -1) {
-          const file = item.getAsFile();
-          imageFiles.push(file);
+          imageFiles.push(item.getAsFile());
         } else if (item.type === 'text/plain') {
           pastedText += clipboardData.getData('text/plain');
         }
       }
 
-      // 粘贴文字
-      if (pastedText) {
+      // 防长文本卡死
+      if (pastedText && pastedText.length > 2000) {
+        this.$message.warning(`检测到长文本(${pastedText.length}字)，已作为文件处理`);
+        const blob = new Blob([pastedText], { type: "text/plain;charset=utf-8" });
+        const file = new File([blob], `pasted-${Date.now()}.txt`, { type: "text/plain" });
+        this.handleFileUpload(file);
+      } else if (pastedText) {
         document.execCommand('insertText', false, pastedText);
       }
 
-      // 异步队列处理图片
+      // 图片处理（异步队列）
       if (imageFiles.length) {
         this.$message.info(`检测到 ${imageFiles.length} 张图片，正在处理...`);
         setTimeout(() => {
