@@ -40,7 +40,7 @@
         <div ref="textarea" class="input-area" contenteditable="true" placeholder="按 Ctrl + Enter 以发送消息"
           @keydown="handleKeyDown" @click="updateCursorPosition"></div>
       </div>
-      <button id="sendButton" :disabled="!hasInput()" @click.prevent="send">
+      <button id="sendButton" @click.prevent="send">
         发送{{ getWraperName() ? ` | ${getWraperName()}` : "" }}
       </button>
     </div>
@@ -130,9 +130,10 @@ export default {
       this.$message.warning("功能暂未开放");
     },
     hasInput() {
-      const text = this.textareaRef?.innerText.trim();
+      // const text = this.textareaRef?.innerText.trim();
+      const hasText = this.textareaRef?.innerText.trim();
       const hasImage = this.textareaRef?.querySelector("img");
-      return !!(text || hasImage);
+      return hasText || hasImage;
     },
     handleDroppedFile(file) {
       if (file.type.startsWith("image/")) {
@@ -506,6 +507,7 @@ export default {
       return container;
     },
     async send() {
+      if (!this.hasInput()) return;
       this.$emit("toButtom");
       const container = this.presend();
       try {
