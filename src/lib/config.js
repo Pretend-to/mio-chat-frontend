@@ -704,7 +704,7 @@ export default class Config {
       console.warn("getVerifiedLLMConfig 接收到的输入无效，按原样返回。");
       return config;
     }
-
+  
     // 创建深拷贝以避免修改原始对象
     let verifiedConfig;
     try {
@@ -713,9 +713,9 @@ export default class Config {
       console.error("深拷贝配置失败 (getVerifiedLLMConfig):", e);
       return config; // 返回原始配置或进行错误处理
     }
-
+  
     this._mergeDefaultsRecursive(verifiedConfig, this.LLMDefaultConfig);
-
+  
     // 验证工具列表
     if (
       verifiedConfig.toolCallSettings &&
@@ -728,7 +728,16 @@ export default class Config {
       // 如果 toolCallSettings 存在但 tools 不存在或不是数组，则设置为空数组
       verifiedConfig.toolCallSettings.tools = [];
     }
-
+  
+    // 新增：如果 chatParams 和默认配置相同，设置为空对象
+    if (
+      verifiedConfig.chatParams &&
+      this.LLMDefaultConfig.chatParams &&
+      JSON.stringify(verifiedConfig.chatParams) === JSON.stringify(this.LLMDefaultConfig.chatParams)
+    ) {
+      verifiedConfig.chatParams = {};
+    }
+  
     return verifiedConfig;
   }
 

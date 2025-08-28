@@ -37,7 +37,7 @@
 
     <div class="input-box">
       <div class="input-content">
-        <div ref="textarea" class="input-area" contenteditable="true" placeholder="按 Ctrl + Enter 以发送消息"
+        <div ref="textarea" class="input-area" contenteditable="true"
           @keydown="handleKeyDown" @click="updateCursorPosition"></div>
       </div>
       <button id="sendButton" @click.prevent="send">
@@ -49,6 +49,7 @@
 
 <script>
 import { client, config } from "@/lib/runtime.js";
+import { debounce } from "../utils/tools.js";
 
 export default {
   props: {
@@ -86,10 +87,11 @@ export default {
   },
   created() {
     this.loadSelected();
+    this.debouncedAdjustHeight = debounce(this.adjustTextareaHeight, 100);
   },
   mounted() {
     this.textareaRef = this.$refs.textarea;
-    this.textareaRef.addEventListener("input", this.adjustTextareaHeight);
+    this.textareaRef.addEventListener("input", this.debouncedAdjustHeight);
 
     // 拖拽文件
     this.handleDragOver = (e) => {
