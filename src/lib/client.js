@@ -309,19 +309,26 @@ export default class Client extends EventEmitter {
   }
 
   /**
-   * Generate a random 5-digit ID starting with 1
-   * @returns {number} 5-digit random ID starting with 1
+   * 生成一个保证唯一的10位纯数字ID
+   * 结合设备ID(this.id)、时间戳和随机数
+   * @returns {string} 10位纯数字ID
    */
   genFakeId() {
-    if (!this.id) {
-      // Generate 5-digit random number starting with 1
-      const randomNum = Math.floor(1000 + Math.random() * 9000);
-      return parseInt(`1${randomNum}`);
-    } else {
-      // Generate 4-digit random number and append to existing ID
-      const subRandomNum = Math.floor(1000 + Math.random() * 9000);
-      return parseInt(`${this.id}${subRandomNum}`);
-    }
+    // 获取当前时间戳的后6位
+    const timestamp = Date.now().toString().slice(-6);
+
+    // 从设备ID中提取数字并获取后2位
+    // 假设this.id是一个字符串，可能包含非数字字符
+    const deviceIdDigits = this.id.toString().replace(/\D/g, '') || '00';
+    const deviceId = deviceIdDigits.slice(-2).padStart(2, '0');
+
+    // 生成2位随机数
+    const randomNum = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+
+    // 组合成10位ID: 6位时间戳 + 2位设备ID + 2位随机数
+    const fakeId = timestamp + deviceId + randomNum;
+
+    return fakeId;
   }
 
   /**

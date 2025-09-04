@@ -122,20 +122,7 @@ export default {
       document.removeEventListener("mouseup", this.stopResize);
     },
     genFakeId() {
-      // 生成5位随机数
-      const randomNum = Math.floor(1000 + Math.random() * 9000);
-      // 将随机数转换为字符串
-      const randomNumStr = `1${randomNum}`;
-      if (!this.id) {
-        // 将拼接后的字符串转换为数字并返回
-        return parseInt(randomNumStr);
-      } else {
-        // 生成5位随机数
-        const subRandomNum = Math.floor(1000 + Math.random() * 9000);
-        // 将随机数转换为字符串
-        const randomNumStr = `${this.id}${subRandomNum}`;
-        return parseInt(randomNumStr);
-      }
+      return client.genFakeId();
     },
     manageAddMenu() {
       this.showAddOptions = !this.showAddOptions;
