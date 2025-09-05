@@ -44,9 +44,9 @@ export default class Client extends EventEmitter {
       this.loadBaseInfo(localBaseInfo);
     }
 
-    const localStroge = await this.getLocalStorage();
-    if (localStroge) {
-      this.loadLocalStorage(localStroge);
+    const localStorage = await this.getLocalStorage();
+    if (localStorage) {
+      this.loadLocalStorage(localStorage);
     }
 
     this.inited = true;

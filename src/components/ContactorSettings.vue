@@ -29,10 +29,17 @@
             <div class="item-title">{{ getShownKey(key) }}</div>
             <div class="item-content">
               <el-input
-                v-if="['model', 'max_messages_num'].includes(key)"
+                v-if="key === 'model'"
                 v-model="localLlmGeneralKeys[key]"
                 @change="updateGeneralSettings"
               ></el-input>
+              <el-input-number
+                v-else-if="key === 'max_messages_num'"
+                v-model="localLlmGeneralKeys[key]"
+                :min="1"
+                :step="1"
+                @change="updateGeneralSettings"
+              />
               <el-switch
                 v-else-if="['stream'].includes(key)"
                 v-model="localLlmGeneralKeys[key]"
@@ -280,7 +287,7 @@
 
 <script>
 import PresetsList from "@/components/PresetsList.vue";
-import { config } from "@/lib/runtime.js"; // For getDefaultModel
+import { config } from "@/lib/runtime.js";
 
 export default {
   name: "ContactorSettings",
