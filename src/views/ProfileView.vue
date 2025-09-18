@@ -401,6 +401,7 @@ export default {
   justify-content: flex-end;
   margin-right: 1.5rem;
 }
+.el-input-number,
 .el-input,
 .el-slider,
 .el-select {
@@ -512,7 +513,7 @@ export default {
   justify-content: space-between;
 }
 .action-bar {
-  position: relative;
+  position: sticky;
   background-color: #f2f2f2;
   bottom: 0px;
   left: 0px;

@@ -60,10 +60,10 @@ export default class Config {
     // 4. 异步加载外部数据 (如可用工具、OneBot 插件等)
     //    添加了错误捕获，防止加载失败影响主流程
     this.loadllmTools().catch((error) =>
-      console.error("加载 LLM 工具失败:", error),
+      console.error("加载 LLM 工具失败:", error)
     );
     this.loadonebotConfig().catch((error) =>
-      console.error("加载 OneBot 配置失败:", error),
+      console.error("加载 OneBot 配置失败:", error)
     );
 
     // 5. 如果是首次运行 (未从 localStorage 加载到配置), 则保存初始配置
@@ -337,7 +337,7 @@ export default class Config {
     // 3. 确保 this.LLMDefaultConfig 是一个对象
     if (!this.LLMDefaultConfig || typeof this.LLMDefaultConfig !== "object") {
       console.log(
-        "LLMDefaultConfig 未加载或格式无效，创建新的空对象用于合并。",
+        "LLMDefaultConfig 未加载或格式无效，创建新的空对象用于合并。"
       );
       this.LLMDefaultConfig = {};
     }
@@ -346,15 +346,15 @@ export default class Config {
     //    这个操作会保留 this.LLMDefaultConfig 中已有的用户设置，只添加缺失的部分
     console.log(
       "合并 LLM 默认配置（之前）:",
-      JSON.stringify(this.LLMDefaultConfig),
+      JSON.stringify(this.LLMDefaultConfig)
     );
     this.LLMDefaultConfig = this._mergeDefaultsRecursive(
       this.LLMDefaultConfig,
-      defaultConfigStructure,
+      defaultConfigStructure
     );
     console.log(
       "合并 LLM 默认配置（之后）:",
-      JSON.stringify(this.LLMDefaultConfig),
+      JSON.stringify(this.LLMDefaultConfig)
     );
 
     // 注意：合并操作后，this.LLMDefaultConfig 可能已更新，保存操作会在适当时机触发。
@@ -386,7 +386,7 @@ export default class Config {
         });
       } else {
         console.warn(
-          `基础配置中未找到 Provider "${newDefaultProvider}" 的默认模型。`,
+          `基础配置中未找到 Provider "${newDefaultProvider}" 的默认模型。`
         );
         // 可以考虑设置一个通用的后备模型
       }
@@ -476,7 +476,7 @@ export default class Config {
   isModelAvailable(provider, model) {
     const providerModels = this.llmModels?.[provider] ?? [];
     return providerModels.some((modelGroup) =>
-      modelGroup.models.includes(model),
+      modelGroup.models.includes(model)
     );
   }
 
@@ -485,7 +485,7 @@ export default class Config {
     for (const provider in this.llmModels) {
       const providerModels = this.llmModels[provider] ?? [];
       const group = providerModels.find((modelGroup) =>
-        modelGroup.models.includes(model),
+        modelGroup.models.includes(model)
       );
       if (group) return group.owner;
     }
@@ -532,7 +532,7 @@ export default class Config {
     ) {
       // 更新指定类型的嵌套对象
       const originalSubConfigString = JSON.stringify(
-        this.LLMDefaultConfig[type],
+        this.LLMDefaultConfig[type]
       );
       this.LLMDefaultConfig[type] = {
         ...this.LLMDefaultConfig[type],
@@ -560,7 +560,7 @@ export default class Config {
       }
     } else {
       console.warn(
-        `无法更新 LLMDefaultConfig: 类型 "${type}" 不存在或不是对象。`,
+        `无法更新 LLMDefaultConfig: 类型 "${type}" 不存在或不是对象。`
       );
       return; // 没有做任何更改
     }
@@ -568,7 +568,7 @@ export default class Config {
     if (configChanged) {
       console.log(
         `更新 LLMDefaultConfig${type ? `[${type}]` : ""} 使用 patch:`,
-        patch,
+        patch
       );
       // 只有在检测到实际变化时才保存
       this._saveStrogeConfig();
@@ -601,13 +601,13 @@ export default class Config {
       const defaultModelForProvider = this.getDefaultModel(provider);
       if (defaultModelForProvider) {
         console.log(
-          `为 Provider "${provider}" 调整 LLM 配置副本 (模型: ${defaultModelForProvider})。`,
+          `为 Provider "${provider}" 调整 LLM 配置副本 (模型: ${defaultModelForProvider})。`
         );
         copiedConfig.provider = provider;
         copiedConfig.base.model = defaultModelForProvider;
       } else {
         console.warn(
-          `请求了 Provider "${provider}"，但在 baseConfig 中未找到其默认模型。返回的配置将使用原始 Provider 和模型。`,
+          `请求了 Provider "${provider}"，但在 baseConfig 中未找到其默认模型。返回的配置将使用原始 Provider 和模型。`
         );
         // 保持 copiedConfig 不变或进行其他处理
       }
@@ -628,64 +628,31 @@ export default class Config {
     }
 
     const availableToolNames = new Set();
-    // 这里的逻辑假设 this.llmTools 是一个对象或数组，需要根据其实际结构调整
-    // 示例假设格式: { pluginName: { toolName1: {...}, toolName2: {...} }, ... }
-    // 或者 [ { plugin: "...", tools: { toolName1: ...} } ]
-    // 或者更简单的 [ "toolName1", "toolName2" ]
-    // 以下是一个通用性较强的示例，假设 llmTools 是对象或数组，其叶子节点是工具定义
-    const extractToolNames = (data) => {
-      if (!data) return;
-      if (Array.isArray(data)) {
-        data.forEach((item) => extractToolNames(item));
-      } else if (typeof data === "object") {
-        // 检查是否有明确的 'tools' 属性或直接是工具定义
-        if (data.tools && typeof data.tools === "object") {
-          Object.keys(data.tools).forEach((name) =>
-            availableToolNames.add(name),
-          );
-        } else {
-          // 假设对象的键是插件名或工具名
-          Object.keys(data).forEach((key) => {
-            // 这里需要更智能的判断，例如检查值的类型是否像工具定义
-            // 简化处理：如果键不包含特定分隔符或已知插件关键字，则认为是工具名
-            // 或者直接添加所有键，让后续过滤处理
-            // 假设顶层对象的键是插件名，其值是包含工具的对象
-            if (typeof data[key] === "object" && data[key] !== null) {
-              Object.keys(data[key]).forEach((toolName) =>
-                availableToolNames.add(toolName),
-              );
-            }
-            // 如果 llmTools 直接是 { toolName: definition } 结构，则：
-            // availableToolNames.add(key);
-          });
-        }
-      } else if (typeof data === "string") {
-        availableToolNames.add(data); // 如果 llmTools 是工具名数组
-      }
-    };
 
-    // 根据你的 this.llmTools 实际结构调整调用方式
-    if (Array.isArray(this.llmTools)) {
-      this.llmTools.forEach((item) => extractToolNames(item)); // 如果是数组
-    } else if (typeof this.llmTools === "object" && this.llmTools !== null) {
+    if (typeof this.llmTools === "object" && this.llmTools !== null) {
       Object.values(this.llmTools).forEach((pluginTools) => {
         // 如果是对象 {plugin: toolsObj}
         if (pluginTools && typeof pluginTools === "object") {
-          Object.keys(pluginTools).forEach((toolName) =>
-            availableToolNames.add(toolName),
+          Object.keys(pluginTools).forEach(
+            (toolName) => availableToolNames.add(toolName) // 只取工具名部分
           );
         }
       });
     }
 
-    // 过滤 selectedToolNames，只保留在 availableToolNames 中的项
-    const validToolNames = selectedToolNames.filter((toolName) =>
-      availableToolNames.has(toolName),
-    );
+    const validToolNames = [...availableToolNames].filter((name) => {
+      for (const toolName of selectedToolNames) {
+        if (name.includes(toolName)) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    });
 
     if (validToolNames.length < selectedToolNames.length) {
       const invalidTools = selectedToolNames.filter(
-        (toolName) => !availableToolNames.has(toolName),
+        (toolName) => !availableToolNames.has(toolName)
       );
       console.warn("配置中指定的以下工具当前不可用或未加载:", invalidTools);
     }
@@ -704,7 +671,7 @@ export default class Config {
       console.warn("getVerifiedLLMConfig 接收到的输入无效，按原样返回。");
       return config;
     }
-  
+
     // 创建深拷贝以避免修改原始对象
     let verifiedConfig;
     try {
@@ -713,31 +680,22 @@ export default class Config {
       console.error("深拷贝配置失败 (getVerifiedLLMConfig):", e);
       return config; // 返回原始配置或进行错误处理
     }
-  
+
     this._mergeDefaultsRecursive(verifiedConfig, this.LLMDefaultConfig);
-  
+
     // 验证工具列表
     if (
       verifiedConfig.toolCallSettings &&
       Array.isArray(verifiedConfig.toolCallSettings.tools)
     ) {
       verifiedConfig.toolCallSettings.tools = this.getValidTools(
-        verifiedConfig.toolCallSettings.tools,
+        verifiedConfig.toolCallSettings.tools
       );
     } else if (verifiedConfig.toolCallSettings) {
       // 如果 toolCallSettings 存在但 tools 不存在或不是数组，则设置为空数组
       verifiedConfig.toolCallSettings.tools = [];
     }
-  
-    // 新增：如果 chatParams 和默认配置相同，设置为空对象
-    if (
-      verifiedConfig.chatParams &&
-      this.LLMDefaultConfig.chatParams &&
-      JSON.stringify(verifiedConfig.chatParams) === JSON.stringify(this.LLMDefaultConfig.chatParams)
-    ) {
-      verifiedConfig.chatParams = {};
-    }
-  
+
     return verifiedConfig;
   }
 
@@ -748,17 +706,15 @@ export default class Config {
    */
   async loadllmTools() {
     try {
-      // TODO: 替换为你的实际 API 端点
       const response = await fetch("/api/openai/tools"); // 示例端点
       if (!response.ok) {
         throw new Error(
-          `请求 LLM 工具失败: ${response.status} ${response.statusText}`,
+          `请求 LLM 工具失败: ${response.status} ${response.statusText}`
         );
       }
       const data = await response.json();
 
       // 假设 API 返回的数据结构是 { data: { tools: ... } }
-      // TODO: 根据你的 API 实际返回结构调整这里的路径
       if (data && data.data && data.data.tools) {
         this.llmTools = data.data.tools;
         console.log("LLM 工具已加载:", this.llmTools);
@@ -780,17 +736,15 @@ export default class Config {
    */
   async loadonebotConfig() {
     try {
-      // TODO: 替换为你的实际 API 端点
       const response = await fetch(`/api/onebot/plugins`); // 示例端点
       if (!response.ok) {
         throw new Error(
-          `请求 OneBot 配置失败: ${response.status} ${response.statusText}`,
+          `请求 OneBot 配置失败: ${response.status} ${response.statusText}`
         );
       }
       const data = await response.json();
 
       // 假设 API 返回的数据结构是 { data: { options: ... } }
-      // TODO: 根据你的 API 实际返回结构调整这里的路径
       if (data && data.data && data.data.options) {
         this.onebotConfig = data.data.options;
         console.log("OneBot 配置已加载:", this.onebotConfig);

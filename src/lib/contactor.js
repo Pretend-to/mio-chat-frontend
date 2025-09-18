@@ -295,7 +295,7 @@ export default class Contactor extends EventEmmiter {
   _getValidOpenaiMessage(
     start = this.firstMessageIndex,
     end = this.messageChain.length,
-    length = this.options.max_messages_num,
+    length = this.options.base.max_messages_num,
   ) {
     const cuttedMessageList = this.messageChain
       .slice(start, end)
@@ -455,7 +455,6 @@ export default class Contactor extends EventEmmiter {
       } else {
         // 截取从this.firstMessageIndex到结尾的消息
         const finalMessages = this._getValidOpenaiMessage();
-
         const messageId = numberString(16);
         await this.kernel.send(finalMessages, messageId, this.options);
 
