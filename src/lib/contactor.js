@@ -283,8 +283,13 @@ export default class Contactor extends EventEmmiter {
   }
 
   _getFilePrompt(fileElms) {
-    const start = "以下是用户上传的文件：\n";
+    const start = "\n以下是用户上传的文件：\n";
     return start + fileElms.join("\n");
+  }
+
+  _getImagePrompt(imageElms) {
+    const start = "\n以下是用户所上传的图片链接：\n";
+    return start + imageElms.join("\n");
   }
 
   _getValidOpenaiMessage(
@@ -302,6 +307,7 @@ export default class Contactor extends EventEmmiter {
 
     const mergedMessages = validMessageList.map((message) => {
       const fileList = [];
+      const imageList = [];
       const subArray = [];
       message.content.forEach((elm) => {
         const role =
@@ -343,6 +349,7 @@ export default class Contactor extends EventEmmiter {
             formatedMsg.content = elm.data.file;
             formatedMsg._content_type = "image";
             subArray.push(formatedMsg);
+            imageList.push(elm.data.file.content);
           } else if (elm.type == "text") {
             formatedMsg.content = elm.data.text;
             formatedMsg._content_type = "text";
@@ -372,6 +379,7 @@ export default class Contactor extends EventEmmiter {
       const imageElm = subArray.filter((elm) => elm._content_type == "image");
       const fileElm = subArray.filter((elm) => elm._content_type == "file");
       const filePrompt = fileElm.length > 0 ? this._getFilePrompt(fileElm) : "";
+      const imagePrompt = imageElm.length > 0 ? this._getImagePrompt(imageElm) : "";
       let message = null;
       if (
         textElm.length > 0 &&
@@ -392,7 +400,7 @@ export default class Contactor extends EventEmmiter {
             ...textElm.map((elm) => {
               return {
                 type: "text",
-                text: elm.content + filePrompt,
+                text: elm.content + filePrompt + imagePrompt,
               };
             }),
           ],
