@@ -316,19 +316,10 @@ export default class Client extends EventEmitter {
   genFakeId() {
     // 获取当前时间戳的后6位
     const timestamp = Date.now().toString().slice(-6);
-
-    // 从设备ID中提取数字并获取后2位
-    // 假设this.id是一个字符串，可能包含非数字字符
-    const deviceIdDigits = this.id.toString().replace(/\D/g, '') || '00';
-    const deviceId = deviceIdDigits.slice(-2).padStart(2, '0');
-
     // 生成2位随机数
-    const randomNum = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    const randomNum = Math.floor(Math.random() * 100).toString().padStart(4, '1');
 
-    // 组合成10位ID: 6位时间戳 + 2位设备ID + 2位随机数
-    const fakeId = timestamp + deviceId + randomNum;
-
-    return fakeId;
+    return randomNum + timestamp;
   }
 
   /**

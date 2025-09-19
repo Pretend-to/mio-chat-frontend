@@ -131,8 +131,7 @@ export default {
       const defaultOptions = config.getLLMDefaultConfig();
       if (options.history)
         defaultOptions.presetSettings.history = options.history;
-      if (options.tools.length > 0)
-            debugger
+      if (options.tools?.length > 0)
         defaultOptions.toolCallSettings.tools = config.getValidTools(
           options.tools,
         );
