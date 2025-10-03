@@ -639,16 +639,10 @@ export default class Config {
         }
       });
     }
-
-    const validToolNames = [...availableToolNames].filter((name) => {
-      for (const toolName of selectedToolNames) {
-        if (name.includes(toolName)) {
-          return true;
-        } else {
-          return false;
-        }
-      }
-    });
+    
+    const validToolNames = selectedToolNames.filter(toolName =>{
+      return availableToolNames.has(toolName);
+    })
 
     if (validToolNames.length < selectedToolNames.length) {
       const invalidTools = selectedToolNames.filter(
@@ -673,13 +667,7 @@ export default class Config {
     }
 
     // 创建深拷贝以避免修改原始对象
-    let verifiedConfig;
-    try {
-      verifiedConfig = JSON.parse(JSON.stringify(config));
-    } catch (e) {
-      console.error("深拷贝配置失败 (getVerifiedLLMConfig):", e);
-      return config; // 返回原始配置或进行错误处理
-    }
+    let verifiedConfig = JSON.parse(JSON.stringify(config));
 
     this._mergeDefaultsRecursive(verifiedConfig, this.LLMDefaultConfig);
 
@@ -688,9 +676,9 @@ export default class Config {
       verifiedConfig.toolCallSettings &&
       Array.isArray(verifiedConfig.toolCallSettings.tools)
     ) {
-      verifiedConfig.toolCallSettings.tools = this.getValidTools(
-        verifiedConfig.toolCallSettings.tools
-      );
+       verifiedConfig.toolCallSettings.tools = this.getValidTools(
+         verifiedConfig.toolCallSettings.tools
+       );
     } else if (verifiedConfig.toolCallSettings) {
       // 如果 toolCallSettings 存在但 tools 不存在或不是数组，则设置为空数组
       verifiedConfig.toolCallSettings.tools = [];
@@ -706,7 +694,7 @@ export default class Config {
    */
   async loadllmTools() {
     try {
-      const response = await fetch("/api/openai/tools"); // 示例端点
+      const response = await fetch("/api/openai/tools");
       if (!response.ok) {
         throw new Error(
           `请求 LLM 工具失败: ${response.status} ${response.statusText}`

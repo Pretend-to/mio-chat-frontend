@@ -290,7 +290,6 @@ export default class Contactor extends EventEmmiter {
   _getImagePrompt(imageElms) {
     const start = "\n以下是用户所上传的图片链接：\n";
     const result =  start + imageElms.map((elm)=>elm.content).join("\n");
-    debugger
     return result
   }
 
@@ -381,8 +380,6 @@ export default class Contactor extends EventEmmiter {
       const imageElm = subArray.filter((elm) => elm._content_type == "image");
       const fileElm = subArray.filter((elm) => elm._content_type == "file");
       const filePrompt = fileElm.length > 0 ? this._getFilePrompt(fileElm) : "";
-      debugger
-      console.log(imageElm);
       const imagePrompt = imageElm.length > 0 ? this._getImagePrompt(imageElm) : "";
     
       let message = null;

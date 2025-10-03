@@ -466,6 +466,7 @@ export default {
       const activeTools = this.localAllLLMTools.flatMap((plugin) =>
         plugin.tools.filter((tool) => tool.enabled).map((tool) => tool.name),
       );
+      console.log("Active tools:", activeTools);
       newOptions.toolCallSettings.tools = activeTools;
 
       if (!newOptions.extraSettings) newOptions.extraSettings = {};
