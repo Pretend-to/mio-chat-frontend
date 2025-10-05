@@ -1,33 +1,33 @@
-div.md-editor p {
+/* mdpreviewer */
+
+.mio-previewer {
+  padding: 0.2rem;
+  background-color: transparent;
+  overflow-x: auto;
+}
+
+.mio-previewer p {
   font-size: 14px;
   line-height: 1.6;
   margin: 0;
   padding: 0.2rem 0;
 }
 
-.md-editor-preview-wrapper {
-  position: relative;
-  flex: 1;
-  box-sizing: border-box;
-  overflow: auto;
-  padding: 0 0;
-}
-
-.md-editor-preview-wrapper * {
+.mio-previewer * {
   user-select: text;
 }
 
-.message-body#user .md-editor h1,
-.message-body#user .md-editor h2,
-.message-body#user .md-editor h3,
-.message-body#user .md-editor h4,
-.message-body#user .md-editor h5,
-.message-body#user .md-editor h6,
-.message-body#user .md-editor li,
-.message-body#user .md-editor ul,
-.message-body#user .md-editor p {
+.message-body#user .mio-previewer h1,
+.message-body#user .mio-previewer h2,
+.message-body#user .mio-previewer h3,
+.message-body#user .mio-previewer h4,
+.message-body#user .mio-previewer h5,
+.message-body#user .mio-previewer h6,
+.message-body#user .mio-previewer li,
+.message-body#user .mio-previewer ul,
+.message-body#user .mio-previewer p {
   color: aliceblue;
-  background-color: rgb(0, 153, 255);
+  background-color: transparent;
 }
 
 figure {
@@ -76,11 +76,24 @@ figure {
   --md-theme-code-inline-bg-color: rgba(133, 206, 255, 0.562);
 }
 
-.message-container iframe {
+.mio-previewer .iframe-wrapper {
   width: 100%;
   height: 36rem;
   border: 0px;
   resize: both;
+  max-height: none;
+  min-width: none;
+}
+
+.pending .mio-previewer > p:last-child,
+.pending .mio-previewer > h1:last-child,
+.pending .mio-previewer > h2:last-child,
+.pending .mio-previewer > h3:last-child,
+.pending .mio-previewer > ul:last-child > li:last-child,
+.pending .mio-previewer > ol:last-child > li:last-child {
+  display: inline;
+  mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 80%, rgba(0, 0, 0, 0));
+  -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 80%, rgba(0, 0, 0, 0));
 }
 
 .message-body#user a {
@@ -107,5 +120,11 @@ figure {
   }
   to {
     transform: scale(0.5); /* 最终大小：0.6rem (0.6/1.25=0.48) */
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .mio-previewer.markdown-body , [data-theme="dark"] {
+    --fgColor-default: black;
   }
 }

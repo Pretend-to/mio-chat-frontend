@@ -1,18 +1,20 @@
 <script>
-import { MdPreview } from "md-editor-v3";
 import ForwardMsg from "@/components/ForwardMsg.vue";
 import InputEditor from "@/components/InputEditor.vue";
 import FileBlock from "@/components/FileBlock.vue";
 import ToolCallBar from "@/components/ToolCallBar.vue";
 import ReasonBlock from "@/components/ReasonBlock.vue";
 import ContextMenu from "@/components/ContextMenu.vue";
+import MdRenderer from "mio-previewer";
+import { mermaidPlugin, codeBlockPlugin, cursorPlugin } from 'mio-previewer/plugins/custom';
+import { katexPlugin } from 'mio-previewer/plugins/markdown-it';
 import "emoji-picker-element";
 import html2canvas from "html2canvas";
 import { client } from "@/lib/runtime.js";
 
 export default {
   components: {
-    MdPreview,
+    MdRenderer,
     ContextMenu,
     ForwardMsg,
     InputEditor,
@@ -63,6 +65,18 @@ export default {
       });
       contactor = client.getContactor(defaultId);
     }
+    const mioPlugins = [{
+      plugin: codeBlockPlugin,
+    },
+    {
+      plugin: mermaidPlugin,
+    },
+    {
+      plugin: cursorPlugin,
+      options: {
+        shape: 'circle'
+      }
+    }]
 
     return {
       scroll,
@@ -94,6 +108,8 @@ export default {
       inputBarTop: 0,
       clearMessageTip: "以上的对话记录已清除",
       loadingIcon: "<span id='message-loading-icon'></span>",
+      katexPlugin,
+      mioPlugins
     };
   },
   computed: {
@@ -757,7 +773,7 @@ export default {
               </div>
             </div>
             <div
-              class="content"
+              :class="['content', item.status]"
               @mouseup="handleMouseUp"
               @contextmenu="showMessageMenu($event, index)"
             >
@@ -766,7 +782,7 @@ export default {
                 :key="elmIndex"
                 class="inner-content"
               >
-                <MdPreview
+                <!-- <MdPreview
                   v-if="element.type === 'text'"
                   :no-img-zoom-in="false"
                   preview-theme="github"
@@ -777,6 +793,16 @@ export default {
                       ? element.data.text + loadingIcon
                       : element.data.text
                   "
+                /> -->
+                <MdRenderer
+                  v-if="element.type === 'text'"
+                  :md="element.data.text"
+                  :isStreaming="
+                    ['pending', 'retrying'].includes(item.status) &&
+                    item.content.length - 1 === elmIndex
+                  "
+                  :custom-plugins="mioPlugins"
+                  :markdown-it-plugins="[{plugin: katexPlugin}]"
                 />
                 <el-image
                   v-else-if="element.type === 'image'"
@@ -791,10 +817,9 @@ export default {
                   loading="lazy"
                   fit="contain"
                 />
-                <MdPreview
+                <MdRenderer
                   v-else-if="element.type === 'reply'"
-                  preview-theme="github"
-                  :model-value="getReplyText(element.data.id)"
+                  :md="getReplyText(element.data.id)"
                 />
                 <ForwardMsg
                   v-else-if="element.type === 'nodes'"
