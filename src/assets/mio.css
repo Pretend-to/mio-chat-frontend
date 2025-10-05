@@ -85,7 +85,7 @@ figure {
   min-width: none;
 }
 
-.pending .mio-previewer > p:last-child,
+/* .pending .mio-previewer > p:last-child,
 .pending .mio-previewer > h1:last-child,
 .pending .mio-previewer > h2:last-child,
 .pending .mio-previewer > h3:last-child,
@@ -94,7 +94,7 @@ figure {
   display: inline;
   mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 80%, rgba(0, 0, 0, 0));
   -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 80%, rgba(0, 0, 0, 0));
-}
+} */
 
 .message-body#user a {
   color: #ffffff;

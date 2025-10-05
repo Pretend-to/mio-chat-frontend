@@ -6,7 +6,7 @@ import ToolCallBar from "@/components/ToolCallBar.vue";
 import ReasonBlock from "@/components/ReasonBlock.vue";
 import ContextMenu from "@/components/ContextMenu.vue";
 import MdRenderer from "mio-previewer";
-import { mermaidPlugin, codeBlockPlugin, cursorPlugin } from 'mio-previewer/plugins/custom';
+import { mermaidPlugin, codeBlockPlugin, cursorPlugin, imageViewerPlugin } from 'mio-previewer/plugins/custom';
 import { katexPlugin } from 'mio-previewer/plugins/markdown-it';
 import "emoji-picker-element";
 import html2canvas from "html2canvas";
@@ -76,7 +76,11 @@ export default {
       options: {
         shape: 'circle'
       }
-    }]
+    },
+    {
+      plugin: imageViewerPlugin,
+    }
+  ]
 
     return {
       scroll,

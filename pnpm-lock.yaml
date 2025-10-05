@@ -27,8 +27,8 @@ importers:
         specifier: ^5.3.2
         version: 5.5.0(vue@3.5.13)
       mio-previewer:
-        specifier: ^0.1.8
-        version: 0.1.8(vue@3.5.13)
+        specifier: ^0.2.0
+        version: 0.2.0(vue@3.5.13)
       rollup-plugin-visualizer:
         specifier: ^5.14.0
         version: 5.14.0(rollup@4.40.0)
@@ -2922,8 +2922,8 @@ packages:
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
 
-  mio-previewer@0.1.8:
-    resolution: {integrity: sha512-la136iydDlD6tzEITs8JXXno68/J+XuZ8b9T0McneNaoWSgUBIxkrSoGRVFbzgNLlPrO3SsoQeb6fzsu2tHoSA==}
+  mio-previewer@0.2.0:
+    resolution: {integrity: sha512-DFWpKde4GL7sxQ2g7H3fDHCUhMKNg3Tt3fzLFZkal1Sg8m0YReYu3wSlnsgFSGIQfyKGvdPxaMiNfTkRXYzERQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
       vue: ^3
@@ -3751,6 +3751,9 @@ packages:
 
   validate-npm-package-license@3.0.4:
     resolution: {integrity: sha512-DpKm2Ui/xN7/HQKCtpZxoRWBhZ9Z0kqtygG8XCgNQ8ZlDnxuQmWhj566j8fN4Cu3/JmbhsDo7fcAJq4s9h27Ew==}
+
+  viewerjs@1.11.7:
+    resolution: {integrity: sha512-0JuVqOmL5v1jmEAlG5EBDR3XquxY8DWFQbFMprOXgaBB0F7Q/X9xWdEaQc59D8xzwkdUgXEMSSknTpriq95igg==}
 
   vite-hot-client@2.0.4:
     resolution: {integrity: sha512-W9LOGAyGMrbGArYJN4LBCdOC5+Zwh7dHvOHC0KmGKkJhsOzaKbpo/jEjpPKVHIW0/jBWj8RZG0NUxfgA8BxgAg==}
@@ -7184,7 +7187,7 @@ snapshots:
 
   minimist@1.2.8: {}
 
-  mio-previewer@0.1.8(vue@3.5.13):
+  mio-previewer@0.2.0(vue@3.5.13):
     dependencies:
       github-markdown-css: 5.8.1
       htmlparser2: 10.0.0
@@ -7194,6 +7197,7 @@ snapshots:
       markdown-it-katex: 2.0.3
       mermaid: 11.12.0
       prismjs: 1.30.0
+      viewerjs: 1.11.7
       vue: 3.5.13
     transitivePeerDependencies:
       - supports-color
@@ -7963,6 +7967,8 @@ snapshots:
     dependencies:
       spdx-correct: 3.2.0
       spdx-expression-parse: 3.0.1
+
+  viewerjs@1.11.7: {}
 
   vite-hot-client@2.0.4(vite@5.4.18(@types/node@24.6.2)(sass@1.92.0)(terser@5.44.0)):
     dependencies:
