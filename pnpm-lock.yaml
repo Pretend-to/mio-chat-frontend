@@ -27,8 +27,8 @@ importers:
         specifier: ^5.3.2
         version: 5.5.0(vue@3.5.13)
       mio-previewer:
-        specifier: ^0.2.3
-        version: 0.2.3(vue@3.5.13)
+        specifier: ^0.2.4
+        version: 0.2.4(vue@3.5.13)
       rollup-plugin-visualizer:
         specifier: ^5.14.0
         version: 5.14.0(rollup@4.40.0)
@@ -2922,8 +2922,8 @@ packages:
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
 
-  mio-previewer@0.2.3:
-    resolution: {integrity: sha512-6blpXkCqsbZf5pshBNkS0DpWiIBmT2ZCimtZRJo5N6MHuO+GA7y3Km8jYG87MGADtS487y7OPhBN39IW5KNATg==}
+  mio-previewer@0.2.4:
+    resolution: {integrity: sha512-yOCA9snHE7MyAyWl+Pvpi+0oF9UhkQdsZNRgOHPVpT1DVn4kdUG4Rd63LxLld4r/r4Spk+Whzm1oAPBC1hBJPA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
       vue: ^3
@@ -7187,7 +7187,7 @@ snapshots:
 
   minimist@1.2.8: {}
 
-  mio-previewer@0.2.3(vue@3.5.13):
+  mio-previewer@0.2.4(vue@3.5.13):
     dependencies:
       github-markdown-css: 5.8.1
       htmlparser2: 10.0.0
