@@ -6,7 +6,6 @@
 
 import "./assets/global.sass";
 import "element-plus/dist/index.css";
-import "md-editor-v3/lib/style.css";
 import "mio-previewer/style.css";
 import "./assets/mio.css";
 
