@@ -127,4 +127,7 @@ figure {
   .mio-previewer.markdown-body , [data-theme="dark"] {
     --fgColor-default: black;
   }
+  .mio-previewer.markdown-body table, [data-theme="dark"] {
+    color: #e3e3e3;
+  }
 }

@@ -43,11 +43,9 @@
               class="content"
             >
               <div>
-                <MdPreview
+                <MdRenderer
                   v-if="elm.type === 'text'"
-                  preview-theme="github"
-                  editor-id="preview-only"
-                  :model-value="elm.data.text"
+                  :md="elm.data.text"
                 />
                 <el-image
                   v-else-if="elm.type === 'image'"
@@ -67,11 +65,9 @@
                   :contactor="activeContactor"
                   :messages="elm.data.messages"
                 />
-                <MdPreview
+                <MdRenderer
                   v-else
-                  preview-theme="github"
-                  editor-id="preview-only"
-                  :model-value="`尚未支持的消息类型：${elm.type}`"
+                  :md="`尚未支持的消息类型：${elm.type}`"
                 />
               </div>
             </div>
@@ -83,14 +79,14 @@
 </template>
 
 <script>
-import { MdPreview } from "md-editor-v3";
+import MdRenderer from "mio-previewer";
 import { client } from "@/lib/runtime.js";
 import displayButtons from "@/components/DisplayButtons.vue";
 
 export default {
   name: "ForwardMsg",
   components: {
-    MdPreview,
+    MdRenderer,
     displayButtons,
   },
   props: {
