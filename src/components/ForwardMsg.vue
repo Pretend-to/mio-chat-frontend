@@ -46,6 +46,7 @@
                 <MdRenderer
                   v-if="elm.type === 'text'"
                   :md="elm.data.text"
+                  :theme="'github'"
                 />
                 <el-image
                   v-else-if="elm.type === 'image'"

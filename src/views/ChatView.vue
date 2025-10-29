@@ -801,6 +801,7 @@ export default {
                 <MdRenderer
                   v-if="element.type === 'text'"
                   :md="element.data.text"
+                  :theme="'github'"
                   :isStreaming="
                     ['pending', 'retrying'].includes(item.status) &&
                     item.content.length - 1 === elmIndex
