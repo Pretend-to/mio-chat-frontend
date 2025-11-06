@@ -38,7 +38,8 @@ export default defineConfig(({ mode }) => {
             ],
           },
         }),
-      visualizer({ open: true }),
+      // only open visualizer when ANALYZE env var is set
+      process.env.ANALYZE === 'true' && visualizer({ open: true }),
     ].filter(Boolean),
     resolve: {
       alias: {
@@ -60,9 +61,13 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (id.includes("node_modules")) {
-              if (/vue|@?vue[/\\]/.test(id)) return "vue-vendor";
-              if (/emoji-picker/.test(id)) return "emoji";
-              return "vendor";
+              if (/node_modules\/.pnpm\/.+element-plus/.test(id) || /element-plus/.test(id)) return "vendor_element_plus";
+              if (/mio-previewer/.test(id) || /md-editor-v3/.test(id)) return "vendor_editor_preview";
+              if (/socket.io-client/.test(id)) return "vendor_socketio";
+              if (/emoji-picker/.test(id) || /emoji-picker-element/.test(id)) return "vendor_emoji";
+              if (/vue|@?vue[/\\]/.test(id)) return "vendor_vue";
+              // fall back to vendor misc
+              return "vendor_misc";
             }
             if (id.includes("src/")) {
               if (id.includes("components/")) return "components";

@@ -1,12 +1,12 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { client } from "@/lib/runtime.js";
 import { ElMessage } from "element-plus";
-import ChatView from "../views/ChatView.vue";
-import HomeView from "../views/HomeView.vue";
-import ProfileView from "../views/ProfileView.vue";
-import SettingsView from "../views/SettingsView.vue";
-import AuthView from "../views/AuthView.vue";
-import BlankView from "../views/BlankView.vue";
+const ChatView = () => import("../views/ChatView.vue");
+const HomeView = () => import("../views/HomeView.vue");
+const ProfileView = () => import("../views/ProfileView.vue");
+const SettingsView = () => import("../views/SettingsView.vue");
+const AuthView = () => import("../views/AuthView.vue");
+const BlankView = () => import("../views/BlankView.vue");
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
