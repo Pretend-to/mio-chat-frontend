@@ -27,7 +27,7 @@
       <button
         ref="show-extra-info"
         :class="{ active: showExtraInfo, 'extra-info-button': true }"
-        @click="showExtraInfo = !showExtraInfo"
+        @click="toggleExtraInfo"
       >
         <svg
           t="1731677922196"
@@ -46,23 +46,42 @@
         </svg>
       </button>
     </div>
-    <div :class="{ active: showExtraInfo, 'extra-info-bar': true }">
-      <div class="extra-detail">
-        <div class="detail-params">
-          <div class="detail-title">参数</div>
-          <div class="detail-content">
-            {{ toolCall.parameters }}
+    <teleport to="body">
+      <div
+        v-if="showExtraInfo"
+        ref="teleportContent"
+        class="extra-info-bar"
+        :class="{ active: showExtraInfo, upward: openUp }"
+        :style="teleportStyle"
+        @click.stop
+      >
+        <div class="extra-detail">
+          <div class="detail-params">
+            <div class="detail-title">
+              <span>参数</span>
+              <button class="copy-btn" @click="copyParameters" title="复制参数">
+                <i class="iconfont fuzhi" title="复制参数"></i>
+              </button>
+            </div>
+            <div class="detail-content">
+              {{ toolCall.parameters }}
+            </div>
           </div>
-        </div>
 
-        <div class="detail-result">
-          <div class="detail-title">返回值</div>
-          <div class="detail-content">
-            {{ toolCall.result }}
+          <div class="detail-result">
+            <div class="detail-title">
+              <span>返回值</span>
+              <button class="copy-btn" @click="copyResult" title="复制返回值">
+                <i class="iconfont fuzhi" title="复制返回值"></i>
+              </button>
+            </div>
+            <div class="detail-content">
+              {{ toolCall.result }}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </teleport>
   </div>
 </template>
 
@@ -77,6 +96,8 @@ export default {
   data() {
     return {
       showExtraInfo: false,
+      teleportStyle: {},
+      openUp: false,
     };
   },
   computed: {
@@ -100,6 +121,109 @@ export default {
     },
   },
   mounted() {},
+  methods: {
+    async copyToClipboard(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        // element-plus / global $message is used elsewhere in the project
+        if (this.$message) this.$message({ message: "已复制到剪贴板", type: "success" });
+      } catch (e) {
+        if (this.$message) this.$message({ message: "复制失败", type: "error" });
+      }
+    },
+    copyParameters() {
+      const p = this.toolCall.parameters;
+      const text = typeof p === "string" ? p : JSON.stringify(p, null, 2);
+      this.copyToClipboard(text);
+    },
+    copyResult() {
+      const r = this.toolCall.result;
+      const text = typeof r === "string" ? r : JSON.stringify(r, null, 2);
+      this.copyToClipboard(text);
+    },
+    toggleExtraInfo(event) {
+      this.showExtraInfo = !this.showExtraInfo;
+      if (this.showExtraInfo) {
+        this.positionTeleport();
+        // attach global listener to detect outside click
+        window.addEventListener("resize", this.positionTeleport);
+        document.addEventListener("click", this.onDocClick);
+      } else {
+        window.removeEventListener("resize", this.positionTeleport);
+        document.removeEventListener("click", this.onDocClick);
+      }
+    },
+    onDocClick(e) {
+      // if clicked outside component root and teleport content, close
+      const root = this.$el;
+      const t = this.$refs.teleportContent;
+      if (root && !root.contains(e.target) && t && !t.contains(e.target)) {
+        this.showExtraInfo = false;
+        window.removeEventListener("resize", this.positionTeleport);
+        document.removeEventListener("click", this.onDocClick);
+      }
+    },
+    positionTeleport() {
+      // Compute root position (tool-call-bar) and place teleport content below by default
+      const root = this.$el;
+      if (!root) return;
+      const rootRect = root.getBoundingClientRect();
+
+      // left align with the left edge of the component
+      const left = Math.max(8, rootRect.left);
+      const initialTop = rootRect.bottom + 8;
+
+      // set a temporary style so the element renders, then measure
+      this.teleportStyle = {
+        position: "fixed",
+        top: initialTop + "px",
+        left: left + "px",
+        minWidth: rootRect.width + "px",
+        zIndex: 10000,
+      };
+
+      this.$nextTick(() => {
+        const content = this.$refs.teleportContent;
+        if (!content) return;
+        const contentRect = content.getBoundingClientRect();
+        const contentHeight = contentRect.height;
+        const contentWidth = contentRect.width;
+
+        // recompute left to avoid overflow on the right
+        let finalLeft = left;
+        if (finalLeft + contentWidth + 8 > window.innerWidth) {
+          finalLeft = Math.max(8, window.innerWidth - contentWidth - 8);
+        }
+
+        // decide upward or downward based on available space below
+        if (rootRect.bottom + contentHeight + 12 > window.innerHeight) {
+          // open upwards
+          const topUp = rootRect.top - contentHeight - 8;
+          this.openUp = true;
+          this.teleportStyle = {
+            position: "fixed",
+            top: topUp + "px",
+            left: finalLeft + "px",
+            minWidth: rootRect.width + "px",
+            zIndex: 10000,
+          };
+        } else {
+          this.openUp = false;
+          this.teleportStyle = {
+            position: "fixed",
+            top: initialTop + "px",
+            left: finalLeft + "px",
+            minWidth: rootRect.width + "px",
+            zIndex: 10000,
+          };
+        }
+      });
+    },
+  },
+  beforeUnmount() {
+    window.removeEventListener("resize", this.positionTeleport);
+    document.removeEventListener("click", this.onDocClick);
+  },
 };
 </script>
 <style scoped>
@@ -108,16 +232,15 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 20rem;
-  max-height: 25rem;
   flex-grow: 1;
   padding-bottom: 1rem;
+  width: 20rem;
 }
 
 .detail-params,
 .detail-result {
   margin-top: 1rem;
-  width: calc(100% - 2rem);
+  width: 18rem;
   background-color: #fff;
   border-radius: 0.5rem;
   display: flex;
@@ -132,6 +255,9 @@ export default {
   flex-basis: 2rem;
   width: 90%;
   border-bottom: 1px solid #5c5c5c;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .detail-content {
@@ -140,6 +266,10 @@ export default {
   font-size: 0.8rem;
   color: #5c5c5c;
   width: 90%;
+  /* allow wrapping and preserve newlines from formatted JSON/text */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   overflow-y: auto;
   overflow-x: hidden;
   max-height: 8rem;
@@ -147,11 +277,9 @@ export default {
 }
 
 .extra-info-bar {
-  position: absolute;
   overflow: hidden;
   z-index: 2;
   max-height: 0px;
-  transition: 0.3s;
   top: 4rem;
   position: absolute;
   background-color: #f5f5f5;
@@ -198,6 +326,21 @@ button.extra-info-button.active {
 button.extra-info-button:hover svg {
   transition: transform 0.3s ease;
   transform: scale(1.2);
+}
+
+.copy-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0.15rem 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #5c5c5c;
+}
+
+.copy-btn:hover {
+  color: #09f;
 }
 
 .tool-name {
