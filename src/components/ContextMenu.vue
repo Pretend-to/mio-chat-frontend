@@ -1,5 +1,5 @@
 <template>
-  <div id="message-menu">
+  <div id="message-menu" :class="{ 'expand-up': isUp, 'expand-down': !isUp }">
     <template v-if="type === 'friend'">
       <div @click.stop="enterChat">
         <i class="iconfont chat"></i>
@@ -71,8 +71,24 @@ export default {
       default: "",
     },
   },
+  data() {
+    return {
+      isUp: false,
+    };
+  },
   emits: ["close", "message-option"], //显式声明emit的事件
   methods: {
+    updateArrow() {
+      // 判断根元素是否通过 inline style 使用 bottom 定位（表示向上展开）
+      const el = this.$el;
+      if (!el) return;
+      const hasBottom = el.style && el.style.bottom && el.style.bottom !== "";
+      this.isUp = !!hasBottom;
+    },
+    onWindowResize() {
+      // 重新计算三角位置（样式由 CSS 控制，这里主要保持 isUp 更新）
+      this.updateArrow();
+    },
     async copySeletedImage() {
       this.$emit("close");
       try {
@@ -211,6 +227,22 @@ export default {
       }
     },
   },
+  mounted() {
+    // 初次渲染后根据 inline style 判断展开方向
+    this.$nextTick(() => {
+      this.updateArrow();
+    });
+    window.addEventListener("resize", this.onWindowResize);
+  },
+  updated() {
+    // 当父组件改变 inline style（top/bottom）时更新箭头方向
+    this.$nextTick(() => {
+      this.updateArrow();
+    });
+  },
+  beforeUnmount() {
+    window.removeEventListener("resize", this.onWindowResize);
+  },
 };
 </script>
 <style lang="sass" scoped>
@@ -237,7 +269,6 @@ export default {
         max-width: 16rem
         background-color: rgba(40, 44, 52, 0.85)
         border-radius: 1rem
-
         left: 50%
         transform: translateX(-50%)
         
@@ -307,4 +338,34 @@ export default {
             color: rgba(255, 255, 255, 0.8)
             line-height: 1.2
             word-break: break-all
+
+    &.expand-down
+      // 当向下展开，三角在顶部居中，指向触发点
+      &::before
+        content: ''
+        position: absolute
+        top: -6px
+        left: 50%
+        transform: translateX(-50%)
+        width: 0
+        height: 0
+        border-left: 6px solid transparent
+        border-right: 6px solid transparent
+        // 与移动端菜单主体保持一致的背景色
+        border-bottom: 6px solid rgba(40, 44, 52, 0.85)
+  
+    &.expand-up
+      // 当向上展开，三角在底部居中，指向触发点
+      &::after
+        content: ''
+        position: absolute
+        bottom: -6px
+        left: 50%
+        transform: translateX(-50%)
+        width: 0
+        height: 0
+        border-left: 6px solid transparent
+        border-right: 6px solid transparent
+        // 与移动端菜单主体保持一致的背景色
+        border-top: 6px solid rgba(40, 44, 52, 0.85)
 </style>

@@ -303,8 +303,6 @@ export default {
       type="friend"
       :message="selectedFriend"
       :style="{
-        position: 'fixed',
-        left: menuX + 'px',
         top: menuY + 'px',
       }"
       @message-option="handleFriendOption"
