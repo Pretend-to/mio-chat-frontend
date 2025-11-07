@@ -542,7 +542,7 @@ export default {
     getReplyText(id) {
       let content = "";
       const message = this.activeContactor.messageChain.find(
-        (item) => item.id === id,
+        (item) => item.id === id || String(item.id) === String(id),
       );
       if (message) {
         message.content.forEach((element) => {
@@ -552,11 +552,18 @@ export default {
             content += "[图片]";
           }
         });
-        if (content.length > 20) {
-          return `> ${content.substr(0, 20)}...`;
-        } else {
-          return `> ${content}`;
-        }
+        // if (content.length > 20) {
+        //   return `${content.substr(0, 20)}...`;
+        // } else {
+        //   return `${content}`;
+        // }
+        return content.trim().slice(0, 20);
+      } else {
+        console.log("用户引用的消息不存在");
+        // 打印消息列表和索引的id
+        console.log(this.activeContactor.messageChain);
+        console.log("引用的消息id：" + id);
+        return "[消息已删除] ";
       }
     },
     imageLoaded() {
@@ -822,10 +829,16 @@ export default {
                   loading="lazy"
                   fit="contain"
                 />
-                <MdRenderer
+                <!-- <MdRenderer
                   v-else-if="element.type === 'reply'"
                   :md="getReplyText(element.data.id)"
-                />
+                /> -->
+                <div
+                  v-else-if="element.type === 'reply'"
+                  class="reply-block"
+                >
+                  {{ getReplyText(element.data.id) }}
+                </div>
                 <ForwardMsg
                   v-else-if="element.type === 'nodes'"
                   :contactor="activeContactor"

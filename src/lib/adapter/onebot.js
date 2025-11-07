@@ -35,7 +35,7 @@ export default class Onebot extends Adapter {
       (element) => element.type !== "reply",
     );
     if (rplMessage.length > 0) {
-      midMessage.push(rplMessage[0]);
+      midMessage.unshift(rplMessage[0]);
     }
 
     const webMessage = {
