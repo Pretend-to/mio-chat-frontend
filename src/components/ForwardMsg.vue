@@ -47,6 +47,7 @@
                   v-if="elm.type === 'text'"
                   :md="elm.data.text"
                   :theme="'github'"
+                  :markdown-it-options="{breaks: true}"
                 />
                 <el-image
                   v-else-if="elm.type === 'image'"

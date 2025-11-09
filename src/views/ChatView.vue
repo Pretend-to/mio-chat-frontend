@@ -793,18 +793,6 @@ export default {
                 :key="elmIndex"
                 class="inner-content"
               >
-                <!-- <MdPreview
-                  v-if="element.type === 'text'"
-                  :no-img-zoom-in="false"
-                  preview-theme="github"
-                  :code-foldable="false"
-                  :model-value="
-                    ['pending', 'retrying'].includes(item.status) &&
-                    item.content.length - 1 === elmIndex
-                      ? element.data.text + loadingIcon
-                      : element.data.text
-                  "
-                /> -->
                 <MdRenderer
                   v-if="element.type === 'text'"
                   :md="element.data.text"
@@ -815,6 +803,7 @@ export default {
                   "
                   :custom-plugins="mioPlugins"
                   :markdown-it-plugins="[{plugin: katexPlugin}]"
+                  :markdown-it-options="{breaks: activeContactor.platform === 'onebot'}"
                 />
                 <el-image
                   v-else-if="element.type === 'image'"
