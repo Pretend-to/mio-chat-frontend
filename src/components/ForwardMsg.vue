@@ -49,7 +49,7 @@
                   :theme="'github'"
                   :markdown-it-options="{breaks: true}"
                 />
-                <el-image
+                <!-- <el-image
                   v-else-if="elm.type === 'image'"
                   :key="index"
                   style="margin: 8px 0; max-width: 20rem; border-radius: 1rem"
@@ -61,6 +61,13 @@
                   :preview-src-list="[elm.data.file]"
                   :initial-index="4"
                   fit="cover"
+                /> -->
+                <MdRenderer
+                  v-if="element.type === 'image'"
+                  :md="`![image](${element.data.file})`"
+                  :key="element.data.file"
+                  :custom-plugins="mioPlugins"
+                  :theme="'github'"
                 />
                 <ForwardMsg
                   v-else-if="elm.type === 'nodes'"
@@ -84,6 +91,7 @@
 import MdRenderer from "mio-previewer";
 import { client } from "@/lib/runtime.js";
 import displayButtons from "@/components/DisplayButtons.vue";
+import { el } from "element-plus/es/locales.mjs";
 
 export default {
   name: "ForwardMsg",

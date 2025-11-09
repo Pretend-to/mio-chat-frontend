@@ -519,7 +519,8 @@ export default class Contactor extends EventEmmiter {
    */
   delMessage(message_id) {
     for (let i = 0; i < this.messageChain.length; i++) {
-      if (this.messageChain[i].id === message_id) {
+      // 如果不是bot发的消息，跳过
+      if (this.messageChain[i].id === message_id && this.messageChain[i].role === 'other') {
         if (this.active) this.emit("delMessage", i);
         else this.acting.messageChain.splice(i, 1);
         this.makeSystemMessage(`${this.name}撤回了一条消息`);

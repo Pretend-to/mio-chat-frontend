@@ -805,23 +805,13 @@ export default {
                   :markdown-it-plugins="[{plugin: katexPlugin}]"
                   :markdown-it-options="{breaks: activeContactor.platform === 'onebot'}"
                 />
-                <el-image
-                  v-else-if="element.type === 'image'"
-                  :key="`${activeContactor.id}-${index}-${elmIndex}-${element.data.file}`"
-                  :src="element.data.file"
-                  :zoom-rate="1.2"
-                  :max-scale="7"
-                  :min-scale="0.2"
-                  :preview-src-list="[element.data.file]"
-                  :initial-index="4"
-                  @load="imageLoaded"
-                  loading="lazy"
-                  fit="contain"
+                <MdRenderer
+                  v-if="element.type === 'image'"
+                  :md="`![image](${element.data.file})`"
+                  :custom-plugins="mioPlugins"
+                  :theme="'github'"
+                  :key="element.data.file"
                 />
-                <!-- <MdRenderer
-                  v-else-if="element.type === 'reply'"
-                  :md="getReplyText(element.data.id)"
-                /> -->
                 <div
                   v-else-if="element.type === 'reply'"
                   class="reply-block"
