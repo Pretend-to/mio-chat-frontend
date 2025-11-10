@@ -63,7 +63,7 @@
                   fit="cover"
                 /> -->
                 <MdRenderer
-                  v-if="element.type === 'image'"
+                  v-else-if="element.type === 'image'"
                   :md="`![image](${element.data.file})`"
                   :key="element.data.file"
                   :custom-plugins="mioPlugins"
@@ -91,7 +91,7 @@
 import MdRenderer from "mio-previewer";
 import { client } from "@/lib/runtime.js";
 import displayButtons from "@/components/DisplayButtons.vue";
-import { el } from "element-plus/es/locales.mjs";
+import { imageViewerPlugin } from "mio-previewer/plugins/custom";
 
 export default {
   name: "ForwardMsg",
@@ -110,9 +110,15 @@ export default {
     },
   },
   data() {
+    const mioPlugins = [
+      {
+        plugin: imageViewerPlugin,
+      }
+    ]
     return {
       showBox: false,
       onPhone: false,
+      mioPlugins: mioPlugins,
     };
   },
   created() {
