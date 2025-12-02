@@ -340,32 +340,34 @@ export default {
             word-break: break-all
 
     &.expand-down
-      // 当向下展开，三角在顶部居中，指向触发点
-      &::before
-        content: ''
-        position: absolute
-        top: -6px
-        left: 50%
-        transform: translateX(-50%)
-        width: 0
-        height: 0
-        border-left: 6px solid transparent
-        border-right: 6px solid transparent
-        // 与移动端菜单主体保持一致的背景色
-        border-bottom: 6px solid rgba(40, 44, 52, 0.85)
+      @media (max-width: 768px)
+        // 当向下展开，三角在顶部居中，指向触发点（仅移动端）
+        &::before
+          content: ''
+          position: absolute
+          top: -6px
+          left: 50%
+          transform: translateX(-50%)
+          width: 0
+          height: 0
+          border-left: 6px solid transparent
+          border-right: 6px solid transparent
+          // 与移动端菜单主体保持一致的背景色
+          border-bottom: 6px solid rgba(40, 44, 52, 0.85)
   
     &.expand-up
-      // 当向上展开，三角在底部居中，指向触发点
-      &::after
-        content: ''
-        position: absolute
-        bottom: -6px
-        left: 50%
-        transform: translateX(-50%)
-        width: 0
-        height: 0
-        border-left: 6px solid transparent
-        border-right: 6px solid transparent
-        // 与移动端菜单主体保持一致的背景色
-        border-top: 6px solid rgba(40, 44, 52, 0.85)
+      @media (max-width: 768px)
+        // 当向上展开，三角在底部居中，指向触发点（仅移动端）
+        &::after
+          content: ''
+          position: absolute
+          bottom: -6px
+          left: 50%
+          transform: translateX(-50%)
+          width: 0
+          height: 0
+          border-left: 6px solid transparent
+          border-right: 6px solid transparent
+          // 与移动端菜单主体保持一致的背景色
+          border-top: 6px solid rgba(40, 44, 52, 0.85)
 </style>
