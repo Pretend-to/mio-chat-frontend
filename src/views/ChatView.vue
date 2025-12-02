@@ -11,6 +11,7 @@ import { katexPlugin } from 'mio-previewer/plugins/markdown-it';
 import "emoji-picker-element";
 import html2canvas from "html2canvas";
 import { client } from "@/lib/runtime.js";
+import { shareOrCopy } from "@/utils/tools.js";
 
 export default {
   components: {
@@ -80,7 +81,7 @@ export default {
     {
       plugin: imageViewerPlugin,
     }
-  ]
+    ]
 
     return {
       scroll,
@@ -157,20 +158,20 @@ export default {
     activeMessageChain() {
       return this.activeContactor.options.presetSettings?.opening
         ? [
-            {
-              role: "other",
-              content: [
-                {
-                  type: "text",
-                  data: {
-                    text: this.activeContactor.options.presetSettings.opening,
-                  },
+          {
+            role: "other",
+            content: [
+              {
+                type: "text",
+                data: {
+                  text: this.activeContactor.options.presetSettings.opening,
                 },
-              ],
-              time: this.activeContactor.createTime,
-            },
-            ...this.activeContactor.messageChain,
-          ]
+              },
+            ],
+            time: this.activeContactor.createTime,
+          },
+          ...this.activeContactor.messageChain,
+        ]
         : this.activeContactor.messageChain;
     },
   },
@@ -357,17 +358,24 @@ export default {
       });
     },
     async share() {
-      const shareResult = await client.shareContactor(this.activeContactor.id);
-      if (shareResult) {
-        this.$message({
-          message: "分享链接已复制",
-          type: "success",
-        });
-      } else {
-        this.$message({
-          message: "分享失败",
-          type: "error",
-        });
+      const shareResult = await client.shareContactor(
+        this.activeContactor.id,
+      );
+      if (shareResult && shareResult.shareUrl) {
+        const { shareUrl } = shareResult;
+        // 首先尝试调用分享api
+        const { success, message } = shareOrCopy(shareUrl);
+        if (success) {
+          this.$message({
+            message: message,
+            type: "success",
+          });
+        } else {
+          this.$message({
+            message: message,
+            type: "error",
+          });
+        }
       }
     },
     hasOpening() {
@@ -378,20 +386,20 @@ export default {
     getFullMessages() {
       return this.hasOpening()
         ? [
-            {
-              role: "other",
-              content: [
-                {
-                  type: "text",
-                  data: {
-                    text: this.activeContactor.options.presetSettings.opening,
-                  },
+          {
+            role: "other",
+            content: [
+              {
+                type: "text",
+                data: {
+                  text: this.activeContactor.options.presetSettings.opening,
                 },
-              ],
-              time: this.activeContactor.createTime,
-            },
-            ...this.activeContactor.messageChain,
-          ]
+              },
+            ],
+            time: this.activeContactor.createTime,
+          },
+          ...this.activeContactor.messageChain,
+        ]
         : this.activeContactor.messageChain;
     },
     showTime(index) {
@@ -722,59 +730,32 @@ export default {
         </li>
       </ul>
     </div>
-    <div
-      id="main-messages-window"
-      ref="chatWindow"
-      :class="{
-        'message-window': true,
-        preview: preview,
-      }"
-    >
-      <div
-        v-if="showRollDown"
-        id="roll-buttom-button"
-        :style="{ bottom: inputBarTop + 24 + 'px' }"
-        @click="toButtom(true)"
-      >
+    <div id="main-messages-window" ref="chatWindow" :class="{
+      'message-window': true,
+      preview: preview,
+    }">
+      <div v-if="showRollDown" id="roll-buttom-button" :style="{ bottom: inputBarTop + 24 + 'px' }"
+        @click="toButtom(true)">
         <i class="iconfont down1"></i>
       </div>
-      <ContextMenu
-        v-show="showMenu"
-        type="message"
-        :message="getseletedMessage()"
-        :seleted-text
-        :seleted-image
-        :style="getMenuStyle"
-        @message-option="handleMessageOption"
-        @close="showMenu = false"
-      />
-      <div
-        v-for="(item, index) of activeMessageChain"
-        :key="`${activeContactor.id}-${item.id}`"
-        ref="message"
-        class="message-container"
-      >
+      <ContextMenu v-show="showMenu" type="message" :message="getseletedMessage()" :seleted-text :seleted-image
+        :style="getMenuStyle" @message-option="handleMessageOption" @close="showMenu = false" />
+      <div v-for="(item, index) of activeMessageChain" :key="`${activeContactor.id}-${item.id}`" ref="message"
+        class="message-container">
         <div v-if="showTime(index).show" class="message-time">
           {{ showTime(index).time }}
         </div>
         <div :id="item.role" class="message-body">
           <div v-if="item.role !== 'mio_system'" class="avatar">
-            <img
-              v-if="item.role === 'other'"
-              :src="activeContactor.avatar"
-              :alt="activeContactor.name"
-              @click="toProfile"
-            />
+            <img v-if="item.role === 'other'" :src="activeContactor.avatar" :alt="activeContactor.name"
+              @click="toProfile" />
             <img v-else :src="client.avatar" :alt="client.name" />
           </div>
           <div v-if="item.role !== 'mio_system'" class="msg">
             <div class="wholename">
-              <div
-                v-if="
-                  item.role === 'other' ? activeContactor.title : client.title
-                "
-                class="title"
-              >
+              <div v-if="
+                item.role === 'other' ? activeContactor.title : client.title
+              " class="title">
                 {{
                   item.role === "other" ? activeContactor.title : client.title
                 }}
@@ -783,68 +764,29 @@ export default {
                 {{ item.role === "other" ? activeContactor.name : client.name }}
               </div>
             </div>
-            <div
-              :class="['content', item.status]"
-              @mouseup="handleMouseUp"
-              @contextmenu="showMessageMenu($event, index)"
-            >
-              <div
-                v-for="(element, elmIndex) of item.content"
-                :key="elmIndex"
-                class="inner-content"
-              >
-                <MdRenderer
-                  v-if="element.type === 'text'"
-                  :md="element.data.text"
-                  :theme="'github'"
-                  :isStreaming="
-                    ['pending', 'retrying'].includes(item.status) &&
-                    item.content.length - 1 === elmIndex
-                  "
-                  :custom-plugins="mioPlugins"
-                  :markdown-it-plugins="[{plugin: katexPlugin}]"
-                  :markdown-it-options="{breaks: activeContactor.platform === 'onebot'}"
-                />
-                <MdRenderer
-                  v-if="element.type === 'image'"
-                  :md="`![image](${element.data.file})`"
-                  :custom-plugins="mioPlugins"
-                  :theme="'github'"
-                  :key="element.data.file"
-                />
-                <div
-                  v-else-if="element.type === 'reply'"
-                  class="reply-block"
-                >
+            <div :class="['content', item.status]" @mouseup="handleMouseUp"
+              @contextmenu="showMessageMenu($event, index)">
+              <div v-for="(element, elmIndex) of item.content" :key="elmIndex" class="inner-content">
+                <MdRenderer v-if="element.type === 'text'" :md="element.data.text" :theme="'github'" :isStreaming="['pending', 'retrying'].includes(item.status) &&
+                  item.content.length - 1 === elmIndex
+                  " :custom-plugins="mioPlugins" :markdown-it-plugins="[{ plugin: katexPlugin }]"
+                  :markdown-it-options="{ breaks: activeContactor.platform === 'onebot' }" />
+                <MdRenderer v-if="element.type === 'image'" :md="`![image](${element.data.file})`"
+                  :custom-plugins="mioPlugins" :theme="'github'" :key="element.data.file" />
+                <div v-else-if="element.type === 'reply'" class="reply-block">
                   {{ getReplyText(element.data.id) }}
                 </div>
-                <ForwardMsg
-                  v-else-if="element.type === 'nodes'"
-                  :contactor="activeContactor"
-                  :messages="element.data.messages"
-                />
-                <FileBlock
-                  v-else-if="element.type === 'file'"
-                  :file-url="element.data.file"
-                />
+                <ForwardMsg v-else-if="element.type === 'nodes'" :contactor="activeContactor"
+                  :messages="element.data.messages" />
+                <FileBlock v-else-if="element.type === 'file'" :file-url="element.data.file" />
                 <span v-else-if="element.type === 'at'" />
-                <ReasonBlock
-                  v-else-if="element.type === 'reason'"
-                  :end-time="element.data.endTime"
-                  :start-time="element.data.startTime"
-                  :content="element.data.text"
-                />
-                <div
-                  v-else-if="element.type === 'blank'"
-                  class="blank-message"
-                  style="width: 10rem; height: 28.8px; position: relative"
-                >
+                <ReasonBlock v-else-if="element.type === 'reason'" :end-time="element.data.endTime"
+                  :start-time="element.data.startTime" :content="element.data.text" />
+                <div v-else-if="element.type === 'blank'" class="blank-message"
+                  style="width: 10rem; height: 28.8px; position: relative">
                   <span class="blank-loader"></span>
                 </div>
-                <ToolCallBar
-                  v-else-if="element.type === 'tool_call'"
-                  :tool-call="element.data"
-                />
+                <ToolCallBar v-else-if="element.type === 'tool_call'" :tool-call="element.data" />
               </div>
             </div>
           </div>
@@ -859,16 +801,8 @@ export default {
         </div>
       </div>
     </div>
-    <InputEditor
-      ref="inputEditor"
-      :active-contactor
-      :replied-message-id
-      @stroge="client.setLocalStorage()"
-      @set-model="setModel"
-      @clean-screen="cleanScreen"
-      @clean-history="cleanHistory"
-      @to-buttom="toButtom"
-    />
+    <InputEditor ref="inputEditor" :active-contactor :replied-message-id @stroge="client.setLocalStorage()"
+      @set-model="setModel" @clean-screen="cleanScreen" @clean-history="cleanHistory" @to-buttom="toButtom" />
   </div>
 </template>
 

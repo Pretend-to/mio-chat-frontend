@@ -1,6 +1,7 @@
 <script>
 import { client, config } from "@/lib/runtime.js";
-import AddContactor from "@/components/AddContactor.vue";
+import AddContactor from "@/components/AddContactor.vue"
+import { shareOrCopy } from "@/utils/tools.js";
 import ContextMenu from "@/components/ContextMenu.vue";
 
 export default {
@@ -203,16 +204,21 @@ export default {
           const shareResult = await client.shareContactor(
             this.selectedFriend.id,
           );
-          if (shareResult) {
-            this.$message({
-              message: "分享链接已复制",
-              type: "success",
-            });
-          } else {
-            this.$message({
-              message: "分享失败",
-              type: "error",
-            });
+          if (shareResult && shareResult.shareUrl) {
+            const { shareUrl } = shareResult;
+            // 首先尝试调用分享api
+            const { success, message } = shareOrCopy(shareUrl);
+            if (success) {
+              this.$message({
+                message: message,
+                type: "success",
+              });
+            } else {
+              this.$message({
+                message: message,
+                type: "error",
+              });
+            }
           }
           break;
         }
@@ -271,18 +277,9 @@ export default {
       </div>
     </div>
     <div class="people">
-      <div
-        v-for="(item, index) of sortedList"
-        :id="getId(item)"
-        :key="index"
-        class="lists"
-        @click="showChat(item.id)"
-        @contextmenu.prevent="showFriendContextMenu($event, item)"
-      >
-        <div
-          class="avatar"
-          :class="item.avatarPolicy == 1 ? 'custom' : 'model'"
-        >
+      <div v-for="(item, index) of sortedList" :id="getId(item)" :key="index" class="lists" @click="showChat(item.id)"
+        @contextmenu.prevent="showFriendContextMenu($event, item)">
+        <div class="avatar" :class="item.avatarPolicy == 1 ? 'custom' : 'model'">
           <img :src="item.avatar" :alt="item.name" />
         </div>
         <div class="info">
@@ -293,21 +290,10 @@ export default {
       </div>
     </div>
     <div class="resizer" @mousedown="startResize"></div>
-    <AddContactor
-      v-if="showAddWindow"
-      @close="showAddWindow = false"
-      @add-bot="addPresetContactor"
-    ></AddContactor>
-    <ContextMenu
-      v-if="showMenu"
-      type="friend"
-      :message="selectedFriend"
-      :style="{
-        top: menuY + 'px',
-      }"
-      @message-option="handleFriendOption"
-      @close="showMenu = false"
-    />
+    <AddContactor v-if="showAddWindow" @close="showAddWindow = false" @add-bot="addPresetContactor"></AddContactor>
+    <ContextMenu v-if="showMenu" type="friend" :message="selectedFriend" :style="{
+      top: menuY + 'px',
+    }" @message-option="handleFriendOption" @close="showMenu = false" />
   </div>
 </template>
 
@@ -322,14 +308,17 @@ export default {
   border-radius: 0.3125rem;
   z-index: 2;
 }
+
 #add-options li {
   display: flex;
   flex-direction: row-reverse;
   padding: 0.1rem 0.5rem;
 }
+
 #add-options li:hover {
   background-color: #f5f5f5;
 }
+
 #add-options ul {
   display: flex;
   flex-direction: column;
@@ -337,9 +326,11 @@ export default {
   height: 100%;
   box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.1);
 }
+
 #add-options button {
   background-color: transparent;
 }
+
 #friendlists {
   height: 100%;
   display: flex;
@@ -353,7 +344,8 @@ export default {
 .resizer {
   width: 5px;
   cursor: ew-resize;
-  background-color: transparent; /* 可视化的样式，你可以根据需求进行调整 */
+  background-color: transparent;
+  /* 可视化的样式，你可以根据需求进行调整 */
   position: absolute;
   right: 0;
   top: 0;
@@ -454,7 +446,7 @@ button#addcont {
   background-color: rgb(0, 153, 255);
 }
 
-.lists > .avatar {
+.lists>.avatar {
   flex-basis: 2.65rem;
   min-width: 2.65rem;
   height: 2.65rem;
@@ -463,12 +455,12 @@ button#addcont {
   background-color: white;
 }
 
-.avatar > img {
+.avatar>img {
   width: 100%;
   height: 100%;
 }
 
-.avatar.model > img {
+.avatar.model>img {
   scale: 0.9;
 }
 

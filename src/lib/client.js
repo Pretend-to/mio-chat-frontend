@@ -142,16 +142,6 @@ export default class Client extends EventEmitter {
   async shareContactor(id) {
     const uploadResult = await this.setOriginalContactor(id);
     if (uploadResult) {
-      const { previewImage, shareUrl } = uploadResult;
-      console.log(shareUrl);
-      console.log(previewImage);
-      // 拼接完整链接
-      const originalUrl = document.location.origin;
-      // 复制链接到剪贴板
-      const clipboard = navigator.clipboard;
-      if (clipboard) {
-        clipboard.writeText(originalUrl + shareUrl);
-      }
       return uploadResult;
     } else {
       return null;
