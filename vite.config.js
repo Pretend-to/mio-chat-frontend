@@ -24,6 +24,16 @@ export default defineConfig(({ mode }) => {
         threshold: 10240,
         disable: mode === "development",
       }),
+      viteCompression({
+        verbose: true,
+        threshold: 10240,
+        disable: mode === "development",
+        algorithm: "brotliCompress",
+        ext: ".br",
+        compressionOptions: {
+          level: 11,
+        },
+      }),
       mode !== "development" &&
         viteImagemin({
           gifsicle: { optimizationLevel: 5, interlaced: false },
@@ -62,7 +72,7 @@ export default defineConfig(({ mode }) => {
           manualChunks(id) {
             if (id.includes("node_modules")) {
               if (/node_modules\/.pnpm\/.+element-plus/.test(id) || /element-plus/.test(id)) return "vendor_element_plus";
-              if (/mio-previewer/.test(id) || /md-editor-v3/.test(id)) return "vendor_editor_preview";
+              if (/mio-previewer/.test(id)) return "vendor_editor_preview";
               if (/socket.io-client/.test(id)) return "vendor_socketio";
               if (/emoji-picker/.test(id) || /emoji-picker-element/.test(id)) return "vendor_emoji";
               if (/vue|@?vue[/\\]/.test(id)) return "vendor_vue";
