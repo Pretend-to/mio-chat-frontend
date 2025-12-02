@@ -360,6 +360,8 @@ export default {
   flex: 0 0 4rem;
   align-items: flex-end;
   -webkit-app-region: drag;
+  align-items: center;
+  padding: 0rem .5rem;
 }
 
 #main-search {
@@ -367,7 +369,7 @@ export default {
   margin-top: 0.1875rem;
   padding-left: 0.3125rem;
   height: 1.125rem;
-  background-color: transparent;
+  background-color: rgb(244, 244, 244);
   border: 0rem;
 }
 
@@ -388,18 +390,17 @@ button#searchButton {
   flex-grow: 1;
   flex-basis: 1rem;
   border-radius: 0.3125rem;
-  background-color: rgb(245 245, 245);
+  background: rgb(244, 244, 244);
   height: 2rem;
   display: flex;
-  padding: 0rem 0.5rem;
   align-items: center;
-  margin: 0 0 0.5rem 0.5rem;
+  padding-left: .5rem;
 }
 
 .bu-add {
   flex-basis: 2rem;
   font-size: 1rem;
-  margin: 0.5rem;
+  margin-left: 0.5rem;
   height: 2rem;
   position: relative;
 }
@@ -415,6 +416,7 @@ button#addcont {
   width: 100%;
   height: 100%;
   border: none;
+  background-color: rgb(244, 244, 244);
 }
 
 .lists {
