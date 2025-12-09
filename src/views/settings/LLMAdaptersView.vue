@@ -57,17 +57,13 @@
           </el-button>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="openai">
+              <el-dropdown-item
+                v-for="(instances, type) in configStore.adapters"
+                :key="type"
+                :command="type"
+              >
                 <el-icon><Connection /></el-icon>
-                OpenAI
-              </el-dropdown-item>
-              <el-dropdown-item command="gemini">
-                <el-icon><Connection /></el-icon>
-                Gemini
-              </el-dropdown-item>
-              <el-dropdown-item command="vertex">
-                <el-icon><Connection /></el-icon>
-                Vertex AI
+                {{ formatTypeLabel(type) }}
               </el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -75,131 +71,46 @@
       </div>
     </div>
 
-    <!-- 适配器列表 -->
+    <!-- 适配器列表（动态，根据 configStore.adapters 的字段呈现） -->
     <div class="adapters-container">
-      <!-- OpenAI -->
-      <div class="adapter-section">
+      <div
+        class="adapter-section"
+        v-for="(instances, type) in configStore.adapters"
+        :key="type"
+      >
         <div class="section-header">
           <div class="section-title">
-            <h2>OpenAI</h2>
-            <el-tag>{{ configStore.adapters.openai.length }} 个实例</el-tag>
+            <h2>{{ formatTypeLabel(type) }}</h2>
+            <el-tag>{{ instances.length }} 个实例</el-tag>
           </div>
           <el-button
             text
             type="primary"
             :icon="Plus"
-            @click="handleAddAdapter('openai')"
+            @click="handleAddAdapter(type)"
           >
             添加实例
           </el-button>
         </div>
-        
-        <div v-if="configStore.adapters.openai.length === 0" class="empty-state">
-          <el-empty description="暂无 OpenAI 实例">
-            <el-button type="primary" @click="handleAddAdapter('openai')">
-              添加 OpenAI 实例
-            </el-button>
-          </el-empty>
-        </div>
-        
-        <div v-else class="adapters-grid">
-          <adapter-card
-            v-for="(adapter, index) in configStore.adapters.openai"
-            :key="`openai-${index}`"
-            :adapter="adapter"
-            type="openai"
-            :index="index"
-            :models="getAdapterModels(adapter, 'openai', index)"
-            :selectable="true"
-            :is-selected="configStore.isAdapterSelected('openai', index)"
-            @edit="handleEdit"
-            @delete="handleDelete"
-            @refresh="handleRefresh"
-            @toggle="handleToggle"
-            @select="handleSelect"
-          />
-        </div>
-      </div>
 
-      <!-- Gemini -->
-      <div class="adapter-section">
-        <div class="section-header">
-          <div class="section-title">
-            <h2>Gemini</h2>
-            <el-tag>{{ configStore.adapters.gemini.length }} 个实例</el-tag>
-          </div>
-          <el-button
-            text
-            type="primary"
-            :icon="Plus"
-            @click="handleAddAdapter('gemini')"
-          >
-            添加实例
-          </el-button>
-        </div>
-        
-        <div v-if="configStore.adapters.gemini.length === 0" class="empty-state">
-          <el-empty description="暂无 Gemini 实例">
-            <el-button type="primary" @click="handleAddAdapter('gemini')">
-              添加 Gemini 实例
+        <div v-if="instances.length === 0" class="empty-state">
+          <el-empty :description="`暂无 ${formatTypeLabel(type)} 实例`">
+            <el-button type="primary" @click="handleAddAdapter(type)">
+              添加 {{ formatTypeLabel(type) }} 实例
             </el-button>
           </el-empty>
         </div>
-        
-        <div v-else class="adapters-grid">
-          <adapter-card
-            v-for="(adapter, index) in configStore.adapters.gemini"
-            :key="`gemini-${index}`"
-            :adapter="adapter"
-            type="gemini"
-            :index="index"
-            :models="getAdapterModels(adapter, 'gemini', index)"
-            :selectable="true"
-            :is-selected="configStore.isAdapterSelected('gemini', index)"
-            @edit="handleEdit"
-            @delete="handleDelete"
-            @refresh="handleRefresh"
-            @toggle="handleToggle"
-            @select="handleSelect"
-          />
-        </div>
-      </div>
 
-      <!-- Vertex AI -->
-      <div class="adapter-section">
-        <div class="section-header">
-          <div class="section-title">
-            <h2>Vertex AI</h2>
-            <el-tag>{{ configStore.adapters.vertex.length }} 个实例</el-tag>
-          </div>
-          <el-button
-            text
-            type="primary"
-            :icon="Plus"
-            @click="handleAddAdapter('vertex')"
-          >
-            添加实例
-          </el-button>
-        </div>
-        
-        <div v-if="configStore.adapters.vertex.length === 0" class="empty-state">
-          <el-empty description="暂无 Vertex AI 实例">
-            <el-button type="primary" @click="handleAddAdapter('vertex')">
-              添加 Vertex AI 实例
-            </el-button>
-          </el-empty>
-        </div>
-        
         <div v-else class="adapters-grid">
           <adapter-card
-            v-for="(adapter, index) in configStore.adapters.vertex"
-            :key="`vertex-${index}`"
+            v-for="(adapter, index) in instances"
+            :key="`${type}-${index}`"
             :adapter="adapter"
-            type="vertex"
+            :type="type"
             :index="index"
-            :models="getAdapterModels(adapter, 'vertex', index)"
+            :models="getAdapterModels(adapter, type, index)"
             :selectable="true"
-            :is-selected="configStore.isAdapterSelected('vertex', index)"
+            :is-selected="configStore.isAdapterSelected(type, index)"
             @edit="handleEdit"
             @delete="handleDelete"
             @refresh="handleRefresh"
@@ -256,6 +167,17 @@ const editorIndex = ref(-1);
 const getAdapterModels = (adapter, type, index) => {
   const providerName = adapter.name || `${type}-${index + 1}`;
   return configStore.models[providerName] || [];
+};
+
+// 将适配器类型格式化为友好显示名（已知类型映射，否则首字母大写）
+const formatTypeLabel = (type) => {
+  const map = {
+    openai: 'OpenAI',
+    gemini: 'Gemini',
+    vertex: 'Vertex AI'
+  };
+  if (map[type]) return map[type];
+  return type.charAt(0).toUpperCase() + type.slice(1);
 };
 
 // 添加适配器

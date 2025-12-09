@@ -32,8 +32,8 @@
         />
       </el-form-item>
 
-      <!-- 认证信息 - OpenAI / Gemini -->
-      <template v-if="type === 'openai' || type === 'gemini'">
+      <!-- 认证信息 - 非 Vertex（统一使用 API Key + Base URL） -->
+      <template v-if="type !== 'vertex'">
         <el-divider content-position="left">认证信息</el-divider>
         
         <el-form-item label="API Key" prop="api_key">
@@ -202,8 +202,7 @@ const props = defineProps({
   },
   type: {
     type: String,
-    required: true,
-    validator: (value) => ['openai', 'gemini', 'vertex'].includes(value)
+    required: true
   },
   adapter: {
     type: Object,
@@ -254,14 +253,20 @@ const modelConfig = ref({
 });
 
 // 对话框标题
-const dialogTitle = computed(() => {
-  const typeNames = {
+// 将适配器类型格式化为友好显示名
+const formatTypeLabel = (type) => {
+  const map = {
     openai: 'OpenAI',
     gemini: 'Gemini',
     vertex: 'Vertex AI'
   };
+  if (map[type]) return map[type];
+  return type ? type.charAt(0).toUpperCase() + type.slice(1) : '适配器';
+};
+
+const dialogTitle = computed(() => {
   const action = props.mode === 'add' ? '添加' : '编辑';
-  return `${action} ${typeNames[props.type]} 适配器实例`;
+  return `${action} ${formatTypeLabel(props.type)} 适配器实例`;
 });
 
 // 预览模型列表（用于模型选择器）
@@ -321,7 +326,7 @@ const rules = computed(() => {
     enable: []
   };
 
-  if (props.type === 'openai' || props.type === 'gemini') {
+  if (props.type !== 'vertex') {
     baseRules.api_key = [
       { required: true, message: '请输入 API Key', trigger: 'blur' },
       { min: 10, message: 'API Key 长度不足', trigger: 'blur' }
@@ -385,7 +390,7 @@ const handleJsonUpload = (file) => {
 // 获取模型列表
 const handleFetchModels = async () => {
   // 验证必要字段
-  if (props.type === 'openai' || props.type === 'gemini') {
+  if (props.type !== 'vertex') {
     if (!formData.value.api_key) {
       ElMessage.warning('请先填写 API Key');
       return;
@@ -557,7 +562,7 @@ const initFormData = () => {
     };
     // 保存原始数据副本
     originalData.value = JSON.parse(JSON.stringify(props.adapter));
-  } else {
+    } else {
     // 添加模式 - 设置默认值
     const defaults = {
       openai: {
@@ -572,10 +577,17 @@ const initFormData = () => {
       }
     };
 
+    // 对于非 vertex 类型，确保有 api_key/base_url 默认结构
+    const nonVertexDefaults = {
+      api_key: '',
+      base_url: ''
+    };
+
     formData.value = {
       name: '',
       enable: true,
-      ...defaults[props.type],
+      ...(props.type === 'vertex' ? defaults.vertex : (defaults[props.type] || {})),
+      ...((props.type !== 'vertex') ? nonVertexDefaults : {}),
       default_model: '',
       guest_models: {
         keywords: [],
