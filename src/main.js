@@ -8,8 +8,10 @@ import "./assets/global.sass";
 import "element-plus/dist/index.css";
 import "mio-previewer/style.css";
 import "./assets/mio.css";
+import "./assets/element-overrides.css"; // Import global overrides
 
 import { createApp } from "vue";
+import { createPinia } from "pinia";
 
 import ElementPlus from "element-plus";
 
@@ -17,7 +19,9 @@ import App from "./App.vue";
 import router from "./router";
 
 const app = createApp(App);
+const pinia = createPinia();
 
+app.use(pinia);
 app.use(ElementPlus);
 app.use(router);
 

@@ -1,0 +1,53 @@
+/* Global Element Plus Overrides */
+
+/* Make cards rounder */
+.el-card {
+  border-radius: 16px !important;
+  border: none !important;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Make buttons rounder */
+.el-button {
+  border-radius: 8px !important;
+}
+
+/* Make inputs rounder */
+.el-input__wrapper {
+  border-radius: 8px !important;
+}
+
+/* Make dialogs rounder */
+.el-dialog {
+  border-radius: 16px !important;
+}
+
+/* Make alerts rounder */
+.el-alert {
+  border-radius: 8px !important;
+}
+
+/* Make tags rounder */
+.el-tag {
+  border-radius: 6px !important;
+}
+
+/* Make dropdown menus rounder */
+.el-dropdown-menu {
+  border-radius: 12px !important;
+}
+
+/* Make popovers rounder */
+.el-popover.el-popper {
+  border-radius: 12px !important;
+}
+
+/* Make message boxes rounder */
+.el-message-box {
+  border-radius: 16px !important;
+}
+
+/* Make notifications rounder */
+.el-notification {
+  border-radius: 16px !important;
+}

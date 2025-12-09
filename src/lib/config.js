@@ -283,7 +283,8 @@ export default class Config {
    */
   initLLMDefaultConfig() {
     // 1. 确定动态值 (provider 和 model)，尝试从 baseConfig 获取，否则使用后备值
-    const defaultProvider = this.baseConfig?.llm_providers?.[0] ?? "openai"; // 默认使用第一个 provider 或 openai
+    const firstProvider = this.baseConfig?.llm_providers?.[0];
+    const defaultProvider = firstProvider?.displayName ?? "openai"; // 默认使用第一个 provider 或 openai
     const defaultModel = this.getDefaultModel(defaultProvider) ?? "gpt-4o-mini"; // 该 provider 的默认模型或 gpt-4o-mini
 
     // 2. 定义完整的默认配置结构 (包括固定的 safetySettings 默认值)
@@ -378,7 +379,7 @@ export default class Config {
     // 副作用 1: 更新 LLMDefaultConfig 中的 provider 和 model (如果 baseConfig 中有定义)
     const { llm_providers = [], default_model = {} } = this.baseConfig;
     if (llm_providers.length > 0) {
-      const newDefaultProvider = llm_providers[0]; // 假设使用第一个 provider 作为新的默认
+      const newDefaultProvider = llm_providers[0]?.displayName; // 使用第一个 provider 的 displayName 作为新的默认
       this.updateLLMDefaultConfig(null, { provider: newDefaultProvider });
       if (default_model[newDefaultProvider]) {
         this.updateLLMDefaultConfig("base", {
@@ -434,9 +435,18 @@ export default class Config {
   getLLMProviders() {
     const providers = this.baseConfig?.llm_providers ?? [];
     return providers.map((provider) => ({
-      value: provider,
-      label: provider, // 可以根据需要提供更友好的标签
+      value: provider.displayName,
+      label: provider.displayName,
+      adapterType: provider.adapterType
     }));
+  }
+
+  /** 获取指定 Provider 的适配器类型 */
+  getProviderAdapterType(providerName) {
+    const providers = this.baseConfig?.llm_providers ?? [];
+    const found = providers.find(p => p.displayName === providerName);
+    if (!found) return null; // 未找到则返回 null
+    return found.adapterType;
   }
 
   /** 获取指定 Provider 的默认模型名称 */

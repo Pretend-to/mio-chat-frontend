@@ -47,6 +47,39 @@ const router = createRouter({
       path: "/settings",
       name: "settings",
       component: SettingsView,
+      redirect: "/settings",
+      children: [
+        {
+          path: "",
+          name: "settings_overview",
+          component: () => import("../views/settings/OverviewView.vue"),
+        },
+        {
+          path: "llm-adapters",
+          name: "settings_llm_adapters",
+          component: () => import("../views/settings/LLMAdaptersView.vue"),
+        },
+        {
+          path: "server",
+          name: "settings_server",
+          component: () => import("../views/settings/ServerConfigView.vue"),
+        },
+        {
+          path: "web",
+          name: "settings_web",
+          component: () => import("../views/settings/WebConfigView.vue"),
+        },
+        {
+          path: "onebot",
+          name: "settings_onebot",
+          component: () => import("../views/settings/OnebotConfigView.vue"),
+        },
+        {
+          path: "plugins",
+          name: "settings_plugins",
+          component: () => import("../views/settings/PluginsView.vue"),
+        },
+      ],
     },
   ],
 });

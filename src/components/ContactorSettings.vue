@@ -184,7 +184,7 @@
     </div>
 
     <div
-      v-if="['gemini', 'vertex'].includes(localLlmProvider)"
+      v-if="isGeminiAdapter"
       class="settings-block"
     >
       <div class="block-title">Gemini 额外设置</div>
@@ -368,6 +368,12 @@ export default {
       },
     };
   },
+  computed: {
+    isGeminiAdapter() {
+      const adapterType = config.getProviderAdapterType(this.localLlmProvider);
+      return ['gemini', 'vertex'].includes(adapterType);
+    }
+  },
   watch: {
     modelValue: {
       handler(newVal) {
@@ -397,7 +403,8 @@ export default {
         ...this.modelValue.base,
         ...this.modelValue.chatParams,
       };
-      if (["gemini", "vertex"].includes(this.localLlmProvider)) {
+      const adapterType = config.getProviderAdapterType(this.localLlmProvider);
+      if (['gemini', 'vertex'].includes(adapterType)) {
         this.localGeminiSafetySettings = this.safeSimplify(
           this.localGeminiExtraSettings.safetySettings,
         );
@@ -494,7 +501,8 @@ export default {
       this.$emit("provider-changed", newProvider); // Inform parent for avatar, etc.
 
       // Re-initialize Gemini settings if switching to/from Gemini
-      if (["gemini", "vertex"].includes(newProvider)) {
+      const adapterType = config.getProviderAdapterType(newProvider);
+      if (['gemini', 'vertex'].includes(adapterType)) {
         this.localGeminiSafetySettings = this.safeSimplify(
           this.localGeminiExtraSettings.safetySettings,
         );

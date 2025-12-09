@@ -25,6 +25,25 @@ body
     width: 100vw
     height: 100vh
 
+// 全局滚动条样式优化
+*::-webkit-scrollbar
+    width: 8px
+    height: 8px
+
+*::-webkit-scrollbar-track
+    background: #f1f1f1
+    border-radius: 4px
+
+*::-webkit-scrollbar-thumb
+    background: #c1c1c1
+    border-radius: 4px
+
+    &:hover
+        background: #a8a8a8
+
+*::-webkit-scrollbar-corner
+    background: transparent
+
 .message-window
     flex-grow: 3
     overflow: auto

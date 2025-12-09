@@ -3,24 +3,7 @@ import Openai from "./adapter/openai.js";
 import EventEmmiter from "./event.js";
 import { numberString } from "../utils/generate.js";
 import { config } from "@/lib/runtime.js";
-
-const AVATAR_BASE_PATH =
-  "https://registry.npmmirror.com/@lobehub/icons-static-svg/latest/files/icons";
-
-const AVATAR_MAP = {
-  OpenAI: "openai.svg",
-  Cohere: "cohere-color.svg",
-  Anthropic: "claude-color.svg",
-  Google: "gemini-color.svg",
-  "X.AI": "grok.svg",
-  DeepSeek: "deepseek-color.svg",
-  智谱清言: "zhipu-color.svg",
-  豆包: "doubao-color.svg",
-  "月之暗面 (kimi)": "moonshot.svg",
-  科大讯飞: "spark-color.svg",
-  通义千问: "qwen-color.svg",
-  腾讯混元: "hunyuan-color.svg",
-};
+import { getAvatarByOwner } from "@/utils/avatar.js";
 
 const avatarPolicy = ["MODEL", "CUSTOM"];
 
@@ -727,10 +710,6 @@ export default class Contactor extends EventEmmiter {
 
   static getAvatarByModel(model) {
     const modelOwner = config.getModelOwner(model);
-    if (Object.keys(AVATAR_MAP).includes(modelOwner)) {
-      return `${AVATAR_BASE_PATH}/${AVATAR_MAP[modelOwner]}`;
-    }
-
-    return `${AVATAR_BASE_PATH}/openai.svg`;
+    return getAvatarByOwner(modelOwner);
   }
 }

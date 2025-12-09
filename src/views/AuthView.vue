@@ -24,6 +24,9 @@ import { nextTick, onUnmounted, onMounted, ref } from "vue";
 import router from "@/router";
 import { client } from "@/lib/runtime.js";
 import { ElMessage } from "element-plus";
+import { useConfigStore } from '@/stores/configStore.js';
+
+const configStore = useConfigStore();
 
 const accessCode = ref();
 const requesting = ref(false);
@@ -45,14 +48,18 @@ const login = async (code) => {
         ElMessage.success(
           `成功以${result.is_admin ? "管理员身份" : "游客身份"}登录，欢迎使用!`,
         );
+
+        // 如果是使用访问码且为管理员，保存到 store（并存 localStorage）
+        if (code && result.is_admin) {
+          configStore.setAdminCode(code);
+        }
+
         // 先看看url里有没有query
         if (router.currentRoute.value.query.redirect) {
           router.push(router.currentRoute.value.query.redirect);
         } else {
           router.push("/");
         }
-
-        // 删除回车触发login的监听
       }
     } catch (error) {
       ElMessage.error(error);

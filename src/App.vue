@@ -26,6 +26,10 @@ export default {
         this.$route.path.includes("/chat")
       );
     },
+    // 是否在 Settings 页面，用于隐藏顶部的显示控制按钮
+    hideDisplayButtons() {
+      return this.$route.path.includes('/settings');
+    }
   },
   created() {
     const displayConfig = config.getBaseConfig();
@@ -76,7 +80,12 @@ export default {
       class="app-desktop"
       :class="{ fullscreen: fullScreen || isTauri }"
     >
-      <displayButtons :full-screen @close="closeApp" @set-screen="setWindowSize"></displayButtons>
+      <displayButtons
+        v-if="!hideDisplayButtons"
+        :full-screen
+        @close="closeApp"
+        @set-screen="setWindowSize"
+      ></displayButtons>
       <sideBar></sideBar>
       <router-view></router-view>
     </div>

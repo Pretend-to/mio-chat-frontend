@@ -12,7 +12,6 @@ export default {
   data() {
     return {
       contactorList: [],
-      showAddOptions: false,
       showAddWindow: false,
       showMenu: false,
       menuX: 0,
@@ -46,8 +45,11 @@ export default {
     }
   },
   methods: {
-    genBotByPreset() {
-      this.showAddOptions = false;
+    genBotByShareCode() {
+      this.showAddWindow = false;
+      this.$emit("open-share-code-window");
+    },
+    openAddWindow() {
       this.showAddWindow = true;
     },
     showChat(id) {
@@ -87,7 +89,6 @@ export default {
         options: options,
       };
 
-      this.showAddOptions = false;
       await client.addConcator("openai", blankConfig);
       this.addReactiveListener();
     },
@@ -124,9 +125,6 @@ export default {
     },
     genFakeId() {
       return client.genFakeId();
-    },
-    manageAddMenu() {
-      this.showAddOptions = !this.showAddOptions;
     },
     mergeOptions(options) {
       const defaultOptions = config.getLLMDefaultConfig();
@@ -259,21 +257,9 @@ export default {
         <input id="main-search" type="text" placeholder="搜索" />
       </div>
       <div class="bu-add">
-        <button id="addcont" title="Add Bot" @click="manageAddMenu">
+        <button id="addcont" title="Add Bot" @click="openAddWindow">
           <i class="iconfont add"></i>
         </button>
-        <div v-show="showAddOptions" id="add-options">
-          <ul>
-            <li v-for="(provider, index) in avaliableProvideres" :key="index">
-              <button @click="genBotByProvider(provider)">
-                新建 {{ provider }} Bot
-              </button>
-            </li>
-            <li>
-              <button @click="genBotByPreset">从预设新建Bot</button>
-            </li>
-          </ul>
-        </div>
       </div>
     </div>
     <div class="people">
@@ -290,7 +276,13 @@ export default {
       </div>
     </div>
     <div class="resizer" @mousedown="startResize"></div>
-    <AddContactor v-if="showAddWindow" @close="showAddWindow = false" @add-bot="addPresetContactor"></AddContactor>
+    <AddContactor 
+      v-model:show="showAddWindow"
+      @close="showAddWindow = false" 
+      @add-bot="addPresetContactor"
+      @add-by-provider="genBotByProvider"
+      @add-by-share-code="genBotByShareCode"
+    />
     <ContextMenu v-if="showMenu" type="friend" :message="selectedFriend" :style="{
       top: menuY + 'px',
     }" @message-option="handleFriendOption" @close="showMenu = false" />
@@ -298,39 +290,6 @@ export default {
 </template>
 
 <style scoped>
-#add-options {
-  position: absolute;
-  top: 2.5rem;
-  background-color: white;
-  width: 8rem;
-  left: 0;
-  border: 0.0625rem solid rgba(161, 154, 154, 0.626);
-  border-radius: 0.3125rem;
-  z-index: 2;
-}
-
-#add-options li {
-  display: flex;
-  flex-direction: row-reverse;
-  padding: 0.1rem 0.5rem;
-}
-
-#add-options li:hover {
-  background-color: #f5f5f5;
-}
-
-#add-options ul {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  height: 100%;
-  box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.1);
-}
-
-#add-options button {
-  background-color: transparent;
-}
-
 #friendlists {
   height: 100%;
   display: flex;
@@ -517,10 +476,6 @@ button#addcont {
     flex-direction: column;
     width: 100%;
     max-width: none;
-  }
-
-  #add-options {
-    left: -6rem;
   }
 }
 </style>
