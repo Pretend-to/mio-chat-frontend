@@ -401,10 +401,10 @@ export default {
   justify-content: flex-end;
   margin-right: 1.5rem;
 }
-.el-input-number,
-.el-input,
-.el-slider,
-.el-select {
+.item-content .el-input-number,
+.item-content .el-input,
+.item-content .el-slider,
+.item-content .el-select {
   width: 10rem;
 }
 .sub-items {
