@@ -227,15 +227,14 @@ export const useConfigStore = defineStore('config', () => {
   async function updateAdapter(type, index, data) {
     try {
       const response = await configAPI.updateAdapter(type, index, data);
-      
-      // 更新 models 数据
+      // 用接口返回的完整适配器列表和模型列表直接更新本地状态
+      if (response.data.llm_adapters) {
+        adapters.value = response.data.llm_adapters;
+      }
       if (response.data.models) {
         models.value = response.data.models;
       }
-      
-      // 重新获取完整配置以确保数据同步
-      await fetchConfig();
-      
+      // 可选：同步 providers 等其他字段
       return response.data;
     } catch (error) {
       console.error('更新适配器失败:', error);
