@@ -228,11 +228,13 @@ export const useConfigStore = defineStore('config', () => {
     try {
       const response = await configAPI.updateAdapter(type, index, data);
       
-      // 更新本地状态
-      if (adapters.value[type] && adapters.value[type][index]) {
-        adapters.value[type][index] = data;
+      // 更新 models 数据
+      if (response.data.models) {
+        models.value = response.data.models;
       }
-      models.value = response.data.models || {};
+      
+      // 重新获取完整配置以确保数据同步
+      await fetchConfig();
       
       return response.data;
     } catch (error) {
