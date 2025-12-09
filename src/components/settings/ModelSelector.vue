@@ -2,22 +2,38 @@
   <div class="model-selector">
     <!-- 默认模型选择 -->
     <el-form-item label="默认模型" v-if="showDefault" required>
-      <el-select
-        :model-value="modelValue.default"
-        @update:model-value="updateDefault"
-        filterable
-        placeholder="请选择默认模型"
-        style="width: 100%"
-      >
-        <el-option
-          v-for="model in availableModels"
-          :key="model"
-          :label="model"
-          :value="model"
-        />
-      </el-select>
+      <div class="model-input-wrapper">
+        <el-select
+          :model-value="modelValue.default"
+          @update:model-value="updateDefault"
+          filterable
+          allow-create
+          default-first-option
+          placeholder="请选择或输入默认模型"
+          class="model-select"
+        >
+          <el-option
+            v-for="model in availableModels"
+            :key="model"
+            :label="model"
+            :value="model"
+          />
+        </el-select>
+        <el-button
+          v-if="showFetchButton"
+          type="primary"
+          :icon="Refresh"
+          :loading="fetchingModels"
+          @click="handleFetchModels"
+          class="fetch-button"
+        >
+          获取模型
+        </el-button>
+      </div>
       <template #extra>
-        <span class="form-item-tip">为所有用户设置的默认模型</span>
+        <span class="form-item-tip">
+          {{ availableModels.length > 0 ? '为所有用户设置的默认模型' : '暂无模型列表，请先获取或手动输入' }}
+        </span>
       </template>
     </el-form-item>
 
@@ -47,7 +63,7 @@
           style="margin-top: 8px"
         >
           <template #append>
-            <el-button :icon="Plus" @click="addKeyword">添加</el-button>
+            <el-button :icon="Plus" @click="addKeyword" class="input-append-button">添加</el-button>
           </template>
         </el-input>
       </div>
@@ -113,7 +129,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { Plus } from '@element-plus/icons-vue';
+import { Plus, Refresh } from '@element-plus/icons-vue';
 
 const props = defineProps({
   modelValue: {
@@ -133,12 +149,25 @@ const props = defineProps({
   showDefault: {
     type: Boolean,
     default: true
+  },
+  showFetchButton: {
+    type: Boolean,
+    default: false
+  },
+  fetchingModels: {
+    type: Boolean,
+    default: false
   }
 });
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'fetch-models']);
 
 const newKeyword = ref('');
+
+// 获取模型列表
+const handleFetchModels = () => {
+  emit('fetch-models');
+};
 
 // 访客可用模型预览
 const guestAvailableModels = computed(() => {
@@ -224,6 +253,21 @@ const updateFullNames = (value) => {
   }
 }
 
+.model-input-wrapper {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  
+  .model-select {
+    flex: 1;
+  }
+  
+  .fetch-button {
+    flex-shrink: 0;
+    width: 100px;
+  }
+}
+
 .form-item-tip {
   color: #909399;
   font-size: 12px;
@@ -267,5 +311,12 @@ const updateFullNames = (value) => {
   background-color: #fff;
   font-weight: 600;
   color: #606266;
+}
+
+// 统一输入框附加按钮宽度
+:deep(.el-input-group__append) {
+  .input-append-button {
+    width: 100px;
+  }
 }
 </style>

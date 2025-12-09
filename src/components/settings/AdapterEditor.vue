@@ -44,7 +44,11 @@
             clearable
           >
             <template #append>
-              <el-button :icon="showApiKey ? View : Hide" @click="showApiKey = !showApiKey" />
+              <el-button 
+                :icon="showApiKey ? View : Hide" 
+                @click="showApiKey = !showApiKey"
+                class="input-append-button"
+              />
             </template>
           </el-input>
         </el-form-item>
@@ -157,6 +161,9 @@
         v-model="modelConfig"
         :available-models="previewModels"
         :show-default="true"
+        :show-fetch-button="true"
+        :fetching-models="fetchingModels"
+        @fetch-models="handleFetchModels"
       />
     </el-form>
 
@@ -180,6 +187,8 @@ import { ref, computed, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { View, Hide, UploadFilled } from '@element-plus/icons-vue';
 import ModelSelector from './ModelSelector.vue';
+import { useConfigStore } from '@/stores/configStore.js';
+import { configAPI } from '@/lib/configApi.js';
 
 const props = defineProps({
   visible: {
@@ -208,10 +217,13 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'submit']);
 
+const configStore = useConfigStore();
 const formRef = ref(null);
 const showApiKey = ref(false);
 const submitting = ref(false);
 const vertexAuthType = ref('json');
+const fetchingModels = ref(false);
+const fetchedModels = ref([]);
 
 // 表单数据
 const formData = ref({
@@ -254,7 +266,31 @@ const dialogTitle = computed(() => {
 
 // 预览模型列表（用于模型选择器）
 const previewModels = computed(() => {
-  // 这里应该从实际 API 获取，暂时使用示例数据
+  // 优先使用手动获取的模型列表
+  if (fetchedModels.value.length > 0) {
+    return fetchedModels.value;
+  }
+  
+  // 从 configStore.models 中获取所有可用模型
+  const allModels = new Set();
+  
+  // 遍历所有 provider 的模型
+  Object.values(configStore.models).forEach(providerModels => {
+    if (Array.isArray(providerModels)) {
+      providerModels.forEach(group => {
+        if (group.models && Array.isArray(group.models)) {
+          group.models.forEach(model => allModels.add(model));
+        }
+      });
+    }
+  });
+  
+  // 如果有模型数据，返回排序后的列表
+  if (allModels.size > 0) {
+    return Array.from(allModels).sort();
+  }
+  
+  // 最后的后备方案：根据类型返回默认列表
   if (props.type === 'openai') {
     return ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'];
   } else if (props.type === 'gemini') {
@@ -346,6 +382,81 @@ const handleJsonUpload = (file) => {
   return false; // 阻止自动上传
 };
 
+// 获取模型列表
+const handleFetchModels = async () => {
+  // 验证必要字段
+  if (props.type === 'openai' || props.type === 'gemini') {
+    if (!formData.value.api_key) {
+      ElMessage.warning('请先填写 API Key');
+      return;
+    }
+    if (!formData.value.base_url) {
+      ElMessage.warning('请先填写 Base URL');
+      return;
+    }
+  } else if (props.type === 'vertex') {
+    if (!formData.value.region) {
+      ElMessage.warning('请先选择区域');
+      return;
+    }
+    if (!formData.value.service_account_json) {
+      ElMessage.warning('请先提供服务账号 JSON');
+      return;
+    }
+  }
+
+  fetchingModels.value = true;
+  try {
+    // 构建测试请求参数（只包含认证相关字段）
+    const testConfig = {};
+
+    // 根据适配器类型添加必要的认证信息
+    if (props.type === 'openai' || props.type === 'gemini') {
+      testConfig.api_key = formData.value.api_key;
+      testConfig.base_url = formData.value.base_url;
+    } else if (props.type === 'vertex') {
+      testConfig.region = formData.value.region;
+      testConfig.service_account_json = formData.value.service_account_json;
+      if (formData.value.models && formData.value.models.length > 0) {
+        testConfig.models = formData.value.models;
+      }
+    }
+
+    // 调用后端 API 测试连接并获取模型
+    const response = await configAPI.request(`/api/config/llm/${props.type}/test-models`, {
+      method: 'POST',
+      body: JSON.stringify(testConfig)
+    });
+
+    if (response.data && response.data.models) {
+      // 将模型列表平铺
+      const models = [];
+      if (Array.isArray(response.data.models)) {
+        response.data.models.forEach(group => {
+          if (group.models && Array.isArray(group.models)) {
+            models.push(...group.models);
+          }
+        });
+      }
+      
+      fetchedModels.value = [...new Set(models)].sort();
+      
+      if (fetchedModels.value.length > 0) {
+        ElMessage.success(`成功获取 ${fetchedModels.value.length} 个模型`);
+      } else {
+        ElMessage.warning('获取模型列表为空');
+      }
+    } else {
+      ElMessage.warning('获取模型列表为空');
+    }
+  } catch (error) {
+    console.error('获取模型失败:', error);
+    ElMessage.error('获取模型失败：' + error.message);
+  } finally {
+    fetchingModels.value = false;
+  }
+};
+
 // 提交表单
 const handleSubmit = async () => {
   try {
@@ -432,6 +543,7 @@ const handleClose = () => {
   setTimeout(() => {
     formRef.value?.resetFields();
     showApiKey.value = false;
+    fetchedModels.value = [];
   }, 300);
 };
 
@@ -525,5 +637,12 @@ watch(
 
 :deep(.el-upload-dragger) {
   padding: 20px;
+}
+
+// 统一输入框附加按钮宽度
+:deep(.el-input-group__append) {
+  .input-append-button {
+    width: 100px;
+  }
 }
 </style>
