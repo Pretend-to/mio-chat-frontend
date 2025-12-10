@@ -1,78 +1,43 @@
 <template>
-  <el-dialog
-    :model-value="visible"
-    :title="dialogTitle"
-    @close="handleClose"
-    width="700px"
-    :close-on-click-modal="false"
-  >
-    <el-form
-      ref="formRef"
-      :model="formData"
-      :rules="rules"
-      label-width="120px"
-      label-position="left"
-    >
+  <el-dialog :model-value="visible" :title="dialogTitle" @close="handleClose" width="700px"
+    :close-on-click-modal="false">
+    <el-form ref="formRef" :model="formData" :rules="rules" label-width="120px" label-position="left">
       <!-- 基本信息 -->
       <el-divider content-position="left">基本信息</el-divider>
-      
+
       <el-form-item label="实例名称" prop="name">
-        <el-input
-          v-model="formData.name"
-          placeholder="留空自动生成"
-          clearable
-        />
+        <el-input v-model="formData.name" placeholder="留空自动生成" clearable />
       </el-form-item>
 
       <el-form-item label="启用状态">
-        <el-switch
-          v-model="formData.enable"
-          active-text="启用"
-          inactive-text="禁用"
-        />
+        <el-switch v-model="formData.enable" active-text="启用" inactive-text="禁用" />
       </el-form-item>
 
       <!-- 认证信息 - 非 Vertex（统一使用 API Key + Base URL） -->
       <template v-if="type !== 'vertex'">
         <el-divider content-position="left">认证信息</el-divider>
-        
+
         <el-form-item label="API Key" prop="api_key">
-          <el-input
-            v-model="formData.api_key"
-            :type="showApiKey ? 'text' : 'password'"
-            placeholder="请输入 API Key"
-            clearable
-          >
+          <el-input v-model="formData.api_key" :type="showApiKey ? 'text' : 'password'" placeholder="请输入 API Key"
+            clearable>
             <template #append>
-              <el-button 
-                :icon="showApiKey ? View : Hide" 
-                @click="showApiKey = !showApiKey"
-                class="input-append-button"
-              />
+              <el-button :icon="showApiKey ? View : Hide" @click="showApiKey = !showApiKey"
+                class="input-append-button" />
             </template>
           </el-input>
         </el-form-item>
 
         <el-form-item label="Base URL" prop="base_url">
-          <el-input
-            v-model="formData.base_url"
-            placeholder="API 基础 URL"
-            clearable
-          />
+          <el-input v-model="formData.base_url" placeholder="API 基础 URL" clearable />
         </el-form-item>
       </template>
 
       <!-- 认证信息 - Vertex AI -->
       <template v-if="type === 'vertex'">
         <el-divider content-position="left">认证信息</el-divider>
-        
+
         <el-form-item label="区域" prop="region">
-          <el-select
-            v-model="formData.region"
-            placeholder="选择 Vertex AI 区域"
-            filterable
-            style="width: 100%"
-          >
+          <el-select v-model="formData.region" placeholder="选择 Vertex AI 区域" filterable style="width: 100%">
             <el-option label="us-central1 (美国中部)" value="us-central1" />
             <el-option label="us-east4 (美国东部)" value="us-east4" />
             <el-option label="asia-northeast1 (日本东京)" value="asia-northeast1" />
@@ -89,30 +54,16 @@
           </el-radio-group>
         </el-form-item>
 
-        <el-form-item
-          v-if="vertexAuthType === 'json'"
-          label="服务账号 JSON"
-          prop="service_account_json"
-        >
-          <el-input
-            v-model="formData.service_account_json"
-            type="textarea"
-            :rows="6"
-            placeholder='{"type": "service_account", "project_id": "...", ...}'
-          />
+        <el-form-item v-if="vertexAuthType === 'json'" label="服务账号 JSON" prop="service_account_json">
+          <el-input v-model="formData.service_account_json" type="textarea" :rows="6"
+            placeholder='{"type": "service_account", "project_id": "...", ...}' />
         </el-form-item>
 
-        <el-form-item
-          v-if="vertexAuthType === 'file'"
-          label="JSON 文件"
-        >
-          <el-upload
-            :before-upload="handleJsonUpload"
-            :show-file-list="false"
-            accept=".json"
-            drag
-          >
-            <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
+        <el-form-item v-if="vertexAuthType === 'file'" label="JSON 文件">
+          <el-upload :before-upload="handleJsonUpload" :show-file-list="false" accept=".json" drag>
+            <el-icon class="el-icon--upload">
+              <UploadFilled />
+            </el-icon>
             <div class="el-upload__text">
               拖拽文件到此处或 <em>点击上传</em>
             </div>
@@ -122,25 +73,13 @@
               </div>
             </template>
           </el-upload>
-          <el-input
-            v-if="formData.service_account_json"
-            :model-value="jsonFilePreview"
-            type="textarea"
-            :rows="3"
-            readonly
-            style="margin-top: 8px"
-          />
+          <el-input v-if="formData.service_account_json" :model-value="jsonFilePreview" type="textarea" :rows="3"
+            readonly style="margin-top: 8px" />
         </el-form-item>
 
         <el-form-item label="自定义模型">
-          <el-select
-            v-model="formData.models"
-            multiple
-            filterable
-            allow-create
-            placeholder="添加模型（可选）"
-            style="width: 100%"
-          >
+          <el-select v-model="formData.models" multiple filterable allow-create placeholder="添加模型（可选）"
+            style="width: 100%">
             <el-option label="gemini-2.0-flash-001" value="gemini-2.0-flash-001" />
             <el-option label="gemini-1.5-pro-002" value="gemini-1.5-pro-002" />
             <el-option label="claude-3-5-sonnet-v2@20241022" value="claude-3-5-sonnet-v2@20241022" />
@@ -156,25 +95,15 @@
 
       <!-- 模型配置 -->
       <el-divider content-position="left">模型配置</el-divider>
-      
-      <model-selector
-        v-model="modelConfig"
-        :available-models="previewModels"
-        :show-default="true"
-        :show-fetch-button="true"
-        :fetching-models="fetchingModels"
-        @fetch-models="handleFetchModels"
-      />
+
+      <model-selector v-model="modelConfig" :available-models="previewModels" :show-default="true"
+        :show-fetch-button="true" :fetching-models="fetchingModels" @fetch-models="handleFetchModels" />
     </el-form>
 
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="handleClose">取消</el-button>
-        <el-button
-          type="primary"
-          :loading="submitting"
-          @click="handleSubmit"
-        >
+        <el-button type="primary" :loading="submitting" @click="handleSubmit">
           {{ mode === 'add' ? '保存并测试连接' : '保存' }}
         </el-button>
       </div>
@@ -275,10 +204,10 @@ const previewModels = computed(() => {
   if (fetchedModels.value.length > 0) {
     return fetchedModels.value;
   }
-  
+
   // 从 configStore.models 中获取所有可用模型
   const allModels = new Set();
-  
+
   // 遍历所有 provider 的模型
   Object.values(configStore.models).forEach(providerModels => {
     if (Array.isArray(providerModels)) {
@@ -289,12 +218,12 @@ const previewModels = computed(() => {
       });
     }
   });
-  
+
   // 如果有模型数据，返回排序后的列表
   if (allModels.size > 0) {
     return Array.from(allModels).sort();
   }
-  
+
   // 最后的后备方案：根据类型返回默认列表
   if (props.type === 'openai') {
     return ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'];
@@ -416,15 +345,15 @@ const handleFetchModels = async () => {
     const testConfig = {};
 
     // 根据适配器类型添加必要的认证信息
-    if (props.type === 'openai' || props.type === 'gemini') {
-      testConfig.api_key = formData.value.api_key;
-      testConfig.base_url = formData.value.base_url;
-    } else if (props.type === 'vertex') {
+    if (props.type === 'vertex') {
       testConfig.region = formData.value.region;
       testConfig.service_account_json = formData.value.service_account_json;
       if (formData.value.models && formData.value.models.length > 0) {
         testConfig.models = formData.value.models;
       }
+    } else {
+      testConfig.api_key = formData.value.api_key;
+      testConfig.base_url = formData.value.base_url;
     }
 
     // 调用后端 API 测试连接并获取模型
@@ -443,9 +372,9 @@ const handleFetchModels = async () => {
           }
         });
       }
-      
+
       fetchedModels.value = [...new Set(models)].sort();
-      
+
       if (fetchedModels.value.length > 0) {
         ElMessage.success(`成功获取 ${fetchedModels.value.length} 个模型`);
       } else {
@@ -466,9 +395,9 @@ const handleFetchModels = async () => {
 const handleSubmit = async () => {
   try {
     await formRef.value.validate();
-    
+
     let submitData;
-    
+
     if (props.mode === 'add') {
       // 添加模式：提交所有字段
       submitData = {
@@ -489,7 +418,7 @@ const handleSubmit = async () => {
     } else {
       // 编辑模式：只提交变更的字段
       submitData = {};
-      
+
       // 比对基本字段
       const fieldsToCheck = ['name', 'enable', 'api_key', 'base_url', 'region', 'service_account_json', 'models'];
       for (const field of fieldsToCheck) {
@@ -500,7 +429,7 @@ const handleSubmit = async () => {
         if (field === 'service_account_json' && formData.value[field]?.startsWith('***')) {
           continue;
         }
-        
+
         // 只在字段值发生变化时添加
         if (JSON.stringify(formData.value[field]) !== JSON.stringify(originalData.value?.[field])) {
           // 根据适配器类型过滤字段
@@ -513,7 +442,7 @@ const handleSubmit = async () => {
           submitData[field] = formData.value[field];
         }
       }
-      
+
       // 检查模型配置变更
       if (JSON.stringify(modelConfig.value.default) !== JSON.stringify(originalData.value?.default_model)) {
         submitData.default_model = modelConfig.value.default;
@@ -530,7 +459,7 @@ const handleSubmit = async () => {
       data: submitData,
       mode: props.mode
     });
-    
+
     handleClose();
   } catch (error) {
     if (error !== 'cancel') {
@@ -562,7 +491,7 @@ const initFormData = () => {
     };
     // 保存原始数据副本
     originalData.value = JSON.parse(JSON.stringify(props.adapter));
-    } else {
+  } else {
     // 添加模式 - 设置默认值
     const defaults = {
       openai: {
