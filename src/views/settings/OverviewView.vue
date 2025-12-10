@@ -341,14 +341,16 @@ const pendingItems = computed(() => {
   return items;
 });
 
-// 适配器类型名称
+// 适配器类型名称（已知类型使用友好名，其他类型首字母大写）
 const adapterTypeName = (type) => {
   const names = {
     openai: 'OpenAI',
     gemini: 'Gemini',
     vertex: 'Vertex AI'
   };
-  return names[type] || type;
+  if (names[type]) return names[type];
+  if (!type) return '';
+  return type.charAt(0).toUpperCase() + type.slice(1);
 };
 
 // 刷新模型列表
