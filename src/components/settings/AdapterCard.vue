@@ -95,7 +95,6 @@ const props = defineProps({
   type: {
     type: String,
     required: true,
-    validator: (value) => ['openai', 'gemini', 'vertex'].includes(value)
   },
   index: {
     type: Number,

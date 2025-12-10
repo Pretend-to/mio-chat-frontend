@@ -438,6 +438,39 @@ export default class Client extends EventEmitter {
         }
       }
     });
+
+    this.socket.on("system_message", (e) => {
+      try {
+        // 支持后端推送的 models/providers 更新
+        if (e && e.type === 'models_updated' && e.data) {
+          const { providers, models, default_model } = e.data;
+
+          // 更新 Config 中的 llmModels
+          if (models && this.config && typeof this.config.setLlmModels === 'function') {
+            this.config.setLlmModels(models);
+            console.log('LLM models updated from system message');
+          }
+
+          // 更新 baseConfig 中的 providers 列表 (llm_providers)
+          if (providers && this.config && typeof this.config.updateBaseConfig === 'function') {
+            try {
+              this.config.updateBaseConfig({ llm_providers: providers, default_model });
+              console.log('LLM providers updated from system message');
+            } catch (err) {
+              console.error('Failed to update baseConfig.llm_providers:', err);
+            }
+          }
+
+          // 广播事件给客户端监听者（比如 UI）
+          this.emit('models_updated', { providers, models });
+          return;
+        }
+
+        console.log("System message received:", e);
+      } catch (err) {
+        console.error('Error handling system_message:', err, e);
+      }
+    });
   }
 
   /**
