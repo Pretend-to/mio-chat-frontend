@@ -114,12 +114,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
-import { ElMessage } from 'element-plus';
-import { View, Hide, UploadFilled } from '@element-plus/icons-vue';
-import ModelSelector from './ModelSelector.vue';
-import { useConfigStore } from '@/stores/configStore.js';
 import { configAPI } from '@/lib/configApi.js';
+import { useConfigStore } from '@/stores/configStore.js';
+import { Hide, UploadFilled, View } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
+import { computed, ref, watch } from 'vue';
+import ModelSelector from './ModelSelector.vue';
 
 const props = defineProps({
   visible: {
@@ -207,23 +207,27 @@ const previewModels = computed(() => {
     return fetchedModels.value;
   }
 
-  // 从 configStore.models 中获取所有可用模型
-  const allModels = new Set();
+  // 从当前适配器类型对应的模型中获取
+  const typeModels = new Set();
+  
+  // 根据适配器类型获取对应的模型
+  const providerModels = configStore.models[props.type];
+  if (Array.isArray(providerModels)) {
+    providerModels.forEach(group => {
+      if (group.models && Array.isArray(group.models)) {
+        group.models.forEach(model => typeModels.add(model));
+      }
+    });
+  }
 
-  // 遍历所有 provider 的模型
-  Object.values(configStore.models).forEach(providerModels => {
-    if (Array.isArray(providerModels)) {
-      providerModels.forEach(group => {
-        if (group.models && Array.isArray(group.models)) {
-          group.models.forEach(model => allModels.add(model));
-        }
-      });
-    }
-  });
+  // 如果当前适配器实例有自定义模型，也包含进来
+  if (formData.value.models && formData.value.models.length > 0) {
+    formData.value.models.forEach(model => typeModels.add(model));
+  }
 
   // 如果有模型数据，返回排序后的列表
-  if (allModels.size > 0) {
-    return Array.from(allModels).sort();
+  if (typeModels.size > 0) {
+    return Array.from(typeModels).sort();
   }
 
   // 最后的后备方案：根据类型返回默认列表
@@ -235,7 +239,12 @@ const previewModels = computed(() => {
     return formData.value.models.length > 0
       ? formData.value.models
       : ['gemini-2.0-flash-001', 'claude-3-5-sonnet-v2@20241022'];
+  } else if (props.type === 'deepseek') {
+    return ['deepseek-chat', 'deepseek-coder'];
+  } else if (props.type === 'anthropic') {
+    return ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'];
   }
+  
   return [];
 });
 
