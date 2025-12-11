@@ -25,7 +25,7 @@
             <div class="block-title">Bot 基本配置</div>
             <div class="block-content">
               <div class="block-content-item">
-                <div class="item-title">昵称</div>
+                <div class="contactor-name item-title">昵称</div>
                 <div class="item-content">
                   <el-input
                     v-model="basicInfo.name"
@@ -291,16 +291,14 @@ export default {
       await client.rmContactor(this.activeContactor.id);
       this.$router.push("/");
     },
-    handleProviderSwitched(newProvider) {
+    handleProviderSwitched() {
       // This event is specifically for actions parent needs to take,
       // like reloading avatar, that are outside the 'options' object.
       this.activeContactor.loadAvatar();
       // The options object (including provider and default model)
       // would have already been updated by the child component via v-model.
     },
-    getBaseInfoShownValue(value) {
-      const table = {};
-    },
+
     updateContactorName() {
       if (this.basicInfo.namePolicy === 0) {
         this.basicInfo.name = this.activeContactor.options.base.model;
@@ -498,11 +496,19 @@ export default {
 }
 .base-info-content .name {
   font-size: 1.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 15rem;
 }
 .base-info-content .id {
   margin-top: 0.25rem;
   font-size: 0.75rem;
   color: dimgrey;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 15rem;
 }
 .base-info-content .status {
   margin-top: 0.25rem;

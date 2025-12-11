@@ -454,7 +454,16 @@ export default class Client extends EventEmitter {
           // 更新 baseConfig 中的 providers 列表 (llm_providers)
           if (providers && this.config && typeof this.config.updateBaseConfig === 'function') {
             try {
-              this.config.updateBaseConfig({ llm_providers: providers, default_model });
+              // 检查是否是新的 API 结构（providers 数组中包含 default_model）
+              const hasNewStructure = providers.some(p => p.default_model !== undefined);
+              
+              if (hasNewStructure) {
+                // 新结构：直接使用 providers 数组
+                this.config.updateBaseConfig({ llm_providers: providers });
+              } else {
+                // 旧结构：同时传递 providers 和 default_model
+                this.config.updateBaseConfig({ llm_providers: providers, default_model });
+              }
               console.log('LLM providers updated from system message');
             } catch (err) {
               console.error('Failed to update baseConfig.llm_providers:', err);

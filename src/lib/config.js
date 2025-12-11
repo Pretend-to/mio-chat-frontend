@@ -381,9 +381,18 @@ export default class Config {
     if (llm_providers.length > 0) {
       const newDefaultProvider = llm_providers[0]?.displayName; // 使用第一个 provider 的 displayName 作为新的默认
       this.updateLLMDefaultConfig(null, { provider: newDefaultProvider });
-      if (default_model[newDefaultProvider]) {
+      
+      // 检查是否是新的 API 结构（provider 对象中包含 default_model）
+      let defaultModelForProvider = llm_providers[0]?.default_model;
+      
+      // 如果新结构中没有找到，尝试旧结构
+      if (!defaultModelForProvider && default_model[newDefaultProvider]) {
+        defaultModelForProvider = default_model[newDefaultProvider];
+      }
+      
+      if (defaultModelForProvider) {
         this.updateLLMDefaultConfig("base", {
-          model: default_model[newDefaultProvider],
+          model: defaultModelForProvider,
         });
       } else {
         console.warn(
@@ -451,6 +460,14 @@ export default class Config {
 
   /** 获取指定 Provider 的默认模型名称 */
   getDefaultModel(provider) {
+    // 首先尝试新的 API 结构：从 provider 对象中获取 default_model
+    const providers = this.baseConfig?.llm_providers || [];
+    const targetProvider = providers.find(p => p.displayName === provider);
+    if (targetProvider?.default_model) {
+      return targetProvider.default_model;
+    }
+    
+    // 如果新结构中没有找到，尝试旧结构：从 default_model 对象中获取
     return this.baseConfig?.default_model?.[provider];
   }
 
@@ -479,7 +496,22 @@ export default class Config {
 
   /** 获取基础配置中定义的默认模型映射 { provider: model } */
   getDefaultLLMModel() {
-    return this.baseConfig?.default_model ?? {};
+    // 首先尝试新的 API 结构：从 llm_providers 数组中构建映射
+    const providers = this.baseConfig?.llm_providers || [];
+    const defaultModelMap = {};
+    
+    providers.forEach(provider => {
+      if (provider.displayName && provider.default_model) {
+        defaultModelMap[provider.displayName] = provider.default_model;
+      }
+    });
+    
+    // 如果新结构中没有找到任何默认模型，尝试旧结构
+    if (Object.keys(defaultModelMap).length === 0 && this.baseConfig?.default_model) {
+      return this.baseConfig.default_model;
+    }
+    
+    return defaultModelMap;
   }
 
   /** 检查指定模型是否在指定 Provider 的可用模型列表中 */

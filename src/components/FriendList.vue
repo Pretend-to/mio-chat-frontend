@@ -82,7 +82,7 @@ export default {
       const options = config.getLLMDefaultConfig(provider);
       const blankConfig = {
         id: this.genFakeId(),
-        title: options.default_model,
+        title: options.base.model,
         avatarPolicy: 0,
         namePolicy: 2,
         priority: 1,
