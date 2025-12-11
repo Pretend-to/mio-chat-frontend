@@ -74,6 +74,16 @@
           </el-card>
 
           <el-card class="stat-card">
+            <div class="stat-icon" style="background-color: #f56c6c20;">
+              <el-icon :size="32" color="#f56c6c"><Document /></el-icon>
+            </div>
+            <div class="stat-content">
+              <div class="stat-value">{{ presetsStore.totalCount }}</div>
+              <div class="stat-label">预设总数</div>
+            </div>
+          </el-card>
+
+          <el-card class="stat-card">
             <div class="stat-icon" :style="{
               backgroundColor: systemStatus === 'normal' ? '#67c23a20' : '#f5672020'
             }">
@@ -137,6 +147,17 @@
               <div class="action-info">
                 <div class="action-title">OneBot 配置</div>
                 <div class="action-desc">QQ 机器人连接</div>
+              </div>
+              <el-icon class="action-arrow"><ArrowRight /></el-icon>
+            </div>
+
+            <div class="action-item" @click="navigateTo('presets')">
+              <div class="action-icon" style="background: #fef0f0; color: #f56c6c;">
+                <el-icon><Document /></el-icon>
+              </div>
+              <div class="action-info">
+                <div class="action-title">预设管理</div>
+                <div class="action-desc">对话预设与模板</div>
               </div>
               <el-icon class="action-arrow"><ArrowRight /></el-icon>
             </div>
@@ -239,13 +260,16 @@ import {
   ChromeFilled,
   ChatDotRound,
   Warning,
-  ArrowRight
+  ArrowRight,
+  Document
 } from '@element-plus/icons-vue';
 import { useConfigStore } from '@/stores/configStore.js';
+import { usePresetsStore } from '@/stores/presetsStore.js';
 import ConfigCompare from '@/components/settings/ConfigCompare.vue';
 
 const router = useRouter();
 const configStore = useConfigStore();
+const presetsStore = usePresetsStore();
 
 const loading = ref(true);
 const refreshing = ref(false);
@@ -429,6 +453,13 @@ onMounted(async () => {
   try {
     if (!configStore.config) {
       await configStore.fetchConfig();
+    }
+    // 加载预设数据
+    try {
+      await presetsStore.fetchPresets();
+    } catch (error) {
+      console.warn('加载预设失败:', error);
+      // 预设加载失败不影响整体页面显示，API可能还未实现
     }
     // 模拟最小加载时间，提升用户体验
     await new Promise(resolve => setTimeout(resolve, 300));

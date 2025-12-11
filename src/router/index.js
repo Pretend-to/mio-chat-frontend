@@ -79,6 +79,11 @@ const router = createRouter({
           name: "settings_plugins",
           component: () => import("../views/settings/PluginsView.vue"),
         },
+        {
+          path: "presets",
+          name: "settings_presets",
+          component: () => import("../views/settings/PresetsView.vue"),
+        },
       ],
     },
   ],

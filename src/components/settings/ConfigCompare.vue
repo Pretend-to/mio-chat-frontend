@@ -6,7 +6,8 @@
     :close-on-click-modal="false"
     @close="handleClose"
   >
-    <div class="config-compare-dialog">
+    <div class="dialog-content">
+      <div class="config-compare-dialog">
       <!-- 上传对比配置 -->
       <div v-if="!compareConfig" class="upload-section">
         <el-upload
@@ -15,7 +16,7 @@
           :show-file-list="false"
           accept=".json"
         >
-          <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+          <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
           <div class="el-upload__text">
             拖拽配置文件到此处，或 <em>点击上传</em>
           </div>
@@ -87,33 +88,73 @@
             </el-tab-pane>
 
             <el-tab-pane label="服务器配置" name="server">
-              <ConfigSection
-                :current="currentConfig.server"
-                :compare="compareConfig.server"
-                section="server"
-              />
+              <div class="config-section-compare">
+                <div v-if="!hasServerDiff" class="no-changes">无变化</div>
+                <div v-else class="diff-table">
+                  <el-table :data="serverDifferences" border>
+                    <el-table-column prop="key" label="配置项" width="200" />
+                    <el-table-column label="当前值">
+                      <template #default="{ row }">
+                        <code>{{ row.currentValue }}</code>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="对比值">
+                      <template #default="{ row }">
+                        <code>{{ row.compareValue }}</code>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+              </div>
             </el-tab-pane>
 
             <el-tab-pane label="Web 配置" name="web">
-              <ConfigSection
-                :current="currentConfig.web"
-                :compare="compareConfig.web"
-                section="web"
-              />
+              <div class="config-section-compare">
+                <div v-if="!hasWebDiff" class="no-changes">无变化</div>
+                <div v-else class="diff-table">
+                  <el-table :data="webDifferences" border>
+                    <el-table-column prop="key" label="配置项" width="200" />
+                    <el-table-column label="当前值">
+                      <template #default="{ row }">
+                        <code>{{ row.currentValue }}</code>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="对比值">
+                      <template #default="{ row }">
+                        <code>{{ row.compareValue }}</code>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+              </div>
             </el-tab-pane>
 
             <el-tab-pane label="OneBot 配置" name="onebot">
-              <ConfigSection
-                :current="currentConfig.onebot"
-                :compare="compareConfig.onebot"
-                section="onebot"
-              />
+              <div class="config-section-compare">
+                <div v-if="!hasOnebotDiff" class="no-changes">无变化</div>
+                <div v-else class="diff-table">
+                  <el-table :data="onebotDifferences" border>
+                    <el-table-column prop="key" label="配置项" width="200" />
+                    <el-table-column label="当前值">
+                      <template #default="{ row }">
+                        <code>{{ row.currentValue }}</code>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="对比值">
+                      <template #default="{ row }">
+                        <code>{{ row.compareValue }}</code>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+              </div>
             </el-tab-pane>
           </el-tabs>
         </div>
 
         <!-- 无差异提示 -->
         <el-empty v-else description="配置完全相同" />
+      </div>
       </div>
     </div>
 
@@ -242,6 +283,57 @@ const hasDifferences = computed(() => {
          diffStats.value.removed > 0;
 });
 
+// 服务器配置差异
+const serverDifferences = computed(() => {
+  return getConfigDifferences(currentConfig.value.server, compareConfig.value?.server);
+});
+
+const hasServerDiff = computed(() => serverDifferences.value.length > 0);
+
+// Web 配置差异
+const webDifferences = computed(() => {
+  return getConfigDifferences(currentConfig.value.web, compareConfig.value?.web);
+});
+
+const hasWebDiff = computed(() => webDifferences.value.length > 0);
+
+// OneBot 配置差异
+const onebotDifferences = computed(() => {
+  return getConfigDifferences(currentConfig.value.onebot, compareConfig.value?.onebot);
+});
+
+const hasOnebotDiff = computed(() => onebotDifferences.value.length > 0);
+
+// 通用配置差异计算函数
+const getConfigDifferences = (current, compare) => {
+  const diffs = [];
+  const keys = new Set([
+    ...Object.keys(current || {}),
+    ...Object.keys(compare || {})
+  ]);
+  
+  keys.forEach(key => {
+    const currVal = current?.[key];
+    const compVal = compare?.[key];
+    
+    if (JSON.stringify(currVal) !== JSON.stringify(compVal)) {
+      diffs.push({
+        key,
+        currentValue: formatConfigValue(currVal),
+        compareValue: formatConfigValue(compVal)
+      });
+    }
+  });
+  
+  return diffs;
+};
+
+const formatConfigValue = (val) => {
+  if (val === undefined) return '-';
+  if (typeof val === 'object') return JSON.stringify(val);
+  return String(val);
+};
+
 const adapterTypeName = (type) => {
   const names = {
     openai: 'OpenAI',
@@ -331,67 +423,16 @@ const handleApply = async () => {
   }
 };
 
-// 简单的配置节对比组件
-const ConfigSection = {
-  props: ['current', 'compare', 'section'],
-  template: `
-    <div class="config-section-compare">
-      <div v-if="!hasDiff" class="no-changes">无变化</div>
-      <div v-else class="diff-table">
-        <el-table :data="differences" border>
-          <el-table-column prop="key" label="配置项" width="200" />
-          <el-table-column label="当前值">
-            <template #default="{ row }">
-              <code>{{ row.currentValue }}</code>
-            </template>
-          </el-table-column>
-          <el-table-column label="对比值">
-            <template #default="{ row }">
-              <code>{{ row.compareValue }}</code>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
-    </div>
-  `,
-  computed: {
-    differences() {
-      const diffs = [];
-      const keys = new Set([
-        ...Object.keys(this.current || {}),
-        ...Object.keys(this.compare || {})
-      ]);
-      
-      keys.forEach(key => {
-        const currVal = this.current?.[key];
-        const compVal = this.compare?.[key];
-        
-        if (JSON.stringify(currVal) !== JSON.stringify(compVal)) {
-          diffs.push({
-            key,
-            currentValue: this.formatValue(currVal),
-            compareValue: this.formatValue(compVal)
-          });
-        }
-      });
-      
-      return diffs;
-    },
-    hasDiff() {
-      return this.differences.length > 0;
-    }
-  },
-  methods: {
-    formatValue(val) {
-      if (val === undefined) return '-';
-      if (typeof val === 'object') return JSON.stringify(val);
-      return String(val);
-    }
-  }
-};
+
 </script>
 
 <style scoped lang="scss">
+.dialog-content {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 0;
+}
+
 .config-compare-dialog {
   min-height: 400px;
 }

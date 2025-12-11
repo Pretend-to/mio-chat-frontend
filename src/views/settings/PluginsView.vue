@@ -169,7 +169,8 @@
       width="800px"
       destroy-on-close
     >
-      <div v-if="currentPlugin" class="plugin-detail">
+      <div class="dialog-content">
+        <div v-if="currentPlugin" class="plugin-detail">
         <el-descriptions :column="2" border>
           <el-descriptions-item label="插件名称">
             {{ currentPlugin.displayName }}
@@ -232,6 +233,7 @@
             </el-collapse-item>
           </el-collapse>
         </div>
+        </div>
       </div>
     </el-dialog>
 
@@ -242,25 +244,27 @@
       width="700px"
       destroy-on-close
     >
-      <div class="config-editor">
-        <el-alert
-          type="info"
-          :closable="false"
-          show-icon
-          style="margin-bottom: 16px;"
-        >
-          <template #title>
-            配置将自动保存并触发热更新
-          </template>
-        </el-alert>
-        
-        <el-input
-          v-model="configJsonStr"
-          type="textarea"
-          :rows="15"
-          placeholder="JSON 配置"
-          class="config-textarea"
-        />
+      <div class="dialog-content">
+        <div class="config-editor">
+          <el-alert
+            type="info"
+            :closable="false"
+            show-icon
+            style="margin-bottom: 16px;"
+          >
+            <template #title>
+              配置将自动保存并触发热更新
+            </template>
+          </el-alert>
+          
+          <el-input
+            v-model="configJsonStr"
+            type="textarea"
+            :rows="15"
+            placeholder="JSON 配置"
+            class="config-textarea"
+          />
+        </div>
       </div>
       
       <template #footer>
@@ -462,25 +466,25 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import LoadingSkeleton from '@/components/settings/LoadingSkeleton.vue';
+import { pluginAPI } from '@/lib/configApi.js';
 import {
-  Refresh,
-  RefreshRight,
-  Grid,
+  Box,
   CircleCheck,
   CircleCheckFilled,
   CircleCloseFilled,
-  Tools,
-  Box,
-  User,
-  Setting,
-  View,
   Cpu,
-  InfoFilled
+  Grid,
+  InfoFilled,
+  Refresh,
+  RefreshRight,
+  Setting,
+  Tools,
+  User,
+  View
 } from '@element-plus/icons-vue';
-import LoadingSkeleton from '@/components/settings/LoadingSkeleton.vue';
-import { pluginAPI } from '@/lib/configApi.js';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { computed, onMounted, ref } from 'vue';
 
 const loading = ref(false);
 const refreshing = ref(false);
@@ -1020,6 +1024,12 @@ onMounted(() => {
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-size: 13px;
   }
+}
+
+.dialog-content {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 0;
 }
 
 .debug-dialog {

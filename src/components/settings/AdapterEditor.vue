@@ -1,7 +1,8 @@
 <template>
   <el-dialog :model-value="visible" :title="dialogTitle" @close="handleClose" width="700px"
     :close-on-click-modal="false">
-    <el-form ref="formRef" :model="formData" :rules="rules" label-width="120px" label-position="left">
+    <div class="dialog-content">
+      <el-form ref="formRef" :model="formData" :rules="rules" label-width="120px" label-position="left">
       <!-- 基本信息 -->
       <el-divider content-position="left">基本信息</el-divider>
 
@@ -98,7 +99,8 @@
 
       <model-selector v-model="modelConfig" :available-models="previewModels" :show-default="true"
         :show-fetch-button="true" :fetching-models="fetchingModels" @fetch-models="handleFetchModels" />
-    </el-form>
+      </el-form>
+    </div>
 
     <template #footer>
       <div class="dialog-footer">
@@ -547,6 +549,12 @@ watch(
 </script>
 
 <style scoped lang="scss">
+.dialog-content {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 0;
+}
+
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
@@ -587,3 +595,4 @@ watch(
   }
 }
 </style>
+

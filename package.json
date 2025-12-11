@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
+    "lint": "oxlint --fix .",
     "format": "prettier --write src/"
   },
   "dependencies": {
@@ -26,21 +26,14 @@
     "vue-router": "^4.3.2"
   },
   "devDependencies": {
-    "@eslint/js": "^9.31.0",
-    "@rushstack/eslint-patch": "^1.10.2",
     "@vitejs/plugin-vue": "^6.0.1",
-    "@vue/eslint-config-prettier": "^8.0.0",
-    "eslint": "^9.27.0",
-    "eslint-config-prettier": "^10.1.2",
-    "eslint-plugin-prettier": "^5.2.3",
-    "eslint-plugin-vue": "^9.33.0",
+    "oxlint": "^1.32.0",
     "prettier": "^3.5.2",
     "sass": "^1.93.3",
     "vite": "^7.2.1",
     "vite-plugin-compression": "^0.5.1",
     "vite-plugin-imagemin": "^0.6.1",
     "vite-plugin-vue-devtools": "^8.0.3",
-    "vue-eslint-parser": "^10.2.0",
     "worker-loader": "^3.0.8"
   }
 }

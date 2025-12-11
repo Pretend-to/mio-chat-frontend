@@ -55,6 +55,10 @@
             <el-icon><Grid /></el-icon>
             <span>插件管理</span>
           </el-menu-item>
+          <el-menu-item index="presets">
+            <el-icon><Document /></el-icon>
+            <span>预设管理</span>
+          </el-menu-item>
         </el-menu>
 
         <!-- 快捷操作 -->
@@ -114,7 +118,8 @@ import {
   Monitor,
   ChromeFilled,
   ChatDotRound,
-  Grid
+  Grid,
+  Document
 } from '@element-plus/icons-vue';
 import { useConfigStore } from '@/stores/configStore.js';
 import { client } from '@/lib/runtime.js';
@@ -144,6 +149,7 @@ const activeMenu = computed(() => {
   if (path.includes('web')) return 'web';
   if (path.includes('onebot')) return 'onebot';
   if (path.includes('plugins')) return 'plugins';
+  if (path.includes('presets')) return 'presets';
   return 'overview';
 });
 
@@ -266,7 +272,7 @@ onMounted(async () => {
 }
 
 #settings-view {
-  width: 100%;
+  width: calc(100% - 3.8rem);
   height: 100vh;
   display: flex;
   flex-direction: column;

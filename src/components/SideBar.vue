@@ -151,6 +151,7 @@ export default {
 #sidebar {
   display: flex;
   flex-basis: 3.8rem;
+  flex-shrink: 0;
   flex-direction: column;
   background-color: hsla(0, 0%, 100%, 0.8);
   backdrop-filter: blur(10px);
