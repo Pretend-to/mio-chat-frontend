@@ -55,21 +55,13 @@
         <div class="tools-label">工具：</div>
         <div class="tools-list">
           <el-tag
-            v-for="tool in preset.tools.slice(0, 3)"
+            v-for="tool in preset.tools"
             :key="tool"
             size="small"
             type="info"
             effect="plain"
           >
             {{ tool }}
-          </el-tag>
-          <el-tag
-            v-if="preset.tools.length > 3"
-            size="small"
-            type="info"
-            effect="plain"
-          >
-            +{{ preset.tools.length - 3 }}
           </el-tag>
         </div>
       </div>

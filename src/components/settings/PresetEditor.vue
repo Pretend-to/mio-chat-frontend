@@ -104,7 +104,7 @@
                 type="textarea"
                 :rows="4"
                 placeholder="请输入消息内容"
-                maxlength="2000"
+                maxlength="30000"
                 show-word-limit
               />
             </div>
@@ -123,24 +123,26 @@
       <!-- 工具列表 -->
       <el-form-item label="工具列表" prop="tools">
         <div class="tools-editor">
-          <el-select
+          <el-cascader
             v-model="formData.tools"
-            multiple
-            filterable
-            allow-create
-            placeholder="选择或输入工具名称"
+            :options="toolsOptions"
+            :props="cascaderProps"
+            placeholder="选择工具"
             style="width: 100%"
-          >
-            <el-option
-              v-for="tool in availableTools"
-              :key="tool"
-              :label="tool"
-              :value="tool"
-            />
-          </el-select>
+            clearable
+            filterable
+            :show-all-levels="false"
+            collapse-tags
+            collapse-tags-tooltip
+            :max-collapse-tags="20"
+            :loading="loadingTools"
+            class="tools-cascader"
+          />
           <div class="tools-help">
             <el-text type="info" size="small">
-              可以选择现有工具或输入新的工具名称，多个工具用回车分隔
+              从插件中选择可用的工具，支持多选和搜索
+              <span v-if="loadingTools">（正在加载工具列表...）</span>
+              <span v-else-if="toolsOptions.length === 0">（暂无可用工具）</span>
             </el-text>
           </div>
         </div>
@@ -164,8 +166,9 @@
 </template>
 
 <script setup>
+import { pluginAPI } from '@/lib/configApi.js';
 import { Delete, Plus } from '@element-plus/icons-vue';
-import { nextTick, reactive, ref, watch } from 'vue';
+import { nextTick, onMounted, reactive, ref, watch } from 'vue';
 
 const props = defineProps({
   visible: {
@@ -209,7 +212,7 @@ const formRules = {
   history: [
     { required: true, message: '至少需要一条对话历史', trigger: 'change' },
     {
-      validator: (rule, value, callback) => {
+      validator: (_, value, callback) => {
         if (!Array.isArray(value) || value.length === 0) {
           callback(new Error('至少需要一条对话历史'));
           return;
@@ -230,16 +233,111 @@ const formRules = {
   ]
 };
 
-// 可用工具列表（示例）
-const availableTools = ref([
-  'web_search',
-  'calculator',
-  'code_interpreter',
-  'image_generator',
-  'file_reader',
-  'weather',
-  'translator'
-]);
+// 工具选项数据
+const toolsOptions = ref([]);
+const loadingTools = ref(false);
+
+// 级联选择器配置
+const cascaderProps = {
+  multiple: true,
+  checkStrictly: false,
+  value: 'value',
+  label: 'label',
+  children: 'children',
+  emitPath: false // 只返回选中的值，不返回完整路径
+};
+
+// 从插件获取工具列表
+const loadToolsFromPlugins = async () => {
+  if (loadingTools.value) return;
+  
+  loadingTools.value = true;
+  try {
+    // 获取所有插件
+    const pluginsResult = await pluginAPI.listPlugins();
+    if (pluginsResult.code !== 0) {
+      console.error('获取插件列表失败:', pluginsResult.message);
+      return;
+    }
+
+    const plugins = pluginsResult.data.plugins || [];
+    const toolsMap = new Map(); // 用于去重和分组
+
+    // 遍历每个启用的插件获取工具
+    for (const plugin of plugins) {
+      if (!plugin.enabled) continue;
+
+      try {
+        const toolsResult = await pluginAPI.getPluginTools(plugin.name);
+        if (toolsResult.code === 0 && toolsResult.data.tools) {
+          // 处理工具数据
+          toolsResult.data.tools.forEach(group => {
+            group.tools.forEach(tool => {
+              // 提取工具名的有意义部分（使用 '_mid_' 分隔符）
+              const meaningfulName = tool.name.split('_mid_')[0];
+              
+              if (!toolsMap.has(meaningfulName)) {
+                toolsMap.set(meaningfulName, {
+                  value: meaningfulName,
+                  label: meaningfulName,
+                  fullName: tool.name,
+                  description: tool.description,
+                  plugin: plugin.displayName,
+                  group: group.group
+                });
+              }
+            });
+          });
+        }
+      } catch (error) {
+        console.error(`获取插件 ${plugin.name} 工具失败:`, error);
+      }
+    }
+
+    // 按插件 -> 工具组 -> 工具的三层结构构建级联选择器数据
+    const pluginGroups = new Map();
+    
+    toolsMap.forEach(tool => {
+      // 第一层：插件
+      if (!pluginGroups.has(tool.plugin)) {
+        pluginGroups.set(tool.plugin, {
+          value: tool.plugin,
+          label: tool.plugin,
+          children: new Map()
+        });
+      }
+      
+      const pluginGroup = pluginGroups.get(tool.plugin);
+      
+      // 第二层：工具组
+      if (!pluginGroup.children.has(tool.group)) {
+        pluginGroup.children.set(tool.group, {
+          value: `${tool.plugin}_${tool.group}`,
+          label: tool.group,
+          children: []
+        });
+      }
+      
+      // 第三层：工具
+      pluginGroup.children.get(tool.group).children.push({
+        value: tool.value,
+        label: tool.label
+      });
+    });
+
+    // 转换为数组格式
+    toolsOptions.value = Array.from(pluginGroups.values()).map(plugin => ({
+      ...plugin,
+      children: Array.from(plugin.children.values())
+    }));
+  } catch (error) {
+    console.error('加载工具列表失败:', error);
+    // 如果加载失败，提供一个空的选项结构
+    toolsOptions.value = [];
+  } finally {
+    loadingTools.value = false;
+  }
+};
 
 // 监听预设数据变化
 watch(() => props.preset, (newPreset) => {
@@ -317,7 +415,7 @@ const handleSubmit = async () => {
     };
 
     // 提交数据
-    await emit('submit', {
+    emit('submit', {
       data: submitData,
       mode: props.mode
     });
@@ -331,6 +429,11 @@ const handleSubmit = async () => {
     submitting.value = false;
   }
 };
+
+// 组件挂载时加载工具列表
+onMounted(() => {
+  loadToolsFromPlugins();
+});
 </script>
 
 <style scoped lang="scss">
@@ -381,6 +484,36 @@ const handleSubmit = async () => {
 
   .tools-help {
     margin-top: 8px;
+  }
+
+  .tools-cascader {
+    :deep(.el-cascader-panel) {
+      .el-cascader-menu {
+        width: 180px; // 固定每一级的宽度
+        min-width: 180px;
+        
+        &:first-child {
+          width: 200px; // 插件名可能较长，给更多空间
+          min-width: 200px;
+        }
+        
+        &:nth-child(2) {
+          width: 160px; // 工具组名通常较短
+          min-width: 160px;
+        }
+        
+        &:nth-child(3) {
+          width: 140px; // 工具名最短
+          min-width: 140px;
+        }
+      }
+      
+      .el-cascader-node__label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
   }
 }
 

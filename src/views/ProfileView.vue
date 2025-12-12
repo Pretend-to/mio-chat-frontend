@@ -127,8 +127,8 @@
 </template>
 
 <script>
-import { client, config } from "@/lib/runtime.js";
 import ContactorSettings from "@/components/ContactorSettings.vue"; // Import the new component
+import { client, config } from "@/lib/runtime.js";
 
 export default {
   components: {
