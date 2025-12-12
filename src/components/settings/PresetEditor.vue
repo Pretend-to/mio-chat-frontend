@@ -503,7 +503,7 @@ const handleCropperConfirm = async (croppedBlob) => {
 
     const result = await response.json();
 
-    if (result.success && result.data?.url) {
+    if (result.code === 0 && result.data?.url) {
       formData.avatar = result.data.url;
       ElMessage.success('头像上传成功');
     } else {
