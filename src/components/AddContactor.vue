@@ -146,13 +146,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { ElMessage } from 'element-plus';
-import { Search, Loading } from '@element-plus/icons-vue';
-import Contactor from "../lib/contactor";
 import { config } from "@/lib/runtime.js";
 import { getAvatarByAdapterType } from "@/utils/avatar.js";
+import { Loading, Search } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
+import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import Contactor from "../lib/contactor";
 
 // Props
 const props = defineProps({
@@ -357,11 +357,11 @@ const loadSerachPresets = async () => {
 const loadSpecificType = async () => {
   if (activeTypeIndex.value === 3 && systemPresets.value.length === 0) {
     const res = await fetch(
-      `/api/openai/presets?type=system&start=${systemShownNum.value}`,
+      `/api/openai/presets?type=system&start=${systemShownNum.value}&limit=20`,
     ).then((res) => res.json());
     systemPresets.value = res.data || [];
     systemShownNum.value += systemPresets.value.length;
-    if (!res.data || res.data.length < 9) {
+    if (!res.data || res.data.length < 20) {
       moreSystemPresets.value = false;
     }
   } else if (
@@ -369,11 +369,11 @@ const loadSpecificType = async () => {
     recommendPresets.value.length === 0
   ) {
     const res = await fetch(
-      `/api/openai/presets?type=recommended&start=${recommendShownNum.value}`,
+      `/api/openai/presets?type=recommended&start=${recommendShownNum.value}&limit=20`,
     ).then((res) => res.json());
     recommendPresets.value = res.data || [];
     recommendShownNum.value += recommendPresets.value.length;
-    if (!res.data || res.data.length < 9) {
+    if (!res.data || res.data.length < 20) {
       moreRecommendPresets.value = false;
     }
   }
@@ -382,24 +382,26 @@ const loadSpecificType = async () => {
 const loadMoreData = async () => {
   if (activeTypeIndex.value === 3 && moreSystemPresets.value) {
     const res = await fetch(
-      `/api/openai/presets?type=system&start=${systemShownNum.value}`,
+      `/api/openai/presets?type=system&start=${systemShownNum.value}&limit=20`,
     ).then((res) => res.json());
     const newPresets = res.data || [];
     if (newPresets.length > 0) {
       systemPresets.value = [...systemPresets.value, ...newPresets];
       systemShownNum.value += newPresets.length;
-    } else {
+    }
+    if (newPresets.length < 20) {
       moreSystemPresets.value = false;
     }
   } else if (activeTypeIndex.value === 0 && moreRecommendPresets.value) {
     const res = await fetch(
-      `/api/openai/presets?type=recommended&start=${recommendShownNum.value}`,
+      `/api/openai/presets?type=recommended&start=${recommendShownNum.value}&limit=20`,
     ).then((res) => res.json());
     const newPresets = res.data || [];
     if (newPresets.length > 0) {
       recommendPresets.value = [...recommendPresets.value, ...newPresets];
       recommendShownNum.value += newPresets.length;
-    } else {
+    }
+    if (newPresets.length < 20) {
       moreRecommendPresets.value = false;
     }
   }
@@ -412,7 +414,7 @@ const changeShownType = (index) => {
 };
 
 // 处理滚动事件，实现无限滚动
-const handleScroll = ({ scrollTop, scrollLeft }) => {
+const handleScroll = ({ scrollTop }) => {
   const scrollbar = document.querySelector('.presets-list .el-scrollbar__wrap');
   if (!scrollbar || !showPresetsLoader.value) return;
   
@@ -420,8 +422,8 @@ const handleScroll = ({ scrollTop, scrollLeft }) => {
   const clientHeight = scrollbar.clientHeight;
   const distanceToBottom = scrollHeight - scrollTop - clientHeight;
   
-  // 当距离底部小于 10px 时加载更多
-  if (distanceToBottom < 10) {
+  // 当距离底部小于 100px 时提前加载更多，提升用户体验
+  if (distanceToBottom < 100) {
     loadMoreData();
   }
 };
