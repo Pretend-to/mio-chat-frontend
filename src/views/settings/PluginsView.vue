@@ -168,6 +168,7 @@
       :title="`${currentPlugin?.displayName} - 详情`"
       width="800px"
       destroy-on-close
+      class="config-dialog plugin-detail-dialog"
     >
       <div class="dialog-content">
         <div v-if="currentPlugin" class="plugin-detail">
@@ -243,6 +244,7 @@
       :title="`${currentPlugin?.displayName} - 配置`"
       width="700px"
       destroy-on-close
+      class="config-dialog plugin-config-dialog"
     >
       <div class="dialog-content">
         <div class="config-editor">

@@ -5,6 +5,7 @@
     width="600px"
     :before-close="handleClose"
     destroy-on-close
+    class="cropper-dialog"
   >
     <div class="cropper-container">
       <div class="cropper-main">

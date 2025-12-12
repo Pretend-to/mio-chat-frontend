@@ -1,5 +1,156 @@
 <template>
+  <!-- 移动端全屏模式 -->
+  <div v-if="isMobile" class="mobile-fullscreen-overlay" :class="{ show: show }" @click="handleOverlayClick">
+    <div class="mobile-container" :class="{ show: show }" @click.stop>
+      <div class="mobile-header">
+        <div class="mobile-title">添加机器人</div>
+        <button class="mobile-close-btn" @click="close">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="add-contactor-body mobile">
+        <!-- 标签页导航 -->
+        <div class="tabs mobile">
+          <div
+            v-for="(tab, index) in tabs"
+            :key="index"
+            class="tab-item"
+            :class="{ active: activeTab === index }"
+            @click="activeTab = index"
+          >
+            {{ tab }}
+          </div>
+        </div>
+
+        <!-- 标签页内容 -->
+        <div class="tab-content mobile">
+          <!-- 适配器列表 -->
+          <div v-show="activeTab === 0" class="adapters-view">
+            <div class="search">
+              <el-input
+                v-model="adapterKeyword"
+                placeholder="搜索适配器..."
+                :prefix-icon="Search"
+                clearable
+              />
+            </div>
+            <el-scrollbar class="adapters-list">
+              <div
+                v-for="(provider, index) in filteredProviders"
+                :key="index"
+                class="adapter-item mobile"
+              >
+                <div class="adapter-icon" :style="{ backgroundColor: getProviderColor(provider.adapterType) }">
+                  <img :src="getAvatarByAdapterType(provider.adapterType)" class="adapter-icon-img" />
+                </div>
+                <div class="adapter-info">
+                  <div class="adapter-header">
+                    <el-tag size="small" :type="getProviderTagType(provider.adapterType)" effect="plain" round>
+                      {{ provider.adapterType }}
+                    </el-tag>
+                    <div class="adapter-name">{{ provider.label }}</div>
+                  </div>
+                  <div class="adapter-desc">{{ getProviderDesc(provider.adapterType) }}</div>
+                </div>
+                <el-button type="primary" size="small" @click="handleAddByProvider(provider)">添加</el-button>
+              </div>
+              <el-empty v-if="filteredProviders.length === 0" description="未找到相关适配器" />
+            </el-scrollbar>
+          </div>
+
+          <!-- 预设列表 -->
+          <div v-show="activeTab === 1" class="presets-view">
+            <div class="search">
+              <el-input
+                v-model="keyWord"
+                placeholder="输入搜索关键词"
+                :prefix-icon="Search"
+                clearable
+                @input="loadSerachPresets"
+              />
+            </div>
+            <div class="info">
+              <header class="presets-types mobile">
+                <div :style="{ left: buttonTranslate }" class="slide-button"></div>
+                <nav
+                  v-for="(type, index) in avaliablePresetTypes"
+                  :key="index"
+                  :class="activeTypeIndex === index ? 'active' : ''"
+                  @click="changeShownType(index)"
+                >
+                  {{ type }}
+                </nav>
+              </header>
+              <el-scrollbar
+                v-if="shownPrestsList.length > 0 || [0, 3].includes(activeTypeIndex)"
+                class="presets-list"
+                @scroll="handleScroll"
+              >
+                <div
+                  v-for="(preset, index) in shownPrestsList"
+                  :key="index"
+                  class="presets-item mobile"
+                >
+                  <div v-if="preset.avatar" class="preset-avatar custom">
+                    <img :src="preset.avatar" />
+                  </div>
+                  <div v-else-if="preset.model" class="preset-avatar model">
+                    <img :src="Contactor.getAvatarByModel(preset.model)" />
+                  </div>
+                  <div v-else class="preset-avatar">
+                    {{ preset.name.slice(0, 2) }}
+                  </div>
+                  <div class="preset-info">
+                    <div class="preset-name">{{ preset.name }}</div>
+                    <div :title="preset.opening" class="preset-description">
+                      {{ preset.opening }}
+                    </div>
+                  </div>
+                  <el-button @click="addBot(preset)">添加</el-button>
+                </div>
+                <div v-if="showPresetsLoader" class="loading">
+                  <el-icon class="is-loading">
+                    <Loading />
+                  </el-icon>
+                  <span style="margin-left: 8px;">加载中...</span>
+                </div>
+              </el-scrollbar>
+              <div v-else class="empty-list">
+                <el-empty :image-size="120" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 分享码 -->
+          <div v-show="activeTab === 2" class="share-code-view">
+            <div class="share-input-container">
+              <div class="input-label">输入分享码或分享链接</div>
+              <el-input
+                v-model="shareCode"
+                placeholder="粘贴分享码或链接..."
+                clearable
+                class="share-input"
+              />
+              <el-button
+                type="primary"
+                :disabled="!shareCode.trim()"
+                @click="handleAddByShareCode"
+                style="width: 100%; margin-top: 16px;"
+              >
+                加载 Bot
+              </el-button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 桌面端对话框模式 -->
   <el-dialog
+    v-else
     :model-value="show"
     title="添加机器人"
     width="500px"
@@ -150,7 +301,7 @@ import { config } from "@/lib/runtime.js";
 import { getAvatarByAdapterType } from "@/utils/avatar.js";
 import { Loading, Search } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import Contactor from "../lib/contactor";
 
@@ -188,6 +339,7 @@ const activeTypeIndex = ref(0);
 const buttonTranslate = ref("4px");
 const moreSystemPresets = ref(true);
 const moreRecommendPresets = ref(true);
+const isMobile = ref(false);
 
 // Computed
 const showPresetsLoader = computed(() => {
@@ -230,6 +382,14 @@ const filteredProviders = computed(() => {
 });
 
 // Methods
+const checkMobile = () => {
+  isMobile.value = window.innerWidth <= 768;
+};
+
+const handleOverlayClick = () => {
+  close();
+};
+
 const close = () => {
   emit('close');
 };
@@ -430,16 +590,100 @@ const handleScroll = ({ scrollTop }) => {
 
 // Lifecycle
 onMounted(async () => {
+  checkMobile();
+  window.addEventListener('resize', checkMobile);
   getAddHistory();
   await loadSpecificType();
+});
+
+// 清理事件监听器
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile);
 });
 </script>
 
 <style lang="scss" scoped>
+// 移动端全屏样式
+.mobile-fullscreen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+
+  &.show {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+.mobile-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--el-bg-color);
+  transform: translateY(-100%);
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  display: flex;
+  flex-direction: column;
+
+  &.show {
+    transform: translateY(0);
+  }
+}
+
+.mobile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--el-border-color-light);
+  background-color: var(--el-bg-color);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.mobile-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.mobile-close-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: var(--el-text-color-regular);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: var(--el-fill-color-light);
+  }
+}
+
 .add-contactor-body {
   height: 60vh;
   display: flex;
   flex-direction: column;
+
+  &.mobile {
+    height: calc(100vh - 65px);
+    flex: 1;
+  }
 }
 
 .tabs {
@@ -447,6 +691,11 @@ onMounted(async () => {
   border-bottom: 1px solid var(--el-border-color-light);
   flex-shrink: 0;
   padding: 0 20px;
+
+  &.mobile {
+    padding: 0 16px;
+    background-color: var(--el-bg-color);
+  }
 }
 
 .tab-item {
@@ -477,6 +726,11 @@ onMounted(async () => {
   padding: 0 20px;
   display: flex;
   flex-direction: column;
+
+  &.mobile {
+    padding: 0 16px;
+    flex: 1;
+  }
 }
 
 .search {
@@ -505,6 +759,11 @@ onMounted(async () => {
 
   &:hover {
     background-color: var(--el-fill-color-light);
+  }
+
+  &.mobile {
+    padding: 16px 12px;
+    margin-bottom: 12px;
   }
 }
 
@@ -579,6 +838,11 @@ onMounted(async () => {
   margin-bottom: 16px;
   height: 40px;
 
+  &.mobile {
+    height: 44px;
+    padding: 6px;
+  }
+
   nav {
     width: 25%;
     text-align: center;
@@ -588,9 +852,15 @@ onMounted(async () => {
     z-index: 2;
     transition: color 0.3s;
     color: var(--el-text-color-regular);
+    font-size: 14px;
 
     &.active {
       color: var(--el-color-primary);
+    }
+
+    @media (max-width: 768px) {
+      font-size: 13px;
+      padding: 8px 0;
     }
   }
 }
@@ -614,6 +884,10 @@ onMounted(async () => {
   padding: 10px 0;
   border-bottom: 1px solid var(--el-border-color-lighter);
 
+  &.mobile {
+    padding: 16px 0;
+  }
+
   .preset-avatar {
     width: 40px;
     height: 40px;
@@ -633,6 +907,12 @@ onMounted(async () => {
       height: 100%;
       object-fit: cover;
     }
+
+    @media (max-width: 768px) {
+      width: 44px;
+      height: 44px;
+      margin-right: 16px;
+    }
   }
 
   .preset-info {
@@ -642,6 +922,10 @@ onMounted(async () => {
 
   .preset-name {
     font-weight: 500;
+
+    @media (max-width: 768px) {
+      font-size: 16px;
+    }
   }
 
   .preset-description {
@@ -650,6 +934,11 @@ onMounted(async () => {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+
+    @media (max-width: 768px) {
+      font-size: 13px;
+      margin-top: 4px;
+    }
   }
 }
 
@@ -691,3 +980,64 @@ onMounted(async () => {
   }
 }
 </style>
+
+// 移动端响应式样式
+@media (max-width: 768px) {
+  .add-contactor-dialog {
+    display: none !important;
+  }
+
+  .search {
+    padding: 12px 0 !important;
+  }
+
+  .adapter-icon {
+    width: 44px !important;
+    height: 44px !important;
+    margin-right: 16px !important;
+  }
+
+  .adapter-name {
+    font-size: 16px !important;
+  }
+
+  .adapter-desc {
+    font-size: 13px !important;
+  }
+
+  .el-button {
+    padding: 8px 16px !important;
+  }
+
+  .share-code-view {
+    padding-top: 20px !important;
+  }
+
+  .input-label {
+    font-size: 15px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .el-input {
+    font-size: 16px !important;
+  }
+
+  .loading {
+    padding: 24px !important;
+    font-size: 15px !important;
+  }
+}
+
+// 平板适配
+@media (min-width: 769px) and (max-width: 1024px) {
+  .mobile-fullscreen-overlay {
+    display: none !important;
+  }
+}
+
+// 确保桌面端不显示移动端组件
+@media (min-width: 769px) {
+  .mobile-fullscreen-overlay {
+    display: none !important;
+  }
+}

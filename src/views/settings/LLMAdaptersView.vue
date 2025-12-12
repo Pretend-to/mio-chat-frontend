@@ -18,11 +18,13 @@
     <transition name="fade" mode="out-in">
       <div v-if="!loading" class="content-container">
         <!-- 页面头部 -->
-        <div class="page-header">
-          <h1>LLM 适配器管理</h1>
-          <div class="header-actions">
+        <div class="page-header" :class="{ 'mobile': isMobile }">
+          <h1 v-if="!isMobile">LLM 适配器管理</h1>
+          
+          <!-- 桌面端操作按钮 -->
+          <div v-if="!isMobile" class="header-actions">
             <el-button
-              v-if="configStore.selectedAdapters.length > 0"
+              v-if="configStore.selectedAdapters && configStore.selectedAdapters.length > 0"
               type="success"
               :icon="Check"
               @click="handleBatchEnable"
@@ -30,7 +32,7 @@
               批量启用 ({{ configStore.selectedAdapters.length }})
             </el-button>
             <el-button
-              v-if="configStore.selectedAdapters.length > 0"
+              v-if="configStore.selectedAdapters && configStore.selectedAdapters.length > 0"
               type="warning"
               :icon="Close"
               @click="handleBatchDisable"
@@ -38,7 +40,7 @@
               批量禁用
             </el-button>
             <el-button
-              v-if="configStore.selectedAdapters.length > 0"
+              v-if="configStore.selectedAdapters && configStore.selectedAdapters.length > 0"
               type="danger"
               :icon="Delete"
               @click="handleBatchDelete"
@@ -70,6 +72,48 @@
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
+          </div>
+
+          <!-- 移动端操作按钮 -->
+          <div v-if="isMobile" class="mobile-actions">
+            <el-button
+              type="primary"
+              :icon="Refresh"
+              :loading="refreshing"
+              @click="handleRefreshAll"
+              size="small"
+            >
+              刷新
+            </el-button>
+            <el-dropdown @command="handleAddAdapter" trigger="click">
+              <el-button type="primary" :icon="Plus" size="small">
+                添加
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item
+                    v-for="type in adapterTypes"
+                    :key="type"
+                    :command="type"
+                  >
+                    <el-icon><Connection /></el-icon>
+                    {{ formatTypeLabel(type) }}
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
+        </div>
+
+        <!-- 移动端批量操作栏 -->
+        <div v-if="isMobile && configStore.selectedAdapters && configStore.selectedAdapters.length > 0" class="mobile-batch-actions">
+          <div class="batch-info">
+            已选择 {{ configStore.selectedAdapters.length }} 项
+          </div>
+          <div class="batch-buttons">
+            <el-button type="success" size="small" @click="handleBatchEnable">启用</el-button>
+            <el-button type="warning" size="small" @click="handleBatchDisable">禁用</el-button>
+            <el-button type="danger" size="small" @click="handleBatchDelete">删除</el-button>
           </div>
         </div>
 
@@ -212,19 +256,19 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import AdapterEditor from '@/components/settings/AdapterEditor.vue';
+import { useConfigStore } from '@/stores/configStore.js';
 import {
-  Plus,
-  Refresh,
-  Delete,
+  ArrowDown,
   Check,
   Close,
   Connection,
-  ArrowDown
+  Delete,
+  Plus,
+  Refresh
 } from '@element-plus/icons-vue';
-import { useConfigStore } from '@/stores/configStore.js';
-import AdapterEditor from '@/components/settings/AdapterEditor.vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 const configStore = useConfigStore();
 
@@ -234,6 +278,13 @@ const editorVisible = ref(false);
 const editorMode = ref('add');
 const editorType = ref('openai');
 const editorAdapter = ref(null);
+
+// 移动端检测
+const isMobile = ref(false);
+
+const checkMobile = () => {
+  isMobile.value = window.innerWidth <= 768;
+};
 const editorIndex = ref(-1);
 
 // 获取所有适配器类型
@@ -402,6 +453,11 @@ const handleRefreshAll = async () => {
 
 // 批量启用
 const handleBatchEnable = async () => {
+  if (!configStore.selectedAdapters || configStore.selectedAdapters.length === 0) {
+    ElMessage.warning('请先选择要操作的适配器');
+    return;
+  }
+  
   try {
     const results = await configStore.batchToggleAdapters(
       configStore.selectedAdapters,
@@ -418,6 +474,11 @@ const handleBatchEnable = async () => {
 
 // 批量禁用
 const handleBatchDisable = async () => {
+  if (!configStore.selectedAdapters || configStore.selectedAdapters.length === 0) {
+    ElMessage.warning('请先选择要操作的适配器');
+    return;
+  }
+  
   try {
     const results = await configStore.batchToggleAdapters(
       configStore.selectedAdapters,
@@ -434,6 +495,11 @@ const handleBatchDisable = async () => {
 
 // 批量删除
 const handleBatchDelete = async () => {
+  if (!configStore.selectedAdapters || configStore.selectedAdapters.length === 0) {
+    ElMessage.warning('请先选择要删除的适配器');
+    return;
+  }
+  
   try {
     await ElMessageBox.confirm(
       `确定要删除选中的 ${configStore.selectedAdapters.length} 个适配器吗？`,
@@ -482,6 +548,10 @@ const handleEditorSubmit = async ({ type, index, data, mode }) => {
 
 // 初始化
 onMounted(async () => {
+  // 检测移动端
+  checkMobile();
+  window.addEventListener('resize', checkMobile);
+  
   loading.value = true;
   try {
     if (!configStore.config) {
@@ -493,6 +563,10 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile);
 });
 </script>
 
@@ -512,6 +586,11 @@ onMounted(async () => {
   padding: 24px;
   max-width: 1400px;
   margin: 0 auto;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+    max-width: 100%;
+  }
 }
 
 .loading-container {
@@ -614,6 +693,11 @@ onMounted(async () => {
   align-items: center;
   margin-bottom: 24px;
 
+  &.mobile {
+    margin-bottom: 16px;
+    justify-content: flex-end;
+  }
+
   h1 {
     margin: 0;
     font-size: 24px;
@@ -625,6 +709,34 @@ onMounted(async () => {
     display: flex;
     gap: 12px;
   }
+
+  .mobile-actions {
+    display: flex;
+    gap: 8px;
+  }
+}
+
+// 移动端批量操作栏
+.mobile-batch-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #ecf5ff;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border: 1px solid #b3d8ff;
+
+  .batch-info {
+    font-size: 14px;
+    color: #409eff;
+    font-weight: 500;
+  }
+
+  .batch-buttons {
+    display: flex;
+    gap: 8px;
+  }
 }
 
 .stats-bar {
@@ -634,6 +746,13 @@ onMounted(async () => {
   background: #f8f9fa;
   border-radius: 8px;
   margin-bottom: 20px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+  }
 
   .stat-item {
     display: flex;
@@ -708,3 +827,91 @@ onMounted(async () => {
   }
 }
 </style>
+// 移动端响应式样式
+@media (max-width: 768px) {
+  .page-header {
+    .header-actions {
+      display: none !important;
+    }
+  }
+
+  .stats-bar {
+    .stat-item {
+      .stat-label {
+        font-size: 13px;
+      }
+      .stat-value {
+        font-size: 14px;
+      }
+    }
+  }
+
+  .adapters-list {
+    .adapter-card {
+      margin-bottom: 12px;
+      
+      .card-header {
+        padding: 12px 16px;
+        
+        .adapter-title {
+          font-size: 16px;
+        }
+        
+        .adapter-actions {
+          gap: 8px;
+          
+          .el-button {
+            padding: 6px 12px;
+            font-size: 13px;
+          }
+        }
+      }
+      
+      .card-content {
+        padding: 12px 16px;
+        
+        .adapter-info {
+          .info-item {
+            margin-bottom: 8px;
+            
+            .info-label {
+              font-size: 13px;
+            }
+            
+            .info-value {
+              font-size: 14px;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .empty-state {
+    padding: 40px 20px;
+    
+    .el-empty {
+      :deep(.el-empty__description) {
+        font-size: 14px;
+      }
+    }
+  }
+}
+
+// 平板适配
+@media (min-width: 769px) and (max-width: 1024px) {
+  .llm-adapters-view {
+    padding: 20px;
+  }
+  
+  .page-header {
+    .header-actions {
+      gap: 8px;
+      
+      .el-button {
+        padding: 8px 12px;
+        font-size: 13px;
+      }
+    }
+  }
+}

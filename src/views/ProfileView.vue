@@ -113,7 +113,7 @@
       <el-button type="danger" plain @click="centerDialogVisible = true">
         删除好友
       </el-button>
-      <el-dialog v-model="centerDialogVisible" title="警告" width="300" center>
+      <el-dialog v-model="centerDialogVisible" title="警告" width="300" center class="confirm-dialog">
         <span> 确认要删除此好友吗？该操作不可逆。 </span>
         <template #footer>
           <div class="dialog-footer">

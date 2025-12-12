@@ -5,6 +5,7 @@
     width="800px"
     :before-close="handleClose"
     destroy-on-close
+    class="form-dialog preset-editor-dialog"
   >
     <div class="dialog-content">
       <el-form

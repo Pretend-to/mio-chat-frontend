@@ -241,31 +241,30 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import ConfigCompare from '@/components/settings/ConfigCompare.vue';
 import LoadingSkeleton from '@/components/settings/LoadingSkeleton.vue';
-import {
-  Connection,
-  CircleCheck,
-  Grid,
-  SuccessFilled,
-  WarningFilled,
-  Refresh,
-  Download,
-  Upload,
-  DocumentCopy,
-  Pointer,
-  Monitor,
-  ChromeFilled,
-  ChatDotRound,
-  Warning,
-  ArrowRight,
-  Document
-} from '@element-plus/icons-vue';
 import { useConfigStore } from '@/stores/configStore.js';
 import { usePresetsStore } from '@/stores/presetsStore.js';
-import ConfigCompare from '@/components/settings/ConfigCompare.vue';
+import {
+  ArrowRight,
+  ChatDotRound,
+  ChromeFilled,
+  CircleCheck,
+  Connection,
+  Document,
+  DocumentCopy,
+  Download,
+  Grid,
+  Monitor,
+  Refresh,
+  SuccessFilled,
+  Upload,
+  Warning,
+  WarningFilled
+} from '@element-plus/icons-vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 
 const router = useRouter();
 const configStore = useConfigStore();
@@ -757,16 +756,173 @@ onMounted(async () => {
       background-color: #ecf5ff;
     }
 
+    // 状态标签 - 固定宽度
+    .el-tag {
+      flex-shrink: 0;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    // 适配器名称 - 限制最大宽度
     .adapter-name {
       font-weight: 500;
       color: #303133;
+      flex: 1;
+      min-width: 0; // 允许收缩
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
+    // 默认模型 - 限制最大宽度
     .adapter-model {
-      margin-left: auto;
+      flex-grow: 1;
       color: #909399;
       font-size: 13px;
+      flex-shrink: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: right;
+    }
+  }
+}
+
+// 移动端适配
+@media (max-width: 768px) {
+  .overview-view {
+    padding: 16px;
+  }
+  
+  // 隐藏快速操作部分
+  .section-container {
+    display: none !important;
+  }
+  
+  // 优化统计卡片在移动端的显示
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    
+    .stat-card {
+      .stat-icon {
+        width: 40px;
+        height: 40px;
+        
+        .el-icon {
+          font-size: 20px !important;
+        }
+      }
+      
+      .stat-content {
+        .stat-value {
+          font-size: 20px;
+        }
+        
+        .stat-label {
+          font-size: 12px;
+        }
+      }
+    }
+  }
+  
+  // 优化头部操作栏
+  .overview-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    
+    .header-title {
+      .subtitle {
+        font-size: 13px;
+      }
+    }
+    
+    .header-actions {
+      align-self: flex-end;
+      
+      .el-button {
+        width: 36px;
+        height: 36px;
+      }
+    }
+  }
+  
+  // 优化卡片间距
+  .section-card {
+    margin-bottom: 16px;
+    
+    .el-card__header {
+      padding: 16px;
+    }
+    
+    .el-card__body {
+      padding: 16px;
+    }
+  }
+  
+  // 优化适配器列表
+  .adapters-overview {
+    .adapter-item {
+      padding: 10px;
+      gap: 8px;
+      
+      // 移动端调整各字段宽度
+      .el-tag {
+        min-width: 50px;
+        font-size: 11px;
+      }
+      
+      .adapter-name {
+        font-size: 14px;
+        max-width: 100px; // 移动端更小的宽度
+      }
+      
+      .adapter-model {
+        font-size: 12px;
+      }
     }
   }
 }
 </style>
+// 平板端适配器列表优化
+@media (min-width: 769px) and (max-width: 1024px) {
+  .adapters-overview {
+    .adapter-item {
+      .adapter-name {
+        max-width: 120px;
+      }
+      
+      .adapter-model {
+        max-width: 100px;
+      }
+    }
+  }
+}
+
+// 超小屏幕适配
+@media (max-width: 480px) {
+  .adapters-overview {
+    .adapter-item {
+      padding: 8px;
+      gap: 6px;
+      
+      .el-tag {
+        min-width: 45px;
+        font-size: 10px;
+        padding: 2px 6px;
+      }
+      
+      .adapter-name {
+        max-width: 80px;
+        font-size: 13px;
+      }
+      
+      .adapter-model {
+        max-width: 60px;
+        font-size: 11px;
+      }
+    }
+  }
+}

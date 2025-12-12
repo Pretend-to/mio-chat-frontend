@@ -184,3 +184,518 @@ body
     @media (min-width: 600px)
         max-width: 20rem
         
+// 移动端对话框全屏适配
+@media (max-width: 768px)
+    // 修复遮罩层高度问题
+    .el-overlay
+        position: fixed !important
+        top: 0 !important
+        left: 0 !important
+        width: 100vw !important
+        height: 100vh !important
+        overflow: hidden !important
+        
+        .el-overlay-dialog
+            width: 100vw !important
+            height: 100vh !important
+            max-height: 100vh !important
+            overflow: hidden !important
+            display: flex !important
+            align-items: flex-start !important
+            justify-content: center !important
+            padding: 0 !important
+            margin: 0 !important
+    
+    // Element Plus 对话框移动端全屏适配
+    .el-dialog
+        width: 100vw !important
+        height: 100vh !important
+        max-width: 100vw !important
+        max-height: 100vh !important
+        margin: 0 !important
+        border-radius: 0 !important
+        top: 0 !important
+        left: 0 !important
+        transform: none !important
+        position: relative !important
+        display: flex !important
+        flex-direction: column !important
+        overflow: hidden !important
+        
+        .el-dialog__header
+            padding: 16px 20px !important
+            border-bottom: 1px solid #e4e7ed !important
+            background: #fff !important
+            z-index: 10 !important
+            flex-shrink: 0 !important
+            
+            .el-dialog__title
+                font-size: 18px !important
+                font-weight: 600 !important
+                
+        .el-dialog__body
+            padding: 0 !important
+            flex: 1 !important
+            overflow-y: auto !important
+            overflow-x: hidden !important
+            -webkit-overflow-scrolling: touch !important
+            
+        .el-dialog__footer
+            padding: 16px 20px !important
+            border-top: 1px solid #e4e7ed !important
+            background: #fff !important
+            z-index: 10 !important
+            flex-shrink: 0 !important
+            
+    // 特殊处理一些常见的对话框内容
+    .el-dialog .el-form
+        padding: 20px !important
+        
+    .el-dialog .el-table
+        .el-table__header-wrapper,
+        .el-table__body-wrapper
+            overflow-x: auto !important
+            
+    // 按钮适配
+    .el-dialog .el-button
+        min-width: 80px !important
+        padding: 8px 16px !important
+        
+    // 输入框适配
+    .el-dialog .el-input
+        .el-input__inner
+            font-size: 16px !important // 防止iOS缩放
+            
+    // 选择器适配
+    .el-dialog .el-select
+        width: 100% !important
+        
+    // 日期选择器适配
+    .el-dialog .el-date-editor
+        width: 100% !important
+
+// 移动端表格适配
+@media (max-width: 768px)
+    .el-table
+        font-size: 14px !important
+        
+        .el-table__header-wrapper
+            .el-table__header
+                th
+                    padding: 8px 4px !important
+                    font-size: 13px !important
+                    
+        .el-table__body-wrapper
+            .el-table__body
+                td
+                    padding: 8px 4px !important
+                    font-size: 13px !important
+                    
+        // 隐藏一些不重要的列
+        .mobile-hidden
+            display: none !important
+            
+    // 分页器适配
+    .el-pagination
+        justify-content: center !important
+        
+        .el-pagination__sizes,
+        .el-pagination__jump
+            display: none !important
+            
+        .el-pager
+            li
+                min-width: 32px !important
+                height: 32px !important
+                line-height: 32px !important
+                font-size: 14px !important
+
+// 移动端消息提示适配
+@media (max-width: 768px)
+    .el-message
+        min-width: auto !important
+        max-width: calc(100vw - 32px) !important
+        left: 16px !important
+        right: 16px !important
+        
+    .el-notification
+        width: calc(100vw - 32px) !important
+        left: 16px !important
+        right: 16px !important
+        
+// 移动端下拉菜单适配
+@media (max-width: 768px)
+    .el-dropdown-menu
+        max-width: calc(100vw - 32px) !important
+        
+    .el-select-dropdown
+        max-width: calc(100vw - 32px) !important
+        
+    .el-picker-panel
+        max-width: calc(100vw - 32px) !important
+// 特殊对话框的移动端适配
+@media (max-width: 768px)
+    // 表单对话框特殊处理
+    .el-dialog.form-dialog
+        .el-dialog__body
+            padding: 0 !important
+            
+        .dialog-content
+            padding: 16px 20px !important
+            height: 100% !important
+            overflow-y: auto !important
+            -webkit-overflow-scrolling: touch !important
+            
+        .el-form
+            height: 100% !important
+            
+            .el-form-item
+                margin-bottom: 16px !important
+                
+                .el-form-item__label
+                    font-size: 14px !important
+                    line-height: 32px !important
+                    
+                .el-form-item__content
+                    .el-input,
+                    .el-select,
+                    .el-textarea
+                        width: 100% !important
+                        
+                    .el-input__inner,
+                    .el-textarea__inner
+                        font-size: 16px !important // 防止iOS缩放
+                        
+    // 配置对话框特殊处理
+    .el-dialog.config-dialog
+        .el-dialog__body
+            padding: 0 !important
+            
+        .dialog-content,
+        .config-content
+            padding: 16px 20px !important
+            height: 100% !important
+            overflow-y: auto !important
+            -webkit-overflow-scrolling: touch !important
+            
+    // 调试对话框特殊处理  
+    .el-dialog.debug-dialog
+        .el-dialog__body
+            padding: 0 !important
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important
+            
+        .debug-container
+            height: 100% !important
+            overflow-y: auto !important
+            -webkit-overflow-scrolling: touch !important
+            
+    // 图片裁剪对话框
+    .el-dialog.cropper-dialog
+        .el-dialog__body
+            padding: 0 !important
+            
+        .dialog-content
+            padding: 16px !important
+            height: 100% !important
+            overflow-y: auto !important
+            -webkit-overflow-scrolling: touch !important
+            
+        .cropper-container
+            height: calc(100% - 32px) !important
+            max-height: none !important
+            
+    // 确认对话框
+    .el-dialog.confirm-dialog
+        width: calc(100vw - 32px) !important
+        margin: 16px !important
+        border-radius: 8px !important
+        
+        .el-dialog__body
+            padding: 20px !important
+            text-align: center !important
+            
+        .el-dialog__footer
+            text-align: center !important
+
+// 移动端特殊组件适配
+@media (max-width: 768px)
+    // 代码编辑器
+    .monaco-editor,
+    .code-editor
+        font-size: 14px !important
+        
+    // 图片上传
+    .el-upload
+        width: 100% !important
+        
+        .el-upload-dragger
+            width: 100% !important
+            height: 120px !important
+            
+    // 颜色选择器
+    .el-color-picker
+        .el-color-picker__trigger
+            width: 40px !important
+            height: 40px !important
+            
+    // 滑块
+    .el-slider
+        margin: 0 16px !important
+        
+    // 开关
+    .el-switch
+        .el-switch__label
+            font-size: 14px !important
+
+// 移动端触摸优化
+@media (max-width: 768px)
+    // 增大可点击区域
+    .el-button,
+    .el-checkbox,
+    .el-radio,
+    .el-switch
+        min-height: 44px !important
+        
+    // 表格行高
+    .el-table
+        .el-table__row
+            height: 48px !important
+            
+    // 菜单项高度
+    .el-menu-item,
+    .el-submenu__title
+        height: 48px !important
+        line-height: 48px !important
+        
+    // 标签页高度
+    .el-tabs__item
+        height: 44px !important
+        line-height: 44px !important
+// 特定对话框的移动端优化
+@media (max-width: 768px)
+    // 适配器编辑器对话框
+    .adapter-editor-dialog
+        .dialog-content
+            padding: 16px 20px !important
+            height: 100% !important
+            overflow-y: auto !important
+            
+        .el-form
+            .el-form-item__label
+                width: 100px !important
+                
+        .el-divider
+            margin: 16px 0 !important
+            
+        .input-append-button
+            padding: 0 8px !important
+            
+    // 预设编辑器对话框
+    .preset-editor-dialog
+        .dialog-content
+            padding: 16px 20px !important
+            height: 100% !important
+            overflow-y: auto !important
+            
+        .el-form
+            .el-form-item__label
+                width: 80px !important
+                
+        .avatar-upload
+            text-align: center !important
+            
+        .el-upload
+            .el-upload-dragger
+                width: 100% !important
+                height: 100px !important
+                
+    // 插件详情对话框
+    .plugin-detail-dialog
+        .dialog-content
+            padding: 16px 20px !important
+            height: 100% !important
+            overflow-y: auto !important
+            
+        .el-descriptions
+            .el-descriptions__body
+                .el-descriptions__table
+                    .el-descriptions__cell
+                        padding: 8px !important
+                        
+        .tools-section
+            margin-top: 20px !important
+            
+            .tool-item
+                padding: 12px !important
+                margin-bottom: 8px !important
+                border: 1px solid #e4e7ed !important
+                border-radius: 6px !important
+                
+                .tool-header
+                    display: flex !important
+                    justify-content: space-between !important
+                    align-items: center !important
+                    margin-bottom: 8px !important
+                    
+                    h5
+                        margin: 0 !important
+                        font-size: 14px !important
+                        
+    // 插件配置对话框
+    .plugin-config-dialog
+        .dialog-content
+            padding: 16px 20px !important
+            height: 100% !important
+            overflow-y: auto !important
+            
+        .config-textarea
+            .el-textarea__inner
+                font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important
+                font-size: 13px !important
+                line-height: 1.4 !important
+                
+    // 调试对话框
+    .debug-dialog
+        .debug-container
+            height: 100% !important
+            padding: 16px !important
+            
+        .debug-form,
+        .debug-result
+            padding: 16px !important
+            
+        .el-code-editor,
+        .monaco-editor
+            font-size: 13px !important
+            
+    // 配置对比对话框
+    .config-dialog
+        .dialog-content
+            padding: 16px 20px !important
+            height: 100% !important
+            overflow-y: auto !important
+            
+        .config-compare-dialog
+            height: 100% !important
+            
+            .diff-container
+                height: 100% !important
+                
+            .diff-editor
+                font-size: 13px !important
+
+// 移动端表单优化
+@media (max-width: 768px)
+    .el-form
+        // 标签位置调整
+        &.el-form--label-left
+            .el-form-item
+                .el-form-item__label
+                    text-align: left !important
+                    padding-right: 8px !important
+                    
+        // 垂直布局的表单
+        &.mobile-vertical
+            .el-form-item
+                display: block !important
+                
+                .el-form-item__label
+                    width: 100% !important
+                    text-align: left !important
+                    padding-bottom: 4px !important
+                    
+                .el-form-item__content
+                    margin-left: 0 !important
+                    
+    // 文件上传组件
+    .el-upload
+        &.el-upload--picture-card
+            width: 100px !important
+            height: 100px !important
+            
+        .el-upload-list
+            &.el-upload-list--picture-card
+                .el-upload-list__item
+                    width: 100px !important
+                    height: 100px !important
+                    
+    // 颜色选择器
+    .el-color-picker
+        .el-color-picker__panel
+            max-width: calc(100vw - 32px) !important
+            
+    // 时间选择器
+    .el-time-picker,
+    .el-date-picker
+        width: 100% !important
+        
+        .el-picker-panel
+            max-width: calc(100vw - 32px) !important
+// 移动端对话框内容区域修复
+@media (max-width: 768px)
+    // 确保所有对话框内容正确显示
+    .el-dialog
+        // 修复内容区域高度计算
+        &:has(.el-dialog__footer)
+            .el-dialog__body
+                height: calc(100vh - 120px) !important // 头部60px + 底部60px
+                
+        &:not(:has(.el-dialog__footer))
+            .el-dialog__body
+                height: calc(100vh - 60px) !important // 只有头部60px
+                
+        // 通用内容容器
+        .dialog-content
+            min-height: 100% !important
+            box-sizing: border-box !important
+            
+        // 修复表单容器
+        .el-form
+            min-height: auto !important
+            
+        // 修复滚动区域
+        .el-scrollbar
+            height: 100% !important
+            
+            .el-scrollbar__wrap
+                height: 100% !important
+                
+        // 修复文本域高度
+        .el-textarea
+            .el-textarea__inner
+                min-height: 100px !important
+                resize: vertical !important
+                
+        // 修复选择器下拉
+        .el-select-dropdown
+            position: fixed !important
+            z-index: 9999 !important
+            
+    // 修复遮罩层滚动问题
+    body:has(.el-overlay)
+        overflow: hidden !important
+        
+    // 确认对话框保持原有样式
+    .el-dialog.confirm-dialog
+        width: calc(100vw - 32px) !important
+        height: auto !important
+        max-height: 80vh !important
+        margin: 16px !important
+        border-radius: 8px !important
+        position: absolute !important
+        top: 50% !important
+        left: 50% !important
+        transform: translate(-50%, -50%) !important
+        
+        .el-dialog__body
+            height: auto !important
+            padding: 20px !important
+            
+    // 小尺寸确认对话框
+    .el-dialog[style*="width: 300"]
+        &.confirm-dialog
+            width: 280px !important
+            margin: 0 !important
+            left: 50% !important
+            top: 50% !important
+            transform: translate(-50%, -50%) !important

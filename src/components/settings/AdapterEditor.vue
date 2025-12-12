@@ -1,6 +1,12 @@
 <template>
-  <el-dialog :model-value="visible" :title="dialogTitle" @close="handleClose" width="700px"
-    :close-on-click-modal="false">
+  <el-dialog 
+    :model-value="visible" 
+    :title="dialogTitle" 
+    @close="handleClose" 
+    width="700px"
+    :close-on-click-modal="false"
+    class="form-dialog adapter-editor-dialog"
+  >
     <div class="dialog-content">
       <el-form ref="formRef" :model="formData" :rules="rules" label-width="120px" label-position="left">
       <!-- 基本信息 -->

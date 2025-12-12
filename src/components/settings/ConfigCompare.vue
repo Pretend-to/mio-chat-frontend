@@ -5,6 +5,7 @@
     width="900px"
     :close-on-click-modal="false"
     @close="handleClose"
+    class="config-dialog"
   >
     <div class="dialog-content">
       <div class="config-compare-dialog">
@@ -174,10 +175,10 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import { UploadFilled } from '@element-plus/icons-vue';
 import { useConfigStore } from '@/stores/configStore.js';
+import { UploadFilled } from '@element-plus/icons-vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
   modelValue: {
