@@ -107,9 +107,14 @@ class PresetsAPI {
       const data = await response.json();
 
       if (!response.ok) {
-        if (response.status === 403) {
-          this.configAPI.adminCode = '';
-          localStorage.removeItem('admin_code');
+        // 只有在真正的认证失败时才清除访问码
+        if (response.status === 401 || response.status === 403) {
+          if (data.error === 'UNAUTHORIZED' || data.error === 'FORBIDDEN' || 
+              data.message?.includes('认证') || data.message?.includes('权限') ||
+              data.message?.includes('访问码')) {
+            this.configAPI.adminCode = '';
+            localStorage.removeItem('admin_code');
+          }
         }
         throw new Error(data.message || data.error || '导入失败');
       }

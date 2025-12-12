@@ -59,10 +59,15 @@ class ConfigAPI {
 
       // 检查响应状态
       if (!response.ok) {
-        // 如果是认证失败，清除本地存储的验证码
-        if (response.status === 403) {
-          this.adminCode = '';
-          localStorage.removeItem('admin_code');
+        // 只有在认证失败时才清除本地存储的验证码
+        if (response.status === 401 || response.status === 403) {
+          // 进一步检查是否真的是认证问题
+          if (data.error === 'UNAUTHORIZED' || data.error === 'FORBIDDEN' || 
+              data.message?.includes('认证') || data.message?.includes('权限') ||
+              data.message?.includes('访问码')) {
+            this.adminCode = '';
+            localStorage.removeItem('admin_code');
+          }
         }
         throw new Error(data.message || data.error || '请求失败');
       }

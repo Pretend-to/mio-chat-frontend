@@ -46,6 +46,54 @@
         </el-select>
       </el-form-item>
 
+      <!-- 预设头像 -->
+      <el-form-item label="预设头像" prop="avatar">
+        <div class="avatar-editor">
+          <div class="avatar-preview">
+            <el-avatar
+              :size="80"
+              :src="formData.avatar"
+              :icon="UserFilled"
+              class="preview-avatar"
+            />
+          </div>
+          <div class="avatar-actions">
+            <el-upload
+              ref="avatarUploadRef"
+              :auto-upload="false"
+              :show-file-list="false"
+              :on-change="handleFileSelect"
+              accept="image/*"
+            >
+              <el-button type="primary">
+                选择头像
+              </el-button>
+            </el-upload>
+            <el-button
+              v-if="formData.avatar"
+              type="danger"
+              text
+              @click="removeAvatar"
+            >
+              移除头像
+            </el-button>
+          </div>
+          <div class="avatar-help">
+            <el-text type="info" size="small">
+              支持 JPG、PNG 等图片格式，将自动裁剪为正方形
+            </el-text>
+          </div>
+        </div>
+      </el-form-item>
+
+      <!-- 图片裁剪组件 -->
+      <ImageCropper
+        :visible="cropperVisible"
+        :image-src="selectedImageSrc"
+        @close="handleCropperClose"
+        @confirm="handleCropperConfirm"
+      />
+
       <!-- 开场白 -->
       <el-form-item label="开场白" prop="opening">
         <el-input
@@ -167,8 +215,10 @@
 
 <script setup>
 import { pluginAPI } from '@/lib/configApi.js';
-import { Delete, Plus } from '@element-plus/icons-vue';
+import { Delete, Plus, UserFilled } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
 import { nextTick, onMounted, reactive, ref, watch } from 'vue';
+import ImageCropper from './ImageCropper.vue';
 
 const props = defineProps({
   visible: {
@@ -195,6 +245,7 @@ const submitting = ref(false);
 const formData = reactive({
   name: '',
   category: 'common', // 默认为常用预设
+  avatar: '', // 头像路径
   opening: '',
   history: [],
   tools: []
@@ -236,6 +287,15 @@ const formRules = {
 // 工具选项数据
 const toolsOptions = ref([]);
 const loadingTools = ref(false);
+
+// 头像上传相关
+const avatarUploadRef = ref(null);
+const uploadingAvatar = ref(false);
+const cropperVisible = ref(false);
+const selectedImageSrc = ref('');
+const uploadHeaders = {
+  'X-Admin-Code': localStorage.getItem('admin_code') || ''
+};
 
 // 级联选择器配置
 const cascaderProps = {
@@ -344,6 +404,7 @@ watch(() => props.preset, (newPreset) => {
   if (newPreset && props.mode === 'edit') {
     formData.name = newPreset.name || '';
     formData.category = newPreset.category || 'common';
+    formData.avatar = newPreset.avatar || '';
     formData.opening = newPreset.opening || '';
     formData.history = newPreset.history ? [...newPreset.history] : [];
     formData.tools = newPreset.tools ? [...newPreset.tools] : [];
@@ -368,6 +429,7 @@ watch(() => props.visible, (visible) => {
 const resetForm = () => {
   formData.name = '';
   formData.category = 'common';
+  formData.avatar = '';
   formData.opening = '';
   formData.history = [];
   formData.tools = [];
@@ -392,6 +454,74 @@ const handleClose = () => {
   emit('close');
 };
 
+// 头像上传前验证
+// 处理文件选择
+const handleFileSelect = (file) => {
+  const isImage = file.raw.type.startsWith('image/');
+  const isLt5M = file.raw.size / 1024 / 1024 < 5;
+
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件!');
+    return;
+  }
+  if (!isLt5M) {
+    ElMessage.error('图片大小不能超过 5MB!');
+    return;
+  }
+
+  // 创建图片预览URL
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    selectedImageSrc.value = e.target.result;
+    cropperVisible.value = true;
+  };
+  reader.readAsDataURL(file.raw);
+};
+
+// 关闭裁剪器
+const handleCropperClose = () => {
+  cropperVisible.value = false;
+  selectedImageSrc.value = '';
+};
+
+// 确认裁剪
+const handleCropperConfirm = async (croppedBlob) => {
+  cropperVisible.value = false;
+  uploadingAvatar.value = true;
+
+  try {
+    // 创建 FormData
+    const uploadFormData = new FormData();
+    uploadFormData.append('image', croppedBlob, 'avatar.jpg');
+
+    // 上传裁剪后的图片
+    const response = await fetch('/api/upload/image', {
+      method: 'POST',
+      headers: uploadHeaders,
+      body: uploadFormData
+    });
+
+    const result = await response.json();
+
+    if (result.success && result.data?.url) {
+      formData.avatar = result.data.url;
+      ElMessage.success('头像上传成功');
+    } else {
+      ElMessage.error('头像上传失败: ' + (result.message || '未知错误'));
+    }
+  } catch (error) {
+    ElMessage.error('头像上传失败: ' + error.message);
+  } finally {
+    uploadingAvatar.value = false;
+  }
+};
+
+// 移除头像
+const removeAvatar = () => {
+  formData.avatar = '';
+  ElMessage.success('头像已移除');
+};
+
 // 处理提交
 const handleSubmit = async () => {
   if (submitting.value) return;
@@ -413,6 +543,11 @@ const handleSubmit = async () => {
       })).filter(item => item.content), // 过滤空内容
       tools: formData.tools.filter(tool => tool.trim()) // 过滤空工具名
     };
+
+    // 添加头像字段（如果有的话）
+    if (formData.avatar) {
+      submitData.avatar = formData.avatar;
+    }
 
     // 提交数据
     emit('submit', {
@@ -476,6 +611,35 @@ onMounted(() => {
       border-radius: 6px;
       background: #fafafa;
     }
+  }
+}
+
+.avatar-editor {
+  width: 100%;
+
+  .avatar-preview {
+    margin-bottom: 12px;
+
+    .preview-avatar {
+      border: 2px dashed #d9d9d9;
+      transition: border-color 0.3s ease;
+
+      &:hover {
+        border-color: #409eff;
+      }
+    }
+  }
+
+  .avatar-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .avatar-help {
+    font-size: 12px;
+    color: #909399;
   }
 }
 

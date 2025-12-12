@@ -29,8 +29,22 @@
 
     <!-- 预设信息 -->
     <div class="card-content">
-      <div class="preset-name">
-        <h4>{{ preset.name }}</h4>
+      <div class="preset-header">
+        <el-avatar
+          v-if="preset.avatar"
+          :src="preset.avatar"
+          :size="48"
+          class="preset-avatar"
+        />
+        <el-avatar
+          v-else
+          :size="48"
+          :icon="UserFilled"
+          class="preset-avatar default-avatar"
+        />
+        <div class="preset-name">
+          <h4>{{ preset.name }}</h4>
+        </div>
       </div>
 
       <div class="preset-opening" v-if="preset.opening">
@@ -109,6 +123,7 @@
 </template>
 
 <script setup>
+import { UserFilled } from '@element-plus/icons-vue';
 
 const props = defineProps({
   preset: {
@@ -270,15 +285,37 @@ const handleExport = () => {
 .card-content {
   margin-bottom: 16px;
 
-  .preset-name {
-    margin-bottom: 8px;
+  .preset-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
 
-    h4 {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 600;
-      color: #303133;
-      line-height: 1.4;
+    .preset-avatar {
+      flex-shrink: 0;
+      border: 2px solid #f0f0f0;
+      transition: border-color 0.3s ease;
+
+      &.default-avatar {
+        background-color: #f5f7fa;
+        color: #909399;
+      }
+    }
+
+    .preset-name {
+      flex: 1;
+      min-width: 0;
+
+      h4 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #303133;
+        line-height: 1.4;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
     }
   }
 
