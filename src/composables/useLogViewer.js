@@ -49,7 +49,8 @@ export function useLogViewer() {
         
       case 'UNSUBSCRIBED':
         isSubscribed.value = false
-        console.log('收到取消订阅确认')
+        console.warn('⚠️ 后端主动取消订阅！可能原因：连接断开、超时、或多客户端冲突')
+        console.log('取消订阅数据:', data)
         break
         
       case 'stream':
@@ -303,7 +304,20 @@ export function useLogViewer() {
       socket.value = client.socket
       setTimeout(() => {
         initLogListener()
+        // 连接成功后，如果之前有订阅，重新订阅
+        if (isSubscribed.value) {
+          console.log('连接恢复，重新订阅日志')
+          autoSubscribe()
+        }
       }, 100)
+    }
+    
+    // 监听连接断开事件
+    const onDisconnect = (reason) => {
+      console.warn('Socket 连接断开:', reason)
+      isConnected.value = false
+      cleanupLogListener()
+      // 注意：不重置 isSubscribed 状态，以便重连后恢复订阅
     }
     
     // 监听连接错误事件
@@ -315,12 +329,14 @@ export function useLogViewer() {
     
     // 添加事件监听器到 client.socket
     client.socket.on('connect', onConnect)
+    client.socket.on('disconnect', onDisconnect)
     client.socket.on('connect_error', onConnectError)
     
     // 返回清理函数
     return () => {
       if (client.socket) {
         client.socket.off('connect', onConnect)
+        client.socket.off('disconnect', onDisconnect)
         client.socket.off('connect_error', onConnectError)
       }
     }
@@ -431,6 +447,13 @@ export function useLogViewer() {
         extra: {
           type: 'json',
           error_code: 'CONNECTION_FAILED',
+          config: {
+            host: 'localhost',
+            port: 5700,
+            protocol: 'ws',
+            timeout: 5000
+          },
+          retry_info: ['attempt_1', 'attempt_2', 'attempt_3'],
           originalObject: {
             error: {
               code: 'CONNECTION_FAILED',
@@ -447,11 +470,39 @@ export function useLogViewer() {
       },
       {
         id: 'test_5',
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(Date.now() - 5000).toISOString(),
         level: 'ERROR',
         module: 'onebot',
         message: '连接失败，正在重试...',
         caller: 'onebot.js:45',
+        ip: '127.0.0.1'
+      },
+      {
+        id: 'test_6',
+        timestamp: new Date().toISOString(),
+        level: 'ERROR',
+        module: 'system',
+        message: {
+          error: 'Database connection failed',
+          code: 'DB_CONN_ERROR',
+          details: {
+            host: 'localhost',
+            port: 5432,
+            database: 'mio_chat',
+            timeout: 5000
+          },
+          stack: 'Error: Connection timeout\n    at Database.connect (db.js:45)\n    at async main (index.js:12)'
+        },
+        caller: 'database.js:45',
+        ip: '127.0.0.1'
+      },
+      {
+        id: 'test_7',
+        timestamp: new Date(Date.now() + 1000).toISOString(),
+        level: 'WARN',
+        module: 'api',
+        message: ['Rate limit exceeded', 'Too many requests', { limit: 100, current: 150, resetTime: '2024-12-16T12:00:00Z' }],
+        caller: 'rateLimit.js:23',
         ip: '127.0.0.1'
       }
     ]
@@ -520,7 +571,17 @@ export function useLogViewer() {
   })
 
   // 组件卸载时清理
-  onUnmounted(() => {
+  onUnmounted(async () => {
+    // 如果当前已订阅，先取消订阅
+    if (isSubscribed.value && (socket.value && isConnected.value)) {
+      try {
+        console.log('组件卸载，主动取消订阅')
+        await unsubscribe()
+      } catch (error) {
+        console.error('组件卸载时取消订阅失败:', error)
+      }
+    }
+    
     // 清理日志监听器
     cleanupLogListener()
     

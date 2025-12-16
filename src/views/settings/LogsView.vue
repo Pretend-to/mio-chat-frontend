@@ -119,6 +119,10 @@
               {{ getJsonSummary(log) }}
               <el-icon class="json-expand-icon"><View /></el-icon>
             </span>
+            <span v-else-if="isObjectMessage(log.message)" class="object-message" @click="openObjectDialog(log)">
+              {{ getObjectSummary(log.message) }}
+              <el-icon class="json-expand-icon"><View /></el-icon>
+            </span>
             <span v-else v-html="log.message"></span>
           </div>
           <div v-if="log.extra && Object.keys(getDisplayExtra(log.extra)).length > 0" class="log-extra">
@@ -126,11 +130,13 @@
               v-for="(value, key) in getDisplayExtra(log.extra)" 
               :key="key"
               size="small"
-              type="info"
+              :type="isObjectValue(value) ? 'warning' : 'info'"
               class="log-extra-tag"
-              :title="`${key}: ${value}`"
+              :class="{ 'clickable': isObjectValue(value) }"
+              :title="getTagTitle(key, value)"
+              @click="isObjectValue(value) ? openExtraObjectDialog(key, value, log) : null"
             >
-              {{ key }}: {{ truncateText(value, 20) }}
+              {{ key }}: {{ formatTagValue(value) }}
             </el-tag>
           </div>
         </div>
@@ -142,7 +148,12 @@
     </el-card>
 
     <!-- JSON 查看对话框 -->
-    <el-dialog v-model="jsonDialogVisible" title="JSON 日志详情" width="800px" class="json-dialog">
+    <el-dialog 
+      v-model="jsonDialogVisible" 
+      :title="getDialogTitle()" 
+      width="800px" 
+      class="json-dialog"
+    >
       <div class="json-content">
         <div class="json-header">
           <span class="json-timestamp">{{ selectedLog?.timestamp }}</span>
@@ -225,6 +236,7 @@ const exportDialogVisible = ref(false)
 const exportLoading = ref(false)
 const jsonDialogVisible = ref(false)
 const selectedLog = ref(null)
+const extraObjectKey = ref(null)
 
 // 导出表单
 const exportForm = ref({
@@ -425,7 +437,21 @@ const formatJsonContent = (log) => {
 // 打开 JSON 对话框
 const openJsonDialog = (log) => {
   selectedLog.value = log
+  extraObjectKey.value = null // 重置 extra 对象键名
   jsonDialogVisible.value = true
+}
+
+// 获取对话框标题
+const getDialogTitle = () => {
+  if (extraObjectKey.value) {
+    return `Extra 字段详情: ${extraObjectKey.value}`
+  }
+  
+  if (selectedLog.value?.extra?.type === 'json') {
+    return 'JSON 日志详情'
+  }
+  
+  return '对象详情'
 }
 
 // 复制 JSON 内容
@@ -435,10 +461,100 @@ const copyJsonContent = async () => {
   try {
     const formattedJson = formatJsonContent(selectedLog.value)
     await navigator.clipboard.writeText(formattedJson)
-    ElMessage.success('JSON 内容已复制到剪贴板')
+    ElMessage.success('内容已复制到剪贴板')
   } catch (error) {
     ElMessage.error('复制失败: ' + error.message)
   }
+}
+
+// 判断 message 是否为对象
+const isObjectMessage = (message) => {
+  return typeof message === 'object' && message !== null
+}
+
+// 获取对象消息的摘要
+const getObjectSummary = (message) => {
+  try {
+    if (Array.isArray(message)) {
+      return `Array[${message.length}]: ${message.length > 0 ? JSON.stringify(message[0]).substring(0, 30) + '...' : 'empty'}`
+    }
+    
+    const keys = Object.keys(message)
+    if (keys.length === 0) {
+      return 'Object: {}'
+    } else if (keys.length === 1) {
+      return `Object: { ${keys[0]}: ... }`
+    } else {
+      return `Object: { ${keys[0]}, ${keys[1]}${keys.length > 2 ? `, +${keys.length - 2} more` : ''} }`
+    }
+  } catch (error) {
+    return 'Object: 解析错误'
+  }
+}
+
+// 打开对象消息对话框
+const openObjectDialog = (log) => {
+  // 创建一个临时的 log 对象，将 message 作为 originalObject
+  const tempLog = {
+    ...log,
+    extra: {
+      ...log.extra,
+      originalObject: log.message
+    }
+  }
+  selectedLog.value = tempLog
+  extraObjectKey.value = null // 重置 extra 对象键名
+  jsonDialogVisible.value = true
+}
+
+// 判断值是否为对象
+const isObjectValue = (value) => {
+  return typeof value === 'object' && value !== null
+}
+
+// 格式化标签值
+const formatTagValue = (value) => {
+  if (!isObjectValue(value)) {
+    return truncateText(String(value), 20)
+  }
+  
+  if (Array.isArray(value)) {
+    return `[${value.length} items]`
+  }
+  
+  const keys = Object.keys(value)
+  if (keys.length === 0) {
+    return '{}'
+  } else if (keys.length === 1) {
+    return `{${keys[0]}}`
+  } else {
+    return `{${keys.length} keys}`
+  }
+}
+
+// 获取标签的 title 属性
+const getTagTitle = (key, value) => {
+  if (!isObjectValue(value)) {
+    return `${key}: ${value}`
+  }
+  return `${key}: 点击查看对象详情`
+}
+
+// 打开 extra 对象对话框
+const openExtraObjectDialog = (key, value, log) => {
+  // 创建一个临时的 log 对象，将 extra 中的对象作为 originalObject
+  const tempLog = {
+    ...log,
+    extra: {
+      ...log.extra,
+      originalObject: value
+    }
+  }
+  selectedLog.value = tempLog
+  
+  // 修改对话框标题显示字段名
+  extraObjectKey.value = key
+  jsonDialogVisible.value = true
 }
 
 // 获取用于显示的 extra 字段（过滤掉内部字段）
@@ -768,7 +884,8 @@ onUnmounted(() => {
   }
 }
 
-.json-message {
+.json-message,
+.object-message {
   cursor: pointer;
   color: #409eff;
   display: inline-flex;
@@ -781,6 +898,15 @@ onUnmounted(() => {
   &:hover {
     background-color: #ecf5ff;
     color: #337ecc;
+  }
+}
+
+.object-message {
+  color: #e6a23c; // 使用橙色区分对象消息
+  
+  &:hover {
+    background-color: #fdf6ec;
+    color: #cf9236;
   }
 }
 
@@ -804,6 +930,16 @@ onUnmounted(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
   flex-shrink: 1;
+  
+  &.clickable {
+    cursor: pointer;
+    transition: all 0.2s;
+    
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+  }
   
   :deep(.el-tag__content) {
     overflow: hidden;
