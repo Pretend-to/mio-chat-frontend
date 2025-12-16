@@ -390,24 +390,25 @@ export function useLogViewer() {
         timestamp: new Date(Date.now() - 45000).toISOString(),
         level: 'INFO',
         module: 'llm',
-        message: JSON.stringify({
-          request: {
-            model: 'gpt-4',
-            messages: [{ role: 'user', content: 'Hello world' }],
-            temperature: 0.7,
-            max_tokens: 1000
-          },
-          response: {
-            id: 'chatcmpl-123',
-            choices: [{ message: { role: 'assistant', content: 'Hello! How can I help you today?' } }],
-            usage: { prompt_tokens: 10, completion_tokens: 15, total_tokens: 25 }
-          }
-        }),
+        message: 'OpenAI API 请求和响应',
         caller: 'openai.js:197',
         ip: '127.0.0.1',
         extra: {
           type: 'json',
-          source: 'openai_api'
+          source: 'openai_api',
+          originalObject: {
+            request: {
+              model: 'gpt-4',
+              messages: [{ role: 'user', content: 'Hello world' }],
+              temperature: 0.7,
+              max_tokens: 1000
+            },
+            response: {
+              id: 'chatcmpl-123',
+              choices: [{ message: { role: 'assistant', content: 'Hello! How can I help you today?' } }],
+              usage: { prompt_tokens: 10, completion_tokens: 15, total_tokens: 25 }
+            }
+          }
         }
       },
       {
@@ -424,23 +425,24 @@ export function useLogViewer() {
         timestamp: new Date(Date.now() - 15000).toISOString(),
         level: 'ERROR',
         module: 'onebot',
-        message: JSON.stringify({
-          error: {
-            code: 'CONNECTION_FAILED',
-            message: '连接到 OneBot 服务器失败',
-            details: {
-              host: 'localhost',
-              port: 5700,
-              timeout: 5000,
-              retries: 3
-            }
-          }
-        }),
+        message: 'OneBot 连接失败详情',
         caller: 'onebot.js:45',
         ip: '127.0.0.1',
         extra: {
           type: 'json',
-          error_code: 'CONNECTION_FAILED'
+          error_code: 'CONNECTION_FAILED',
+          originalObject: {
+            error: {
+              code: 'CONNECTION_FAILED',
+              message: '连接到 OneBot 服务器失败',
+              details: {
+                host: 'localhost',
+                port: 5700,
+                timeout: 5000,
+                retries: 3
+              }
+            }
+          }
         }
       },
       {

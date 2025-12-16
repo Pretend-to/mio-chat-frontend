@@ -116,7 +116,7 @@
           </div>
           <div class="log-message">
             <span v-if="log.extra?.type === 'json'" class="json-message" @click="openJsonDialog(log)">
-              {{ getJsonSummary(log.message) }}
+              {{ getJsonSummary(log) }}
               <el-icon class="json-expand-icon"><View /></el-icon>
             </span>
             <span v-else v-html="log.message"></span>
@@ -152,7 +152,7 @@
           <span class="json-module">{{ selectedLog?.module }}</span>
         </div>
         <div class="json-body">
-          <pre class="json-pre">{{ formatJsonContent(selectedLog?.message) }}</pre>
+          <pre class="json-pre">{{ formatJsonContent(selectedLog) }}</pre>
         </div>
       </div>
       <template #footer>
@@ -389,9 +389,13 @@ const truncateText = (text, maxLength) => {
 }
 
 // 获取 JSON 摘要
-const getJsonSummary = (message) => {
+const getJsonSummary = (log) => {
   try {
-    const jsonObj = JSON.parse(message)
+    const jsonObj = log.extra?.originalObject
+    if (!jsonObj || typeof jsonObj !== 'object') {
+      return 'JSON: 无效对象'
+    }
+    
     const keys = Object.keys(jsonObj)
     if (keys.length === 0) {
       return 'JSON: {}'
@@ -401,17 +405,20 @@ const getJsonSummary = (message) => {
       return `JSON: { ${keys[0]}, ${keys[1]}${keys.length > 2 ? `, +${keys.length - 2} more` : ''} }`
     }
   } catch (error) {
-    return `JSON: ${truncateText(message, 50)}`
+    return 'JSON: 解析错误'
   }
 }
 
 // 格式化 JSON 内容
-const formatJsonContent = (message) => {
+const formatJsonContent = (log) => {
   try {
-    const jsonObj = JSON.parse(message)
+    const jsonObj = log.extra?.originalObject
+    if (!jsonObj) {
+      return '无 JSON 数据'
+    }
     return JSON.stringify(jsonObj, null, 2)
   } catch (error) {
-    return message
+    return '格式化失败'
   }
 }
 
@@ -426,7 +433,7 @@ const copyJsonContent = async () => {
   if (!selectedLog.value) return
   
   try {
-    const formattedJson = formatJsonContent(selectedLog.value.message)
+    const formattedJson = formatJsonContent(selectedLog.value)
     await navigator.clipboard.writeText(formattedJson)
     ElMessage.success('JSON 内容已复制到剪贴板')
   } catch (error) {
@@ -438,7 +445,7 @@ const copyJsonContent = async () => {
 const getDisplayExtra = (extra) => {
   if (!extra) return {}
   
-  const { type, ...displayExtra } = extra
+  const { type, originalObject, ...displayExtra } = extra
   return displayExtra
 }
 
@@ -498,7 +505,7 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .logs-view {
-  height: 100%;
+  height: calc(100vh - 120px); // 减去顶部导航和边距
   display: flex;
   flex-direction: column;
   padding: 24px;

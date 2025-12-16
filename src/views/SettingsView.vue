@@ -686,14 +686,12 @@ onUnmounted(() => {
 
 .settings-content {
   flex: 1;
-  overflow: hidden; // 改为 hidden，让子元素自己处理滚动
+  overflow-y: auto;
   background-color: #fff; // 内容区白色背景
   border-radius: 16px; // 内容区大圆角
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04); // 柔和投影
   position: relative;
   padding: 0; // 内容区内部padding由各页面自己控制，或者在这里统一加
-  display: flex; // 添加 flex 布局
-  flex-direction: column; // 垂直布局
 
   &.mobile {
     border-radius: 0;
