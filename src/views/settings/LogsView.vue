@@ -671,17 +671,19 @@ onUnmounted(() => {
     height: 8px;
     border-radius: 50%;
     background-color: #f56c6c;
-    
-    .connected & {
-      background-color: #67c23a;
-    }
   }
   
   span {
     font-weight: 500;
     color: #f56c6c;
+  }
+  
+  &.connected {
+    .status-dot {
+      background-color: #67c23a;
+    }
     
-    .connected & {
+    span {
       color: #67c23a;
     }
   }
