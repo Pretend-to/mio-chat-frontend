@@ -187,7 +187,8 @@ const menuItems = [
   { index: 'web', label: 'Web 配置', icon: ChromeFilled },
   { index: 'onebot', label: 'OneBot 配置', icon: ChatDotRound },
   { index: 'plugins', label: '插件管理', icon: Grid },
-  { index: 'presets', label: '预设管理', icon: Document }
+  { index: 'presets', label: '预设管理', icon: Document },
+  { index: 'logs', label: '日志管理', icon: Document }
 ];
 
 // 操作：切换账号（清除 admin_code 并跳转到 /auth）
@@ -215,6 +216,7 @@ const activeMenu = computed(() => {
   if (path.includes('onebot')) return 'onebot';
   if (path.includes('plugins')) return 'plugins';
   if (path.includes('presets')) return 'presets';
+  if (path.includes('logs')) return 'logs';
   return 'overview';
 });
 
@@ -684,12 +686,14 @@ onUnmounted(() => {
 
 .settings-content {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden; // 改为 hidden，让子元素自己处理滚动
   background-color: #fff; // 内容区白色背景
   border-radius: 16px; // 内容区大圆角
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04); // 柔和投影
   position: relative;
   padding: 0; // 内容区内部padding由各页面自己控制，或者在这里统一加
+  display: flex; // 添加 flex 布局
+  flex-direction: column; // 垂直布局
 
   &.mobile {
     border-radius: 0;

@@ -1,6 +1,6 @@
-import { createRouter, createWebHistory } from "vue-router";
 import { client } from "@/lib/runtime.js";
 import { ElMessage } from "element-plus";
+import { createRouter, createWebHistory } from "vue-router";
 const ChatView = () => import("../views/ChatView.vue");
 const HomeView = () => import("../views/HomeView.vue");
 const ProfileView = () => import("../views/ProfileView.vue");
@@ -83,6 +83,11 @@ const router = createRouter({
           path: "presets",
           name: "settings_presets",
           component: () => import("../views/settings/PresetsView.vue"),
+        },
+        {
+          path: "logs",
+          name: "settings_logs",
+          component: () => import("../views/settings/LogsView.vue"),
         },
       ],
     },

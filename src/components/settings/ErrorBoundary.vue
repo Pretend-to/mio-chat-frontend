@@ -38,9 +38,8 @@
 </template>
 
 <script setup>
-import { ref, onErrorCaptured } from 'vue';
+import { onErrorCaptured, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { ElMessage } from 'element-plus';
 
 const props = defineProps({
   fallbackTitle: {
@@ -114,6 +113,8 @@ const handleGoBack = () => {
 .error-boundary {
   width: 100%;
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .error-container {
