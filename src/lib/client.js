@@ -1,10 +1,10 @@
-import Socket from "./websocket.js";
-import Contactor from "./contactor.js";
 import localforage from "localforage";
-import EventEmitter from "./event.js";
 import { reactive } from "vue";
 import { debounce } from "../utils/tools.js";
 import UploadWorker from "../worker/fileUpload.js?worker";
+import Contactor from "./contactor.js";
+import EventEmitter from "./event.js";
+import Socket from "./websocket.js";
 
 // Configure localforage
 localforage.config({
@@ -61,7 +61,7 @@ export default class Client extends EventEmitter {
         name: "OneBot",
         namePolicy: 1,
         avatarPolicy: 1,
-        avatar: `/p/qava?q=${this.bot_qq}`,
+        avatar: `/p/qava?q=${this.bot_qq ?? 1099834705}`,
         title: "云崽",
         priority: 0,
         options: {},
@@ -83,7 +83,7 @@ export default class Client extends EventEmitter {
     const LLMDefaultConfig = {
       id: this.genFakeId(),
       name: "MioBot",
-      avatar: "/p/ava/miobot.png",
+      avatar: "/static/icons/512x512.png",
       namePolicy: 1,
       avatarPolicy: 1,
       title: "chat",
