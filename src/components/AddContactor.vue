@@ -396,7 +396,7 @@ const close = () => {
 
 const handleAddByProvider = (provider) => {
   emit("add-by-provider", provider.value);
-  ElMessage.success(`正在创建 ${provider.label} Bot...`);
+  ElMessage.success(`成功创建 ${provider.label} Bot`);
   close();
 };
 

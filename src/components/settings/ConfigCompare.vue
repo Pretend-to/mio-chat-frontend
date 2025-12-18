@@ -212,13 +212,17 @@ const currentConfig = computed(() => configStore.config || {});
 const adapterDiffs = computed(() => {
   if (!compareConfig.value) return {};
   
-  const diffs = {
-    openai: [],
-    gemini: [],
-    vertex: []
-  };
+  const diffs = {};
   
-  ['openai', 'gemini', 'vertex'].forEach(type => {
+  // 动态获取适配器类型
+  const adapterTypes = configStore?.adapterTypes?.types || Object.keys(currentConfig.value.adapters || {});
+  
+  // 初始化差异对象
+  adapterTypes.forEach(type => {
+    diffs[type] = [];
+  });
+  
+  adapterTypes.forEach(type => {
     const current = currentConfig.value.adapters?.[type] || [];
     const compare = compareConfig.value.adapters?.[type] || [];
     

@@ -133,6 +133,14 @@ class ConfigAPI {
   // ========== LLM 适配器管理 ==========
 
   /**
+   * 获取适配器类型信息
+   * @returns {Promise<object>} 适配器类型数据
+   */
+  async getAdapterTypes() {
+    return this.request('/api/config/adapter-types');
+  }
+
+  /**
    * 添加适配器实例
    * @param {string} type - 适配器类型 (openai/gemini/vertex)
    * @param {object} data - 适配器配置数据

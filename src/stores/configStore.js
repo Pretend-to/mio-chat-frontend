@@ -4,9 +4,9 @@
  * 使用 Composition API 风格
  */
 
-import { ref, computed } from 'vue';
-import { defineStore } from 'pinia';
 import { configAPI } from '@/lib/configApi.js';
+import { defineStore } from 'pinia';
+import { computed, ref } from 'vue';
 
 export const useConfigStore = defineStore('config', () => {
   // ========== State ==========
@@ -14,15 +14,18 @@ export const useConfigStore = defineStore('config', () => {
   // 完整配置
   const config = ref(null);
   
-  // LLM 适配器
-  const adapters = ref({
-    openai: [],
-    gemini: [],
-    vertex: []
+  // 适配器类型信息
+  const adapterTypes = ref({
+    types: [],
+    adapters: [],
+    count: 0
   });
   
+  // LLM 适配器
+  const adapters = ref({});
+  
   // 模型列表 { provider: [{ owner, models }] }
-  const models = ref({});
+  const models = ref({}); 
   
   // 加载状态
   const loading = ref(false);
@@ -107,6 +110,20 @@ export const useConfigStore = defineStore('config', () => {
   }
 
   /**
+   * 获取适配器类型信息
+   */
+  async function fetchAdapterTypes() {
+    try {
+      const response = await configAPI.getAdapterTypes();
+      adapterTypes.value = response.data;
+      return response.data;
+    } catch (error) {
+      console.error('获取适配器类型失败:', error);
+      throw error;
+    }
+  }
+
+  /**
    * 清除管理员验证码
    */
   function clearAdminCode() {
@@ -123,11 +140,7 @@ export const useConfigStore = defineStore('config', () => {
     try {
       const response = await configAPI.getConfig();
       config.value = response.data;
-      adapters.value = response.data.llm_adapters || {
-        openai: [],
-        gemini: [],
-        vertex: []
-      };
+      adapters.value = response.data.llm_adapters || {};
       // 同时获取 models 数据
       models.value = response.data.models || {};
       return response.data;
@@ -415,6 +428,7 @@ export const useConfigStore = defineStore('config', () => {
   return {
     // State
     config,
+    adapterTypes,
     adapters,
     models,
     loading,
@@ -432,6 +446,7 @@ export const useConfigStore = defineStore('config', () => {
     // Actions
     setAdminCode,
     clearAdminCode,
+    fetchAdapterTypes,
     fetchConfig,
     fetchConfigSection,
     updateConfig,

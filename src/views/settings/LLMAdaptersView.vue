@@ -289,7 +289,7 @@ const editorIndex = ref(-1);
 
 // 获取所有适配器类型
 const adapterTypes = computed(() => {
-  return Object.keys(configStore.adapters);
+  return configStore?.adapterTypes?.types || [];
 });
 
 // 获取所有适配器实例的扁平化列表
@@ -329,10 +329,22 @@ const getAdapterModels = (adapter, type, index) => {
 
 // 将适配器类型格式化为友好显示名
 const formatTypeLabel = (type) => {
+  // 确保 configStore 和 adapterTypes 都存在
+  if (configStore?.adapterTypes?.adapters) {
+    // 优先从适配器类型信息中获取显示名称
+    const adapterInfo = configStore.adapterTypes.adapters.find(a => a.type === type);
+    if (adapterInfo?.name) {
+      return adapterInfo.name;
+    }
+  }
+  
+  // 后备方案：使用硬编码映射
   const map = {
     openai: 'OpenAI',
     gemini: 'Gemini',
-    vertex: 'Vertex AI'
+    vertex: 'Vertex AI',
+    deepseek: 'DeepSeek',
+    anthropic: 'Anthropic'
   };
   if (map[type]) return map[type];
   return type.charAt(0).toUpperCase() + type.slice(1);
@@ -554,9 +566,18 @@ onMounted(async () => {
   
   loading.value = true;
   try {
-    if (!configStore.config) {
-      await configStore.fetchConfig();
+    // 并行加载适配器类型信息和配置
+    const promises = [];
+    
+    if (!configStore.adapterTypes.types.length) {
+      promises.push(configStore.fetchAdapterTypes());
     }
+    
+    if (!configStore.config) {
+      promises.push(configStore.fetchConfig());
+    }
+    
+    await Promise.all(promises);
     await new Promise(resolve => setTimeout(resolve, 300));
   } catch (error) {
     ElMessage.error('加载配置失败：' + error.message);
@@ -826,7 +847,6 @@ onUnmounted(() => {
     padding: 12px 0;
   }
 }
-</style>
 // 移动端响应式样式
 @media (max-width: 768px) {
   .page-header {
@@ -915,3 +935,4 @@ onUnmounted(() => {
     }
   }
 }
+</style>

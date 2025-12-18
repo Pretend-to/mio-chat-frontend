@@ -205,20 +205,20 @@
       </template>
       <div class="adapters-overview">
         <div
-          v-for="(instances, type) in configStore.adapters"
+          v-for="type in allAdapterTypes"
           :key="type"
           class="adapter-type-section"
         >
           <div class="adapter-type-header">
             <h3>{{ adapterTypeName(type) }}</h3>
-            <el-tag>{{ instances.length }} 个实例</el-tag>
+            <el-tag>{{ getAdapterInstanceCount(type) }} 个实例</el-tag>
           </div>
-          <div v-if="instances.length === 0" class="empty-state">
+          <div v-if="getAdapterInstanceCount(type) === 0" class="empty-state">
             暂无实例
           </div>
           <div v-else class="adapter-list">
             <div
-              v-for="(adapter, index) in instances"
+              v-for="(adapter, index) in getAdapterInstances(type)"
               :key="index"
               class="adapter-item"
             >
@@ -290,6 +290,29 @@ const systemStatusText = computed(() => {
   if (configStore.needRestart) return '需要重启';
   return systemStatus.value === 'normal' ? '正常' : '有警告';
 });
+
+// 获取所有适配器类型（包括没有实例的类型）
+const allAdapterTypes = computed(() => {
+  const typesFromApi = configStore?.adapterTypes?.types || [];
+  const typesFromConfig = Object.keys(configStore.adapters || {});
+  
+  // 优先使用 API 返回的类型顺序，然后添加配置中存在但 API 中没有的类型
+  const apiTypes = [...typesFromApi];
+  const configOnlyTypes = typesFromConfig.filter(type => !typesFromApi.includes(type));
+  
+  return [...apiTypes, ...configOnlyTypes];
+});
+
+// 获取指定类型的适配器实例数量
+const getAdapterInstanceCount = (type) => {
+  const instances = configStore.adapters?.[type] || [];
+  return instances.length;
+};
+
+// 获取指定类型的适配器实例列表
+const getAdapterInstances = (type) => {
+  return configStore.adapters?.[type] || [];
+};
 
 // 待处理事项
 const pendingItems = computed(() => {
@@ -366,10 +389,34 @@ const pendingItems = computed(() => {
 
 // 适配器类型名称（已知类型使用友好名，其他类型首字母大写）
 const adapterTypeName = (type) => {
+  // 确保 configStore 和 adapterTypes 都存在
+  if (!configStore || !configStore.adapterTypes) {
+    // 使用后备方案
+    const names = {
+      openai: 'OpenAI',
+      gemini: 'Gemini',
+      vertex: 'Vertex AI',
+      deepseek: 'DeepSeek',
+      anthropic: 'Anthropic'
+    };
+    if (names[type]) return names[type];
+    if (!type) return '';
+    return type.charAt(0).toUpperCase() + type.slice(1);
+  }
+  
+  // 优先从适配器类型信息中获取显示名称
+  const adapterInfo = configStore.adapterTypes.adapters?.find(a => a.type === type);
+  if (adapterInfo?.name) {
+    return adapterInfo.name;
+  }
+  
+  // 后备方案：使用硬编码映射
   const names = {
     openai: 'OpenAI',
     gemini: 'Gemini',
-    vertex: 'Vertex AI'
+    vertex: 'Vertex AI',
+    deepseek: 'DeepSeek',
+    anthropic: 'Anthropic'
   };
   if (names[type]) return names[type];
   if (!type) return '';
@@ -450,16 +497,27 @@ const navigateTo = (path) => {
 onMounted(async () => {
   loading.value = true;
   try {
+    // 并行加载多个数据源
+    const promises = [];
+    
     if (!configStore.config) {
-      await configStore.fetchConfig();
+      promises.push(configStore.fetchConfig());
     }
+    
+    if (!configStore.adapterTypes.types.length) {
+      promises.push(configStore.fetchAdapterTypes());
+    }
+    
     // 加载预设数据
-    try {
-      await presetsStore.fetchPresets();
-    } catch (error) {
-      console.warn('加载预设失败:', error);
-      // 预设加载失败不影响整体页面显示，API可能还未实现
-    }
+    promises.push(
+      presetsStore.fetchPresets().catch(error => {
+        console.warn('加载预设失败:', error);
+        // 预设加载失败不影响整体页面显示，API可能还未实现
+      })
+    );
+    
+    await Promise.all(promises);
+    
     // 模拟最小加载时间，提升用户体验
     await new Promise(resolve => setTimeout(resolve, 300));
   } catch (error) {

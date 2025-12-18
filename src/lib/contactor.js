@@ -1,9 +1,9 @@
+import { config } from "@/lib/runtime.js";
+import { getAvatarByOwner } from "@/utils/avatar.js";
+import { numberString } from "../utils/generate.js";
 import Onebot from "./adapter/onebot.js";
 import Openai from "./adapter/openai.js";
 import EventEmmiter from "./event.js";
-import { numberString } from "../utils/generate.js";
-import { config } from "@/lib/runtime.js";
-import { getAvatarByOwner } from "@/utils/avatar.js";
 
 const avatarPolicy = ["MODEL", "CUSTOM"];
 
