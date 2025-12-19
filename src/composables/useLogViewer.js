@@ -23,21 +23,28 @@ export function useLogViewer() {
     const { request_id, type } = data
 
     // 处理有请求ID的响应
-    if (request_id && pendingRequests.has(request_id)) {
-      const resolver = pendingRequests.get(request_id)
-      pendingRequests.delete(request_id)
+    if (request_id) {
+      console.log('收到带request_id的响应:', request_id, '待处理请求:', Array.from(pendingRequests.keys()))
       
-      // 处理订阅相关的响应
-      if (type === 'subscribe' && data.success) {
-        isSubscribed.value = true
-        console.log('订阅成功，更新状态为已订阅')
-      } else if (type === 'unsubscribe' && data.success) {
-        isSubscribed.value = false
-        console.log('取消订阅成功，更新状态为未订阅')
+      if (pendingRequests.has(request_id)) {
+        const resolver = pendingRequests.get(request_id)
+        pendingRequests.delete(request_id)
+        console.log('找到对应的请求，解析响应:', type)
+        
+        // 处理订阅相关的响应
+        if (type === 'subscribe' && data.success) {
+          isSubscribed.value = true
+          console.log('订阅成功，更新状态为已订阅')
+        } else if (type === 'unsubscribe' && data.success) {
+          isSubscribed.value = false
+          console.log('取消订阅成功，更新状态为未订阅')
+        }
+        
+        resolver(data)
+        return
+      } else {
+        console.warn('收到未知request_id的响应:', request_id, '类型:', type)
       }
-      
-      resolver(data)
-      return
     }
 
     // 处理实时日志流和其他消息
@@ -56,6 +63,14 @@ export function useLogViewer() {
       case 'stream':
         console.log('收到日志流数据:', data.data)
         addLog(data.data)
+        break
+        
+      case 'LOG_STATS':
+        // 处理统计信息响应
+        console.log('收到统计信息:', data.data)
+        if (data.success) {
+          stats.value = data.data
+        }
         break
         
       case 'ERROR':
@@ -423,10 +438,13 @@ export function useLogViewer() {
     console.log('LogViewer 手动初始化')
     console.log('Client 当前连接状态:', client.isConnected)
     console.log('Client 当前 socket:', client.socket)
+    console.log('Client socket 是否存在:', !!client.socket)
     
     // 同步初始状态
     isConnected.value = client.isConnected
     socket.value = client.socket
+    
+    console.log('LogViewer 初始化后连接状态:', isConnected.value)
     
     // 设置 socket 事件监听器
     cleanupSocketListeners = setupSocketListeners()
@@ -436,11 +454,15 @@ export function useLogViewer() {
     
     // 如果已经连接，立即初始化监听器
     if (isConnected.value && socket.value) {
+      console.log('连接已就绪，初始化日志监听器')
       initLogListener()
+    } else {
+      console.log('连接未就绪，等待连接建立')
     }
     
     // 自动订阅日志（延迟一点确保连接稳定）
     setTimeout(() => {
+      console.log('延迟自动订阅，当前连接状态:', isConnected.value)
       autoSubscribe()
     }, 2000)
   }

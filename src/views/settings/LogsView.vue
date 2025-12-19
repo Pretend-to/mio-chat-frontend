@@ -30,6 +30,8 @@
       <div class="debug-info" style="margin-top: 12px; font-size: 12px; color: #909399;">
         <div>连接状态: {{ isConnected ? '✅ 已连接' : '❌ 未连接' }}</div>
         <div>日志数量: {{ logs.length }} 条</div>
+        <div>过滤后日志数量: {{ filteredLogs.length }} 条</div>
+        <div>logStore是否初始化: {{ logStore.isInitialized ? '是' : '否' }}</div>
       </div>
     </el-card>
 
@@ -217,7 +219,11 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 const logStore = useLogStore()
 
 // 从store中获取数据和方法
-const logs = computed(() => logStore.logs.value || [])
+const logs = computed(() => {
+  const logsData = logStore.logs || []
+  console.log('LogsView: 当前日志数量:', logsData.length)
+  return logsData
+})
 const isConnected = computed(() => logStore.isConnected)
 const stats = computed(() => logStore.stats)
 const search = logStore.search
@@ -248,7 +254,8 @@ const exportForm = ref({
 
 // 过滤后的日志
 const filteredLogs = computed(() => {
-  let filtered = logs.value
+  let filtered = logs.value || []
+  console.log('filteredLogs computed 被调用，原始日志数量:', filtered.length)
 
   if (filterLevel.value) {
     filtered = filtered.filter(log => log.level === filterLevel.value)
@@ -596,10 +603,31 @@ watch(filteredLogs, () => {
   }
 }, { deep: true })
 
+// 监听连接状态变化
+watch(isConnected, (newValue, oldValue) => {
+  console.log('LogsView: 连接状态变化', oldValue, '->', newValue)
+  if (newValue && !oldValue) {
+    console.log('LogsView: 连接建立，获取统计信息')
+    getStats()
+  }
+}, { immediate: true })
+
 // 定期获取统计信息
 let statsInterval = null
 
-onMounted(() => {
+onMounted(async () => {
+  // 确保日志store已经初始化
+  try {
+    await logStore.initialize()
+    console.log('日志界面：logStore初始化完成')
+    console.log('日志界面：初始化后连接状态:', isConnected.value)
+    console.log('日志界面：初始化后日志数量:', logs.value.length)
+    console.log('日志界面：强制触发filteredLogs:', filteredLogs.value.length)
+  } catch (error) {
+    console.error('日志界面：logStore初始化失败:', error)
+    ElMessage.error('日志服务初始化失败: ' + error.message)
+  }
+  
   // 每30秒获取一次统计信息
   statsInterval = setInterval(() => {
     if (isConnected.value) {
@@ -607,10 +635,15 @@ onMounted(() => {
     }
   }, 30000)
   
-  // 初始获取统计信息
-  if (isConnected.value) {
-    getStats()
-  }
+  // 延迟一点获取统计信息，确保连接稳定
+  setTimeout(() => {
+    if (isConnected.value) {
+      console.log('日志界面：延迟获取统计信息')
+      getStats()
+    } else {
+      console.log('日志界面：连接未就绪，跳过统计信息获取')
+    }
+  }, 1000)
 })
 
 onUnmounted(() => {
