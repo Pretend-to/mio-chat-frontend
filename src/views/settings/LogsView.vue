@@ -208,21 +208,22 @@
 </template>
 
 <script setup>
-import { useLogViewer } from '@/composables/useLogViewer'
+import { useLogStore } from '@/stores/logStore.js'
 import { Search, View } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
-// 使用日志查看器 composable
-const {
-  logs,
-  isConnected,
-  stats,
-  search,
-  exportLogs: exportLogsData,
-  getStats,
-  clearLogs: clearLogsData
-} = useLogViewer()
+// 使用日志store
+const logStore = useLogStore()
+
+// 从store中获取数据和方法
+const logs = computed(() => logStore.logs.value || [])
+const isConnected = computed(() => logStore.isConnected)
+const stats = computed(() => logStore.stats)
+const search = logStore.search
+const exportLogsData = logStore.exportLogs
+const getStats = logStore.getStats
+const clearLogsData = logStore.clearLogs
 
 // 过滤和搜索
 const filterLevel = ref('')

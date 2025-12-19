@@ -99,6 +99,36 @@
               <div class="stat-label">系统状态</div>
             </div>
           </el-card>
+
+          <el-card class="stat-card">
+            <div class="stat-icon" style="background-color: #67c23a20;">
+              <el-icon :size="32" color="#67c23a"><Document /></el-icon>
+            </div>
+            <div class="stat-content">
+              <div class="stat-value">{{ logStore.totalLogsCount }}</div>
+              <div class="stat-label">日志总数</div>
+            </div>
+          </el-card>
+
+          <el-card class="stat-card">
+            <div class="stat-icon" style="background-color: #e6a23c20;">
+              <el-icon :size="32" color="#e6a23c"><Grid /></el-icon>
+            </div>
+            <div class="stat-content">
+              <div class="stat-value">{{ configStore.totalPluginsCount }}</div>
+              <div class="stat-label">可用插件</div>
+            </div>
+          </el-card>
+
+          <el-card class="stat-card">
+            <div class="stat-icon" style="background-color: #409eff20;">
+              <el-icon :size="32" color="#409eff"><Grid /></el-icon>
+            </div>
+            <div class="stat-content">
+              <div class="stat-value">{{ configStore.totalToolsCount }}</div>
+              <div class="stat-label">可用工具</div>
+            </div>
+          </el-card>
         </div>
 
         <!-- 快速操作 -->
@@ -158,6 +188,39 @@
               <div class="action-info">
                 <div class="action-title">预设管理</div>
                 <div class="action-desc">对话预设与模板</div>
+              </div>
+              <el-icon class="action-arrow"><ArrowRight /></el-icon>
+            </div>
+
+            <div class="action-item" @click="navigateTo('logs')">
+              <div class="action-icon" style="background: #f4f4f5; color: #909399;">
+                <el-icon><Document /></el-icon>
+              </div>
+              <div class="action-info">
+                <div class="action-title">日志管理</div>
+                <div class="action-desc">实时查看系统日志</div>
+              </div>
+              <el-icon class="action-arrow"><ArrowRight /></el-icon>
+            </div>
+
+            <div class="action-item" @click="navigateTo('plugins')">
+              <div class="action-icon" style="background: #f0f9ff; color: #409eff;">
+                <el-icon><Grid /></el-icon>
+              </div>
+              <div class="action-info">
+                <div class="action-title">插件管理</div>
+                <div class="action-desc">管理插件与工具</div>
+              </div>
+              <el-icon class="action-arrow"><ArrowRight /></el-icon>
+            </div>
+
+            <div class="action-item" @click="navigateToChat">
+              <div class="action-icon" style="background: #f0f9eb; color: #67c23a;">
+                <el-icon><ChatDotRound /></el-icon>
+              </div>
+              <div class="action-info">
+                <div class="action-title">开始聊天</div>
+                <div class="action-desc">返回聊天界面</div>
               </div>
               <el-icon class="action-arrow"><ArrowRight /></el-icon>
             </div>
@@ -244,23 +307,24 @@
 import ConfigCompare from '@/components/settings/ConfigCompare.vue';
 import LoadingSkeleton from '@/components/settings/LoadingSkeleton.vue';
 import { useConfigStore } from '@/stores/configStore.js';
+import { useLogStore } from '@/stores/logStore.js';
 import { usePresetsStore } from '@/stores/presetsStore.js';
 import {
-  ArrowRight,
-  ChatDotRound,
-  ChromeFilled,
-  CircleCheck,
-  Connection,
-  Document,
-  DocumentCopy,
-  Download,
-  Grid,
-  Monitor,
-  Refresh,
-  SuccessFilled,
-  Upload,
-  Warning,
-  WarningFilled
+    ArrowRight,
+    ChatDotRound,
+    ChromeFilled,
+    CircleCheck,
+    Connection,
+    Document,
+    DocumentCopy,
+    Download,
+    Grid,
+    Monitor,
+    Refresh,
+    SuccessFilled,
+    Upload,
+    Warning,
+    WarningFilled
 } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { computed, onMounted, ref } from 'vue';
@@ -269,6 +333,7 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 const configStore = useConfigStore();
 const presetsStore = usePresetsStore();
+const logStore = useLogStore();
 
 const loading = ref(true);
 const refreshing = ref(false);
@@ -493,6 +558,11 @@ const navigateTo = (path) => {
   router.push(`/settings/${path}`);
 };
 
+// 导航到聊天页面
+const navigateToChat = () => {
+  router.push('/');
+};
+
 // 加载配置
 onMounted(async () => {
   loading.value = true;
@@ -513,6 +583,22 @@ onMounted(async () => {
       presetsStore.fetchPresets().catch(error => {
         console.warn('加载预设失败:', error);
         // 预设加载失败不影响整体页面显示，API可能还未实现
+      })
+    );
+    
+    // 初始化日志store
+    promises.push(
+      logStore.initialize().catch(error => {
+        console.warn('初始化日志store失败:', error);
+        // 日志初始化失败不影响整体页面显示
+      })
+    );
+    
+    // 加载插件数据
+    promises.push(
+      configStore.fetchPlugins().catch(error => {
+        console.warn('加载插件数据失败:', error);
+        // 插件加载失败不影响整体页面显示
       })
     );
     

@@ -151,6 +151,7 @@
 import ErrorBoundary from '@/components/settings/ErrorBoundary.vue';
 import { client } from '@/lib/runtime.js';
 import { useConfigStore } from '@/stores/configStore.js';
+import { useLogStore } from '@/stores/logStore.js';
 import {
   ChatDotRound,
   ChromeFilled,
@@ -167,6 +168,7 @@ import { useRoute, useRouter } from 'vue-router';
 const route = useRoute();
 const router = useRouter();
 const configStore = useConfigStore();
+const logStore = useLogStore();
 const forbidden = ref(false);
 
 // 移动端相关状态
@@ -359,6 +361,14 @@ onMounted(async () => {
   // 检测移动端
   checkMobile();
   window.addEventListener('resize', checkMobile);
+  
+  // 初始化日志订阅
+  try {
+    await logStore.initialize();
+    console.log('日志订阅初始化成功');
+  } catch (error) {
+    console.error('日志订阅初始化失败:', error);
+  }
   
   // 如果有本地保存的访问码，直接用它去拉取配置以验证权限
   if (configStore.isAuthenticated) {

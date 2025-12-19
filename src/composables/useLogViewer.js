@@ -389,127 +389,7 @@ export function useLogViewer() {
     }
   }
 
-  // 添加测试日志数据
-  const addTestLogs = () => {
-    const testLogs = [
-      {
-        id: 'test_1',
-        timestamp: new Date(Date.now() - 60000).toISOString(),
-        level: 'INFO',
-        module: 'system',
-        message: '系统启动完成',
-        caller: 'main.js:1',
-        ip: '127.0.0.1'
-      },
-      {
-        id: 'test_2',
-        timestamp: new Date(Date.now() - 45000).toISOString(),
-        level: 'INFO',
-        module: 'llm',
-        message: 'OpenAI API 请求和响应',
-        caller: 'openai.js:197',
-        ip: '127.0.0.1',
-        extra: {
-          type: 'json',
-          source: 'openai_api',
-          originalObject: {
-            request: {
-              model: 'gpt-4',
-              messages: [{ role: 'user', content: 'Hello world' }],
-              temperature: 0.7,
-              max_tokens: 1000
-            },
-            response: {
-              id: 'chatcmpl-123',
-              choices: [{ message: { role: 'assistant', content: 'Hello! How can I help you today?' } }],
-              usage: { prompt_tokens: 10, completion_tokens: 15, total_tokens: 25 }
-            }
-          }
-        }
-      },
-      {
-        id: 'test_3',
-        timestamp: new Date(Date.now() - 30000).toISOString(),
-        level: 'WARN',
-        module: 'llm',
-        message: 'API 响应时间较长',
-        caller: 'openai.js:123',
-        ip: '127.0.0.1'
-      },
-      {
-        id: 'test_4',
-        timestamp: new Date(Date.now() - 15000).toISOString(),
-        level: 'ERROR',
-        module: 'onebot',
-        message: 'OneBot 连接失败详情',
-        caller: 'onebot.js:45',
-        ip: '127.0.0.1',
-        extra: {
-          type: 'json',
-          error_code: 'CONNECTION_FAILED',
-          config: {
-            host: 'localhost',
-            port: 5700,
-            protocol: 'ws',
-            timeout: 5000
-          },
-          retry_info: ['attempt_1', 'attempt_2', 'attempt_3'],
-          originalObject: {
-            error: {
-              code: 'CONNECTION_FAILED',
-              message: '连接到 OneBot 服务器失败',
-              details: {
-                host: 'localhost',
-                port: 5700,
-                timeout: 5000,
-                retries: 3
-              }
-            }
-          }
-        }
-      },
-      {
-        id: 'test_5',
-        timestamp: new Date(Date.now() - 5000).toISOString(),
-        level: 'ERROR',
-        module: 'onebot',
-        message: '连接失败，正在重试...',
-        caller: 'onebot.js:45',
-        ip: '127.0.0.1'
-      },
-      {
-        id: 'test_6',
-        timestamp: new Date().toISOString(),
-        level: 'ERROR',
-        module: 'system',
-        message: {
-          error: 'Database connection failed',
-          code: 'DB_CONN_ERROR',
-          details: {
-            host: 'localhost',
-            port: 5432,
-            database: 'mio_chat',
-            timeout: 5000
-          },
-          stack: 'Error: Connection timeout\n    at Database.connect (db.js:45)\n    at async main (index.js:12)'
-        },
-        caller: 'database.js:45',
-        ip: '127.0.0.1'
-      },
-      {
-        id: 'test_7',
-        timestamp: new Date(Date.now() + 1000).toISOString(),
-        level: 'WARN',
-        module: 'api',
-        message: ['Rate limit exceeded', 'Too many requests', { limit: 100, current: 150, resetTime: '2024-12-16T12:00:00Z' }],
-        caller: 'rateLimit.js:23',
-        ip: '127.0.0.1'
-      }
-    ]
-    
-    logs.value.push(...testLogs)
-    console.log('已添加测试日志数据:', testLogs.length, '条')
-  }
+
 
   // 清理函数
   let cleanupSocketListeners = null
@@ -538,6 +418,33 @@ export function useLogViewer() {
     }
   }
 
+  // 手动初始化方法（用于非组件环境）
+  const manualInit = () => {
+    console.log('LogViewer 手动初始化')
+    console.log('Client 当前连接状态:', client.isConnected)
+    console.log('Client 当前 socket:', client.socket)
+    
+    // 同步初始状态
+    isConnected.value = client.isConnected
+    socket.value = client.socket
+    
+    // 设置 socket 事件监听器
+    cleanupSocketListeners = setupSocketListeners()
+    
+    // 设置状态轮询
+    cleanupStatusPolling = setupStatusPolling()
+    
+    // 如果已经连接，立即初始化监听器
+    if (isConnected.value && socket.value) {
+      initLogListener()
+    }
+    
+    // 自动订阅日志（延迟一点确保连接稳定）
+    setTimeout(() => {
+      autoSubscribe()
+    }, 2000)
+  }
+
   // 组件挂载时初始化
   onMounted(() => {
     console.log('LogViewer 组件挂载')
@@ -559,10 +466,7 @@ export function useLogViewer() {
       initLogListener()
     }
     
-    // 添加一些测试日志数据
-    setTimeout(() => {
-      addTestLogs()
-    }, 1000)
+
     
     // 自动订阅日志（延迟一点确保连接稳定）
     setTimeout(() => {
@@ -613,6 +517,9 @@ export function useLogViewer() {
     exportLogs,
     updateConfig,
     getStats,
-    clearLogs
+    clearLogs,
+    subscribe,
+    unsubscribe,
+    manualInit
   }
 }

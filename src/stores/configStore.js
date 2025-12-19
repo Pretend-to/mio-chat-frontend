@@ -94,6 +94,23 @@ export const useConfigStore = defineStore('config', () => {
     return count;
   });
 
+  // 插件数据
+  const plugins = ref([]);
+  
+  /**
+   * 获取可用插件总数
+   */
+  const totalPluginsCount = computed(() => {
+    return plugins.value.length;
+  });
+
+  /**
+   * 获取可用工具总数
+   */
+  const totalToolsCount = computed(() => {
+    return plugins.value.reduce((sum, plugin) => sum + (plugin.toolCount || 0), 0);
+  });
+
   /**
    * 检查是否已认证（有管理员验证码）
    */
@@ -168,6 +185,27 @@ export const useConfigStore = defineStore('config', () => {
       return response.data;
     } catch (error) {
       console.error(`获取配置节点 ${section} 失败:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取插件列表
+   */
+  async function fetchPlugins() {
+    try {
+      const result = await configAPI.request('/api/plugins');
+      if (result.code === 0) {
+        plugins.value = result.data.plugins || [];
+        return result.data.plugins;
+      } else {
+        console.error('获取插件列表失败:', result.message);
+        plugins.value = [];
+        return [];
+      }
+    } catch (error) {
+      console.error('获取插件列表失败:', error);
+      plugins.value = [];
       throw error;
     }
   }
@@ -444,6 +482,7 @@ export const useConfigStore = defineStore('config', () => {
     adapterTypes,
     adapters,
     models,
+    plugins,
     loading,
     needRestart,
     adminCode,
@@ -454,6 +493,8 @@ export const useConfigStore = defineStore('config', () => {
     totalAdapters,
     enabledAdaptersCount,
     totalModelsCount,
+    totalPluginsCount,
+    totalToolsCount,
     isAuthenticated,
     
     // Actions
@@ -462,6 +503,7 @@ export const useConfigStore = defineStore('config', () => {
     fetchAdapterTypes,
     fetchConfig,
     fetchConfigSection,
+    fetchPlugins,
     updateConfig,
     updateConfigSection,
     addAdapter,
