@@ -249,6 +249,16 @@ class ConfigAPI {
     });
   }
 
+  // ========== OneBot 配置管理 ==========
+
+  /**
+   * 获取 OneBot 插件选项
+   * @returns {Promise<object>} OneBot 插件选项数据
+   */
+  async getOneBotPlugins() {
+    return this.request('/api/onebot/plugins');
+  }
+
   // ========== 配置导出/导入 ==========
 
   /**

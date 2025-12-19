@@ -204,8 +204,8 @@ export const useConfigStore = defineStore('config', () => {
         config.value[section] = data;
       }
       
-      // 非 LLM 适配器配置需要重启
-      if (section !== 'llm_adapters') {
+      // 非 LLM 适配器和 OneBot 配置需要重启
+      if (section !== 'llm_adapters' && section !== 'onebot') {
         needRestart.value = true;
       }
       
@@ -395,6 +395,19 @@ export const useConfigStore = defineStore('config', () => {
   }
 
   /**
+   * 获取 OneBot 插件选项
+   */
+  async function fetchOneBotPlugins() {
+    try {
+      const response = await configAPI.getOneBotPlugins();
+      return response.data;
+    } catch (error) {
+      console.error('获取 OneBot 插件选项失败:', error);
+      throw error;
+    }
+  }
+
+  /**
    * 切换适配器选中状态
    */
   function toggleAdapterSelection(type, index) {
@@ -462,6 +475,7 @@ export const useConfigStore = defineStore('config', () => {
     resetConfig,
     exportConfig,
     importConfig,
+    fetchOneBotPlugins,
     toggleAdapterSelection,
     clearAdapterSelection,
     isAdapterSelected

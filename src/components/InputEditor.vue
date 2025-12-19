@@ -117,7 +117,7 @@ export default {
     this.textareaRef.addEventListener("paste", this.handlePaste);
 
     this.host = window.location.origin;
-    this.onebotPresets = config.onebotConfig.textwraper.options;
+    this.onebotPresets = config.onebotConfig?.textwraper?.options || [];
   },
   unmounted() {
     this.textareaRef.removeEventListener("input", this.adjustTextareaHeight);

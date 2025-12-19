@@ -14,16 +14,7 @@
       </div>
     </div>
 
-    <el-alert
-      type="warning"
-      :closable="false"
-      show-icon
-      style="margin-bottom: 24px;"
-    >
-      <template #title>
-        修改 OneBot 配置需要重启服务才能生效
-      </template>
-    </el-alert>
+
 
     <el-card>
       <el-form
@@ -46,92 +37,94 @@
           </template>
         </el-form-item>
 
-        <template v-if="formData.enable">
-          <el-divider content-position="left">连接配置</el-divider>
+        <el-divider content-position="left">连接配置</el-divider>
 
-          <el-form-item label="反向 WebSocket URL" prop="reverse_ws_url">
-            <el-input
-              v-model="formData.reverse_ws_url"
-              placeholder="ws://localhost:2536/OneBotv11"
-              style="width: 500px"
-            />
-            <template #extra>
-              <span class="form-item-tip">
-                OneBot 实现端的反向 WebSocket 地址（如 go-cqhttp）
-              </span>
+        <el-form-item label="反向 WebSocket URL" prop="reverse_ws_url">
+          <el-input
+            v-model="formData.reverse_ws_url"
+            placeholder="ws://localhost:8080/onebot/v11/ws"
+            style="width: 500px"
+            :disabled="!formData.enable"
+          />
+          <template #extra>
+            <span class="form-item-tip">
+              OneBot 实现端的反向 WebSocket 地址（如 go-cqhttp）
+            </span>
+          </template>
+        </el-form-item>
+
+        <el-form-item label="Access Token" prop="token">
+          <el-input
+            v-model="formData.token"
+            :type="showToken ? 'text' : 'password'"
+            placeholder="留空则不使用 token 验证"
+            maxlength="100"
+            show-word-limit
+            style="width: 500px"
+            :disabled="!formData.enable"
+          >
+            <template #append>
+              <el-button
+                :icon="showToken ? View : Hide"
+                @click="showToken = !showToken"
+              />
             </template>
-          </el-form-item>
+          </el-input>
+          <template #extra>
+            <span class="form-item-tip">
+              与 OneBot 实现端配置的 access_token 保持一致
+            </span>
+          </template>
+        </el-form-item>
 
-          <el-form-item label="Access Token" prop="token">
-            <el-input
-              v-model="formData.token"
-              :type="showToken ? 'text' : 'password'"
-              placeholder="留空则不使用 token 验证"
-              maxlength="100"
-              show-word-limit
-              style="width: 500px"
-            >
-              <template #append>
-                <el-button
-                  :icon="showToken ? View : Hide"
-                  @click="showToken = !showToken"
-                />
-              </template>
-            </el-input>
-            <template #extra>
-              <span class="form-item-tip">
-                与 OneBot 实现端配置的 access_token 保持一致
-              </span>
-            </template>
-          </el-form-item>
+        <el-divider content-position="left">机器人配置</el-divider>
 
-          <el-divider content-position="left">机器人配置</el-divider>
+        <el-form-item label="机器人 QQ 号" prop="bot_qq">
+          <el-input
+            v-model="formData.bot_qq"
+            placeholder="2698788044"
+            maxlength="20"
+            style="width: 300px"
+            :disabled="!formData.enable"
+          />
+          <template #extra>
+            <span class="form-item-tip">
+              接入的 QQ 机器人账号
+            </span>
+          </template>
+        </el-form-item>
 
-          <el-form-item label="机器人 QQ 号" prop="bot_qq">
-            <el-input
-              v-model="formData.bot_qq"
-              placeholder="3038848622"
-              maxlength="20"
-              style="width: 300px"
-            />
-            <template #extra>
-              <span class="form-item-tip">
-                接入的 QQ 机器人账号
-              </span>
-            </template>
-          </el-form-item>
-
-          <el-form-item label="管理员 QQ 号" prop="admin_qq">
-            <el-input
-              v-model="formData.admin_qq"
-              placeholder="1099834705"
-              maxlength="20"
-              style="width: 300px"
-            />
-            <template #extra>
-              <span class="form-item-tip">
-                机器人管理员的 QQ 号，拥有特殊权限
-              </span>
-            </template>
-          </el-form-item>
-        </template>
+        <el-form-item label="管理员 QQ 号" prop="admin_qq">
+          <el-input
+            v-model="formData.admin_qq"
+            placeholder="1099834705"
+            maxlength="20"
+            style="width: 300px"
+            :disabled="!formData.enable"
+          />
+          <template #extra>
+            <span class="form-item-tip">
+              机器人管理员的 QQ 号，拥有特殊权限
+            </span>
+          </template>
+        </el-form-item>
       </el-form>
     </el-card>
 
-    <!-- 连接状态（可选） -->
-    <el-card v-if="formData.enable" style="margin-top: 16px;">
+    <!-- 连接状态 -->
+    <el-card style="margin-top: 16px;">
       <template #header>
         <div class="card-header">
           <span>连接状态</span>
         </div>
       </template>
       <el-alert
-        type="info"
+        :type="formData.enable ? 'info' : 'warning'"
         :closable="false"
         show-icon
       >
         <template #title>
-          连接状态监控功能需要后端支持，暂未实现
+          {{ formData.enable ? '连接状态监控功能需要后端支持，暂未实现' : 'OneBot 协议已禁用' }}
         </template>
       </el-alert>
     </el-card>
@@ -139,10 +132,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import { View, Hide } from '@element-plus/icons-vue';
 import { useConfigStore } from '@/stores/configStore.js';
+import { Hide, View } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
+import { onMounted, reactive, ref } from 'vue';
 
 const configStore = useConfigStore();
 const formRef = ref(null);
@@ -167,7 +160,7 @@ const rules = {
     {
       validator: (rule, value, callback) => {
         if (formData.enable && !value) {
-          callback(new Error('请输入反向 WebSocket URL'));
+          callback(new Error('启用 OneBot 时必须输入反向 WebSocket URL'));
         } else if (value && !value.startsWith('ws://') && !value.startsWith('wss://')) {
           callback(new Error('URL 必须以 ws:// 或 wss:// 开头'));
         } else {
@@ -181,7 +174,7 @@ const rules = {
     {
       validator: (rule, value, callback) => {
         if (formData.enable && !value) {
-          callback(new Error('请输入机器人 QQ 号'));
+          callback(new Error('启用 OneBot 时必须输入机器人 QQ 号'));
         } else if (value && !/^\d+$/.test(value)) {
           callback(new Error('QQ 号必须为纯数字'));
         } else {
@@ -208,6 +201,7 @@ const rules = {
 // 加载配置
 const loadConfig = async () => {
   try {
+    // 使用新的 OneBot API 接口获取配置
     const onebotConfig = configStore.config?.onebot || await configStore.fetchConfigSection('onebot');
     
     Object.assign(formData, {
@@ -221,7 +215,7 @@ const loadConfig = async () => {
     // 保存原始数据
     Object.assign(originalData, formData);
   } catch (error) {
-    ElMessage.error('加载配置失败：' + error.message);
+    ElMessage.error('加载 OneBot 配置失败：' + error.message);
   }
 };
 
@@ -230,15 +224,7 @@ const handleSave = async () => {
   try {
     await formRef.value.validate();
     
-    await ElMessageBox.confirm(
-      '修改 OneBot 配置需要重启服务才能生效，是否继续？',
-      '确认保存',
-      {
-        confirmButtonText: '保存',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    );
+
 
     saving.value = true;
 
@@ -250,7 +236,7 @@ const handleSave = async () => {
       admin_qq: formData.admin_qq
     });
 
-    ElMessage.success('配置保存成功，请重启服务使配置生效');
+    ElMessage.success('OneBot 配置保存成功');
     
     // 更新原始数据
     Object.assign(originalData, formData);
@@ -331,5 +317,17 @@ onMounted(async () => {
 :deep(.el-divider__text) {
   font-weight: 600;
   color: #606266;
+}
+
+// 禁用状态的输入框样式
+:deep(.el-input.is-disabled .el-input__wrapper) {
+  background-color: #f5f7fa;
+  border-color: #e4e7ed;
+  color: #c0c4cc;
+}
+
+:deep(.el-input.is-disabled .el-input__inner) {
+  color: #c0c4cc;
+  cursor: not-allowed;
 }
 </style>

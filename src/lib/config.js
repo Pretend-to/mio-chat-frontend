@@ -769,23 +769,23 @@ export default class Config {
       const response = await fetch(`/api/onebot/plugins`);
       if (!response.ok) {
         throw new Error(
-          `请求 OneBot 配置失败: ${response.status} ${response.statusText}`
+          `请求 OneBot 插件配置失败: ${response.status} ${response.statusText}`
         );
       }
       const data = await response.json();
 
-      // 假设 API 返回的数据结构是 { data: { options: ... } }
-      if (data && data.data && data.data.options) {
+      // 根据 OneBot API 文档，返回的数据结构是 { success: true, data: { options: ... } }
+      if (data && data.success && data.data && data.data.options) {
         this.onebotConfig = data.data.options;
-        console.log("OneBot 配置已加载:", this.onebotConfig);
+        console.log("OneBot 插件配置已加载:", this.onebotConfig);
         // 加载后立即保存
         this._saveStrogeConfig();
       } else {
-        console.warn("从 API 收到的 OneBot 配置数据格式不符合预期:", data);
+        console.warn("从 API 收到的 OneBot 插件配置数据格式不符合预期:", data);
         this.onebotConfig = null; // 或保持旧数据？
       }
     } catch (error) {
-      console.error("加载 OneBot 配置时发生网络或解析错误:", error);
+      console.error("加载 OneBot 插件配置时发生网络或解析错误:", error);
       // 可以考虑加载失败时的回退逻辑
     }
   }
