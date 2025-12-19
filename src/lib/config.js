@@ -766,7 +766,7 @@ export default class Config {
    */
   async loadonebotConfig() {
     try {
-      const response = await fetch(`/api/onebot/plugins`); // 示例端点
+      const response = await fetch(`/api/onebot/plugins`);
       if (!response.ok) {
         throw new Error(
           `请求 OneBot 配置失败: ${response.status} ${response.statusText}`

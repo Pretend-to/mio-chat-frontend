@@ -341,20 +341,45 @@ const handleFetchModels = async () => {
 
   fetchingModels.value = true;
   try {
-    // 构建测试请求参数（只包含认证相关字段）
+    // 构建测试请求参数（包含所有相关字段）
     const testConfig = {};
 
-    // 根据适配器类型添加必要的认证信息
+    // 根据适配器类型添加必要的认证信息和配置
     if (props.type === 'vertex') {
       testConfig.region = formData.value.region;
       testConfig.service_account_json = formData.value.service_account_json;
+      
+      // 包含手动模型配置
       if (formData.value.models && formData.value.models.length > 0) {
         testConfig.models = formData.value.models;
+      }
+      
+      // 包含手动模型字符串（如果有的话）
+      if (formData.value.manual_models && formData.value.manual_models.trim()) {
+        testConfig.manual_models = formData.value.manual_models.trim();
+      }
+      
+      // 包含其他可能的 Vertex 特定配置
+      if (formData.value.name) {
+        testConfig.name = formData.value.name;
+      }
+      if (formData.value.enable !== undefined) {
+        testConfig.enable = formData.value.enable;
       }
     } else {
       testConfig.api_key = formData.value.api_key;
       testConfig.base_url = formData.value.base_url;
+      
+      // 包含其他通用配置
+      if (formData.value.name) {
+        testConfig.name = formData.value.name;
+      }
+      if (formData.value.enable !== undefined) {
+        testConfig.enable = formData.value.enable;
+      }
     }
+
+    console.log('发送测试配置:', testConfig); // 添加调试日志
 
     // 调用后端 API 测试连接并获取模型
     const response = await configAPI.request(`/api/config/llm/${props.type}/test-models`, {
@@ -411,16 +436,19 @@ const handleSubmit = async () => {
         delete submitData.region;
         delete submitData.service_account_json;
         delete submitData.models;
+        delete submitData.manual_models;
       } else {
         delete submitData.api_key;
         delete submitData.base_url;
       }
+
+      console.log('提交数据 (添加模式):', submitData); // 添加调试日志
     } else {
       // 编辑模式：只提交变更的字段
       submitData = {};
 
       // 比对基本字段
-      const fieldsToCheck = ['name', 'enable', 'api_key', 'base_url', 'region', 'service_account_json', 'models'];
+      const fieldsToCheck = ['name', 'enable', 'api_key', 'base_url', 'region', 'service_account_json', 'models', 'manual_models'];
       for (const field of fieldsToCheck) {
         // 跳过加密字段（以 *** 开头的值表示未修改）
         if (field === 'api_key' && formData.value[field]?.startsWith('***')) {
@@ -433,7 +461,7 @@ const handleSubmit = async () => {
         // 只在字段值发生变化时添加
         if (JSON.stringify(formData.value[field]) !== JSON.stringify(originalData.value?.[field])) {
           // 根据适配器类型过滤字段
-          if (props.type !== 'vertex' && ['region', 'service_account_json', 'models'].includes(field)) {
+          if (props.type !== 'vertex' && ['region', 'service_account_json', 'models', 'manual_models'].includes(field)) {
             continue;
           }
           if (props.type === 'vertex' && ['api_key', 'base_url'].includes(field)) {
@@ -450,6 +478,8 @@ const handleSubmit = async () => {
       if (JSON.stringify(modelConfig.value.guest) !== JSON.stringify(originalData.value?.guest_models)) {
         submitData.guest_models = modelConfig.value.guest;
       }
+
+      console.log('提交数据 (编辑模式):', submitData); // 添加调试日志
     }
 
     submitting.value = true;
@@ -493,6 +523,8 @@ const initFormData = () => {
     };
     // 保存原始数据副本
     originalData.value = JSON.parse(JSON.stringify(props.adapter));
+    
+    console.log('初始化表单数据 (编辑模式):', formData.value); // 添加调试日志
   } else {
     // 添加模式 - 基于配置模式设置默认值
     const defaultData = {};
@@ -523,6 +555,8 @@ const initFormData = () => {
         full_name: []
       }
     };
+
+    console.log('初始化表单数据 (添加模式):', formData.value); // 添加调试日志
 
     modelConfig.value = {
       default: '',
