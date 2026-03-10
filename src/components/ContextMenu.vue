@@ -1,54 +1,56 @@
 <template>
-  <div id="message-menu" :class="{ 'expand-up': isUp, 'expand-down': !isUp }">
-    <template v-if="type === 'friend'">
-      <div @click.stop="enterChat">
-        <i class="iconfont chat"></i>
-        <span>进入对话</span>
-      </div>
-      <div @click.stop="togglePriority">
-        <i class="iconfont star"></i>
-        <span>{{ message.priority === 0 ? "取消置顶" : "置顶" }}</span>
-      </div>
-      <div @click.stop="shareBot">
-        <i class="iconfont icon-share"></i>
-        <span>分享</span>
-      </div>
-      <div @click.stop="deleteBot">
-        <i class="iconfont shanchu"></i>
-        <span>删除</span>
-      </div>
-    </template>
-    <template v-else>
-      <div v-if="seletedText" @click.stop="copySeletedText">
-        <i class="iconfont fuzhi"></i>
-        <span>复制选中</span>
-      </div>
-      <div @click.stop="copyText">
-        <i class="iconfont fuzhi"></i>
-        <span>复制消息</span>
-      </div>
-      <div v-if="seletedImage" @click.stop="copySeletedImage">
-        <i class="iconfont fuzhi"></i>
-        <span>复制图片</span>
-      </div>
-      <div v-if="seletedImage" @click.stop="saveSeletedImage">
-        <i class="iconfont fuzhi"></i>
-        <span>保存图片</span>
-      </div>
-      <div @click.stop="retryMessage">
-        <i class="iconfont reset"></i>
-        <span>重试消息</span>
-      </div>
-      <div @click.stop="replyMessage">
-        <i class="iconfont yinyong"></i>
-        <span>引用消息</span>
-      </div>
-      <div @click.stop="deleteMessage">
-        <i class="iconfont shanchu"></i>
-        <span>删除消息</span>
-      </div>
-    </template>
-  </div>
+  <transition name="menu">
+    <div id="message-menu" :class="{ 'expand-up': isUp, 'expand-down': !isUp }">
+      <template v-if="type === 'friend'">
+        <div @click.stop="enterChat">
+          <i class="iconfont chat"></i>
+          <span>进入对话</span>
+        </div>
+        <div @click.stop="togglePriority">
+          <i class="iconfont star"></i>
+          <span>{{ message.priority === 0 ? "取消置顶" : "置顶" }}</span>
+        </div>
+        <div @click.stop="shareBot">
+          <i class="iconfont icon-share"></i>
+          <span>分享</span>
+        </div>
+        <div @click.stop="deleteBot">
+          <i class="iconfont shanchu"></i>
+          <span>删除</span>
+        </div>
+      </template>
+      <template v-else>
+        <div v-if="seletedText" @click.stop="copySeletedText">
+          <i class="iconfont fuzhi"></i>
+          <span>复制选中</span>
+        </div>
+        <div @click.stop="copyText">
+          <i class="iconfont fuzhi"></i>
+          <span>复制消息</span>
+        </div>
+        <div v-if="seletedImage" @click.stop="copySeletedImage">
+          <i class="iconfont fuzhi"></i>
+          <span>复制图片</span>
+        </div>
+        <div v-if="seletedImage" @click.stop="saveSeletedImage">
+          <i class="iconfont fuzhi"></i>
+          <span>保存图片</span>
+        </div>
+        <div @click.stop="retryMessage">
+          <i class="iconfont reset"></i>
+          <span>重试消息</span>
+        </div>
+        <div @click.stop="replyMessage">
+          <i class="iconfont yinyong"></i>
+          <span>引用消息</span>
+        </div>
+        <div @click.stop="deleteMessage">
+          <i class="iconfont shanchu"></i>
+          <span>删除消息</span>
+        </div>
+      </template>
+    </div>
+  </transition>
 </template>
 <script>
 export default {
@@ -257,9 +259,8 @@ export default {
     padding: .5rem
     z-index: 9999
     -webkit-user-select: none
-    -moz-user-select: none
-    -ms-user-select: none
     user-select: none
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease
     
     // 移动端样式 - 横向网格布局
     @media (max-width: 768px)
@@ -270,7 +271,8 @@ export default {
         background-color: rgba(40, 44, 52, 0.85)
         border-radius: 1rem
         left: 50%
-        transform: translateX(-50%)
+        transform: translateX(-50%) scale(1)
+        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease
         
     @keyframes pop-up
         0%
@@ -370,4 +372,21 @@ export default {
           border-right: 6px solid transparent
           // 与移动端菜单主体保持一致的背景色
           border-top: 6px solid rgba(40, 44, 52, 0.85)
+
+    // 动画 transition classes
+    &.menu-enter-from, &.menu-leave-to
+        opacity: 0
+        @media (max-width: 768px)
+            transform: translateX(-50%) scale(0)
+        @media (min-width: 769px)
+            transform: scale(0.8)
+
+    &.menu-enter-active, &.menu-leave-active
+        @media (max-width: 768px)
+            &.expand-down
+              transform-origin: center top
+            &.expand-up
+              transform-origin: center bottom
+        @media (min-width: 769px)
+            transform-origin: top left
 </style>

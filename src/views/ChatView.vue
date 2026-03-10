@@ -114,7 +114,9 @@ export default {
       clearMessageTip: "以上的对话记录已清除",
       loadingIcon: "<span id='message-loading-icon'></span>",
       katexPlugin,
-      mioPlugins
+      mioPlugins,
+      longPressTimer: null,
+      lastClickTime: 0
     };
   },
   computed: {
@@ -579,18 +581,18 @@ export default {
     },
     showMessageMenu(event, messageIndex) {
       // 确定右击的元素类型
-      if (event.target.tagName.toLowerCase() === "img") {
+      if (event.target && event.target.tagName && event.target.tagName.toLowerCase() === "img") {
         const imgElement = event.target;
         const imgSrc = imgElement.src;
         this.seletedImage = imgSrc;
       } else {
-        console.log("用户右击了非图片元素");
+        console.log("用户右击了非图片元素或合成事件");
       }
       this.validMessageIndex =
         this.activeContactor.platform === "openai" && this.hasOpening()
           ? messageIndex - 1
           : messageIndex;
-      event.preventDefault();
+      if (event.preventDefault) event.preventDefault();
       this.showMenu = true;
       this.menuTop = event.clientY;
       this.menuLeft = event.clientX;
@@ -602,6 +604,30 @@ export default {
         this.seletedText = "";
       }
     },
+    handleTouchStart(event, index) {
+      const now = Date.now();
+      const delay = now - this.lastClickTime;
+
+      if (delay < 300 && delay > 0) {
+        // Double tap detected
+        if (event.cancelable) event.preventDefault(); // 阻止浏览器缩放
+        const touch = event.touches[0];
+        const syntheticEvent = {
+          clientX: touch.clientX,
+          clientY: touch.clientY,
+          target: event.target,
+          preventDefault: () => {
+            if (event.preventDefault) event.preventDefault();
+          }
+        };
+        this.showMessageMenu(syntheticEvent, index);
+        this.lastClickTime = 0;
+      } else {
+        this.lastClickTime = now;
+      }
+    },
+    handleTouchEnd() { },
+    handleTouchMove() { },
     toProfile() {
       this.$router.push({
         name: "profile_view",
@@ -765,7 +791,7 @@ export default {
               </div>
             </div>
             <div :class="['content', item.status]" @mouseup="handleMouseUp"
-              @contextmenu="showMessageMenu($event, index)">
+              @contextmenu="showMessageMenu($event, index)" @touchstart="handleTouchStart($event, index)">
               <div v-for="(element, elmIndex) of item.content" :key="elmIndex" class="inner-content">
                 <MdRenderer v-if="element.type === 'text'" :md="element.data.text" :theme="'github'" :isStreaming="['pending', 'retrying'].includes(item.status) &&
                   item.content.length - 1 === elmIndex

@@ -17,6 +17,8 @@ export default {
       menuX: 0,
       menuY: 0,
       selectedFriend: null,
+      longPressTimer: null,
+      lastClickTime: 0,
     };
   },
   computed: {
@@ -176,6 +178,7 @@ export default {
       this.addReactiveListener();
     },
     showFriendContextMenu(event, friend) {
+      if (event.preventDefault) event.preventDefault();
       this.selectedFriend = friend;
       this.menuX = event.clientX;
       this.menuY = event.clientY;
@@ -187,6 +190,30 @@ export default {
       };
       document.addEventListener("click", closeMenu);
     },
+
+    handleTouchStart(event, item) {
+      const now = Date.now();
+      const delay = now - this.lastClickTime;
+
+      if (delay < 350 && delay > 0) {
+        // Double tap detected
+        if (event.cancelable) event.preventDefault();
+        const touch = event.touches[0];
+        const syntheticEvent = {
+          clientX: touch.clientX,
+          clientY: touch.clientY,
+          preventDefault: () => {
+            if (event.preventDefault) event.preventDefault();
+          },
+        };
+        this.showFriendContextMenu(syntheticEvent, item);
+        this.lastClickTime = 0;
+      } else {
+        this.lastClickTime = now;
+      }
+    },
+    handleTouchEnd() { },
+    handleTouchMove() { },
 
     async handleFriendOption(option) {
       switch (option) {
@@ -264,7 +291,7 @@ export default {
     </div>
     <div class="people">
       <div v-for="(item, index) of sortedList" :id="getId(item)" :key="index" class="lists" @click="showChat(item.id)"
-        @contextmenu.prevent="showFriendContextMenu($event, item)">
+        @contextmenu.prevent="showFriendContextMenu($event, item)" @touchstart="handleTouchStart($event, item)">
         <div class="avatar" :class="item.avatarPolicy == 1 ? 'custom' : 'model'">
           <img :src="item.avatar" :alt="item.name" />
         </div>
@@ -276,13 +303,8 @@ export default {
       </div>
     </div>
     <div class="resizer" @mousedown="startResize"></div>
-    <AddContactor 
-      v-model:show="showAddWindow"
-      @close="showAddWindow = false" 
-      @add-bot="addPresetContactor"
-      @add-by-provider="genBotByProvider"
-      @add-by-share-code="genBotByShareCode"
-    />
+    <AddContactor v-model:show="showAddWindow" @close="showAddWindow = false" @add-bot="addPresetContactor"
+      @add-by-provider="genBotByProvider" @add-by-share-code="genBotByShareCode" />
     <ContextMenu v-if="showMenu" type="friend" :message="selectedFriend" :style="{
       top: menuY + 'px',
     }" @message-option="handleFriendOption" @close="showMenu = false" />
@@ -386,6 +408,7 @@ button#addcont {
   height: 3.75rem;
   max-height: 3.75rem;
   min-height: 3.75rem;
+  -webkit-touch-callout: none;
   /* border: .0625rem solid pink; */
 }
 
