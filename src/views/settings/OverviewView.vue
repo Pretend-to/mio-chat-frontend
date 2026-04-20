@@ -267,8 +267,12 @@
         </div>
       </template>
       <div class="adapters-overview">
+        <div v-if="activeAdapterTypes.length === 0" class="empty-state" style="padding: 32px 0;">
+          <el-empty description="暂无任何适配器实例" :image-size="100"></el-empty>
+        </div>
         <div
-          v-for="type in allAdapterTypes"
+          v-else
+          v-for="type in activeAdapterTypes"
           :key="type"
           class="adapter-type-section"
         >
@@ -276,10 +280,7 @@
             <h3>{{ adapterTypeName(type) }}</h3>
             <el-tag>{{ getAdapterInstanceCount(type) }} 个实例</el-tag>
           </div>
-          <div v-if="getAdapterInstanceCount(type) === 0" class="empty-state">
-            暂无实例
-          </div>
-          <div v-else class="adapter-list">
+          <div class="adapter-list">
             <div
               v-for="(adapter, index) in getAdapterInstances(type)"
               :key="index"
@@ -373,6 +374,11 @@ const getAdapterInstanceCount = (type) => {
   const instances = configStore.adapters?.[type] || [];
   return instances.length;
 };
+
+// 获取有实例的适配器类型
+const activeAdapterTypes = computed(() => {
+  return allAdapterTypes.value.filter(type => getAdapterInstanceCount(type) > 0);
+});
 
 // 获取指定类型的适配器实例列表
 const getAdapterInstances = (type) => {

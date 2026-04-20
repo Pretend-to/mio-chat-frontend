@@ -117,39 +117,30 @@ export default {
         }
       });
       this.copyTextToClipboard(text);
-      this.$emit("close");
     },
     copySeletedText() {
       this.copyTextToClipboard(this.seletedText);
-      this.$emit("close");
     },
     retryMessage() {
       this.$emit("message-option", "retry");
-      this.$emit("close");
     },
     replyMessage() {
       this.$emit("message-option", "reply");
-      this.$emit("close");
     },
     deleteMessage() {
       this.$emit("message-option", "delete");
-      this.$emit("close");
     },
     enterChat() {
       this.$emit("message-option", "enter");
-      this.$emit("close");
     },
     togglePriority() {
       this.$emit("message-option", "priority");
-      this.$emit("close");
     },
     shareBot() {
       this.$emit("message-option", "share");
-      this.$emit("close");
     },
     deleteBot() {
       this.$emit("message-option", "delete");
-      this.$emit("close");
     },
     // 封装复制文本到剪贴板的函数
     async copyTextToClipboard(text) {

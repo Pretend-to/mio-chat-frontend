@@ -645,7 +645,7 @@ export default class Contactor extends EventEmmiter {
       msg = msg.data
     }
 
-    return getMessageText(msg.content ? msg.content[0] : msg);
+    return  msg.content?.length > 0 ? getMessageText(msg.content[0]) : '[未知消息]'
   }
 
   updateFirstMessage() {

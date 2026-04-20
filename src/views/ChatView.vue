@@ -577,7 +577,7 @@ export default {
       }
     },
     imageLoaded() {
-      this.scroll && this.toButtom();
+      // this.scroll && this.toButtom();
     },
     showMessageMenu(event, messageIndex) {
       // 确定右击的元素类型
@@ -694,7 +694,6 @@ export default {
               message.role === "user"
                 ? this.validMessageIndex + 1
                 : this.validMessageIndex;
-
             let validMessage = this.activeContactor.messageChain[targetIndex];
             if (!validMessage || validMessage.role !== "other") {
               // 是用户发送且下一条消息被删除,先插入一条空消息
@@ -734,6 +733,9 @@ export default {
         default:
           break;
       }
+
+      this.showMenu = false
+
     },
   },
 };
