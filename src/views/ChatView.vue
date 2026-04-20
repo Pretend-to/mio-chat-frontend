@@ -507,7 +507,12 @@ export default {
       });
 
       contactor.on("updateMessage", () => {
-        this.$forceUpdate();
+        if (!this._updateRaf) {
+          this._updateRaf = requestAnimationFrame(() => {
+            this.$forceUpdate();
+            this._updateRaf = null;
+          });
+        }
         this.toupdate = true;
         client.setLocalStorage(); //持久化存储
       });

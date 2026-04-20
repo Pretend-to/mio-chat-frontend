@@ -102,10 +102,10 @@ export default class Contactor extends EventEmmiter {
           rawMessage.content[existingReasonIndex].data.text + reasoning_content;
         msgElm.data.startTime =
           rawMessage.content[existingReasonIndex].data.startTime;
-        rawMessage.content[existingReasonIndex] = msgElm;
+        rawMessage.content.splice(existingReasonIndex, 1, msgElm);
       } else if (rawMessage.content[0].type === "blank") {
         // 如果是 blank 状态，直接更新第一个元素
-        rawMessage.content[0] = msgElm;
+        rawMessage.content.splice(0, 1, msgElm);
       } else {
         // 其他情况，追加到末尾
         rawMessage.content.push(msgElm);
@@ -138,7 +138,7 @@ export default class Contactor extends EventEmmiter {
       };
 
       if (isFirstElement)
-        rawMessage.content[rawMessage.content.length - 1] = msgElm;
+        rawMessage.content.splice(rawMessage.content.length - 1, 1, msgElm);
       else rawMessage.content.push(msgElm);
 
       this.emit("updateMessage"); // 更新响应式数据
@@ -160,7 +160,7 @@ export default class Contactor extends EventEmmiter {
 
       if (lastMsgElm.type == "blank") {
         // 这种情况一定是第一条空白消息，直接更新成 toolCall 消息
-        rawMessage.content[0] = msgElm;
+        rawMessage.content.splice(0, 1, msgElm);
       } else {
         const previousCall = rawMessage.content.find(
           (msgElm) => msgElm.data.id == tool_call.id,
@@ -173,7 +173,7 @@ export default class Contactor extends EventEmmiter {
             updatedCall.data.parameters += tool_call.parameters;
           }
           const index = rawMessage.content.indexOf(previousCall);
-          rawMessage.content[index] = updatedCall;
+          rawMessage.content.splice(index, 1, updatedCall);
         } else {
           // 这种情况就是新增一条 toolCall 消息
           rawMessage.content.push(msgElm);
@@ -229,7 +229,7 @@ export default class Contactor extends EventEmmiter {
         );
 
         if (withBlank) {
-          rawMessage.content[0] = errElem;
+          rawMessage.content.splice(0, 1, errElem);
         } else {
           rawMessage.content.push(errElem);
         }

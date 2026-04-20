@@ -7,79 +7,33 @@
           <div class="block-content-item">
             <div class="item-title">来源渠道</div>
             <div class="item-content">
-              <el-select
-                v-model="localLlmProvider"
-                style="width: 10rem"
-                @change="handleProviderChange"
-              >
-                <el-option
-                  v-for="item in llmProvidersList"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
-                />
+              <el-select v-model="localLlmProvider" style="width: 10rem" @change="handleProviderChange">
+                <el-option v-for="item in llmProvidersList" :key="item.value" :label="item.label" :value="item.value" />
               </el-select>
             </div>
           </div>
-          <div
-            v-for="(_, key) in localLlmGeneralKeys"
-            :key="key"
-            class="block-content-item"
-          >
+          <div v-for="(_, key) in localLlmGeneralKeys" :key="key" class="block-content-item">
             <div class="item-title">{{ getShownKey(key) }}</div>
             <div class="item-content">
-              <el-input
-                v-if="key === 'model'"
-                v-model="localLlmGeneralKeys[key]"
-                @change="updateGeneralSettings"
-              ></el-input>
-              <el-input-number
-                v-else-if="key === 'max_messages_num'"
-                v-model="localLlmGeneralKeys[key]"
-                :min="1"
-                :step="1"
-                @change="updateGeneralSettings"
-              />
-              <el-switch
-                v-else-if="['stream'].includes(key)"
-                v-model="localLlmGeneralKeys[key]"
-                @change="updateGeneralSettings"
-              ></el-switch>
-              <el-slider
-                v-else-if="['temperature'].includes(key)"
-                v-model="localLlmGeneralKeys[key]"
-                :step="sliderTypes.a.step"
-                :min="sliderTypes.a.min"
-                :max="sliderTypes.a.max"
-                @change="updateGeneralSettings"
-              />
-              <el-slider
-                v-else-if="['top_p'].includes(key)"
-                v-model="localLlmGeneralKeys[key]"
-                :step="sliderTypes.b.step"
-                :min="sliderTypes.b.min"
-                :max="sliderTypes.b.max"
-                @change="updateGeneralSettings"
-              />
-              <el-slider
-                v-else-if="
-                  ['frequency_penalty', 'presence_penalty'].includes(key)
-                "
-                v-model="localLlmGeneralKeys[key]"
-                :step="sliderTypes.c.step"
-                :min="sliderTypes.c.min"
-                :max="sliderTypes.c.max"
-                @change="updateGeneralSettings"
-              />
-              <el-slider
-                v-else-if="['reasoning_effort'].includes(key)"
-                v-model="localLlmGeneralKeys[key]"
-                :step="sliderTypes.d.step"
-                :min="sliderTypes.d.min"
-                :max="sliderTypes.d.max"
-                :format-tooltip="sliderTypes.d.formatter"
-                @change="updateGeneralSettings"
-              />
+              <el-input v-if="key === 'model'" v-model="localLlmGeneralKeys[key]"
+                @change="updateGeneralSettings"></el-input>
+              <el-input-number v-else-if="key === 'max_messages_num'" v-model="localLlmGeneralKeys[key]" :min="1"
+                :step="1" @change="updateGeneralSettings" />
+              <el-switch v-else-if="['stream'].includes(key)" v-model="localLlmGeneralKeys[key]"
+                @change="updateGeneralSettings"></el-switch>
+              <el-slider v-else-if="['temperature'].includes(key)" v-model="localLlmGeneralKeys[key]"
+                :step="sliderTypes.a.step" :min="sliderTypes.a.min" :max="sliderTypes.a.max"
+                @change="updateGeneralSettings" />
+              <el-slider v-else-if="['top_p'].includes(key)" v-model="localLlmGeneralKeys[key]"
+                :step="sliderTypes.b.step" :min="sliderTypes.b.min" :max="sliderTypes.b.max"
+                @change="updateGeneralSettings" />
+              <el-slider v-else-if="
+                ['frequency_penalty', 'presence_penalty'].includes(key)
+              " v-model="localLlmGeneralKeys[key]" :step="sliderTypes.c.step" :min="sliderTypes.c.min"
+                :max="sliderTypes.c.max" @change="updateGeneralSettings" />
+              <el-slider v-else-if="['reasoning_effort'].includes(key)" v-model="localLlmGeneralKeys[key]"
+                :step="sliderTypes.d.step" :min="sliderTypes.d.min" :max="sliderTypes.d.max"
+                :format-tooltip="sliderTypes.d.formatter" @change="updateGeneralSettings" />
             </div>
           </div>
         </div>
@@ -91,27 +45,17 @@
           <div class="block-content-item">
             <div class="item-title">预设历史记录</div>
             <div class="item-content">
-              <button
-                :class="{
-                  active: showPresetsDetail,
-                  'extra-info-button': true,
-                }"
-                @click="showPresetsDetail = !showPresetsDetail"
-              >
+              <button :class="{
+                active: showPresetsDetail,
+                'extra-info-button': true,
+              }" @click="showPresetsDetail = !showPresetsDetail">
                 <i class="iconfont icon-return"></i>
               </button>
             </div>
           </div>
           <transition name="expand-slide">
-            <div
-              v-show="showPresetsDetail"
-              class="block-content-item"
-              style="overflow: hidden"
-            >
-              <PresetsList
-                :presets-history="presetsHistoryData"
-                @update-presets="handleUpdatePresets"
-              />
+            <div v-show="showPresetsDetail" class="block-content-item" style="overflow: hidden">
+              <PresetsList :presets-history="presetsHistoryData" @update-presets="handleUpdatePresets" />
             </div>
           </transition>
         </div>
@@ -123,57 +67,32 @@
           <div class="block-content-item">
             <div class="item-title">工具调用模式</div>
             <div class="item-content">
-              <el-select
-                v-model="localLlmToolCallMode"
-                placeholder="AUTO"
-                style="width: 10rem"
-                @change="handleToolCallModeChange"
-              >
-                <el-option
-                  v-for="item in toolCallModesList"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
-                />
+              <el-select v-model="localLlmToolCallMode" placeholder="AUTO" style="width: 10rem"
+                @change="handleToolCallModeChange">
+                <el-option v-for="item in toolCallModesList" :key="item.value" :label="item.label"
+                  :value="item.value" />
               </el-select>
             </div>
           </div>
-          <div
-            v-for="(plugin, index) in localAllLLMTools"
-            :key="index"
-            class="block-content-item parent-item"
-          >
+          <div v-for="(plugin, index) in localAllLLMTools" :key="index" class="block-content-item parent-item">
             <div class="item-title">{{ plugin.name }}</div>
             <div class="item-content">
-              <button
-                :class="{
-                  active: !plugin.collapsed,
-                  'extra-info-button': true,
-                }"
-                @click="plugin.collapsed = !plugin.collapsed"
-              >
+              <button :class="{
+                active: !plugin.collapsed,
+                'extra-info-button': true,
+              }" @click="plugin.collapsed = !plugin.collapsed">
                 <i class="iconfont icon-return"></i>
               </button>
             </div>
             <transition name="expand-slide">
-              <div
-                v-show="!plugin.collapsed"
-                class="item-hidden-content plugin-tools-container"
-              >
-                <div
-                  v-for="(tool, toolIndex) in plugin.tools"
-                  :key="toolIndex"
-                  class="block-content-item child-item"
-                  :title="tool.description"
-                >
+              <div v-show="!plugin.collapsed" class="item-hidden-content plugin-tools-container">
+                <div v-for="(tool, toolIndex) in plugin.tools" :key="toolIndex" class="block-content-item child-item"
+                  :title="tool.description">
                   <div class="item-title">
                     {{ tool.name.split("_mid_")[0] }}
                   </div>
                   <div class="item-content">
-                    <el-switch
-                      v-model="tool.enabled"
-                      @change="handleToolEnableChange"
-                    ></el-switch>
+                    <el-switch v-model="tool.enabled" @change="handleToolEnableChange"></el-switch>
                   </div>
                 </div>
               </div>
@@ -183,53 +102,36 @@
       </div>
     </div>
 
-    <div
-      v-if="isGeminiAdapter"
-      class="settings-block"
-    >
+    <div v-if="isGeminiAdapter" class="settings-block">
       <div class="block-title">Gemini 额外设置</div>
       <div class="block-content">
         <div class="block-content-item">
           <div class="item-title">图像生成</div>
           <div class="item-content">
-            <el-switch
-              v-model="localGeminiExtraSettings.imageGeneration"
-              @change="handleGeminiSettingsChange"
-            ></el-switch>
+            <el-switch v-model="localGeminiExtraSettings.imageGeneration"
+              @change="handleGeminiSettingsChange"></el-switch>
           </div>
         </div>
         <div class="block-content-item">
           <div class="item-title">内置工具</div>
           <div class="item-content">
-            <button
-              :class="{
-                active: showInternalTools,
-                'extra-info-button': true,
-              }"
-              @click="showInternalTools = !showInternalTools"
-            >
+            <button :class="{
+              active: showInternalTools,
+              'extra-info-button': true,
+            }" @click="showInternalTools = !showInternalTools">
               <i class="iconfont icon-return"></i>
             </button>
           </div>
         </div>
         <transition name="expand-slide">
-          <div
-            v-show="showInternalTools"
-            class="block-content-item"
-            style="overflow: hidden"
-          >
+          <div v-show="showInternalTools" class="block-content-item" style="overflow: hidden">
             <ul id="internal-tools-settings" class="sub-items">
-              <li
-                v-for="(value, key) of localGeminiExtraSettings.internalTools"
-                :key="key"
-                class="block-content-item child-item"
-              >
+              <li v-for="(value, key) of localGeminiExtraSettings.internalTools" :key="key"
+                class="block-content-item child-item">
                 <div class="item-title">{{ getShownKey(key) }}</div>
                 <div class="item-content">
-                  <el-switch
-                    v-model="localGeminiExtraSettings.internalTools[key]"
-                    @change="handleGeminiSettingsChange"
-                  ></el-switch>
+                  <el-switch v-model="localGeminiExtraSettings.internalTools[key]"
+                    @change="handleGeminiSettingsChange"></el-switch>
                 </div>
               </li>
             </ul>
@@ -238,42 +140,24 @@
         <div class="block-content-item">
           <div class="item-title">过滤等级设置</div>
           <div class="item-content">
-            <button
-              :class="{
-                active: showSafetySettings,
-                'extra-info-button': true,
-              }"
-              @click="showSafetySettings = !showSafetySettings"
-            >
+            <button :class="{
+              active: showSafetySettings,
+              'extra-info-button': true,
+            }" @click="showSafetySettings = !showSafetySettings">
               <i class="iconfont icon-return"></i>
             </button>
           </div>
         </div>
         <transition name="expand-slide">
-          <div
-            v-show="showSafetySettings"
-            class="block-content-item"
-            style="overflow: hidden"
-          >
+          <div v-show="showSafetySettings" class="block-content-item" style="overflow: hidden">
             <ul id="safety-settings" class="sub-items">
-              <li
-                v-for="(value, key) of localGeminiSafetySettings"
-                :key="key"
-                class="block-content-item child-item"
-              >
+              <li v-for="(value, key) of localGeminiSafetySettings" :key="key" class="block-content-item child-item">
                 <div class="item-title">{{ getShownKey(key) }}</div>
                 <div class="item-content">
-                  <el-select
-                    v-model="localGeminiSafetySettings[key]"
-                    style="width: 10rem"
-                    @change="handleSafetySettingChange(key)"
-                  >
-                    <el-option
-                      v-for="item in safetySimpleValueOptions"
-                      :key="item.value"
-                      :label="item.label"
-                      :value="item.value"
-                    />
+                  <el-select v-model="localGeminiSafetySettings[key]" style="width: 10rem"
+                    @change="handleSafetySettingChange(key)">
+                    <el-option v-for="item in safetySimpleValueOptions" :key="item.value" :label="item.label"
+                      :value="item.value" />
                   </el-select>
                 </div>
               </li>
@@ -371,7 +255,7 @@ export default {
   computed: {
     isGeminiAdapter() {
       const adapterType = config.getProviderAdapterType(this.localLlmProvider);
-      return ['gemini', 'vertex'].includes(adapterType);
+      return ['gemini', 'vertex', 'vertexExpress'].includes(adapterType);
     }
   },
   watch: {
