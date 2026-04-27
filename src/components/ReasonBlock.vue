@@ -1,18 +1,16 @@
 <template>
   <div class="reason-block">
-    <div class="head-bar">
+    <div class="head-bar" @click="toggleShow">
       <div class="reason-info">{{ getReasonInfo }}</div>
-      <button
-        :class="{ active: show, 'extra-info-button': true }"
-        @click="toggleShow"
-      >
+      <button :class="{ active: show, 'extra-info-button': true }">
         <i class="iconfont icon-return" />
       </button>
     </div>
-    <div
-      ref="reasonContent"
-      class="reason-content"
-      :style="{ 'max-height': maxHeight }"
+    <div 
+      ref="reasonContent" 
+      class="reason-content" 
+      :class="{ 'is-expanded': show }"
+      @scroll="handleScroll"
     >
       {{ content }}
     </div>
@@ -40,7 +38,7 @@ export default {
   data() {
     return {
       show: true,
-      maxHeight: "auto", // 初始值
+      isUserScrolledUp: false,
     };
   },
   computed: {
@@ -53,24 +51,35 @@ export default {
       }
     },
   },
-  mounted() {
-    this.updateMaxHeight(); //初始展开
-  },
-  updated() {
-    this.updateMaxHeight(); //防止内容更新,导致高度计算错误
+  watch: {
+    content() {
+      if (this.show) {
+        this.$nextTick(() => {
+          this.scrollToBottomIfNeeded();
+        });
+      }
+    },
   },
   methods: {
     toggleShow() {
       this.show = !this.show;
-      this.updateMaxHeight();
-    },
-    updateMaxHeight() {
       if (this.show) {
-        // 展开时，设置为内容实际高度 + 一些额外空间 (如 padding)
-        this.maxHeight = this.$refs.reasonContent.scrollHeight + 20 + "px";
-      } else {
-        // 收起时，设置为 0
-        this.maxHeight = "0px";
+        this.isUserScrolledUp = false;
+        this.$nextTick(() => {
+          this.scrollToBottomIfNeeded();
+        });
+      }
+    },
+    handleScroll(e) {
+      const el = e.target;
+      // 距离底部超过20px则认为用户已经主动向上滚动
+      this.isUserScrolledUp = el.scrollHeight - el.scrollTop - el.clientHeight > 20;
+    },
+    scrollToBottomIfNeeded() {
+      const el = this.$refs.reasonContent;
+      if (!el) return;
+      if (!this.isUserScrolledUp) {
+        el.scrollTop = el.scrollHeight;
       }
     },
   },
@@ -103,6 +112,8 @@ export default {
   background-color: #f5f5f5;
   border-radius: 10px;
   padding: 0px 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .head-bar:hover {
@@ -116,7 +127,6 @@ export default {
   border: none;
   cursor: pointer;
   transition: transform 0.3s ease-in-out;
-  /* 使用 ease-in-out */
   display: flex;
   align-items: center;
   gap: 2px;
@@ -132,16 +142,40 @@ export default {
 
 .reason-content {
   max-width: 100%;
-  /* max-height 在 JavaScript 中动态控制 */
+  max-height: 0;
   overflow: hidden;
-  /* 隐藏超出部分 */
+  word-break: break-word;
   user-select: text;
   font-size: 0.8rem;
   color: #6f6f6f;
   white-space: pre-line;
-  border-left: 2px solid #ccc;
-  transition: max-height 0.3s ease-in-out;
-  /* 对 max-height 应用过渡 */
+  border-left: 2px solid transparent;
+  transition: max-height 0.3s ease-in-out, margin 0.3s ease-in-out, border-color 0.3s ease-in-out, opacity 0.3s ease-in-out;
   padding-left: 1rem;
+  margin-top: 0;
+  margin-bottom: 0;
+  opacity: 0;
+}
+
+.reason-content.is-expanded {
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-left-color: #ccc;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  opacity: 1;
+}
+
+/* 隐藏 reason-content 的默认粗大滚动条，美化一下 */
+.reason-content::-webkit-scrollbar {
+  width: 6px;
+}
+.reason-content::-webkit-scrollbar-thumb {
+  background-color: #d1d1d1;
+  border-radius: 3px;
+}
+.reason-content::-webkit-scrollbar-track {
+  background: transparent;
 }
 </style>

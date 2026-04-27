@@ -77,172 +77,290 @@ export default class Contactor extends EventEmmiter {
   }
 
   enableOpenaiListener() {
-    this.kernel.on("updateReasoning", (e) => {
-      const { reasoning_content, messageId } = e;
-      const rawMessage = this.getMessageById(messageId);
-      if (!rawMessage) return;
+    this.kernel.on("updateReasoning", this.handleUpdateReasoning.bind(this));
+    this.kernel.on("updateMessage", this.handleUpdateMessage.bind(this));
+    this.kernel.on("updateToolCall", this.handleUpdateToolCall.bind(this));
+    this.kernel.on("completeMessage", this.handleCompleteMessage.bind(this));
+    this.kernel.on("failedMessage", this.handleFailedMessage.bind(this));
+  }
 
-      // 查找现有的 reason 块
-      const existingReasonIndex = rawMessage.content.findIndex(
-        (msgElm) => msgElm.type === "reason",
-      );
+  /**
+   * 获取消息
+   */
+  getRawMessage(messageId) {
+    return this.getMessageById(messageId);
+  }
 
+  /**
+   * 获取最后一个 content 元素
+   */
+  getLastContent(rawMessage) {
+    const content = rawMessage.content || [];
+    return content[content.length - 1];
+  }
+
+  /**
+   * 统一触发消息更新
+   */
+  emitMessageUpdated() {
+    this.emit("updateMessage");
+    this.emit("updateMessageSummary");
+  }
+
+  /**
+   * 替换 blank，或者追加新元素
+   */
+  replaceBlankOrAppend(rawMessage, msgElm) {
+    const content = rawMessage.content;
+
+    if (!content.length) {
+      content.push(msgElm);
+      return;
+    }
+
+    const blankIndex = content.findIndex((elm) => elm.type === "blank");
+
+    if (blankIndex !== -1) {
+      content.splice(blankIndex, 1, msgElm);
+    } else {
+      content.push(msgElm);
+    }
+  }
+
+  /**
+   * 处理 reasoning 增量
+   */
+  handleUpdateReasoning(e) {
+    const { reasoning_content, messageId } = e;
+
+    const rawMessage = this.getRawMessage(messageId);
+    if (!rawMessage) return;
+
+    const last = this.getLastContent(rawMessage);
+
+    const now = Date.now();
+
+    if (last?.type === "reason") {
+      last.data.text += reasoning_content;
+    } else {
       const msgElm = {
         type: "reason",
         data: {
           text: reasoning_content,
-          startTime: new Date().getTime(),
+          startTime: now,
           endTime: 0,
         },
       };
 
-      if (existingReasonIndex !== -1) {
-        // 如果已存在 reason 块，更新其内容
-        msgElm.data.text =
-          rawMessage.content[existingReasonIndex].data.text + reasoning_content;
-        msgElm.data.startTime =
-          rawMessage.content[existingReasonIndex].data.startTime;
-        rawMessage.content.splice(existingReasonIndex, 1, msgElm);
-      } else if (rawMessage.content[0].type === "blank") {
-        // 如果是 blank 状态，直接更新第一个元素
-        rawMessage.content.splice(0, 1, msgElm);
-      } else {
-        // 其他情况，追加到末尾
-        rawMessage.content.push(msgElm);
-      }
+      this.replaceBlankOrAppend(rawMessage, msgElm);
+    }
 
-      this.emit("updateMessage");
-      this.emit("updateMessageSummary");
-    });
+    this.emitMessageUpdated();
+  }
 
-    this.kernel.on("updateMessage", (e) => {
-      const { chunk, messageId } = e;
-      const rawMessage = this.getMessageById(messageId);
-      if (!rawMessage) return;
+  /**
+   * 处理普通文本增量
+   */
+  handleUpdateMessage(e) {
+    const { chunk, messageId } = e;
 
-      rawMessage.content.forEach((msgElm) => {
-        if (msgElm.type == "reason" && !msgElm.data.endTime)
-          msgElm.data.endTime = new Date().getTime();
-      });
+    const rawMessage = this.getRawMessage(messageId);
+    if (!rawMessage) return;
 
-      const lastMsgElm = rawMessage.content[rawMessage.content.length - 1];
-      const isFirstElement = ["blank", "text"].includes(lastMsgElm.type);
+    const content = rawMessage.content || (rawMessage.content = []);
 
-      const msgElm = {
+    this.closeReasoningBlocks(rawMessage);
+
+    const last = this.getLastContent(rawMessage);
+
+    if (last?.type === "text") {
+      last.data.text += chunk;
+    } else if (last?.type === "blank") {
+      content.splice(content.length - 1, 1, {
         type: "text",
         data: {
-          text: (lastMsgElm.type == "text" ? lastMsgElm.data.text : "").concat(
-            chunk,
-          ),
+          text: chunk,
         },
-      };
+      });
+    } else {
+      content.push({
+        type: "text",
+        data: {
+          text: chunk,
+        },
+      });
+    }
 
-      if (isFirstElement)
-        rawMessage.content.splice(rawMessage.content.length - 1, 1, msgElm);
-      else rawMessage.content.push(msgElm);
+    this.emitMessageUpdated();
+  }
 
-      this.emit("updateMessage"); // 更新响应式数据
-      this.emit("updateMessageSummary");
-    });
+  /**
+   * 关闭所有未结束的 reasoning 块
+   */
+  closeReasoningBlocks(rawMessage) {
+    const now = Date.now();
 
-    this.kernel.on("updateToolCall", (e) => {
-      const { tool_call, messageId } = e;
-      console.log(tool_call);
-
-      const rawMessage = this.getMessageById(messageId);
-      if (!rawMessage) return;
-
-      const lastMsgElm = rawMessage.content[rawMessage.content.length - 1];
-      const msgElm = {
-        type: "tool_call",
-        data: tool_call,
-      };
-
-      if (lastMsgElm.type == "blank") {
-        // 这种情况一定是第一条空白消息，直接更新成 toolCall 消息
-        rawMessage.content.splice(0, 1, msgElm);
-      } else {
-        const previousCall = rawMessage.content.find(
-          (msgElm) => msgElm.data.id == tool_call.id,
-        );
-        if (previousCall) {
-          const updatedCall = JSON.parse(JSON.stringify(previousCall));
-          updatedCall.data.action = tool_call.action;
-          updatedCall.data.result = tool_call.result;
-          if (tool_call.action == "pending") {
-            updatedCall.data.parameters += tool_call.parameters;
-          }
-          const index = rawMessage.content.indexOf(previousCall);
-          rawMessage.content.splice(index, 1, updatedCall);
-        } else {
-          // 这种情况就是新增一条 toolCall 消息
-          rawMessage.content.push(msgElm);
-        }
-      }
-
-      this.emit("updateMessage"); // 更新响应式数据
-      this.emit("updateMessageSummary");
-    });
-
-    this.kernel.on("completeMessage", (e) => {
-      this.updateLastUpdate();
-      const messageId = e.messageId;
-      const rawMessage = this.getMessageById(messageId);
-      if (rawMessage) {
-        rawMessage.status = "completed";
-
-        this.emit("updateMessageSummary");
-
-        this.emit("completeMessage", {
-          messageId,
-        });
+    rawMessage.content.forEach((elm) => {
+      if (elm.type === "reason" && !elm.data.endTime) {
+        elm.data.endTime = now;
       }
     });
+  }
 
-    this.kernel.on("failedMessage", (e) => {
-      console.error(e);
-      // case 1: e.error.message 为json字符串，需要解析
-      if (typeof e.error === "string") {
-        try {
-          e.error.message = JSON.parse(e.error.message);
-        } catch (error) {
-          console.error("Failed to parse error message:", error);
-        }
-      }
-      const error = JSON.stringify(e.error, null, 2);
+  /**
+   * 处理 tool call
+   */
+  handleUpdateToolCall(e) {
+    const { tool_call, messageId } = e;
 
-      this.updateLastUpdate();
-      const messageId = e.messageId;
-      const rawMessage = this.getMessageById(messageId);
-      if (rawMessage) {
-        const errorMessage =
-          "Error : LLM 响应失败！\n```json\n " + error + "\n```";
-        const errElem = {
-          type: "text",
-          data: {
-            text: errorMessage,
-          },
+    const rawMessage = this.getRawMessage(messageId);
+    if (!rawMessage) return;
+
+    const content = rawMessage.content || (rawMessage.content = []);
+
+    const msgElm = {
+      type: "tool_call",
+      data: {
+        ...tool_call,
+      },
+    };
+
+    const last = this.getLastContent(rawMessage);
+
+    if (last?.type === "blank") {
+      content.splice(content.length - 1, 1, msgElm);
+      this.emitMessageUpdated();
+      return;
+    }
+
+    this.closeReasoningBlocks(rawMessage);
+
+    const index = content.findIndex(
+      (elm) => elm.type === "tool_call" && elm.data?.id === tool_call.id,
+    );
+
+    if (index === -1) {
+      content.push(msgElm);
+    } else {
+      content.splice(index, 1, this.mergeToolCall(content[index], tool_call));
+    }
+
+    this.emitMessageUpdated();
+  }
+
+  /**
+   * 合并 tool call 增量
+   */
+  mergeToolCall(previousElm, incomingToolCall) {
+    const previousData = previousElm.data || {};
+
+    const merged = {
+      ...previousElm,
+      data: {
+        ...previousData,
+        ...incomingToolCall,
+      },
+    };
+
+    /**
+     * pending 阶段 parameters 通常是流式增量，需要拼接
+     */
+    if (incomingToolCall.action === "pending") {
+      merged.data.parameters =
+        String(previousData.parameters || "") +
+        String(incomingToolCall.parameters || "");
+    }
+
+    return merged;
+  }
+
+  /**
+   * 处理完成
+   */
+  handleCompleteMessage(e) {
+    const { messageId } = e;
+
+    this.updateLastUpdate();
+
+    const rawMessage = this.getRawMessage(messageId);
+    if (!rawMessage) return;
+
+    rawMessage.status = "completed";
+
+    this.emit("updateMessageSummary");
+    this.emit("completeMessage", {
+      messageId,
+    });
+  }
+
+  /**
+   * 处理失败
+   */
+  handleFailedMessage(e) {
+    console.error(e);
+
+    const { messageId } = e;
+
+    this.updateLastUpdate();
+
+    const rawMessage = this.getRawMessage(messageId);
+    if (!rawMessage) return;
+
+    const errorText = this.formatLLMError(e.error);
+
+    const errElm = {
+      type: "text",
+      data: {
+        text: errorText,
+      },
+    };
+
+    this.replaceBlankOrAppend(rawMessage, errElm);
+
+    rawMessage.status = "completed";
+
+    this.emit("updateMessageSummary");
+    this.emit("completeMessage", {
+      messageId,
+    });
+  }
+
+  /**
+   * 格式化 LLM 错误
+   */
+  formatLLMError(error) {
+    const normalizedError = this.normalizeError(error);
+    const errorJson = JSON.stringify(normalizedError, null, 2);
+
+    return `Error : LLM 响应失败！\n\`\`\`json\n${errorJson}\n\`\`\``;
+  }
+
+  /**
+   * 规范化错误对象
+   */
+  normalizeError(error) {
+    if (typeof error === "string") {
+      try {
+        return JSON.parse(error);
+      } catch {
+        return {
+          message: error,
         };
-
-        const withBlank = rawMessage.content.some(
-          (elm) => elm.type === "blank",
-        );
-
-        if (withBlank) {
-          rawMessage.content.splice(0, 1, errElem);
-        } else {
-          rawMessage.content.push(errElem);
-        }
-
-        rawMessage.status = "completed";
-
-        this.emit("updateMessageSummary");
-
-        this.emit("completeMessage", {
-          messageId,
-        });
       }
-    });
+    }
+
+    if (error?.message && typeof error.message === "string") {
+      try {
+        return {
+          ...error,
+          message: JSON.parse(error.message),
+        };
+      } catch {
+        return error;
+      }
+    }
+
+    return error;
   }
 
   handleLLMMessageEvent(e) {
@@ -272,8 +390,8 @@ export default class Contactor extends EventEmmiter {
 
   _getImagePrompt(imageElms) {
     const start = "\n以下是用户所上传的图片链接：\n";
-    const result =  start + imageElms.map((elm)=>elm.content).join("\n");
-    return result
+    const result = start + imageElms.map((elm) => elm.content).join("\n");
+    return result;
   }
 
   _getValidOpenaiMessage(
@@ -363,8 +481,9 @@ export default class Contactor extends EventEmmiter {
       const imageElm = subArray.filter((elm) => elm._content_type == "image");
       const fileElm = subArray.filter((elm) => elm._content_type == "file");
       const filePrompt = fileElm.length > 0 ? this._getFilePrompt(fileElm) : "";
-      const imagePrompt = imageElm.length > 0 ? this._getImagePrompt(imageElm) : "";
-    
+      const imagePrompt =
+        imageElm.length > 0 ? this._getImagePrompt(imageElm) : "";
+
       let message = null;
       if (
         textElm.length > 0 &&
@@ -470,13 +589,14 @@ export default class Contactor extends EventEmmiter {
       ];
       this.updateLastUpdate();
       const index = this.messageChain.indexOf(message);
-      const finalMessages = this._getValidOpenaiMessage(0, index);
+      const finalMessages = this._getValidOpenaiMessage(
+        index < this.firstMessageIndex ? 0 : this.firstMessageIndex,
+        index,
+      );
       this.kernel.send(finalMessages, id, this.options);
       return true;
     }
   }
-
-  as;
 
   /**
    * 接收到消息
@@ -503,7 +623,10 @@ export default class Contactor extends EventEmmiter {
   delMessage(message_id) {
     for (let i = 0; i < this.messageChain.length; i++) {
       // 如果不是bot发的消息，跳过
-      if (this.messageChain[i].id === message_id && this.messageChain[i].role === 'other') {
+      if (
+        this.messageChain[i].id === message_id &&
+        this.messageChain[i].role === "other"
+      ) {
         if (this.active) this.emit("delMessage", i);
         else this.acting.messageChain.splice(i, 1);
         this.makeSystemMessage(`${this.name}撤回了一条消息`);
@@ -638,14 +761,16 @@ export default class Contactor extends EventEmmiter {
       }
     };
 
-    let msg = message || this.messageChain[this.messageChain.length - 1]
+    let msg = message || this.messageChain[this.messageChain.length - 1];
     if (!msg) return "";
     msg = JSON.parse(JSON.stringify(msg));
     if (msg.type === "node") {
-      msg = msg.data
+      msg = msg.data;
     }
 
-    return  msg.content?.length > 0 ? getMessageText(msg.content[0]) : '[未知消息]'
+    return msg.content?.length > 0
+      ? getMessageText(msg.content[0])
+      : "[未知消息]";
   }
 
   updateFirstMessage() {
