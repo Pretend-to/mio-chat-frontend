@@ -307,6 +307,7 @@ export default {
       @add-by-provider="genBotByProvider" @add-by-share-code="genBotByShareCode" />
     <ContextMenu v-if="showMenu" type="friend" :message="selectedFriend" :style="{
       top: menuY + 'px',
+      left: menuX + 'px'
     }" @message-option="handleFriendOption" @close="showMenu = false" />
   </div>
 </template>

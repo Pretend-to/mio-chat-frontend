@@ -848,10 +848,16 @@ export default {
         const shareUrl = shareResult?.shareUrl ?? window.location.origin;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(shareUrl)}`;
 
-        // Build export container with mobile width, mirroring chatwindow bg
+        // Build export container with broader width, mirroring chatwindow bg
         exportEl = document.createElement('div');
-        exportEl.style.cssText = 'position:fixed;left:-9999px;top:0;width:390px;background-color:#f2f2f2;padding:0.5rem 0;box-sizing:border-box;overflow:hidden;';
+        exportEl.id = 'chat-window';
+        exportEl.style.cssText = 'position:fixed;left:-9999px;top:0;width:500px;background-color:#f2f2f2;padding:0.5rem 0;box-sizing:border-box;overflow:hidden;';
         document.body.appendChild(exportEl);
+
+        // Wrapper to maintain CSS selector hierarchy
+        const messageWindow = document.createElement('div');
+        messageWindow.className = 'message-window';
+        exportEl.appendChild(messageWindow);
 
         // Clone selected message DOM nodes (preserving real styles)
         const refs = this.$refs.message; // array of .message-container els
@@ -864,7 +870,7 @@ export default {
           clone.querySelector('.multi-select-box')?.remove();
           const wrapper = clone.querySelector('.message-flex-wrapper');
           if (wrapper) wrapper.classList.remove('is-multi-select', 'is-selected');
-          exportEl.appendChild(clone);
+          messageWindow.appendChild(clone);
         });
 
         // Footer with QR code
@@ -937,16 +943,18 @@ export default {
         <div class="message-flex-wrapper"
           :class="{ 'is-multi-select': isMultiSelect, 'is-selected': isMultiSelect && selectedMessages.includes(item.id) }"
           @click="handleMessageClick(item)">
-          <div v-if="isMultiSelect && item.role !== 'mio_system'" class="multi-select-box">
-            <div class="round-checkbox" :class="{ checked: selectedMessages.includes(item.id) }"
-              @click.stop="toggleSelect(item.id)">
-              <svg v-if="selectedMessages.includes(item.id)" viewBox="0 0 12 10" fill="none"
-                xmlns="http://www.w3.org/2000/svg">
-                <polyline points="1,5 4.5,8.5 11,1" stroke="white" stroke-width="2" stroke-linecap="round"
-                  stroke-linejoin="round" />
-              </svg>
+          <transition name="checkbox-slide">
+            <div v-if="isMultiSelect && item.role !== 'mio_system'" class="multi-select-box">
+              <div class="round-checkbox" :class="{ checked: selectedMessages.includes(item.id) }"
+                @click.stop="toggleSelect(item.id)">
+                <svg v-if="selectedMessages.includes(item.id)" viewBox="0 0 12 10" fill="none"
+                  xmlns="http://www.w3.org/2000/svg">
+                  <polyline points="1,5 4.5,8.5 11,1" stroke="white" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+              </div>
             </div>
-          </div>
+          </transition>
           <div :id="item.role" class="message-body" :style="{ pointerEvents: isMultiSelect ? 'none' : 'auto' }">
             <div v-if="item.role !== 'mio_system'" class="avatar">
               <img v-if="item.role === 'other'" :src="activeContactor.avatar" :alt="activeContactor.name"
@@ -1009,7 +1017,7 @@ export default {
       @clean-screen="cleanScreen" @clean-history="cleanHistory" @to-buttom="toButtom" />
     <div v-else class="multi-select-action-bar">
       <div class="actions">
-        <div class="action-btn" @click="handleMultiShareMD">
+        <div class="action-btn hide-mobile" @click="handleMultiShareMD">
           <span class="action-icon"><i class="iconfont icon-share"></i></span>
           <span class="action-label">导出MD</span>
         </div>
@@ -1017,7 +1025,7 @@ export default {
           <span class="action-icon"><i class="iconfont icon-share"></i></span>
           <span class="action-label">导出图片</span>
         </div>
-        <div class="action-btn" @click="handleMultiShareLink">
+        <div class="action-btn hide-mobile" @click="handleMultiShareLink">
           <span class="action-icon"><i class="iconfont icon-share"></i></span>
           <span class="action-label">分享链接</span>
         </div>
@@ -1086,8 +1094,18 @@ $icon-hover: #09f
         &:hover
             background-color: rgba(0, 0, 0, 0.08)
 
+    .checkbox-slide-enter-active, .checkbox-slide-leave-active
+        transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1)
+        overflow: hidden
+
+    .checkbox-slide-enter-from, .checkbox-slide-leave-to
+        width: 0 !important
+        margin-right: 0 !important
+        opacity: 0 !important
+
     .multi-select-box
         margin-right: 0.75rem
+        width: 1rem
         display: flex
         align-items: center
         align-self: center
@@ -1130,7 +1148,15 @@ $icon-hover: #09f
     position: relative
 
     @media (max-width: $mobile)
-        flex-basis: 7rem
+        border-top: none
+        height: 5rem
+        padding: 0
+        width: 100%
+        position: fixed
+        bottom: 0
+        z-index: 1000
+        background-color: hsla(0, 0%, 100%, 0.8)
+        backdrop-filter: blur(0.5rem)
 
     .actions
         display: flex
@@ -1150,6 +1176,10 @@ $icon-hover: #09f
         flex-shrink: 0
         gap: 0.4rem
         transition: opacity 0.2s
+
+        &.hide-mobile
+            @media (max-width: $mobile)
+                display: none
 
         &:hover
             opacity: 0.7
@@ -1175,6 +1205,9 @@ $icon-hover: #09f
             font-size: 0.72rem
             color: #555
             white-space: nowrap
+
+            @media (max-width: $mobile)
+                display: none
 
     .close-btn
         position: absolute
