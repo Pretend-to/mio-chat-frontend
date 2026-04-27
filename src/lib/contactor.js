@@ -706,7 +706,7 @@ export default class Contactor extends EventEmmiter {
         .getMinutes()
         .toString()
         .padStart(2, "0");
-      return `昨天${hours}:${minutes}`;
+      return `昨天 ${hours}:${minutes}`;
     } else if (timeDiff < 7 * 24 * 60 * 60 * 1000) {
       // 小于7天，返回星期x+时间
       const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
@@ -716,7 +716,7 @@ export default class Contactor extends EventEmmiter {
         .getMinutes()
         .toString()
         .padStart(2, "0");
-      return `星期${weekdays[weekday]}${hours}:${minutes}`;
+      return `星期${weekdays[weekday]} ${hours}:${minutes}`;
     } else {
       // 7天以上，返回xxxx/xx/xx（年/月/日）+时间
       const year = new Date(timestamp).getFullYear();
