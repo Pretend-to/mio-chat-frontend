@@ -927,7 +927,10 @@ export default {
         }
         await Promise.all(loadPromises);
 
-        const result = await snapdom(exportEl, { scale: 2 });
+        // Explicitly set dpr: 1 to override the mobile device's high devicePixelRatio (e.g., 3).
+        // This ensures the canvas width strictly remains 500 * 2 = 1000px, 
+        // matching the desktop output and preventing the 64MP canvas limit crash.
+        const result = await snapdom(exportEl, { scale: 2, dpr: 1 });
         const img = await result.toPng();
         this.previewImageUrl = img.src;
         this.isMobileDevice = window.innerWidth < 768;
