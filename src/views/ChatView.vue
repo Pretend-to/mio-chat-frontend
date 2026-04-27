@@ -10,6 +10,7 @@ import { mermaidPlugin, codeBlockPlugin, cursorPlugin, imageViewerPlugin } from 
 import { katexPlugin } from 'mio-previewer/plugins/markdown-it';
 import "emoji-picker-element";
 import { snapdom } from "@zumer/snapdom";
+import QRCode from "qrcode";
 import { client } from "@/lib/runtime.js";
 import { shareOrCopy } from "@/utils/tools.js";
 
@@ -846,13 +847,31 @@ export default {
         this.$message({ message: "正在生成分享链接...", type: "info" });
         const shareResult = await client.shareMessages(this.activeContactor.id, this.selectedMessages);
         const shareUrl = shareResult?.shareUrl ?? window.location.origin;
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(shareUrl)}`;
+        
+        // Generate QR code locally as a Data URI
+        const qrUrl = await QRCode.toDataURL(shareUrl, { width: 120, margin: 1 });
 
         // Build export container with broader width, mirroring chatwindow bg
         exportEl = document.createElement('div');
         exportEl.id = 'chat-window';
-        exportEl.style.cssText = 'position:fixed;left:-9999px;top:0;width:500px;background-color:#f2f2f2;padding:0.5rem 0;box-sizing:border-box;overflow:hidden;';
+        exportEl.style.cssText = 'position:fixed;left:-9999px;top:0;width:500px;background-color:#f2f2f2;padding:0;box-sizing:border-box;overflow:hidden;';
         document.body.appendChild(exportEl);
+
+        // Header with Icon and Slogan
+        const header = document.createElement('div');
+        header.style.cssText = 'display:flex;align-items:center;justify-content:flex-start;padding:1.5rem 1.25rem 1rem;margin-bottom:0.5rem;background:linear-gradient(180deg, rgba(255,255,255,1) 0%, #f2f2f2 100%);border-bottom:1px solid rgba(0,0,0,0.04);';
+        
+        const headerIcon = document.createElement('img');
+        headerIcon.src = window.location.origin + '/static/icons/512x512.png';
+        headerIcon.style.cssText = 'width:64px;height:64px;margin-right:16px;border-radius:16px;box-shadow:0 3px 10px rgba(0,0,0,0.1);';
+        
+        const headerTitle = document.createElement('div');
+        headerTitle.style.cssText = 'display:flex;flex-direction:column;justify-content:center;height:64px;overflow:hidden;';
+        headerTitle.innerHTML = '<div style="font-size:30px;font-weight:800;color:#2c3e50;letter-spacing:0.5px;line-height:1.2;white-space:nowrap;">Mio Chat</div><div style="font-size:16px;color:#7f8c8d;font-weight:500;line-height:1.2;margin-top:4px;white-space:nowrap;">A modern AI-powered companion</div>';
+        
+        header.appendChild(headerIcon);
+        header.appendChild(headerTitle);
+        exportEl.appendChild(header);
 
         // Wrapper to maintain CSS selector hierarchy
         const messageWindow = document.createElement('div');
@@ -873,24 +892,35 @@ export default {
           messageWindow.appendChild(clone);
         });
 
-        // Footer with QR code
+        // Footer with QR code in a premium card style
         const footer = document.createElement('div');
-        footer.style.cssText = 'border-top:1px solid #ddd;margin:0.5rem 0.625rem 0;padding-top:0.75rem;display:flex;align-items:center;justify-content:space-between;';
+        footer.style.cssText = 'margin:1rem 1.25rem 1.5rem;padding:1.25rem;background-color:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;';
+        
         const textDiv = document.createElement('div');
-        textDiv.innerHTML = '<div style="font-weight:bold;font-size:15px;color:#333;">MioChat</div><div style="font-size:11px;color:#666;margin-top:3px;">扫码接续对话</div>';
+        textDiv.innerHTML = '<div style="font-weight:800;font-size:16px;color:#2c3e50;">扫码接续对话</div><div style="font-size:12px;color:#7f8c8d;margin-top:5px;line-height:1.4;">长按或扫描二维码<br>立即参与精彩聊天</div>';
+        
         const qrImg = document.createElement('img');
         qrImg.src = qrUrl;
-        qrImg.style.cssText = 'width:56px;height:56px;flex-shrink:0;';
+        qrImg.style.cssText = 'width:68px;height:68px;flex-shrink:0;border:2px solid #f8f9fa;border-radius:8px;';
         qrImg.crossOrigin = 'anonymous';
+        
         footer.appendChild(textDiv);
         footer.appendChild(qrImg);
         exportEl.appendChild(footer);
 
-        // Wait for QR image to load
-        await new Promise((resolve) => {
-          if (qrImg.complete) resolve();
-          else { qrImg.onload = resolve; qrImg.onerror = resolve; setTimeout(resolve, 1500); }
-        });
+        // Wait for images to load (Header Icon and QR)
+        const loadPromises = [];
+        if (!headerIcon.complete) {
+          loadPromises.push(new Promise(resolve => {
+            headerIcon.onload = resolve; headerIcon.onerror = resolve; setTimeout(resolve, 1500);
+          }));
+        }
+        if (!qrImg.complete) {
+          loadPromises.push(new Promise(resolve => {
+            qrImg.onload = resolve; qrImg.onerror = resolve; setTimeout(resolve, 1500);
+          }));
+        }
+        await Promise.all(loadPromises);
 
         const result = await snapdom(exportEl, { scale: 2 });
         await result.download({ format: 'png', filename: `chat_image_export_${Date.now()}.png` });
@@ -941,9 +971,9 @@ export default {
           {{ showTime(index).time }}
         </div>
         <div class="message-flex-wrapper"
-          :class="{ 'is-multi-select': isMultiSelect, 'is-selected': isMultiSelect && selectedMessages.includes(item.id) }"
+          :class="{ 'is-multi-select': isMultiSelect && item.role !== 'mio_system', 'is-selected': isMultiSelect && selectedMessages.includes(item.id) }"
           @click="handleMessageClick(item)">
-          <transition name="checkbox-slide">
+          <transition name="checkbox-fade">
             <div v-if="isMultiSelect && item.role !== 'mio_system'" class="multi-select-box">
               <div class="round-checkbox" :class="{ checked: selectedMessages.includes(item.id) }"
                 @click.stop="toggleSelect(item.id)">
@@ -1075,15 +1105,20 @@ $icon-hover: #09f
     display: flex
     align-items: flex-start
     width: 100%
+    position: relative
+    transition: background-color 0.15s
 
     .message-body
         flex: 1
         min-width: 0
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)
+        transform: translateX(0)
 
     &.is-multi-select
         cursor: pointer
-        padding-left: 0.5rem
-        transition: background-color 0.15s
+
+        & > #other.message-body
+            transform: translateX(1.75rem)
 
         &:hover
             background-color: rgba(0, 0, 0, 0.04)
@@ -1094,21 +1129,22 @@ $icon-hover: #09f
         &:hover
             background-color: rgba(0, 0, 0, 0.08)
 
-    .checkbox-slide-enter-active, .checkbox-slide-leave-active
-        transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1)
-        overflow: hidden
+    .checkbox-fade-enter-active, .checkbox-fade-leave-active
+        transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1)
 
-    .checkbox-slide-enter-from, .checkbox-slide-leave-to
-        width: 0 !important
-        margin-right: 0 !important
+    .checkbox-fade-enter-from, .checkbox-fade-leave-to
         opacity: 0 !important
 
     .multi-select-box
-        margin-right: 0.75rem
+        position: absolute
+        left: 0.5rem
+        top: 50%
+        transform: translateY(-50%)
         width: 1rem
+        height: 1rem
         display: flex
         align-items: center
-        align-self: center
+        justify-content: center
         flex-shrink: 0
 
         .round-checkbox
