@@ -39,8 +39,11 @@ export function getIconByAdapterType(adapterType) {
     gemini: "gemini-color.svg",
     vertex: "gemini-color.svg", // Vertex AI 使用 Gemini 图标
     onebot: "openai.svg", // OneBot 暂时使用 OpenAI 图标作为默认
+    deepseek: "deepseek-color.svg",
+    anthropic: "claude-color.svg",
+    cohere: "cohere-color.svg",
   };
-  return iconMap[adapterType] || "openai.svg";
+  return iconMap[adapterType?.toLowerCase()] || "openai.svg";
 }
 
 /**

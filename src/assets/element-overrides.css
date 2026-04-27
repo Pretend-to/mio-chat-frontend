@@ -51,3 +51,8 @@
 .el-notification {
   border-radius: 16px !important;
 }
+
+/* Remove padding from mobile preview drawer */
+.el-drawer.mobile-preview-drawer .el-drawer__body {
+  padding: 0 !important;
+}

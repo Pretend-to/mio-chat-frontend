@@ -321,8 +321,10 @@ const getProviderDesc = (provider) => {
     'gemini': 'Google Gemini 模型',
     'vertex': 'Google Vertex AI 平台',
     'onebot': 'OneBot 协议 (QQ, etc.)',
+    'deepseek': 'DeepSeek 深度求索模型',
+    'anthropic': 'Anthropic Claude 模型'
   };
-  return descMap[provider] || '大语言模型适配器';
+  return descMap[provider?.toLowerCase()] || '大语言模型适配器';
 };
 
 const getProviderTagType = (provider) => {
@@ -331,8 +333,10 @@ const getProviderTagType = (provider) => {
     'gemini': 'success',
     'vertex': 'warning',
     'onebot': 'info',
+    'deepseek': 'primary',
+    'anthropic': 'warning'
   };
-  return typeMap[provider] || 'info';
+  return typeMap[provider?.toLowerCase()] || 'info';
 };
 
 const getProviderColor = (provider) => {
@@ -341,8 +345,10 @@ const getProviderColor = (provider) => {
     'gemini': '#f0f7ff',  // 浅蓝色背景
     'vertex': '#fffbeb',  // 浅黄色背景
     'onebot': '#f0f4ff',  // 浅紫蓝色背景
+    'deepseek': '#f0f4ff', // 浅蓝色背景
+    'anthropic': '#fff0f0' // 浅红色背景
   };
-  return colorMap[provider] || '#f5f5f5'; // 默认浅灰色
+  return colorMap[provider?.toLowerCase()] || '#f5f5f5'; // 默认浅灰色
 };
 
 const handleAddByShareCode = () => {
