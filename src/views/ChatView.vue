@@ -884,11 +884,11 @@ export default {
         exportEl.appendChild(messageWindow);
 
         // Clone selected message DOM nodes (preserving real styles)
-        const refs = this.$refs.message; // array of .message-container els
-        this.activeMessageChain.forEach((item, i) => {
-          if (!this.selectedMessages.includes(item.id)) return;
-          const el = refs[i];
-          if (!el) return;
+        const containerEls = this.chatWindowRef.querySelectorAll('.message-container');
+        containerEls.forEach((el) => {
+          const itemId = el.getAttribute('data-id');
+          const isSelected = this.selectedMessages.some(id => String(id) === itemId);
+          if (!isSelected) return;
           const clone = el.cloneNode(true);
           // Remove multi-select UI artifacts
           clone.querySelector('.multi-select-box')?.remove();
@@ -1010,7 +1010,7 @@ export default {
       <ContextMenu v-show="showMenu" type="message" :message="getseletedMessage()" :seleted-text :seleted-image
         :style="getMenuStyle" @message-option="handleMessageOption" @close="showMenu = false" />
       <div v-for="(item, index) of activeMessageChain" :key="`${activeContactor.id}-${item.id}`" ref="message"
-        class="message-container">
+        class="message-container" :data-id="item.id">
         <div v-if="showTime(index).show" class="message-time">
           {{ showTime(index).time }}
         </div>
