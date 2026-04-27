@@ -120,6 +120,10 @@ export default {
       lastClickTime: 0,
       isMultiSelect: false,
       selectedMessages: [],
+      showImagePreview: false,
+      previewImageUrl: "",
+      previewShareUrl: "",
+      isMobileDevice: window.innerWidth < 768,
     };
   },
   computed: {
@@ -844,10 +848,11 @@ export default {
       let exportEl = null;
 
       try {
-        this.$message({ message: "正在生成分享链接...", type: "info" });
+        this.$message({ message: "正在生成图片预览...", type: "info" });
         const shareResult = await client.shareMessages(this.activeContactor.id, this.selectedMessages);
         const shareUrl = shareResult?.shareUrl ?? window.location.origin;
-        
+        this.previewShareUrl = shareUrl;
+
         // Generate QR code locally as a Data URI
         const qrUrl = await QRCode.toDataURL(shareUrl, { width: 120, margin: 1 });
 
@@ -859,16 +864,16 @@ export default {
 
         // Header with Icon and Slogan
         const header = document.createElement('div');
-        header.style.cssText = 'display:flex;align-items:center;justify-content:flex-start;padding:1.5rem 1.25rem 1rem;margin-bottom:0.5rem;background:linear-gradient(180deg, rgba(255,255,255,1) 0%, #f2f2f2 100%);border-bottom:1px solid rgba(0,0,0,0.04);';
-        
+        header.style.cssText = 'display:flex;align-items:center;justify-content:flex-start;padding:1.5rem 1.25rem 0rem;margin-bottom:0.5rem;background:linear-gradient(180deg, rgba(255,255,255,1) 0%, #f2f2f2 100%);border-bottom:1px solid rgba(0,0,0,0.04);';
+
         const headerIcon = document.createElement('img');
         headerIcon.src = window.location.origin + '/static/icons/512x512.png';
         headerIcon.style.cssText = 'width:64px;height:64px;margin-right:16px;border-radius:16px;box-shadow:0 3px 10px rgba(0,0,0,0.1);';
-        
+
         const headerTitle = document.createElement('div');
         headerTitle.style.cssText = 'display:flex;flex-direction:column;justify-content:center;height:64px;overflow:hidden;';
         headerTitle.innerHTML = '<div style="font-size:30px;font-weight:800;color:#2c3e50;letter-spacing:0.5px;line-height:1.2;white-space:nowrap;">Mio Chat</div><div style="font-size:16px;color:#7f8c8d;font-weight:500;line-height:1.2;margin-top:4px;white-space:nowrap;">A modern AI-powered companion</div>';
-        
+
         header.appendChild(headerIcon);
         header.appendChild(headerTitle);
         exportEl.appendChild(header);
@@ -895,15 +900,15 @@ export default {
         // Footer with QR code in a premium card style
         const footer = document.createElement('div');
         footer.style.cssText = 'margin:1rem 1.25rem 1.5rem;padding:1.25rem;background-color:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;';
-        
+
         const textDiv = document.createElement('div');
         textDiv.innerHTML = '<div style="font-weight:800;font-size:16px;color:#2c3e50;">扫码接续对话</div><div style="font-size:12px;color:#7f8c8d;margin-top:5px;line-height:1.4;">长按或扫描二维码<br>立即参与精彩聊天</div>';
-        
+
         const qrImg = document.createElement('img');
         qrImg.src = qrUrl;
         qrImg.style.cssText = 'width:68px;height:68px;flex-shrink:0;border:2px solid #f8f9fa;border-radius:8px;';
         qrImg.crossOrigin = 'anonymous';
-        
+
         footer.appendChild(textDiv);
         footer.appendChild(qrImg);
         exportEl.appendChild(footer);
@@ -923,15 +928,54 @@ export default {
         await Promise.all(loadPromises);
 
         const result = await snapdom(exportEl, { scale: 2 });
-        await result.download({ format: 'png', filename: `chat_image_export_${Date.now()}.png` });
+        const img = await result.toPng();
+        this.previewImageUrl = img.src;
+        this.isMobileDevice = window.innerWidth < 768;
+        this.showImagePreview = true;
 
-        this.$message({ message: "已导出图片", type: "success" });
+        this.$message({ message: "预览生成成功", type: "success" });
       } catch (err) {
         console.error("生成图片失败", err);
         this.$message({ message: "生成图片失败", type: "error" });
       } finally {
         exportEl?.remove();
         this.cancelMultiSelect();
+      }
+    },
+    downloadPreviewImage() {
+      if (!this.previewImageUrl) return;
+      const a = document.createElement('a');
+      a.href = this.previewImageUrl;
+      a.download = `chat_image_export_${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      this.showImagePreview = false;
+    },
+    shareMobilePreviewLink() {
+      if (!this.previewShareUrl) return;
+      const { success, message } = shareOrCopy(this.previewShareUrl);
+      if (success) {
+        this.$message({ message: message, type: "success" });
+      } else {
+        this.$message({ message: message, type: "error" });
+      }
+    },
+    async copyPreviewImage() {
+      if (!this.previewImageUrl) return;
+      try {
+        const response = await fetch(this.previewImageUrl);
+        const blob = await response.blob();
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            [blob.type]: blob
+          })
+        ]);
+        this.$message({ message: "已复制到剪贴板", type: "success" });
+        this.showImagePreview = false;
+      } catch (error) {
+        console.error('复制图片失败:', error);
+        this.$message({ message: "复制图片失败，您的浏览器可能不支持该功能", type: "error" });
       }
     },
   },
@@ -1075,6 +1119,51 @@ export default {
       </div>
       <div class="close-btn" @click="cancelMultiSelect">&times;</div>
     </div>
+
+    <!-- Image Preview for Desktop -->
+    <el-dialog
+      v-if="!isMobileDevice"
+      v-model="showImagePreview"
+      title="分享预览"
+      width="60%"
+      class="desktop-preview-dialog"
+    >
+      <div class="preview-scroll-container" style="max-height: 60vh; overflow-y: auto; text-align: center; background: #f2f2f2; padding: 20px; border-radius: 8px;">
+        <img :src="previewImageUrl" class="preview-image" style="max-width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 12px;"/>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="showImagePreview = false">取消</el-button>
+          <el-button @click="copyPreviewImage">复制到剪贴板</el-button>
+          <el-button type="primary" @click="downloadPreviewImage">下载图片</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- Image Preview for Mobile -->
+    <el-drawer
+      v-if="isMobileDevice"
+      v-model="showImagePreview"
+      direction="btt"
+      size="100%"
+      :with-header="false"
+      class="mobile-preview-drawer"
+    >
+      <div style="height: 100%; display: flex; flex-direction: column; background: #f2f2f2;">
+        <div class="mobile-preview-header" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background-color: #fff; border-bottom: 1px solid #ebeef5;">
+          <span @click="showImagePreview = false" style="font-size: 16px; color: #606266; cursor: pointer;"><i class="iconfont icon-return"></i> 取消</span>
+          <span class="title" style="font-size: 16px; font-weight: 600;">分享预览</span>
+          <span style="width: 40px;"></span>
+        </div>
+        <div class="preview-scroll-container" style="flex: 1; max-height: none; padding: 20px; box-sizing: border-box; overflow-y: auto;">
+          <img :src="previewImageUrl" class="preview-image" style="width: 100%; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"/>
+        </div>
+        <div class="mobile-preview-footer" style="padding: 20px; background: transparent; border: none; display: flex; gap: 12px;">
+          <el-button @click="shareMobilePreviewLink" size="large" style="flex: 1; border-radius: 12px; font-weight: bold;">分享链接</el-button>
+          <el-button type="primary" @click="downloadPreviewImage" size="large" style="flex: 1; border-radius: 12px; font-weight: bold;">保存图片</el-button>
+        </div>
+      </div>
+    </el-drawer>
 
   </div>
 </template>

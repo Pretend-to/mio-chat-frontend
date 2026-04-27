@@ -6,20 +6,15 @@
         <div class="mobile-title">添加机器人</div>
         <button class="mobile-close-btn" @click="close">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
           </svg>
         </button>
       </div>
       <div class="add-contactor-body mobile">
         <!-- 标签页导航 -->
         <div class="tabs mobile">
-          <div
-            v-for="(tab, index) in tabs"
-            :key="index"
-            class="tab-item"
-            :class="{ active: activeTab === index }"
-            @click="activeTab = index"
-          >
+          <div v-for="(tab, index) in tabs" :key="index" class="tab-item" :class="{ active: activeTab === index }"
+            @click="activeTab = index">
             {{ tab }}
           </div>
         </div>
@@ -29,19 +24,10 @@
           <!-- 适配器列表 -->
           <div v-show="activeTab === 0" class="adapters-view">
             <div class="search">
-              <el-input
-                v-model="adapterKeyword"
-                placeholder="搜索适配器..."
-                :prefix-icon="Search"
-                clearable
-              />
+              <el-input v-model="adapterKeyword" placeholder="搜索适配器..." :prefix-icon="Search" clearable />
             </div>
             <el-scrollbar class="adapters-list">
-              <div
-                v-for="(provider, index) in filteredProviders"
-                :key="index"
-                class="adapter-item mobile"
-              >
+              <div v-for="(provider, index) in filteredProviders" :key="index" class="adapter-item mobile">
                 <div class="adapter-icon" :style="{ backgroundColor: getProviderColor(provider.adapterType) }">
                   <img :src="getAvatarByAdapterType(provider.adapterType)" class="adapter-icon-img" />
                 </div>
@@ -63,36 +49,20 @@
           <!-- 预设列表 -->
           <div v-show="activeTab === 1" class="presets-view">
             <div class="search">
-              <el-input
-                v-model="keyWord"
-                placeholder="输入搜索关键词"
-                :prefix-icon="Search"
-                clearable
-                @input="loadSerachPresets"
-              />
+              <el-input v-model="keyWord" placeholder="输入搜索关键词" :prefix-icon="Search" clearable
+                @input="loadSerachPresets" />
             </div>
             <div class="info">
               <header class="presets-types mobile">
                 <div :style="{ left: buttonTranslate }" class="slide-button"></div>
-                <nav
-                  v-for="(type, index) in avaliablePresetTypes"
-                  :key="index"
-                  :class="activeTypeIndex === index ? 'active' : ''"
-                  @click="changeShownType(index)"
-                >
+                <nav v-for="(type, index) in avaliablePresetTypes" :key="index"
+                  :class="activeTypeIndex === index ? 'active' : ''" @click="changeShownType(index)">
                   {{ type }}
                 </nav>
               </header>
-              <el-scrollbar
-                v-if="shownPrestsList.length > 0 || [0, 3].includes(activeTypeIndex)"
-                class="presets-list"
-                @scroll="handleScroll"
-              >
-                <div
-                  v-for="(preset, index) in shownPrestsList"
-                  :key="index"
-                  class="presets-item mobile"
-                >
+              <el-scrollbar v-if="shownPrestsList.length > 0 || [0, 3].includes(activeTypeIndex)" class="presets-list"
+                @scroll="handleScroll">
+                <div v-for="(preset, index) in shownPrestsList" :key="index" class="presets-item mobile">
                   <div v-if="preset.avatar" class="preset-avatar custom">
                     <img :src="preset.avatar" />
                   </div>
@@ -127,18 +97,9 @@
           <div v-show="activeTab === 2" class="share-code-view">
             <div class="share-input-container">
               <div class="input-label">输入分享码或分享链接</div>
-              <el-input
-                v-model="shareCode"
-                placeholder="粘贴分享码或链接..."
-                clearable
-                class="share-input"
-              />
-              <el-button
-                type="primary"
-                :disabled="!shareCode.trim()"
-                @click="handleAddByShareCode"
-                style="width: 100%; margin-top: 16px;"
-              >
+              <el-input v-model="shareCode" placeholder="粘贴分享码或链接..." clearable class="share-input" />
+              <el-button type="primary" :disabled="!shareCode.trim()" @click="handleAddByShareCode"
+                style="width: 100%; margin-top: 16px;">
                 加载 Bot
               </el-button>
             </div>
@@ -149,25 +110,13 @@
   </div>
 
   <!-- 桌面端对话框模式 -->
-  <el-dialog
-    v-else
-    :model-value="show"
-    title="添加机器人"
-    width="500px"
-    class="add-contactor-dialog"
-    @update:model-value="$emit('update:show', $event)"
-    @close="$emit('close')"
-  >
+  <el-dialog v-else :model-value="show" title="添加机器人" width="500px" class="add-contactor-dialog"
+    @update:model-value="$emit('update:show', $event)" @close="$emit('close')">
     <div class="add-contactor-body">
       <!-- 标签页导航 -->
       <div class="tabs">
-        <div
-          v-for="(tab, index) in tabs"
-          :key="index"
-          class="tab-item"
-          :class="{ active: activeTab === index }"
-          @click="activeTab = index"
-        >
+        <div v-for="(tab, index) in tabs" :key="index" class="tab-item" :class="{ active: activeTab === index }"
+          @click="activeTab = index">
           {{ tab }}
         </div>
       </div>
@@ -177,19 +126,10 @@
         <!-- 适配器列表 -->
         <div v-show="activeTab === 0" class="adapters-view">
           <div class="search">
-            <el-input
-              v-model="adapterKeyword"
-              placeholder="搜索适配器..."
-              :prefix-icon="Search"
-              clearable
-            />
+            <el-input v-model="adapterKeyword" placeholder="搜索适配器..." :prefix-icon="Search" clearable />
           </div>
           <el-scrollbar class="adapters-list">
-            <div
-              v-for="(provider, index) in filteredProviders"
-              :key="index"
-              class="adapter-item"
-            >
+            <div v-for="(provider, index) in filteredProviders" :key="index" class="adapter-item">
               <div class="adapter-icon" :style="{ backgroundColor: getProviderColor(provider.adapterType) }">
                 <img :src="getAvatarByAdapterType(provider.adapterType)" class="adapter-icon-img" />
               </div>
@@ -211,36 +151,20 @@
         <!-- 预设列表 -->
         <div v-show="activeTab === 1" class="presets-view">
           <div class="search">
-            <el-input
-              v-model="keyWord"
-              placeholder="输入搜索关键词"
-              :prefix-icon="Search"
-              clearable
-              @input="loadSerachPresets"
-            />
+            <el-input v-model="keyWord" placeholder="输入搜索关键词" :prefix-icon="Search" clearable
+              @input="loadSerachPresets" />
           </div>
           <div class="info">
             <header class="presets-types">
               <div :style="{ left: buttonTranslate }" class="slide-button"></div>
-              <nav
-                v-for="(type, index) in avaliablePresetTypes"
-                :key="index"
-                :class="activeTypeIndex === index ? 'active' : ''"
-                @click="changeShownType(index)"
-              >
+              <nav v-for="(type, index) in avaliablePresetTypes" :key="index"
+                :class="activeTypeIndex === index ? 'active' : ''" @click="changeShownType(index)">
                 {{ type }}
               </nav>
             </header>
-            <el-scrollbar
-              v-if="shownPrestsList.length > 0 || [0, 3].includes(activeTypeIndex)"
-              class="presets-list"
-              @scroll="handleScroll"
-            >
-              <div
-                v-for="(preset, index) in shownPrestsList"
-                :key="index"
-                class="presets-item"
-              >
+            <el-scrollbar v-if="shownPrestsList.length > 0 || [0, 3].includes(activeTypeIndex)" class="presets-list"
+              @scroll="handleScroll">
+              <div v-for="(preset, index) in shownPrestsList" :key="index" class="presets-item">
                 <div v-if="preset.avatar" class="preset-avatar custom">
                   <img :src="preset.avatar" />
                 </div>
@@ -275,18 +199,9 @@
         <div v-show="activeTab === 2" class="share-code-view">
           <div class="share-input-container">
             <div class="input-label">输入分享码或分享链接</div>
-            <el-input
-              v-model="shareCode"
-              placeholder="粘贴分享码或链接..."
-              clearable
-              class="share-input"
-            />
-            <el-button
-              type="primary"
-              :disabled="!shareCode.trim()"
-              @click="handleAddByShareCode"
-              style="width: 100%; margin-top: 16px;"
-            >
+            <el-input v-model="shareCode" placeholder="粘贴分享码或链接..." clearable class="share-input" />
+            <el-button type="primary" :disabled="!shareCode.trim()" @click="handleAddByShareCode"
+              style="width: 100%; margin-top: 16px;">
               加载 Bot
             </el-button>
           </div>
@@ -374,7 +289,7 @@ const filteredProviders = computed(() => {
     return availableProviders.value;
   }
   const keyword = adapterKeyword.value.toLowerCase();
-  return availableProviders.value.filter(provider => 
+  return availableProviders.value.filter(provider =>
     provider.value.toLowerCase().includes(keyword) ||
     provider.label.toLowerCase().includes(keyword) ||
     provider.adapterType.toLowerCase().includes(keyword)
@@ -435,21 +350,21 @@ const handleAddByShareCode = () => {
     ElMessage.warning('请输入分享码');
     return;
   }
-  
+
   const code = shareCode.value.trim();
-  
+
   // 判断是否为纯数字
   if (/^\d+$/.test(code)) {
-    router.push(`/s/${code}`);
+    router.push(`/chat/0?shareId=${code}`);
     close();
     return;
   }
-  
+
   // 判断是否为链接
   try {
     const url = new URL(code);
     const currentHost = window.location.host;
-    
+
     if (url.host === currentHost) {
       const match = url.pathname.match(/^\/s\/(\d+)$/);
       if (match) {
@@ -577,11 +492,11 @@ const changeShownType = (index) => {
 const handleScroll = ({ scrollTop }) => {
   const scrollbar = document.querySelector('.presets-list .el-scrollbar__wrap');
   if (!scrollbar || !showPresetsLoader.value) return;
-  
+
   const scrollHeight = scrollbar.scrollHeight;
   const clientHeight = scrollbar.clientHeight;
   const distanceToBottom = scrollHeight - scrollTop - clientHeight;
-  
+
   // 当距离底部小于 100px 时提前加载更多，提升用户体验
   if (distanceToBottom < 100) {
     loadMoreData();
@@ -738,7 +653,9 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-.adapters-view, .presets-view, .share-code-view {
+.adapters-view,
+.presets-view,
+.share-code-view {
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -821,6 +738,7 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
   }
+
   .presets-list {
     flex-grow: 1;
     overflow-y: auto;
@@ -975,6 +893,7 @@ onUnmounted(() => {
     border-bottom: 1px solid var(--el-border-color-light);
     margin-right: 0;
   }
+
   .el-dialog__body {
     padding: 0;
   }
@@ -983,61 +902,61 @@ onUnmounted(() => {
 
 // 移动端响应式样式
 @media (max-width: 768px) {
-  .add-contactor-dialog {
-    display: none !important;
-  }
+.add-contactor-dialog {
+display: none !important;
+}
 
-  .search {
-    padding: 12px 0 !important;
-  }
+.search {
+padding: 12px 0 !important;
+}
 
-  .adapter-icon {
-    width: 44px !important;
-    height: 44px !important;
-    margin-right: 16px !important;
-  }
+.adapter-icon {
+width: 44px !important;
+height: 44px !important;
+margin-right: 16px !important;
+}
 
-  .adapter-name {
-    font-size: 16px !important;
-  }
+.adapter-name {
+font-size: 16px !important;
+}
 
-  .adapter-desc {
-    font-size: 13px !important;
-  }
+.adapter-desc {
+font-size: 13px !important;
+}
 
-  .el-button {
-    padding: 8px 16px !important;
-  }
+.el-button {
+padding: 8px 16px !important;
+}
 
-  .share-code-view {
-    padding-top: 20px !important;
-  }
+.share-code-view {
+padding-top: 20px !important;
+}
 
-  .input-label {
-    font-size: 15px !important;
-    margin-bottom: 12px !important;
-  }
+.input-label {
+font-size: 15px !important;
+margin-bottom: 12px !important;
+}
 
-  .el-input {
-    font-size: 16px !important;
-  }
+.el-input {
+font-size: 16px !important;
+}
 
-  .loading {
-    padding: 24px !important;
-    font-size: 15px !important;
-  }
+.loading {
+padding: 24px !important;
+font-size: 15px !important;
+}
 }
 
 // 平板适配
 @media (min-width: 769px) and (max-width: 1024px) {
-  .mobile-fullscreen-overlay {
-    display: none !important;
-  }
+.mobile-fullscreen-overlay {
+display: none !important;
+}
 }
 
 // 确保桌面端不显示移动端组件
 @media (min-width: 769px) {
-  .mobile-fullscreen-overlay {
-    display: none !important;
-  }
+.mobile-fullscreen-overlay {
+display: none !important;
+}
 }

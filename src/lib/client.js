@@ -124,6 +124,7 @@ export default class Client extends EventEmitter {
       const data = await res.json();
       if (data.code == 0) {
         contactor = data.data.contactor;
+        contactor.firstMessageIndex = 0;
         // 检查是否已经存在
         if (!this.getContactor(contactor.id)) {
           this.addConcator(contactor.platform, contactor);
@@ -151,11 +152,13 @@ export default class Client extends EventEmitter {
   async shareMessages(id, messageIds) {
     const contactor = this.getContactor(id);
     if (!contactor) return null;
-    
+
     // Create a copy of the contactor with filtered messageChain
     const shadowContactor = { ...contactor };
-    shadowContactor.messageChain = contactor.messageChain.filter(msg => messageIds.includes(msg.id));
-    
+    shadowContactor.messageChain = contactor.messageChain.filter((msg) =>
+      messageIds.includes(msg.id),
+    );
+
     const path = `/api/share/set`;
     const body = {
       contactor: shadowContactor,
@@ -337,7 +340,9 @@ export default class Client extends EventEmitter {
     // 获取当前时间戳的后6位
     const timestamp = Date.now().toString().slice(-6);
     // 生成2位随机数
-    const randomNum = Math.floor(Math.random() * 100).toString().padStart(4, '1');
+    const randomNum = Math.floor(Math.random() * 100)
+      .toString()
+      .padStart(4, "1");
 
     return randomNum + timestamp;
   }
@@ -472,42 +477,55 @@ export default class Client extends EventEmitter {
     this.socket.on("system_message", (e) => {
       try {
         // 支持后端推送的 models/providers 更新
-        if (e && e.type === 'models_updated' && e.data) {
+        if (e && e.type === "models_updated" && e.data) {
           const { providers, models, default_model } = e.data;
 
           // 更新 Config 中的 llmModels
-          if (models && this.config && typeof this.config.setLlmModels === 'function') {
+          if (
+            models &&
+            this.config &&
+            typeof this.config.setLlmModels === "function"
+          ) {
             this.config.setLlmModels(models);
-            console.log('LLM models updated from system message');
+            console.log("LLM models updated from system message");
           }
 
           // 更新 baseConfig 中的 providers 列表 (llm_providers)
-          if (providers && this.config && typeof this.config.updateBaseConfig === 'function') {
+          if (
+            providers &&
+            this.config &&
+            typeof this.config.updateBaseConfig === "function"
+          ) {
             try {
               // 检查是否是新的 API 结构（providers 数组中包含 default_model）
-              const hasNewStructure = providers.some(p => p.default_model !== undefined);
-              
+              const hasNewStructure = providers.some(
+                (p) => p.default_model !== undefined,
+              );
+
               if (hasNewStructure) {
                 // 新结构：直接使用 providers 数组
                 this.config.updateBaseConfig({ llm_providers: providers });
               } else {
                 // 旧结构：同时传递 providers 和 default_model
-                this.config.updateBaseConfig({ llm_providers: providers, default_model });
+                this.config.updateBaseConfig({
+                  llm_providers: providers,
+                  default_model,
+                });
               }
-              console.log('LLM providers updated from system message');
+              console.log("LLM providers updated from system message");
             } catch (err) {
-              console.error('Failed to update baseConfig.llm_providers:', err);
+              console.error("Failed to update baseConfig.llm_providers:", err);
             }
           }
 
           // 广播事件给客户端监听者（比如 UI）
-          this.emit('models_updated', { providers, models });
+          this.emit("models_updated", { providers, models });
           return;
         }
 
         console.log("System message received:", e);
       } catch (err) {
-        console.error('Error handling system_message:', err, e);
+        console.error("Error handling system_message:", err, e);
       }
     });
   }
