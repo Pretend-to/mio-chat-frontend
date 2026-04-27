@@ -26,7 +26,7 @@
         </div>
         <div @click.stop="copyText">
           <i class="iconfont fuzhi"></i>
-          <span>复制消息</span>
+          <span>复制</span>
         </div>
         <div v-if="seletedImage" @click.stop="copySeletedImage">
           <i class="iconfont fuzhi"></i>
@@ -38,15 +38,19 @@
         </div>
         <div @click.stop="retryMessage">
           <i class="iconfont reset"></i>
-          <span>重试消息</span>
+          <span>重试</span>
         </div>
         <div @click.stop="replyMessage">
           <i class="iconfont yinyong"></i>
-          <span>引用消息</span>
+          <span>引用</span>
+        </div>
+        <div @click.stop="multiSelect">
+          <i class="iconfont xuanze"></i>
+          <span>多选</span>
         </div>
         <div @click.stop="deleteMessage">
           <i class="iconfont shanchu"></i>
-          <span>删除消息</span>
+          <span>删除</span>
         </div>
       </template>
     </div>
@@ -129,6 +133,9 @@ export default {
     },
     deleteMessage() {
       this.$emit("message-option", "delete");
+    },
+    multiSelect() {
+      this.$emit("message-option", "multi-select");
     },
     enterChat() {
       this.$emit("message-option", "enter");

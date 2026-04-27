@@ -60,10 +60,10 @@ export default class Config {
     // 4. 异步加载外部数据 (如可用工具、OneBot 插件等)
     //    添加了错误捕获，防止加载失败影响主流程
     this.loadllmTools().catch((error) =>
-      console.error("加载 LLM 工具失败:", error)
+      console.error("加载 LLM 工具失败:", error),
     );
     this.loadonebotConfig().catch((error) =>
-      console.error("加载 OneBot 配置失败:", error)
+      console.error("加载 OneBot 配置失败:", error),
     );
 
     // 5. 如果是首次运行 (未从 localStorage 加载到配置), 则保存初始配置
@@ -338,7 +338,7 @@ export default class Config {
     // 3. 确保 this.LLMDefaultConfig 是一个对象
     if (!this.LLMDefaultConfig || typeof this.LLMDefaultConfig !== "object") {
       console.log(
-        "LLMDefaultConfig 未加载或格式无效，创建新的空对象用于合并。"
+        "LLMDefaultConfig 未加载或格式无效，创建新的空对象用于合并。",
       );
       this.LLMDefaultConfig = {};
     }
@@ -347,15 +347,15 @@ export default class Config {
     //    这个操作会保留 this.LLMDefaultConfig 中已有的用户设置，只添加缺失的部分
     console.log(
       "合并 LLM 默认配置（之前）:",
-      JSON.stringify(this.LLMDefaultConfig)
+      JSON.stringify(this.LLMDefaultConfig),
     );
     this.LLMDefaultConfig = this._mergeDefaultsRecursive(
       this.LLMDefaultConfig,
-      defaultConfigStructure
+      defaultConfigStructure,
     );
     console.log(
       "合并 LLM 默认配置（之后）:",
-      JSON.stringify(this.LLMDefaultConfig)
+      JSON.stringify(this.LLMDefaultConfig),
     );
 
     // 注意：合并操作后，this.LLMDefaultConfig 可能已更新，保存操作会在适当时机触发。
@@ -381,22 +381,22 @@ export default class Config {
     if (llm_providers.length > 0) {
       const newDefaultProvider = llm_providers[0]?.displayName; // 使用第一个 provider 的 displayName 作为新的默认
       this.updateLLMDefaultConfig(null, { provider: newDefaultProvider });
-      
+
       // 检查是否是新的 API 结构（provider 对象中包含 default_model）
       let defaultModelForProvider = llm_providers[0]?.default_model;
-      
+
       // 如果新结构中没有找到，尝试旧结构
       if (!defaultModelForProvider && default_model[newDefaultProvider]) {
         defaultModelForProvider = default_model[newDefaultProvider];
       }
-      
+
       if (defaultModelForProvider) {
         this.updateLLMDefaultConfig("base", {
           model: defaultModelForProvider,
         });
       } else {
         console.warn(
-          `基础配置中未找到 Provider "${newDefaultProvider}" 的默认模型。`
+          `基础配置中未找到 Provider "${newDefaultProvider}" 的默认模型。`,
         );
         // 可以考虑设置一个通用的后备模型
       }
@@ -446,14 +446,14 @@ export default class Config {
     return providers.map((provider) => ({
       value: provider.displayName,
       label: provider.displayName,
-      adapterType: provider.adapterType
+      adapterType: provider.adapterType,
     }));
   }
 
   /** 获取指定 Provider 的适配器类型 */
   getProviderAdapterType(providerName) {
     const providers = this.baseConfig?.llm_providers ?? [];
-    const found = providers.find(p => p.displayName === providerName);
+    const found = providers.find((p) => p.displayName === providerName);
     if (!found) return null; // 未找到则返回 null
     return found.adapterType;
   }
@@ -462,11 +462,11 @@ export default class Config {
   getDefaultModel(provider) {
     // 首先尝试新的 API 结构：从 provider 对象中获取 default_model
     const providers = this.baseConfig?.llm_providers || [];
-    const targetProvider = providers.find(p => p.displayName === provider);
+    const targetProvider = providers.find((p) => p.displayName === provider);
     if (targetProvider?.default_model) {
       return targetProvider.default_model;
     }
-    
+
     // 如果新结构中没有找到，尝试旧结构：从 default_model 对象中获取
     return this.baseConfig?.default_model?.[provider];
   }
@@ -499,18 +499,21 @@ export default class Config {
     // 首先尝试新的 API 结构：从 llm_providers 数组中构建映射
     const providers = this.baseConfig?.llm_providers || [];
     const defaultModelMap = {};
-    
-    providers.forEach(provider => {
+
+    providers.forEach((provider) => {
       if (provider.displayName && provider.default_model) {
         defaultModelMap[provider.displayName] = provider.default_model;
       }
     });
-    
+
     // 如果新结构中没有找到任何默认模型，尝试旧结构
-    if (Object.keys(defaultModelMap).length === 0 && this.baseConfig?.default_model) {
+    if (
+      Object.keys(defaultModelMap).length === 0 &&
+      this.baseConfig?.default_model
+    ) {
       return this.baseConfig.default_model;
     }
-    
+
     return defaultModelMap;
   }
 
@@ -518,7 +521,7 @@ export default class Config {
   isModelAvailable(provider, model) {
     const providerModels = this.llmModels?.[provider] ?? [];
     return providerModels.some((modelGroup) =>
-      modelGroup.models.includes(model)
+      modelGroup.models.includes(model),
     );
   }
 
@@ -527,7 +530,7 @@ export default class Config {
     for (const provider in this.llmModels) {
       const providerModels = this.llmModels[provider] ?? [];
       const group = providerModels.find((modelGroup) =>
-        modelGroup.models.includes(model)
+        modelGroup.models.includes(model),
       );
       if (group) return group.owner;
     }
@@ -574,7 +577,7 @@ export default class Config {
     ) {
       // 更新指定类型的嵌套对象
       const originalSubConfigString = JSON.stringify(
-        this.LLMDefaultConfig[type]
+        this.LLMDefaultConfig[type],
       );
       this.LLMDefaultConfig[type] = {
         ...this.LLMDefaultConfig[type],
@@ -602,7 +605,7 @@ export default class Config {
       }
     } else {
       console.warn(
-        `无法更新 LLMDefaultConfig: 类型 "${type}" 不存在或不是对象。`
+        `无法更新 LLMDefaultConfig: 类型 "${type}" 不存在或不是对象。`,
       );
       return; // 没有做任何更改
     }
@@ -610,7 +613,7 @@ export default class Config {
     if (configChanged) {
       console.log(
         `更新 LLMDefaultConfig${type ? `[${type}]` : ""} 使用 patch:`,
-        patch
+        patch,
       );
       // 只有在检测到实际变化时才保存
       this._saveStrogeConfig();
@@ -643,13 +646,13 @@ export default class Config {
       const defaultModelForProvider = this.getDefaultModel(provider);
       if (defaultModelForProvider) {
         console.log(
-          `为 Provider "${provider}" 调整 LLM 配置副本 (模型: ${defaultModelForProvider})。`
+          `为 Provider "${provider}" 调整 LLM 配置副本 (模型: ${defaultModelForProvider})。`,
         );
         copiedConfig.provider = provider;
         copiedConfig.base.model = defaultModelForProvider;
       } else {
         console.warn(
-          `请求了 Provider "${provider}"，但在 baseConfig 中未找到其默认模型。返回的配置将使用原始 Provider 和模型。`
+          `请求了 Provider "${provider}"，但在 baseConfig 中未找到其默认模型。返回的配置将使用原始 Provider 和模型。`,
         );
         // 保持 copiedConfig 不变或进行其他处理
       }
@@ -676,19 +679,19 @@ export default class Config {
         // 如果是对象 {plugin: toolsObj}
         if (pluginTools && typeof pluginTools === "object") {
           Object.keys(pluginTools).forEach(
-            (toolName) => availableToolNames.add(toolName) // 只取工具名部分
+            (toolName) => availableToolNames.add(toolName), // 只取工具名部分
           );
         }
       });
     }
-    
-    const validToolNames = selectedToolNames.filter(toolName =>{
+
+    const validToolNames = selectedToolNames.filter((toolName) => {
       return availableToolNames.has(toolName);
-    })
+    });
 
     if (validToolNames.length < selectedToolNames.length) {
       const invalidTools = selectedToolNames.filter(
-        (toolName) => !availableToolNames.has(toolName)
+        (toolName) => !availableToolNames.has(toolName),
       );
       console.warn("配置中指定的以下工具当前不可用或未加载:", invalidTools);
     }
@@ -718,9 +721,9 @@ export default class Config {
       verifiedConfig.toolCallSettings &&
       Array.isArray(verifiedConfig.toolCallSettings.tools)
     ) {
-       verifiedConfig.toolCallSettings.tools = this.getValidTools(
-         verifiedConfig.toolCallSettings.tools
-       );
+      verifiedConfig.toolCallSettings.tools = this.getValidTools(
+        verifiedConfig.toolCallSettings.tools,
+      );
     } else if (verifiedConfig.toolCallSettings) {
       // 如果 toolCallSettings 存在但 tools 不存在或不是数组，则设置为空数组
       verifiedConfig.toolCallSettings.tools = [];
@@ -739,7 +742,7 @@ export default class Config {
       const response = await fetch("/api/openai/tools");
       if (!response.ok) {
         throw new Error(
-          `请求 LLM 工具失败: ${response.status} ${response.statusText}`
+          `请求 LLM 工具失败: ${response.status} ${response.statusText}`,
         );
       }
       const data = await response.json();
@@ -769,13 +772,13 @@ export default class Config {
       const response = await fetch(`/api/onebot/plugins`);
       if (!response.ok) {
         throw new Error(
-          `请求 OneBot 插件配置失败: ${response.status} ${response.statusText}`
+          `请求 OneBot 插件配置失败: ${response.status} ${response.statusText}`,
         );
       }
       const data = await response.json();
 
       // 根据 OneBot API 文档，返回的数据结构是 { success: true, data: { options: ... } }
-      if (data && data.success && data.data && data.data.options) {
+      if (data?.data?.options) {
         this.onebotConfig = data.data.options;
         console.log("OneBot 插件配置已加载:", this.onebotConfig);
         // 加载后立即保存

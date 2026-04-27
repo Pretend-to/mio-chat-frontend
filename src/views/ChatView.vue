@@ -9,7 +9,7 @@ import MdRenderer from "mio-previewer";
 import { mermaidPlugin, codeBlockPlugin, cursorPlugin, imageViewerPlugin } from 'mio-previewer/plugins/custom';
 import { katexPlugin } from 'mio-previewer/plugins/markdown-it';
 import "emoji-picker-element";
-import html2canvas from "html2canvas";
+import { snapdom } from "@zumer/snapdom";
 import { client } from "@/lib/runtime.js";
 import { shareOrCopy } from "@/utils/tools.js";
 
@@ -116,7 +116,9 @@ export default {
       katexPlugin,
       mioPlugins,
       longPressTimer: null,
-      lastClickTime: 0
+      lastClickTime: 0,
+      isMultiSelect: false,
+      selectedMessages: [],
     };
   },
   computed: {
@@ -339,25 +341,10 @@ export default {
       this.activeContactor.loadAvatar();
       await client.setLocalStorage(); //持久化存储
     },
-    toimg() {
-      // 使用html2canvas把 this.chatWindowRef 渲染为图片
-      const rect = this.chatWindowRef.getBoundingClientRect();
-      rect.height = this.chatWindowRef.scrollHeight;
-
-      html2canvas(this.chatWindowRef, {
-        windowHeight: rect.height * 1.2,
-        width: rect.width,
-        // 例如: allowTaint: true, backgroundColor: null
-      }).then((canvas) => {
-        // 将canvas转换为图片
-        const img = canvas.toDataURL("image/png");
-        // 创建一个a标签，并设置下载属性和下载链接
-        const link = document.createElement("a");
-        link.download = "chat.png";
-        link.href = img;
-        // 模拟点击下载
-        link.click();
-      });
+    async toimg() {
+      // 使用snapdom把 this.chatWindowRef 渲染为图片
+      const result = await snapdom(this.chatWindowRef);
+      await result.download({ format: 'png', filename: 'chat.png' });
     },
     async share() {
       const shareResult = await client.shareContactor(
@@ -682,6 +669,12 @@ export default {
     handleMessageOption(option) {
       const message = this.getseletedMessage();
       switch (option) {
+        case "multi-select":
+          this.isMultiSelect = true;
+          if (message && message.id) {
+            this.selectedMessages.push(message.id);
+          }
+          break;
         case "retry":
           if (this.activeContactor.platform === "onebot") {
             // 重新发送一样的消息
@@ -742,6 +735,169 @@ export default {
       this.showMenu = false
 
     },
+    toggleSelect(id) {
+      if (!id) return;
+      const index = this.selectedMessages.indexOf(id);
+      if (index > -1) {
+        this.selectedMessages.splice(index, 1);
+      } else {
+        this.selectedMessages.push(id);
+      }
+    },
+    handleMessageClick(item) {
+      if (this.isMultiSelect && item.role !== 'mio_system') {
+        this.toggleSelect(item.id);
+      }
+    },
+    cancelMultiSelect() {
+      this.isMultiSelect = false;
+      this.selectedMessages = [];
+    },
+    handleMultiDelete() {
+      if (this.selectedMessages.length === 0) return;
+      for (let i = this.activeContactor.messageChain.length - 1; i >= 0; i--) {
+        if (this.selectedMessages.includes(this.activeContactor.messageChain[i].id)) {
+          this.activeContactor.messageChain.splice(i, 1);
+        }
+      }
+      client.setLocalStorage();
+      this.cancelMultiSelect();
+    },
+    handleMultiCopy() {
+      if (this.selectedMessages.length === 0) return;
+      let text = "";
+      this.getFullMessages().forEach((msg) => {
+        if (this.selectedMessages.includes(msg.id)) {
+          const senderName = msg.role === 'other' ? this.activeContactor.name : this.client.name;
+          const time = this.activeContactor.getShownTime(msg.time);
+          let msgText = "";
+          msg.content.forEach((element) => {
+            if (element.type === "text") {
+              msgText += element.data.text;
+            } else if (element.type === "image") {
+              msgText += `[图片]`;
+            }
+          });
+          text += `${senderName} ${time}\n${msgText}\n\n`;
+        }
+      });
+      let textarea = document.createElement("textarea");
+      textarea.style.position = "absolute";
+      textarea.style.left = "-9999px";
+      textarea.value = text.trim();
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      this.$message({ message: "已复制选中的消息", type: "success" });
+      this.cancelMultiSelect();
+    },
+    handleMultiShareMD() {
+      if (this.selectedMessages.length === 0) return;
+      let mdText = `# 与${this.activeContactor.name}的对话记录\n\n`;
+      this.getFullMessages().forEach((msg) => {
+        if (this.selectedMessages.includes(msg.id)) {
+          const senderName = msg.role === 'other' ? this.activeContactor.name : this.client.name;
+          const time = this.activeContactor.getShownTime(msg.time);
+          let msgText = "";
+          msg.content.forEach((element) => {
+            if (element.type === "text") {
+              msgText += element.data.text;
+            } else if (element.type === "image") {
+              msgText += `![图片](${element.data.file})`;
+            }
+          });
+          mdText += `### ${senderName} _${time}_\n${msgText}\n\n`;
+        }
+      });
+      const blob = new Blob([mdText], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `chat_export_${new Date().getTime()}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      this.$message({ message: "已导出Markdown", type: "success" });
+      this.cancelMultiSelect();
+    },
+    async handleMultiShareLink() {
+      if (this.selectedMessages.length === 0) return;
+      this.$message({ message: "正在生成分享链接...", type: "info" });
+      const shareResult = await client.shareMessages(this.activeContactor.id, this.selectedMessages);
+      if (shareResult && shareResult.shareUrl) {
+        const { success, message } = shareOrCopy(shareResult.shareUrl);
+        if (success) {
+          this.$message({ message: "分享链接已复制到剪贴板", type: "success" });
+        } else {
+          this.$message({ message: message, type: "error" });
+        }
+      } else {
+        this.$message({ message: "生成分享链接失败", type: "error" });
+      }
+      this.cancelMultiSelect();
+    },
+    async handleMultiShareImage() {
+      if (this.selectedMessages.length === 0) return;
+      let exportEl = null;
+
+      try {
+        this.$message({ message: "正在生成分享链接...", type: "info" });
+        const shareResult = await client.shareMessages(this.activeContactor.id, this.selectedMessages);
+        const shareUrl = shareResult?.shareUrl ?? window.location.origin;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(shareUrl)}`;
+
+        // Build export container with mobile width, mirroring chatwindow bg
+        exportEl = document.createElement('div');
+        exportEl.style.cssText = 'position:fixed;left:-9999px;top:0;width:390px;background-color:#f2f2f2;padding:0.5rem 0;box-sizing:border-box;overflow:hidden;';
+        document.body.appendChild(exportEl);
+
+        // Clone selected message DOM nodes (preserving real styles)
+        const refs = this.$refs.message; // array of .message-container els
+        this.activeMessageChain.forEach((item, i) => {
+          if (!this.selectedMessages.includes(item.id)) return;
+          const el = refs[i];
+          if (!el) return;
+          const clone = el.cloneNode(true);
+          // Remove multi-select UI artifacts
+          clone.querySelector('.multi-select-box')?.remove();
+          const wrapper = clone.querySelector('.message-flex-wrapper');
+          if (wrapper) wrapper.classList.remove('is-multi-select', 'is-selected');
+          exportEl.appendChild(clone);
+        });
+
+        // Footer with QR code
+        const footer = document.createElement('div');
+        footer.style.cssText = 'border-top:1px solid #ddd;margin:0.5rem 0.625rem 0;padding-top:0.75rem;display:flex;align-items:center;justify-content:space-between;';
+        const textDiv = document.createElement('div');
+        textDiv.innerHTML = '<div style="font-weight:bold;font-size:15px;color:#333;">MioChat</div><div style="font-size:11px;color:#666;margin-top:3px;">扫码接续对话</div>';
+        const qrImg = document.createElement('img');
+        qrImg.src = qrUrl;
+        qrImg.style.cssText = 'width:56px;height:56px;flex-shrink:0;';
+        qrImg.crossOrigin = 'anonymous';
+        footer.appendChild(textDiv);
+        footer.appendChild(qrImg);
+        exportEl.appendChild(footer);
+
+        // Wait for QR image to load
+        await new Promise((resolve) => {
+          if (qrImg.complete) resolve();
+          else { qrImg.onload = resolve; qrImg.onerror = resolve; setTimeout(resolve, 1500); }
+        });
+
+        const result = await snapdom(exportEl, { scale: 2 });
+        await result.download({ format: 'png', filename: `chat_image_export_${Date.now()}.png` });
+
+        this.$message({ message: "已导出图片", type: "success" });
+      } catch (err) {
+        console.error("生成图片失败", err);
+        this.$message({ message: "生成图片失败", type: "error" });
+      } finally {
+        exportEl?.remove();
+        this.cancelMultiSelect();
+      }
+    },
   },
 };
 </script>
@@ -778,64 +934,110 @@ export default {
         <div v-if="showTime(index).show" class="message-time">
           {{ showTime(index).time }}
         </div>
-        <div :id="item.role" class="message-body">
-          <div v-if="item.role !== 'mio_system'" class="avatar">
-            <img v-if="item.role === 'other'" :src="activeContactor.avatar" :alt="activeContactor.name"
-              @click="toProfile" />
-            <img v-else :src="client.avatar" :alt="client.name" />
-          </div>
-          <div v-if="item.role !== 'mio_system'" class="msg">
-            <div class="wholename">
-              <div v-if="
-                item.role === 'other' ? activeContactor.title : client.title
-              " class="title">
-                {{
-                  item.role === "other" ? activeContactor.title : client.title
-                }}
-              </div>
-              <div class="name">
-                {{ item.role === "other" ? activeContactor.name : client.name }}
-              </div>
-            </div>
-            <div :class="['content', item.status]" @mouseup="handleMouseUp"
-              @contextmenu="showMessageMenu($event, index)" @touchstart="handleTouchStart($event, index)">
-              <div v-for="(element, elmIndex) of item.content" :key="elmIndex" class="inner-content">
-                <MdRenderer v-if="element.type === 'text'" :md="element.data.text" :theme="'github'" :isStreaming="['pending', 'retrying'].includes(item.status) &&
-                  item.content.length - 1 === elmIndex
-                  " :custom-plugins="mioPlugins" :markdown-it-plugins="[{ plugin: katexPlugin }]"
-                  :markdown-it-options="{ breaks: activeContactor.platform === 'onebot' }" />
-                <MdRenderer v-if="element.type === 'image'" :md="`![image](${element.data.file})`"
-                  :custom-plugins="mioPlugins" :theme="'github'" :key="element.data.file" />
-                <div v-else-if="element.type === 'reply'" class="reply-block">
-                  {{ getReplyText(element.data.id) }}
-                </div>
-                <ForwardMsg v-else-if="element.type === 'nodes'" :contactor="activeContactor"
-                  :messages="element.data.messages" />
-                <FileBlock v-else-if="element.type === 'file'" :file-url="element.data.file" />
-                <span v-else-if="element.type === 'at'" />
-                <ReasonBlock v-else-if="element.type === 'reason'" :end-time="element.data.endTime"
-                  :start-time="element.data.startTime" :content="element.data.text" />
-                <div v-else-if="element.type === 'blank'" class="blank-message"
-                  style="width: 10rem; height: 28.8px; position: relative">
-                  <span class="blank-loader"></span>
-                </div>
-                <ToolCallBar v-else-if="element.type === 'tool_call'" :tool-call="element.data" />
-              </div>
+        <div class="message-flex-wrapper"
+          :class="{ 'is-multi-select': isMultiSelect, 'is-selected': isMultiSelect && selectedMessages.includes(item.id) }"
+          @click="handleMessageClick(item)">
+          <div v-if="isMultiSelect && item.role !== 'mio_system'" class="multi-select-box">
+            <div class="round-checkbox" :class="{ checked: selectedMessages.includes(item.id) }"
+              @click.stop="toggleSelect(item.id)">
+              <svg v-if="selectedMessages.includes(item.id)" viewBox="0 0 12 10" fill="none"
+                xmlns="http://www.w3.org/2000/svg">
+                <polyline points="1,5 4.5,8.5 11,1" stroke="white" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
             </div>
           </div>
-          <div v-else class="system-message">
-            <div class="system-message-content">
-              {{ item.content[0].data.text }}
+          <div :id="item.role" class="message-body" :style="{ pointerEvents: isMultiSelect ? 'none' : 'auto' }">
+            <div v-if="item.role !== 'mio_system'" class="avatar">
+              <img v-if="item.role === 'other'" :src="activeContactor.avatar" :alt="activeContactor.name"
+                @click="toProfile" />
+              <img v-else :src="client.avatar" :alt="client.name" />
             </div>
-            <div class="system-message-button">
-              <i class="iconfont close" @click="delSystemMessage(index)"></i>
+            <div v-if="item.role !== 'mio_system'" class="msg">
+              <div class="wholename">
+                <div v-if="
+                  item.role === 'other' ? activeContactor.title : client.title
+                " class="title">
+                  {{
+                    item.role === "other" ? activeContactor.title : client.title
+                  }}
+                </div>
+                <div class="name">
+                  {{ item.role === "other" ? activeContactor.name : client.name }}
+                </div>
+              </div>
+              <div :class="['content', item.status]" @mouseup="handleMouseUp"
+                @contextmenu="showMessageMenu($event, index)" @touchstart="handleTouchStart($event, index)">
+                <div v-for="(element, elmIndex) of item.content" :key="elmIndex" class="inner-content">
+                  <MdRenderer v-if="element.type === 'text'" :md="element.data.text" :theme="'github'" :isStreaming="['pending', 'retrying'].includes(item.status) &&
+                    item.content.length - 1 === elmIndex
+                    " :custom-plugins="mioPlugins" :markdown-it-plugins="[{ plugin: katexPlugin }]"
+                    :markdown-it-options="{ breaks: activeContactor.platform === 'onebot' }" />
+                  <MdRenderer v-if="element.type === 'image'" :md="`![image](${element.data.file})`"
+                    :custom-plugins="mioPlugins" :theme="'github'" :key="element.data.file" />
+                  <div v-else-if="element.type === 'reply'" class="reply-block">
+                    {{ getReplyText(element.data.id) }}
+                  </div>
+                  <ForwardMsg v-else-if="element.type === 'nodes'" :contactor="activeContactor"
+                    :messages="element.data.messages" />
+                  <FileBlock v-else-if="element.type === 'file'" :file-url="element.data.file" />
+                  <span v-else-if="element.type === 'at'" />
+                  <ReasonBlock v-else-if="element.type === 'reason'" :end-time="element.data.endTime"
+                    :start-time="element.data.startTime" :content="element.data.text" />
+                  <div v-else-if="element.type === 'blank'" class="blank-message"
+                    style="width: 10rem; height: 28.8px; position: relative">
+                    <span class="blank-loader"></span>
+                  </div>
+                  <ToolCallBar v-else-if="element.type === 'tool_call'" :tool-call="element.data" />
+                </div>
+              </div>
+            </div>
+            <div v-else class="system-message">
+              <div class="system-message-content">
+                {{ item.content[0].data.text }}
+              </div>
+              <div class="system-message-button">
+                <i class="iconfont close" @click="delSystemMessage(index)"></i>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <InputEditor ref="inputEditor" :active-contactor :replied-message-id @stroge="client.setLocalStorage()"
-      @set-model="setModel" @clean-screen="cleanScreen" @clean-history="cleanHistory" @to-buttom="toButtom" />
+    <InputEditor v-if="!isMultiSelect" ref="inputEditor" :active-contactor="activeContactor"
+      :replied-message-id="repliedMessageId" @stroge="client.setLocalStorage()" @set-model="setModel"
+      @clean-screen="cleanScreen" @clean-history="cleanHistory" @to-buttom="toButtom" />
+    <div v-else class="multi-select-action-bar">
+      <div class="actions">
+        <div class="action-btn" @click="handleMultiShareMD">
+          <span class="action-icon"><i class="iconfont icon-share"></i></span>
+          <span class="action-label">导出MD</span>
+        </div>
+        <div class="action-btn" @click="handleMultiShareImage">
+          <span class="action-icon"><i class="iconfont icon-share"></i></span>
+          <span class="action-label">导出图片</span>
+        </div>
+        <div class="action-btn" @click="handleMultiShareLink">
+          <span class="action-icon"><i class="iconfont icon-share"></i></span>
+          <span class="action-label">分享链接</span>
+        </div>
+        <div class="action-btn" @click="handleMultiCopy">
+          <span class="action-icon"><i class="iconfont fuzhi"></i></span>
+          <span class="action-label">复制</span>
+        </div>
+        <el-popconfirm title="此操作不可撤销" confirm-button-text="确定" cancel-button-text="取消" placement="top"
+          @confirm="handleMultiDelete">
+          <template #reference>
+            <div class="action-btn">
+              <span class="action-icon"><i class="iconfont shanchu"></i></span>
+              <span class="action-label">删除</span>
+            </div>
+          </template>
+        </el-popconfirm>
+      </div>
+      <div class="close-btn" @click="cancelMultiSelect">&times;</div>
+    </div>
+
   </div>
 </template>
 
@@ -860,8 +1062,137 @@ $icon-hover: #09f
     background-color: #f2f2f2
     flex-direction: column
 
+
+.message-flex-wrapper
+    display: flex
+    align-items: flex-start
+    width: 100%
+
+    .message-body
+        flex: 1
+        min-width: 0
+
+    &.is-multi-select
+        cursor: pointer
+        padding-left: 0.5rem
+        transition: background-color 0.15s
+
+        &:hover
+            background-color: rgba(0, 0, 0, 0.04)
+
+    &.is-selected
+        background-color: rgba(0, 0, 0, 0.06)
+
+        &:hover
+            background-color: rgba(0, 0, 0, 0.08)
+
+    .multi-select-box
+        margin-right: 0.75rem
+        display: flex
+        align-items: center
+        align-self: center
+        flex-shrink: 0
+
+        .round-checkbox
+            width: 1rem
+            height: 1rem
+            border-radius: 50%
+            border: 2px solid #ccc
+            background-color: #fff
+            display: flex
+            align-items: center
+            justify-content: center
+            cursor: pointer
+            transition: border-color 0.15s, background-color 0.15s
+            flex-shrink: 0
+
+            svg
+                width: 0.7rem
+                height: 0.7rem
+                display: block
+
+            &.checked
+                border-color: rgb(0, 153, 255)
+                background-color: rgb(0, 153, 255)
+
+            &:hover:not(.checked)
+                border-color: rgb(0, 153, 255)
+
+.multi-select-action-bar
+    flex-shrink: 0
+    flex-basis: 11rem
+    border-top: 0.0625rem solid rgba(128, 128, 128, 0.502)
+    display: flex
+    flex-direction: row
+    align-items: center
+    justify-content: center
+    padding: 0 1.5rem
+    position: relative
+
     @media (max-width: $mobile)
-        height: 100%
+        flex-basis: 7rem
+
+    .actions
+        display: flex
+        flex-direction: row
+        align-items: center
+        justify-content: center
+        gap: 2.5rem
+        flex: 1
+
+    .action-btn
+        display: flex
+        flex-direction: column
+        align-items: center
+        justify-content: center
+        cursor: pointer
+        color: #333
+        flex-shrink: 0
+        gap: 0.4rem
+        transition: opacity 0.2s
+
+        &:hover
+            opacity: 0.7
+
+        .action-icon
+            width: 2.8rem
+            height: 2.8rem
+            border-radius: 50%
+            background-color: #fff
+            display: flex
+            align-items: center
+            justify-content: center
+            transition: background-color 0.2s
+
+            i
+                font-size: 1.25rem
+                color: #333
+
+        &:hover .action-icon
+            background-color: #f2f2f2
+
+        .action-label
+            font-size: 0.72rem
+            color: #555
+            white-space: nowrap
+
+    .close-btn
+        position: absolute
+        right: 1.25rem
+        top: 50%
+        transform: translateY(-50%)
+        font-size: 1.4rem
+        color: #999
+        cursor: pointer
+        line-height: 1
+        padding: 0.25rem 0.5rem
+        border-radius: 50%
+        transition: color 0.2s, background-color 0.2s
+        user-select: none
+
+        &:hover
+            color: #333
+            background-color: #f2f2f2
 
 .upside-bar
     flex-basis: 4rem

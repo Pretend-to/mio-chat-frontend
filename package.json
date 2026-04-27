@@ -13,6 +13,7 @@
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
     "@tauri-apps/api": "^2.5.0",
+    "@zumer/snapdom": "^2.9.0",
     "element-plus": "^2.11.7",
     "emoji-picker-element": "^1.21.3",
     "html2canvas": "^1.4.1",

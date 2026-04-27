@@ -148,6 +148,36 @@ export default class Client extends EventEmitter {
     }
   }
 
+  async shareMessages(id, messageIds) {
+    const contactor = this.getContactor(id);
+    if (!contactor) return null;
+    
+    // Create a copy of the contactor with filtered messageChain
+    const shadowContactor = { ...contactor };
+    shadowContactor.messageChain = contactor.messageChain.filter(msg => messageIds.includes(msg.id));
+    
+    const path = `/api/share/set`;
+    const body = {
+      contactor: shadowContactor,
+    };
+    try {
+      const res = await fetch(path, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.code == 0) {
+        return data.data;
+      }
+    } catch (error) {
+      console.error("Failed to share messages:", error);
+      return null;
+    }
+  }
+
   async setOriginalContactor(id) {
     const path = `/api/share/set`;
     const body = {
