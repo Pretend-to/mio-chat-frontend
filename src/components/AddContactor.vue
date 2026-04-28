@@ -212,7 +212,7 @@
 </template>
 
 <script setup>
-import { config } from "@/lib/runtime.js";
+import { config, client } from "@/lib/runtime.js";
 import { getAvatarByAdapterType } from "@/utils/avatar.js";
 import { Loading, Search } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
