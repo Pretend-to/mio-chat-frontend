@@ -1156,6 +1156,10 @@ $icon-hover: #09f
     flex-direction: column
 
 
+.message-container
+    content-visibility: auto
+    contain-intrinsic-size: auto 150px
+    
 .message-flex-wrapper
     display: flex
     align-items: flex-start
