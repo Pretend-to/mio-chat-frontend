@@ -108,6 +108,7 @@ export default {
       clearMessageTip: "以上的对话记录已清除",
       loadingIcon: "<span id='message-loading-icon'></span>",
       katexPlugin,
+      katexPluginList: [{ plugin: katexPlugin }],
       mioPlugins,
       longPressTimer: null,
       lastClickTime: 0,
@@ -157,10 +158,14 @@ export default {
             ? "low"
             : "ultra";
     },
+    mdOptions() {
+      return { breaks: this.activeContactor.platform === 'onebot' };
+    },
     activeMessageChain() {
       return this.activeContactor.options.presetSettings?.opening
         ? [
           {
+            id: 'opening-message',
             role: "other",
             content: [
               {
@@ -352,26 +357,10 @@ export default {
         : false;
     },
     getFullMessages() {
-      return this.hasOpening()
-        ? [
-          {
-            role: "other",
-            content: [
-              {
-                type: "text",
-                data: {
-                  text: this.activeContactor.options.presetSettings.opening,
-                },
-              },
-            ],
-            time: this.activeContactor.createTime,
-          },
-          ...this.activeContactor.messageChain,
-        ]
-        : this.activeContactor.messageChain;
+      return this.activeMessageChain;
     },
     showTime(index) {
-      const list = this.getFullMessages();
+      const list = this.activeMessageChain;
       const thisTime = list[index].time;
       if (index === 0) {
         return {
@@ -1030,8 +1019,8 @@ export default {
                 <div v-for="(element, elmIndex) of item.content" :key="elmIndex" class="inner-content">
                   <MdRenderer v-if="element.type === 'text'" :md="element.data.text" :theme="'github'" :isStreaming="['pending', 'retrying'].includes(item.status) &&
                     item.content.length - 1 === elmIndex
-                    " :custom-plugins="mioPlugins" :markdown-it-plugins="[{ plugin: katexPlugin }]"
-                    :markdown-it-options="{ breaks: activeContactor.platform === 'onebot' }" />
+                    " :custom-plugins="mioPlugins" :markdown-it-plugins="katexPluginList"
+                    :markdown-it-options="mdOptions" />
                   <MdRenderer v-if="element.type === 'image'" :md="`![image](${element.data.file})`"
                     :custom-plugins="mioPlugins" :theme="'github'" :key="element.data.file" />
                   <div v-else-if="element.type === 'reply'" class="reply-block">

@@ -18,6 +18,7 @@ export function shareOrCopy(url) {
     navigator
       .share({
         title: "从Mio Chat分享",
+        text: url,
         url: url,
       })
       .then(() => {
