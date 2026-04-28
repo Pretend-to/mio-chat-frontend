@@ -266,7 +266,6 @@ export default {
       console.log("addReactiveListener");
       this.contactorList.map((contactor) => {
         contactor.on("updateMessageSummary", () => {
-          console.log("updateMessageSummary");
           contactor.lastMessageSummary = contactor.getLastMessageSummary();
           this.$forceUpdate();
         });

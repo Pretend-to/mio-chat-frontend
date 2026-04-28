@@ -410,7 +410,6 @@ export default {
         result.push({
           type: "image",
           data: {
-            // file: matches[2].length > 200 ? matches[2] : `/api/proxy?url=${matches[2]}`,
             file: matches[2],
           },
         });
@@ -450,21 +449,37 @@ export default {
     initContactor(contactor) {
       contactor.active = true;
 
-      // 如果 Socket 已连接，主动发送 enter_chat 信号尝试同步流式缓存
-      if (client.socket && client.socket.available) {
-        client.socket.enterChat(contactor.id);
-      }
-
-      // 监听重连事件：一旦 Socket 重新连接并登录成功，再次同步
-      const onSocketConnect = () => {
-        if (contactor.active) {
+      // 核心修复：处理生产环境下 socket 实例延迟初始化的竞争问题
+      const trySync = () => {
+        if (client.socket && client.socket.available) {
           client.socket.enterChat(contactor.id);
+          return true;
+        }
+        return false;
+      };
+
+      // 绑定重连后的同步逻辑
+      contactor._socketConnectHandler = () => {
+        if (contactor.active) {
+          trySync();
         }
       };
+
+      const bindSocketEvents = (socket) => {
+        socket.on("connect", contactor._socketConnectHandler);
+        // 如果当前是激活状态，立即尝试同步
+        if (contactor.active) trySync();
+      };
+
+      // 1. 如果 Socket 已经存在，直接绑定
+      if (client.socket) {
+        bindSocketEvents(client.socket);
+      } 
       
-      // 这里的 'connect' 是 websocket.js 中监听到系统 login 消息后触发的
-      contactor._socketConnectHandler = onSocketConnect;
-      client.socket?.on("connect", contactor._socketConnectHandler);
+      // 2. 无论 Socket 是否存在，都注册就绪事件
+      client.on("socket_ready", (socket) => {
+        bindSocketEvents(socket);
+      });
 
       contactor.on("revMessage", (message) => {
         this.activeContactor.messageChain.push(message);
@@ -472,7 +487,6 @@ export default {
         client.setLocalStorage(); // 持久化新收到的消息（包含 blank msg）
       });
       contactor.on("delMessage", (index) => {
-        console.log(`删除消息${index}`);
         // 从消息链中删除消息
         this.activeContactor.messageChain.splice(index, 1);
         this.toupdate = true;
@@ -488,7 +502,8 @@ export default {
         this.toupdate = true;
       });
 
-      contactor.on("syncMessage", (e) => {
+      contactor.on("syncMessage", () => {
+        this.$forceUpdate();
         this.toupdate = true;
       });
 
@@ -516,7 +531,7 @@ export default {
         this.toupdate = true;
         this.$forceUpdate();
         this.activeContactor.loadName();
-        client.setLocalStorage(); // 持久化完整消息
+        await client.saveNow(); // 立即持久化完整消息，不走防抖
         console.log(e);
       });
     },
@@ -705,6 +720,7 @@ export default {
               await this.activeContactor.retryMessage(validMessage.id);
               validMessage.status = "retrying";
               this.retryList.push(validMessage.id);
+              client.saveNow(); // 立即保存 blank 状态，防止刷新后旧内容复活
             } catch (error) {
               this.$message.error(error.message || "重试失败");
               return;

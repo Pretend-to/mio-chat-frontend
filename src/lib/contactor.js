@@ -98,13 +98,14 @@ export default class Contactor extends EventEmmiter {
 
     if (chunks && Array.isArray(chunks)) {
       const now = Date.now();
+
       chunks.forEach((chunk) => {
         if (chunk.type === "reasoningContent") {
           newContent.push({
-            type: "reason", // 必须是 reason 类型
+            type: "reason",
             data: { 
               text: chunk.content,
-              startTime: now // 补齐渲染所需的开始时间
+              startTime: now
             },
           });
         } else if (chunk.type === "content") {
@@ -130,7 +131,6 @@ export default class Contactor extends EventEmmiter {
     }
 
     this.emitMessageUpdated();
-    console.log(`[Sync] 消息 ${messageId} 已完成顺序对齐，当前状态: ${status}`);
   }
 
   /**

@@ -28,7 +28,8 @@ export default class Client extends EventEmitter {
     this.name = "user"; // Fixed
     this.config = config; // Parameter
 
-    this.setLocalStorage = debounce(this.setLocalStorage.bind(this), 500); // 防抖时间设置为 1000 毫秒 (1 秒)
+    this.saveNow = this._setLocalStorage.bind(this); // 立即持久化，用于关键节点
+    this.setLocalStorage = debounce(this.saveNow, 500); // 防抖版本，用于高频更新
   }
 
   /**
@@ -385,7 +386,7 @@ export default class Client extends EventEmitter {
   /**
    * Save user information to localStorage
    */
-  async setLocalStorage() {
+  async _setLocalStorage() {
     // await localforage.setItem("client", JSON.stringify(this));
     const client = {
       id: this.id,
@@ -411,6 +412,7 @@ export default class Client extends EventEmitter {
         console.log("Login successful");
         this.isConnected = true;
         this.socket = socket;
+        this.emit("socket_ready", socket);
         this.config.setLlmModels(info.models);
         this.addMsgListener();
         if (this.contactList.length == 0) {
@@ -464,12 +466,12 @@ export default class Client extends EventEmitter {
 
     this.socket.on("llm_message", (e) => {
       const data = e.data;
-      const { metaData } = data;
-      if (metaData.contactorId) {
+      const { metaData } = data || {};
+      
+      if (metaData?.contactorId) {
         const contactor = this.getContactor(metaData.contactorId);
         if (contactor) {
           contactor.handleLLMMessageEvent(e);
-          // this.setLocalStorage();
         }
       }
     });

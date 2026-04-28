@@ -140,7 +140,7 @@ export default class Socket extends EventEmitter {
       transports: transports, // <-- 使用指定的 transports
       auth: { id: this.id, token: this.code },
       reconnection: true, // 保持开启，让 Socket.IO 处理后续的重连尝试
-      reconnectionAttempts: Infinity, 
+      reconnectionAttempts: Infinity,
       reconnectionDelay: 3000, // 固定 3 秒重连一次
       reconnectionDelayMax: 3000, // 将最大延迟设为与初始延迟相同，即可实现固定频率重连
       timeout: 10000, // 缩短超时时间，加快重连周转
@@ -182,7 +182,7 @@ export default class Socket extends EventEmitter {
    * @param {String} message - The received message
    */
   messageHandler(message) {
-    console.log("WebSocket received message", message);
+    // console.log("WebSocket received message", message);
     try {
       const e = JSON.parse(message);
       if (e.protocol === "llm") {
@@ -195,7 +195,7 @@ export default class Socket extends EventEmitter {
         if (e.type === "login") this.emit("connect", e.data);
         this.emit("system_message", e);
       }
-      this.emit(e.request_id, e)
+      this.emit(e.request_id, e);
       this.pendingRequests.delete(e.request_id); // Remove request_id
     } catch (error) {
       console.error("JSON parsing failed:", error, "Received:", message); // Log received message on error

@@ -52,7 +52,7 @@ export default class Openai extends Adapter {
       this.emit(eventName, { ...detail, messageId });
     };
 
-    console.log("Received chunk from LLM:", chunk);
+    // console.log("Received chunk from LLM:", chunk);
     if (["update", "sync"].includes(chunk.message)) {
       const updateHandlers = {
         reasoningContent: (content) =>
@@ -60,10 +60,11 @@ export default class Openai extends Adapter {
         content: (content) => emitEvent("updateMessage", { chunk: content }),
         toolCall: (tool_call) => emitEvent("updateToolCall", { tool_call }),
         // 'sync' 类型传递全量结构化快照数组
-        sync: (data) => emitEvent("syncMessage", { 
-          chunks: data.chunks, 
-          status: data.status 
-        }),
+        sync: (data) =>
+          emitEvent("syncMessage", {
+            chunks: data.chunks,
+            status: data.status,
+          }),
       };
 
       const data = chunk.data;
