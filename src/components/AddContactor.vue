@@ -351,43 +351,48 @@ const getProviderColor = (provider) => {
   return colorMap[provider?.toLowerCase()] || '#f5f5f5'; // 默认浅灰色
 };
 
-const handleAddByShareCode = () => {
+const handleAddByShareCode = async () => {
   if (!shareCode.value.trim()) {
     ElMessage.warning('请输入分享码');
     return;
   }
 
   const code = shareCode.value.trim();
+  let shareId = code;
 
-  // 判断是否为纯数字
-  if (/^\d+$/.test(code)) {
-    router.push(`/chat/0?shareId=${code}`);
-    close();
-    return;
-  }
+  // 判断是否为链接并提取 shareId
+  if (!/^\d+$/.test(code)) {
+    try {
+      const url = new URL(code);
+      const currentHost = window.location.host;
 
-  // 判断是否为链接
-  try {
-    const url = new URL(code);
-    const currentHost = window.location.host;
-
-    if (url.host === currentHost) {
-      const match = url.pathname.match(/^\/s\/(\d+)$/);
-      if (match) {
-        router.push(url.pathname);
-        close();
-        return;
+      if (url.host === currentHost) {
+        const match = url.pathname.match(/^\/s\/(\d+)$/);
+        if (match) {
+          shareId = match[1];
+        } else {
+          ElMessage.error('链接格式不正确，应为 /s/数字');
+          return;
+        }
       } else {
-        ElMessage.error('链接格式不正确，应为 /s/数字');
+        ElMessage.error('链接域名与当前网站不一致');
         return;
       }
-    } else {
-      ElMessage.error('链接域名与当前网站不一致');
+    } catch (e) {
+      ElMessage.error('请输入有效的分享码或分享链接');
       return;
     }
-  } catch (e) {
-    ElMessage.error('请输入有效的分享码或分享链接');
-    return;
+  }
+
+  // 直接在组件内完成加载逻辑，不依赖 router 传递状态
+  ElMessage.info("正在获取远程 Agent 信息...");
+  const contactorId = await client.loadOriginalContactors(shareId);
+  if (contactorId) {
+    ElMessage.success("成功加载远程 Agent");
+    router.push(`/chat/${contactorId}`);
+    close();
+  } else {
+    ElMessage.error("加载失败，分享码可能无效");
   }
 };
 

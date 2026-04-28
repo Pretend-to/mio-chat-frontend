@@ -44,6 +44,32 @@ const router = createRouter({
       component: AuthView,
     },
     {
+      path: "/s/:shareId",
+      name: "share_link",
+      component: BlankView,
+      beforeEnter: async (to, from, next) => {
+        // Handle direct share links
+        const shareId = to.params.shareId;
+        
+        // Ensure client is initialized (wait for it if necessary)
+        if (!client.inited) {
+          // Pre-init isn't complete, let the App.vue or main.js handle the initialization
+          // But since this route is matched, we can just load the contactor
+          await client.preInit(); 
+        }
+
+        ElMessage.info("正在获取远程 Agent 信息...");
+        const contactorId = await client.loadOriginalContactors(shareId);
+        if (contactorId) {
+          ElMessage.success("成功加载分享的 Agent");
+          next(`/chat/${contactorId}`);
+        } else {
+          ElMessage.error("分享链接无效或已过期");
+          next("/");
+        }
+      }
+    },
+    {
       path: "/settings",
       name: "settings",
       component: SettingsView,

@@ -26,7 +26,6 @@ export default {
   },
   data() {
     let preview = false;
-    let shareId = undefined;
     let contactor = undefined;
     let scroll = true;
 
@@ -41,10 +40,6 @@ export default {
       if (params.get("preview") === "true") {
         preview = true;
       }
-    }
-    // 检查URL参数是否有shareId参数
-    if (params.has("shareId")) {
-      shareId = params.get("shareId");
     }
     if (params.has("scroll")) {
       scroll = params.get("scroll") || "true";
@@ -62,7 +57,6 @@ export default {
         path: `/chat/${defaultId}`,
         query: {
           preview,
-          shareId,
         },
       });
       contactor = client.getContactor(defaultId);
@@ -87,7 +81,6 @@ export default {
     return {
       scroll,
       preview,
-      shareId,
       activeContactor: contactor,
       showwindow: true,
       showemoji: false,
@@ -221,25 +214,6 @@ export default {
       const pageHeight = window.innerHeight;
       this.inputBarTop = pageHeight - element.offsetTop;
       console.log(this.inputBarTop);
-    }
-
-
-    if (this.shareId) {
-      const loadAble = await client.loadOriginalContactors(this.shareId);
-      if (loadAble) {
-        this.$router.push({
-          path: "/chat/" + this.shareId,
-          query: {
-            preview: this.preview,
-            scroll: false,
-          },
-        });
-      } else {
-        this.$message({
-          message: "分享链接已失效",
-          type: "error",
-        });
-      }
     }
   },
   updated() {
