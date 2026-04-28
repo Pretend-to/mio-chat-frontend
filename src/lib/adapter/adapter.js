@@ -12,6 +12,10 @@ export default class Adapter extends EventEmitter {
     super();
   }
 
+  get isConnected() {
+    return client.isConnected && client.socket?.available;
+  }
+
   async fetch(url, data) {
     return await client.socket.fetch(url, data);
   }

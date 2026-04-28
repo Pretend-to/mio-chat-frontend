@@ -519,7 +519,7 @@ export default {
         this.uploaded.images = [];
         this.uploaded.files = [];
       } catch (error) {
-        this.$message.error("发送消息失败");
+        this.$message.error(error.message || "发送消息失败");
       }
     },
     getSafeText(text) {

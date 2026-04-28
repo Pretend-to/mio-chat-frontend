@@ -450,9 +450,26 @@ export default {
     initContactor(contactor) {
       contactor.active = true;
 
+      // 如果 Socket 已连接，主动发送 enter_chat 信号尝试同步流式缓存
+      if (client.socket && client.socket.available) {
+        client.socket.enterChat(contactor.id);
+      }
+
+      // 监听重连事件：一旦 Socket 重新连接并登录成功，再次同步
+      const onSocketConnect = () => {
+        if (contactor.active) {
+          client.socket.enterChat(contactor.id);
+        }
+      };
+      
+      // 这里的 'connect' 是 websocket.js 中监听到系统 login 消息后触发的
+      contactor._socketConnectHandler = onSocketConnect;
+      client.socket?.on("connect", contactor._socketConnectHandler);
+
       contactor.on("revMessage", (message) => {
         this.activeContactor.messageChain.push(message);
         this.toupdate = true;
+        client.setLocalStorage(); // 持久化新收到的消息（包含 blank msg）
       });
       contactor.on("delMessage", (index) => {
         console.log(`删除消息${index}`);
@@ -469,7 +486,10 @@ export default {
           });
         }
         this.toupdate = true;
-        client.setLocalStorage(); //持久化存储
+      });
+
+      contactor.on("syncMessage", (e) => {
+        this.toupdate = true;
       });
 
       contactor.on(`completeMessage`, async (e) => {
@@ -496,7 +516,7 @@ export default {
         this.toupdate = true;
         this.$forceUpdate();
         this.activeContactor.loadName();
-        client.setLocalStorage(); //持久化存储
+        client.setLocalStorage(); // 持久化完整消息
         console.log(e);
       });
     },
@@ -507,6 +527,12 @@ export default {
         contactor.off(`revMessage`);
         contactor.off(`delMessage`);
         contactor.off(`completeMessage`);
+        contactor.off(`syncMessage`);
+
+        if (contactor._socketConnectHandler) {
+          client.socket?.off("connect", contactor._socketConnectHandler);
+          delete contactor._socketConnectHandler;
+        }
       }
     },
     getReplyText(id) {
@@ -634,7 +660,7 @@ export default {
     getseletedMessage() {
       return this.activeContactor.messageChain[this.validMessageIndex];
     },
-    handleMessageOption(option) {
+    async handleMessageOption(option) {
       const message = this.getseletedMessage();
       switch (option) {
         case "multi-select":
@@ -675,9 +701,14 @@ export default {
               });
               return;
             }
-            this.activeContactor.retryMessage(validMessage.id);
-            validMessage.status = "retrying";
-            this.retryList.push(validMessage.id);
+            try {
+              await this.activeContactor.retryMessage(validMessage.id);
+              validMessage.status = "retrying";
+              this.retryList.push(validMessage.id);
+            } catch (error) {
+              this.$message.error(error.message || "重试失败");
+              return;
+            }
           }
           this.toButtom();
           break;

@@ -140,12 +140,10 @@ export default class Socket extends EventEmitter {
       transports: transports, // <-- 使用指定的 transports
       auth: { id: this.id, token: this.code },
       reconnection: true, // 保持开启，让 Socket.IO 处理后续的重连尝试
-      reconnectionAttempts: Infinity, // 可以为 polling 设置不同的重试次数
-      reconnectionDelay: 2000,
-      reconnectionDelayMax: 10000,
-      timeout: 15000, // 可以为 polling 调整超时
-      // 重要：强制新的连接尝试，而不是升级现有连接（如果适用）
-      // 对于 polling，这通常不是问题，但加上无妨
+      reconnectionAttempts: Infinity, 
+      reconnectionDelay: 3000, // 固定 3 秒重连一次
+      reconnectionDelayMax: 3000, // 将最大延迟设为与初始延迟相同，即可实现固定频率重连
+      timeout: 10000, // 缩短超时时间，加快重连周转
       forceNew: true,
     });
 
@@ -303,5 +301,20 @@ export default class Socket extends EventEmitter {
     };
     this.sendMessage(request);
     console.log("WebSocket sending request", request);
+  }
+
+  /**
+   * Enter chat room and request stream sync
+   * @param {String} contactorId - Contactor ID
+   */
+  enterChat(contactorId) {
+    const request = {
+      request_id: randomString(16),
+      protocol: "llm",
+      type: "enter_chat",
+      data: { contactorId },
+    };
+    this.sendMessage(request);
+    console.log("WebSocket sending enter_chat", request);
   }
 }

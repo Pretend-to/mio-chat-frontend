@@ -80,8 +80,57 @@ export default class Contactor extends EventEmmiter {
     this.kernel.on("updateReasoning", this.handleUpdateReasoning.bind(this));
     this.kernel.on("updateMessage", this.handleUpdateMessage.bind(this));
     this.kernel.on("updateToolCall", this.handleUpdateToolCall.bind(this));
+    this.kernel.on("syncMessage", this.handleSyncMessage.bind(this));
     this.kernel.on("completeMessage", this.handleCompleteMessage.bind(this));
     this.kernel.on("failedMessage", this.handleFailedMessage.bind(this));
+  }
+
+  /**
+   * 处理全量结构化同步消息 (确保顺序)
+   */
+  handleSyncMessage(e) {
+    const { chunks, status, messageId } = e;
+
+    const rawMessage = this.getRawMessage(messageId);
+    if (!rawMessage) return;
+
+    const newContent = [];
+
+    if (chunks && Array.isArray(chunks)) {
+      const now = Date.now();
+      chunks.forEach((chunk) => {
+        if (chunk.type === "reasoningContent") {
+          newContent.push({
+            type: "reason", // 必须是 reason 类型
+            data: { 
+              text: chunk.content,
+              startTime: now // 补齐渲染所需的开始时间
+            },
+          });
+        } else if (chunk.type === "content") {
+          newContent.push({
+            type: "text",
+            data: { text: chunk.content },
+          });
+        } else if (chunk.type === "toolCall") {
+          newContent.push({
+            type: "tool_call",
+            data: chunk.content,
+          });
+        }
+      });
+    }
+
+    rawMessage.content = newContent;
+
+    if (status === "completed") {
+      rawMessage.status = "completed";
+    } else if (status === "failed") {
+      rawMessage.status = "failed";
+    }
+
+    this.emitMessageUpdated();
+    console.log(`[Sync] 消息 ${messageId} 已完成顺序对齐，当前状态: ${status}`);
   }
 
   /**
@@ -547,6 +596,11 @@ export default class Contactor extends EventEmmiter {
    * 从网页前端发来的消息
    */
   async webSend(message, toServer = true) {
+    // --- 核心修复：前置校验连接状态 ---
+    if (toServer && !this.kernel.isConnected) {
+      throw new Error("连接已断开，请检查网络或刷新页面");
+    }
+
     this.updateLastUpdate();
     this.messageChain.push(message);
     this.updateMessageSummary();
@@ -580,6 +634,11 @@ export default class Contactor extends EventEmmiter {
   }
 
   async retryMessage(id) {
+    // --- 核心修复：前置校验连接状态 ---
+    if (!this.kernel.isConnected) {
+      throw new Error("连接已断开，无法重试");
+    }
+
     const message = this.getMessageById(id);
     if (message) {
       message.content = [
