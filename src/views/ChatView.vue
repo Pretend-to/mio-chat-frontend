@@ -869,6 +869,8 @@ export default {
         // Build export container with broader width, mirroring chatwindow bg
         exportEl = document.createElement('div');
         exportEl.id = 'chat-window';
+        // 核心修复：增加 .is-exporting 类，用于在 CSS 中强制禁用 content-visibility
+        exportEl.className = 'is-exporting';
         exportEl.style.cssText = 'position:fixed;left:-9999px;top:0;width:500px;background-color:#f2f2f2;padding:0;box-sizing:border-box;overflow:hidden;';
         document.body.appendChild(exportEl);
 
@@ -1206,6 +1208,11 @@ $icon-hover: #09f
 .message-container
     content-visibility: auto
     contain-intrinsic-size: auto 150px
+
+    // 导出图片时强制禁用懒渲染，确保截图完整
+    .is-exporting &
+        content-visibility: visible !important
+        contain: none !important
     
 .message-flex-wrapper
     display: flex
