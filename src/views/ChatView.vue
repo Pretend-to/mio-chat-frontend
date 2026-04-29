@@ -925,19 +925,28 @@ export default {
         footer.appendChild(qrImg);
         exportEl.appendChild(footer);
 
-        // Wait for images to load (Header Icon and QR)
-        const loadPromises = [];
-        if (!headerIcon.complete) {
-          loadPromises.push(new Promise(resolve => {
-            headerIcon.onload = resolve; headerIcon.onerror = resolve; setTimeout(resolve, 1500);
-          }));
-        }
-        if (!qrImg.complete) {
-          loadPromises.push(new Promise(resolve => {
-            qrImg.onload = resolve; qrImg.onerror = resolve; setTimeout(resolve, 1500);
-          }));
-        }
-        await Promise.all(loadPromises);
+        // 等待所有图片加载（含消息内嵌图、头像、二维码等）
+        const allImgs = Array.from(exportEl.querySelectorAll('img'));
+        const imgPromises = allImgs.map(img => {
+          // 跨域图片必须在 src 赋值前设置 crossOrigin，克隆节点时已经有 src 了
+          // 需要重置 src 才能触发带 CORS 头的请求
+          if (img.src && img.src.startsWith('http') && !img.src.includes(window.location.host)) {
+            const originalSrc = img.src;
+            img.crossOrigin = 'anonymous';
+            img.src = '';
+            img.src = originalSrc;
+          }
+          if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+          return new Promise(resolve => {
+            img.onload = resolve;
+            img.onerror = resolve;
+            setTimeout(resolve, 2000); // 2s 超时兜底，防止永久卡住
+          });
+        });
+
+        await Promise.all(imgPromises);
+        // 双帧 RAF 确保浏览器完成回流重绘
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
         // Explicitly set dpr: 1 to override the mobile device's high devicePixelRatio (e.g., 3).
         // This ensures the canvas width strictly remains 500 * 2 = 1000px, 
