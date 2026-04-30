@@ -1,0 +1,132 @@
+/* mdpreviewer */
+
+.mio-previewer {
+  background-color: transparent;
+  overflow-x: auto;
+}
+
+.mio-previewer p {
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0.2rem 0;
+}
+
+.mio-previewer * {
+  user-select: text;
+}
+
+.message-body#user .mio-previewer h1,
+.message-body#user .mio-previewer h2,
+.message-body#user .mio-previewer h3,
+.message-body#user .mio-previewer h4,
+.message-body#user .mio-previewer h5,
+.message-body#user .mio-previewer h6,
+.message-body#user .mio-previewer li,
+.message-body#user .mio-previewer ul,
+.message-body#user .mio-previewer p {
+  color: aliceblue;
+  background-color: transparent;
+}
+
+figure {
+  margin: 0;
+}
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  -webkit-box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+  background: #adacac8a;
+}
+
+.el-popper__arrow {
+  display: none;
+}
+
+.code-block {
+  font-size: 0.8rem;
+}
+
+.bu-emoji .el-select {
+  position: absolute;
+  right: 1.5rem;
+  width: 1rem;
+  opacity: 0%;
+}
+
+.bu-emoji .el-select:hover + i {
+  color: rgb(0, 153, 255);
+}
+
+@media (max-width: 600px) {
+  .code-block {
+    font-size: 0.6rem;
+  }
+}
+
+.md-editor {
+  --md-bk-color: none;
+}
+
+#user code {
+  --md-theme-code-inline-bg-color: rgba(133, 206, 255, 0.562);
+}
+
+.mio-previewer .iframe-wrapper {
+  width: 100%;
+  height: 36rem;
+  border: 0px;
+  resize: both;
+  max-height: none;
+  min-width: none;
+}
+
+/* .pending .mio-previewer > p:last-child,
+.pending .mio-previewer > h1:last-child,
+.pending .mio-previewer > h2:last-child,
+.pending .mio-previewer > h3:last-child,
+.pending .mio-previewer > ul:last-child > li:last-child,
+.pending .mio-previewer > ol:last-child > li:last-child {
+  display: inline;
+  mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 80%, rgba(0, 0, 0, 0));
+  -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 80%, rgba(0, 0, 0, 0));
+} */
+
+.message-body#user a {
+  color: #ffffff;
+}
+
+#message-loading-icon {
+  width: 1rem;
+  height: 1rem;
+  position: relative;
+  display: inline-block;
+  border-radius: 50%; /* 创建圆形 */
+  background-color: #000000; /* 黑色背景 */
+  animation: loading-scale 0.5s infinite alternate; /* 使用缩放动画 */
+  transform-origin: center; /* 从中心点缩放 */
+  bottom: -3px;
+  left: 1px;
+  z-index: 100;
+}
+
+@keyframes loading-scale {
+  from {
+    transform: scale(0.8); /* 初始大小：1rem (对应1)*/
+  }
+  to {
+    transform: scale(0.5); /* 最终大小：0.6rem (0.6/1.25=0.48) */
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .mio-previewer.markdown-body , [data-theme="dark"] {
+    --fgColor-default: black;
+  }
+  .mio-previewer.markdown-body table, [data-theme="dark"] {
+    color: #e3e3e3;
+  }
+}
