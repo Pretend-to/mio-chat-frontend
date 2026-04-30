@@ -98,6 +98,7 @@ export default class Contactor extends EventEmmiter {
 
     if (chunks && Array.isArray(chunks)) {
       const now = Date.now();
+      console.warn(`[DEBUG-SYNC-TOOL] 开始处理 Sync, messageId: ${messageId}`);
 
       chunks.forEach((chunk) => {
         if (chunk.type === "reasoningContent") {
@@ -114,9 +115,27 @@ export default class Contactor extends EventEmmiter {
             data: { text: chunk.content },
           });
         } else if (chunk.type === "toolCall") {
+          console.warn(`[DEBUG-SYNC-TOOL] 收到 toolCall 原始块:`, JSON.stringify(chunk));
+          
+          // 判定工具调用状态（供渲染组件外的其他逻辑使用）
+          let status = "waiting";
+          if (chunk.content.result) {
+            status = "done";
+          } else if (chunk.content.action === "running" || chunk.content.action === "pending") {
+            status = "running";
+          }
+          
+          const toolCallData = {
+            ...chunk.content, // 直接透传所有原始字段，包含 action, parameters, result, id, name
+            arguments: chunk.content.arguments || chunk.content.parameters || "", // 兼容性字段
+            status: status // 兼容性字段
+          };
+          
+          console.warn(`[DEBUG-SYNC-TOOL] 组装后的 tool_call data:`, JSON.stringify(toolCallData));
+          
           newContent.push({
             type: "tool_call",
-            data: chunk.content,
+            data: toolCallData,
           });
         }
       });

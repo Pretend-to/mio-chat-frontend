@@ -159,7 +159,8 @@ import {
   Document,
   Grid,
   Menu,
-  Monitor
+  Monitor,
+  Box
 } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
@@ -190,6 +191,7 @@ const menuItems = [
   { index: 'onebot', label: 'OneBot 配置', icon: ChatDotRound },
   { index: 'plugins', label: '插件管理', icon: Grid },
   { index: 'presets', label: '预设管理', icon: Document },
+  { index: 'storage', label: '存储配置', icon: Box },
   { index: 'logs', label: '日志管理', icon: Document }
 ];
 
@@ -218,6 +220,7 @@ const activeMenu = computed(() => {
   if (path.includes('onebot')) return 'onebot';
   if (path.includes('plugins')) return 'plugins';
   if (path.includes('presets')) return 'presets';
+  if (path.includes('storage')) return 'storage';
   if (path.includes('logs')) return 'logs';
   return 'overview';
 });

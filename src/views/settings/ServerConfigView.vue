@@ -199,7 +199,8 @@ const handleSave = async () => {
     Object.assign(originalData, formData);
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('保存失败：' + error.message);
+      console.error('保存服务器配置失败:', error);
+      ElMessage.error('服务器配置保存失败，请查看控制台详情');
     }
   } finally {
     saving.value = false;

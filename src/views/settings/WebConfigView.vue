@@ -15,13 +15,13 @@
     </div>
 
     <el-alert
-      type="warning"
+      type="success"
       :closable="false"
       show-icon
       style="margin-bottom: 24px;"
     >
       <template #title>
-        修改 Web 配置需要重启服务才能生效
+        Web 配置支持热更新，修改后需刷新页面生效
       </template>
     </el-alert>
 
@@ -190,16 +190,6 @@ const handleSave = async () => {
   try {
     await formRef.value.validate();
     
-    await ElMessageBox.confirm(
-      '修改 Web 配置需要重启服务才能生效，是否继续？',
-      '确认保存',
-      {
-        confirmButtonText: '保存',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    );
-
     saving.value = true;
 
     await configStore.updateConfigSection('web', {
@@ -210,13 +200,18 @@ const handleSave = async () => {
       full_screen: formData.full_screen
     });
 
-    ElMessage.success('配置保存成功，请重启服务使配置生效');
+    ElMessage.success({
+      message: 'Web 配置保存成功，请刷新页面以应用更改。',
+      duration: 5000,
+      showClose: true
+    });
     
     // 更新原始数据
     Object.assign(originalData, formData);
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('保存失败：' + error.message);
+      console.error('保存 Web 配置失败:', error);
+      ElMessage.error('Web 配置保存失败，请查看控制台详情');
     }
   } finally {
     saving.value = false;

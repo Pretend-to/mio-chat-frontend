@@ -1,86 +1,58 @@
 <template>
-  <div class="tool-call-bar">
-    <div class="status-icon">
-      <span v-if="toolCallSuccess" class="call-success-icon">
-        <div class="checkmark-container">
-          <svg
-            class="checkmark"
-            viewBox="0 0 52 36"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <polyline points="1 20 15 36 51 1" />
-          </svg>
-        </div>
-      </span>
-      <span v-else-if="toolCallFail" class="call-fail-icon">❌</span>
-      <span v-else class="call-pend-icon"></span>
+  <div class="tool-call-bar" :class="[toolCall.action, { 'is-success': toolCallSuccess, 'is-fail': toolCallFail }]">
+    <!-- 左侧状态指示器 -->
+    <div class="status-indicator">
+      <div v-if="toolCall.action === 'running' || toolCall.action === 'pending'" class="mini-spinner"></div>
+      <div v-else-if="toolCallSuccess" class="dot success"></div>
+      <div v-else-if="toolCallFail" class="dot fail"></div>
+      <div v-else class="dot started"></div>
     </div>
-    <div class="tool-info">
-      <div>
+    
+    <!-- 中间信息区 -->
+    <div class="tool-content" @click="toggleExtraInfo">
+      <div class="tool-main">
         <span class="tool-name">{{ toolCall.name.split("_mid_")[0] }}</span>
-      </div>
-      <div class="tool-status">
-        {{ call_status }}
+        <span class="tool-status-text">{{ call_status }}</span>
       </div>
     </div>
-    <div class="extra-info">
+
+    <!-- 右侧操作区 -->
+    <div class="tool-actions">
       <button
         ref="show-extra-info"
-        :class="{ active: showExtraInfo, 'extra-info-button': true }"
+        :class="{ active: showExtraInfo, 'action-btn': true }"
         @click="toggleExtraInfo"
       >
-        <svg
-          t="1731677922196"
-          class="icon"
-          viewBox="0 0 1024 1024"
-          version="1.1"
-          xmlns="http://www.w3.org/2000/svg"
-          p-id="5948"
-          width="16"
-          height="16"
-        >
-          <path
-            d="M778.965749 128.759549l-383.064442 383.063419 388.097062 388.096039-0.070608 0.033769c12.709463 13.137205 20.529569 31.024597 20.529569 50.731428 0 40.376593-32.736589 73.112158-73.115228 73.112158-19.705807 0-37.591153-7.819083-50.730405-20.528546l-0.034792 0.035816L241.890654 564.622498l0.035816-0.035816c-13.779841-13.281491-22.3838-31.915897-22.3838-52.585659 0-0.071631 0-0.106424 0-0.178055 0-0.072655 0-0.10847 0-0.144286 0-20.669762 8.603959-39.341007 22.3838-52.622498l-0.035816-0.034792L680.573835 20.337187l0.180102 0.179079c13.139252-12.5662 30.950919-20.313651 50.587142-20.313651 40.378639 0 73.115228 32.736589 73.115228 73.114205C804.455283 95.485725 794.567076 115.334795 778.965749 128.759549z"
-            p-id="5949"
-          ></path>
+        <svg class="chevron" viewBox="0 0 1024 1024" width="14" height="14">
+          <path d="M778.965749 128.759549l-383.064442 383.063419 388.097062 388.096039-0.070608 0.033769c12.709463 13.137205 20.529569 31.024597 20.529569 50.731428 0 40.376593-32.736589 73.112158-73.115228 73.112158-19.705807 0-37.591153-7.819083-50.730405-20.528546l-0.034792 0.035816L241.890654 564.622498l0.035816-0.035816c-13.779841-13.281491-22.3838-31.915897-22.3838-52.585659 0-0.071631 0-0.106424 0-0.178055 0-0.072655 0-0.10847 0-0.144286 0-20.669762 8.603959-39.341007 22.3838-52.622498l-0.035816-0.034792L680.573835 20.337187l0.180102 0.179079c13.139252-12.5662 30.950919-20.313651 50.587142-20.313651 40.378639 0 73.115228 32.736589 73.115228 73.114205C804.455283 95.485725 794.567076 115.334795 778.965749 128.759549z" fill="currentColor"></path>
         </svg>
       </button>
     </div>
+
     <teleport to="body">
-      <div
-        v-if="showExtraInfo"
-        ref="teleportContent"
-        class="extra-info-bar"
-        :class="{ active: showExtraInfo, upward: openUp }"
-        :style="teleportStyle"
-        @click.stop
-      >
-        <div class="extra-detail">
-          <div class="detail-params">
-            <div class="detail-title">
-              <span>参数</span>
-              <button class="copy-btn" @click="copyParameters" title="复制参数">
-                <i class="iconfont fuzhi" title="复制参数"></i>
-              </button>
-            </div>
-            <div class="detail-content">
-              {{ toolCall.parameters }}
+      <transition name="panel-fade">
+        <div
+          v-if="showExtraInfo"
+          ref="teleportContent"
+          class="detail-panel"
+          :class="{ upward: openUp }"
+          :style="teleportStyle"
+          @click.stop
+        >
+          <div class="detail-header">
+            <span class="header-title">执行细节</span>
+            <div class="header-actions">
+              <button class="mini-btn" @click="copyParameters" title="复制参数">参数</button>
+              <button class="mini-btn" @click="copyResult" title="复制结果">结果</button>
             </div>
           </div>
-
-          <div class="detail-result">
-            <div class="detail-title">
-              <span>返回值</span>
-              <button class="copy-btn" @click="copyResult" title="复制返回值">
-                <i class="iconfont fuzhi" title="复制返回值"></i>
-              </button>
-            </div>
-            <div class="detail-content">
-              {{ toolCall.result }}
-            </div>
+          <div class="detail-body">
+            <pre class="json-box">{{ formattedParameters }}</pre>
+            <div class="divider"></div>
+            <pre class="json-box" :class="{ 'error-text': toolCallFail }">{{ formattedResult }}</pre>
           </div>
         </div>
-      </div>
+      </transition>
     </teleport>
   </div>
 </template>
@@ -102,387 +74,234 @@ export default {
   },
   computed: {
     toolCallSuccess() {
-      return (
-        this.toolCall.action === "finished" && !this.toolCall?.result?.error
-      );
+      return this.toolCall.action === "finished" && !this.toolCall?.result?.error;
     },
     toolCallFail() {
-      return (
-        this.toolCall.action === "finished" && this.toolCall?.result?.error
-      );
+      return (this.toolCall.action === "finished" && this.toolCall?.result?.error) || (this.toolCall.action === "failed");
     },
     call_status() {
-      if (this.toolCall.action == "started") return "开始运行";
-      if (this.toolCall.action == "pending") return "函数构建中";
-      if (this.toolCall.action == "running") return "函数运行中";
-      if (this.toolCallSuccess) return "函数运行成功";
-      if (this.toolCallFail) return "函数运行失败";
-      else return "未知状态";
+      if (this.toolCall.action == "started") return "就绪";
+      if (this.toolCall.action == "pending") return "准备中";
+      if (this.toolCall.action == "running") return "执行中";
+      if (this.toolCallSuccess) return "完成";
+      if (this.toolCallFail) return "失败";
+      return "未知";
     },
+    formattedParameters() {
+      const p = this.toolCall.parameters;
+      if (!p) return "{}";
+      try {
+        const obj = typeof p === "string" ? JSON.parse(p) : p;
+        return JSON.stringify(obj, null, 2);
+      } catch (e) { return String(p); }
+    },
+    formattedResult() {
+      const r = this.toolCall.result;
+      if (r === undefined || r === null) return "等待中...";
+      try {
+        const obj = typeof r === "string" ? JSON.parse(r) : r;
+        return JSON.stringify(obj, null, 2);
+      } catch (e) { return String(r); }
+    }
   },
-  mounted() {},
   methods: {
     async copyToClipboard(text) {
       try {
         await navigator.clipboard.writeText(text);
-        // element-plus / global $message is used elsewhere in the project
-        if (this.$message) this.$message({ message: "已复制到剪贴板", type: "success" });
-      } catch (e) {
-        if (this.$message) this.$message({ message: "复制失败", type: "error" });
-      }
+        if (this.$message) this.$message({ message: "已复制", type: "success", duration: 1500 });
+      } catch (e) {}
     },
-    copyParameters() {
-      const p = this.toolCall.parameters;
-      const text = typeof p === "string" ? p : JSON.stringify(p, null, 2);
-      this.copyToClipboard(text);
-    },
-    copyResult() {
-      const r = this.toolCall.result;
-      const text = typeof r === "string" ? r : JSON.stringify(r, null, 2);
-      this.copyToClipboard(text);
-    },
-    toggleExtraInfo(event) {
+    copyParameters() { this.copyToClipboard(this.formattedParameters); },
+    copyResult() { this.copyToClipboard(this.formattedResult); },
+    toggleExtraInfo() {
       this.showExtraInfo = !this.showExtraInfo;
       if (this.showExtraInfo) {
         this.positionTeleport();
-        // attach global listener to detect outside click
         window.addEventListener("resize", this.positionTeleport);
         document.addEventListener("click", this.onDocClick);
-      } else {
-        window.removeEventListener("resize", this.positionTeleport);
-        document.removeEventListener("click", this.onDocClick);
-      }
+      } else { this.cleanup(); }
     },
     onDocClick(e) {
-      // if clicked outside component root and teleport content, close
       const root = this.$el;
       const t = this.$refs.teleportContent;
       if (root && !root.contains(e.target) && t && !t.contains(e.target)) {
         this.showExtraInfo = false;
-        window.removeEventListener("resize", this.positionTeleport);
-        document.removeEventListener("click", this.onDocClick);
+        this.cleanup();
       }
     },
+    cleanup() {
+      window.removeEventListener("resize", this.positionTeleport);
+      document.removeEventListener("click", this.onDocClick);
+    },
     positionTeleport() {
-      // Compute root position (tool-call-bar) and place teleport content below by default
       const root = this.$el;
       if (!root) return;
       const rootRect = root.getBoundingClientRect();
-
-      // left align with the left edge of the component
-      const left = Math.max(8, rootRect.left);
-      const initialTop = rootRect.bottom + 8;
-
-      // set a temporary style so the element renders, then measure
+      const left = Math.max(12, rootRect.left);
       this.teleportStyle = {
         position: "fixed",
-        top: initialTop + "px",
+        top: (rootRect.bottom + 8) + "px",
         left: left + "px",
-        minWidth: rootRect.width + "px",
+        width: Math.min(320, window.innerWidth - 24) + "px",
         zIndex: 10000,
       };
-
       this.$nextTick(() => {
         const content = this.$refs.teleportContent;
         if (!content) return;
         const contentRect = content.getBoundingClientRect();
-        const contentHeight = contentRect.height;
-        const contentWidth = contentRect.width;
-
-        // recompute left to avoid overflow on the right
-        let finalLeft = left;
-        if (finalLeft + contentWidth + 8 > window.innerWidth) {
-          finalLeft = Math.max(8, window.innerWidth - contentWidth - 8);
-        }
-
-        // decide upward or downward based on available space below
-        if (rootRect.bottom + contentHeight + 12 > window.innerHeight) {
-          // open upwards
-          const topUp = rootRect.top - contentHeight - 8;
+        if (rootRect.bottom + contentRect.height + 20 > window.innerHeight) {
           this.openUp = true;
-          this.teleportStyle = {
-            position: "fixed",
-            top: topUp + "px",
-            left: finalLeft + "px",
-            minWidth: rootRect.width + "px",
-            zIndex: 10000,
-          };
-        } else {
-          this.openUp = false;
-          this.teleportStyle = {
-            position: "fixed",
-            top: initialTop + "px",
-            left: finalLeft + "px",
-            minWidth: rootRect.width + "px",
-            zIndex: 10000,
-          };
+          this.teleportStyle.top = (rootRect.top - contentRect.height - 8) + "px";
         }
       });
     },
   },
-  beforeUnmount() {
-    window.removeEventListener("resize", this.positionTeleport);
-    document.removeEventListener("click", this.onDocClick);
-  },
+  beforeUnmount() { this.cleanup(); },
 };
 </script>
+
 <style scoped>
-.extra-detail {
-  overflow: hidden;
+.tool-call-bar {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  flex-grow: 1;
-  padding-bottom: 1rem;
-  width: 20rem;
+  padding: 0 12px;
+  height: 40px;
+  border-radius: 10px;
+  margin: 8px 0;
+  background: #f0f7ff; /* Default Blue Tint (Option A) */
+  border: 1px solid #d9ecff;
+  transition: all 0.2s ease;
+  user-select: none;
 }
 
-.detail-params,
-.detail-result {
-  margin-top: 1rem;
-  width: 18rem;
-  background-color: #fff;
-  border-radius: 0.5rem;
+/* 状态配色 (Option A Style) */
+.tool-call-bar.is-success { background: #f6ffed; border-color: #d9f7be; }
+.tool-call-bar.is-fail { background: #fff1f0; border-color: #ffccc7; }
+.tool-call-bar.running, .tool-call-bar.pending { background: #e6f7ff; border-color: #91d5ff; }
+
+.status-indicator {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  align-items: center;
+  width: 20px;
+  margin-right: 10px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.dot.success { background: #52c41a; box-shadow: 0 0 6px rgba(82, 196, 26, 0.4); }
+.dot.fail { background: #ff4d4f; box-shadow: 0 0 6px rgba(255, 77, 79, 0.4); }
+.dot.started { background: #bfbfbf; }
+
+.mini-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(24, 144, 255, 0.2);
+  border-top-color: #1890ff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.tool-content {
   flex-grow: 1;
-}
-
-.detail-title {
-  padding-top: 0.5rem;
-  flex-basis: 2rem;
-  width: 90%;
-  border-bottom: 1px solid #5c5c5c;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.detail-content {
-  user-select: text;
-  margin: 0.5rem 0rem;
-  font-size: 0.8rem;
-  color: #5c5c5c;
-  width: 90%;
-  /* allow wrapping and preserve newlines from formatted JSON/text */
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  overflow-y: auto;
-  overflow-x: hidden;
-  max-height: 8rem;
-  flex-grow: 1;
-}
-
-.extra-info-bar {
-  overflow: hidden;
-  z-index: 2;
-  max-height: 0px;
-  top: 4rem;
-  position: absolute;
-  background-color: #f5f5f5;
-  border-radius: 0.5rem;
-  box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-}
-
-.extra-info-bar.active {
-  max-height: 50rem;
-}
-
-.tool-info {
-  flex-grow: 1;
-  flex-basis: 10rem;
-  flex-shrink: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-evenly;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  margin-right: 0.5rem;
-}
-
-.extra-info {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-basis: 3rem;
-  min-width: 3rem;
-}
-
-button.extra-info-button {
-  transition: transform 0.3s ease;
-  transform: rotate(90deg);
-}
-
-button.extra-info-button.active {
-  transform: rotate(-90deg);
-}
-
-button.extra-info-button:hover svg {
-  transition: transform 0.3s ease;
-  transform: scale(1.2);
-}
-
-.copy-btn {
-  border: none;
-  background: transparent;
   cursor: pointer;
-  padding: 0.15rem 0.25rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #5c5c5c;
+  overflow: hidden;
 }
 
-.copy-btn:hover {
-  color: #09f;
+.tool-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .tool-name {
-  font-weight: bolder;
+  font-size: 13px;
+  font-weight: 600;
+  color: #262626;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.tool-call-bar {
-  max-width: 100%;
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
-  height: 4rem;
-  flex-wrap: nowrap;
-  background-color: #f5f5f5;
-  border-radius: 5px;
-  display: flex;
-  position: relative;
+.tool-status-text {
+  font-size: 11px;
+  color: #8c8c8c;
+  min-width: 48px; /* 固定宽度，防止字数变化引起抖动 */
+  text-align: left;
+  flex-shrink: 0;
 }
 
-.status-icon {
+.action-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #bfbfbf;
+  padding: 4px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  height: 100%;
-  border-radius: 50%;
-  min-width: 4rem;
+  transition: all 0.2s;
+}
+.action-btn:hover { color: #595959; }
+.action-btn.active .chevron { transform: rotate(-90deg); }
+.chevron { transition: transform 0.3s ease; transform: rotate(90deg); }
+
+/* Detail Panel */
+.detail-panel {
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.call-pend-icon {
-  transform: rotateZ(45deg);
-  perspective: 1000px;
-  border-radius: 50%;
-  width: 48px;
-  height: 48px;
-  color: #fff;
+.detail-header {
+  padding: 8px 12px;
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.call-pend-icon:before,
-.call-pend-icon:after {
-  content: "";
-  display: block;
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: inherit;
-  height: inherit;
-  border-radius: 50%;
-  transform: rotateX(70deg);
-  animation: 1s spin linear infinite;
+.header-title { font-size: 11px; font-weight: 600; color: #8c8c8c; text-transform: uppercase; }
+
+.header-actions { display: flex; gap: 4px; }
+.mini-btn {
+  background: white;
+  border: 1px solid #d9d9d9;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #595959;
+}
+.mini-btn:hover { border-color: #40a9ff; color: #40a9ff; }
+
+.detail-body {
+  padding: 10px;
+  max-height: 300px;
+  overflow-y: auto;
 }
 
-.call-pend-icon:after {
-  color: #ff3d00;
-  transform: rotateY(70deg);
-  animation-delay: 0.4s;
+.json-box {
+  margin: 0;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 11px;
+  color: #595959;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
+.error-text { color: #ff4d4f; }
+.divider { height: 1px; background: #f0f0f0; margin: 8px 0; }
 
-@keyframes rotate {
-  0% {
-    transform: translate(-50%, -50%) rotateZ(0deg);
-  }
-
-  100% {
-    transform: translate(-50%, -50%) rotateZ(360deg);
-  }
-}
-
-@keyframes rotateccw {
-  0% {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-
-  100% {
-    transform: translate(-50%, -50%) rotate(-360deg);
-  }
-}
-
-@keyframes spin {
-  0%,
-  100% {
-    box-shadow: 0.2em 0px 0 0px currentcolor;
-  }
-
-  12% {
-    box-shadow: 0.2em 0.2em 0 0 currentcolor;
-  }
-
-  25% {
-    box-shadow: 0 0.2em 0 0px currentcolor;
-  }
-
-  37% {
-    box-shadow: -0.2em 0.2em 0 0 currentcolor;
-  }
-
-  50% {
-    box-shadow: -0.2em 0 0 0 currentcolor;
-  }
-
-  62% {
-    box-shadow: -0.2em -0.2em 0 0 currentcolor;
-  }
-
-  75% {
-    box-shadow: 0px -0.2em 0 0 currentcolor;
-  }
-
-  87% {
-    box-shadow: 0.2em -0.2em 0 0 currentcolor;
-  }
-}
-
-.checkmark-container {
-  width: 2.25rem;
-  height: 2rem;
-}
-
-.checkmark {
-  width: 100%;
-  height: 100%;
-}
-
-.checkmark polyline {
-  fill: none;
-  stroke: green;
-  /* 设置颜色为绿色 */
-  stroke-width: 10;
-  /* 设置线条的粗细 */
-  stroke-dasharray: 60;
-  /* 总长度 */
-  stroke-dashoffset: 60;
-  /* 起始偏移量 */
-  animation: draw 1s forwards;
-  /* 动画定义 */
-}
-
-@keyframes draw {
-  to {
-    stroke-dashoffset: 0;
-    /* 结束时偏移量为0，显示完整的对勾 */
-  }
-}
+.panel-fade-enter-active, .panel-fade-leave-active { transition: opacity 0.2s, transform 0.2s; }
+.panel-fade-enter-from, .panel-fade-leave-to { opacity: 0; transform: translateY(5px); }
 </style>
+

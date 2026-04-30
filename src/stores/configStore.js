@@ -242,14 +242,61 @@ export const useConfigStore = defineStore('config', () => {
         config.value[section] = data;
       }
       
-      // 非 LLM 适配器和 OneBot 配置需要重启
-      if (section !== 'llm_adapters' && section !== 'onebot') {
+      // 非 LLM 适配器、OneBot、Storage 和 Web 配置需要重启
+      // 这些节点现在支持热更新
+      if (section !== 'llm_adapters' && section !== 'onebot' && section !== 'storage' && section !== 'web') {
         needRestart.value = true;
       }
       
       return response.data;
     } catch (error) {
       console.error(`更新配置节点 ${section} 失败:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取存储配置
+   */
+  async function fetchStorageConfig() {
+    try {
+      const response = await configAPI.getStorageConfig();
+      if (config.value) {
+        config.value.storage = response.data;
+      }
+      return response.data;
+    } catch (error) {
+      console.error('获取存储配置失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 更新存储配置
+   */
+  async function updateStorageConfig(data) {
+    try {
+      const response = await configAPI.updateStorageConfig(data);
+      if (config.value) {
+        config.value.storage = data;
+      }
+      // 存储配置支持热更新，不需要设置 needRestart
+      return response.data;
+    } catch (error) {
+      console.error('更新存储配置失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 测试存储配置
+   */
+  async function testStorageConfig(data) {
+    try {
+      const response = await configAPI.testStorageConfig(data);
+      return response.data;
+    } catch (error) {
+      console.error('测试存储配置失败:', error);
       throw error;
     }
   }
@@ -506,6 +553,9 @@ export const useConfigStore = defineStore('config', () => {
     fetchPlugins,
     updateConfig,
     updateConfigSection,
+    fetchStorageConfig,
+    updateStorageConfig,
+    testStorageConfig,
     addAdapter,
     updateAdapter,
     deleteAdapter,

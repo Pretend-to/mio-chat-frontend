@@ -111,6 +111,11 @@ const router = createRouter({
           component: () => import("../views/settings/PresetsView.vue"),
         },
         {
+          path: "storage",
+          name: "settings_storage",
+          component: () => import("../views/settings/StorageConfigView.vue"),
+        },
+        {
           path: "logs",
           name: "settings_logs",
           component: () => import("../views/settings/LogsView.vue"),

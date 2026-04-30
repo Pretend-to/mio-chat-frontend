@@ -44,7 +44,7 @@ class ConfigAPI {
     }
 
     const headers = {
-      'X-Admin-Code': this.adminCode,
+      'x-admin-code': this.adminCode,
       'Content-Type': 'application/json',
       ...options.headers
     };
@@ -96,11 +96,45 @@ class ConfigAPI {
 
   /**
    * 获取指定配置节点
-   * @param {string} section - 配置节点名称 (server/web/onebot/llm_adapters)
+   * @param {string} section - 配置节点名称 (server/web/onebot/llm_adapters/storage)
    * @returns {Promise<object>} 配置节点数据
    */
   async getConfigSection(section) {
     return this.request(`/api/config/${section}`);
+  }
+
+  // ========== 存储管理 ==========
+
+  /**
+   * 获取存储配置
+   * @returns {Promise<object>} 存储配置数据
+   */
+  async getStorageConfig() {
+    return this.request('/api/config/storage');
+  }
+
+  /**
+   * 更新存储配置
+   * @param {object} data - 存储配置数据
+   * @returns {Promise<object>} 响应数据
+   */
+  async updateStorageConfig(data) {
+    return this.request('/api/config/storage', {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  }
+
+  /**
+   * 测试存储配置
+   * @param {object} data - 存储配置数据
+   * @returns {Promise<object>} 测试结果
+   */
+  async testStorageConfig(data) {
+    return this.request('/api/config/storage/test', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
   }
 
   // ========== 配置修改 ==========
