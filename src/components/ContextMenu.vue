@@ -40,6 +40,10 @@
           <i class="iconfont reset"></i>
           <span>重试</span>
         </div>
+        <div v-if="['pending', 'retrying'].includes(message.status)" @click.stop="stopGeneration">
+          <i class="iconfont stop"></i>
+          <span>停止</span>
+        </div>
         <div @click.stop="replyMessage">
           <i class="iconfont yinyong"></i>
           <span>引用</span>
@@ -139,6 +143,9 @@ export default {
     },
     enterChat() {
       this.$emit("message-option", "enter");
+    },
+    stopGeneration() {
+      this.$emit("message-option", "stop");
     },
     togglePriority() {
       this.$emit("message-option", "priority");

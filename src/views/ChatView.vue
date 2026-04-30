@@ -740,8 +740,11 @@ export default {
           }
           break;
         case "delete":
-          this.activeContactor.messageChain.splice(this.validMessageIndex, 1);
+          this.activeContactor.delMessage(message.id);
           client.setLocalStorage();
+          break;
+        case "stop":
+          this.activeContactor.interruptMessage(message.id);
           break;
         default:
           break;

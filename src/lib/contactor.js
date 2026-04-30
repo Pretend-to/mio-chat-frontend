@@ -91,8 +91,7 @@ export default class Contactor extends EventEmmiter {
   handleSyncMessage(e) {
     const { chunks, status, messageId } = e;
 
-    const rawMessage = this.getRawMessage(messageId);
-    if (!rawMessage) return;
+    const rawMessage = this.getOrCreateRawMessage(messageId);
 
     const newContent = [];
 
@@ -104,9 +103,9 @@ export default class Contactor extends EventEmmiter {
         if (chunk.type === "reasoningContent") {
           newContent.push({
             type: "reason",
-            data: { 
+            data: {
               text: chunk.content,
-              startTime: now
+              startTime: now,
             },
           });
         } else if (chunk.type === "content") {
@@ -115,24 +114,34 @@ export default class Contactor extends EventEmmiter {
             data: { text: chunk.content },
           });
         } else if (chunk.type === "toolCall") {
-          console.warn(`[DEBUG-SYNC-TOOL] 收到 toolCall 原始块:`, JSON.stringify(chunk));
-          
+          console.warn(
+            `[DEBUG-SYNC-TOOL] 收到 toolCall 原始块:`,
+            JSON.stringify(chunk),
+          );
+
           // 判定工具调用状态（供渲染组件外的其他逻辑使用）
           let status = "waiting";
           if (chunk.content.result) {
             status = "done";
-          } else if (chunk.content.action === "running" || chunk.content.action === "pending") {
+          } else if (
+            chunk.content.action === "running" ||
+            chunk.content.action === "pending"
+          ) {
             status = "running";
           }
-          
+
           const toolCallData = {
             ...chunk.content, // 直接透传所有原始字段，包含 action, parameters, result, id, name
-            arguments: chunk.content.arguments || chunk.content.parameters || "", // 兼容性字段
-            status: status // 兼容性字段
+            arguments:
+              chunk.content.arguments || chunk.content.parameters || "", // 兼容性字段
+            status: status, // 兼容性字段
           };
-          
-          console.warn(`[DEBUG-SYNC-TOOL] 组装后的 tool_call data:`, JSON.stringify(toolCallData));
-          
+
+          console.warn(
+            `[DEBUG-SYNC-TOOL] 组装后的 tool_call data:`,
+            JSON.stringify(toolCallData),
+          );
+
           newContent.push({
             type: "tool_call",
             data: toolCallData,
@@ -157,6 +166,23 @@ export default class Contactor extends EventEmmiter {
    */
   getRawMessage(messageId) {
     return this.getMessageById(messageId);
+  }
+
+  /**
+   * 获取或创建消息容器 (支持 Agent 主动推送)
+   */
+  getOrCreateRawMessage(messageId) {
+    let message = this.getMessageById(messageId);
+    if (!message) {
+      // 如果消息不存在，说明是 Agent 主动发起的推送
+      // 调用 revMessage 创建并初始化一个新的 "other" 角色消息容器
+      message = this.revMessage({
+        id: messageId,
+        role: "other",
+      });
+      console.log(`[Contactor] 自动创建主动推送消息容器: ${messageId}`);
+    }
+    return message;
   }
 
   /**
@@ -201,8 +227,7 @@ export default class Contactor extends EventEmmiter {
   handleUpdateReasoning(e) {
     const { reasoning_content, messageId } = e;
 
-    const rawMessage = this.getRawMessage(messageId);
-    if (!rawMessage) return;
+    const rawMessage = this.getOrCreateRawMessage(messageId);
 
     const last = this.getLastContent(rawMessage);
 
@@ -232,8 +257,7 @@ export default class Contactor extends EventEmmiter {
   handleUpdateMessage(e) {
     const { chunk, messageId } = e;
 
-    const rawMessage = this.getRawMessage(messageId);
-    if (!rawMessage) return;
+    const rawMessage = this.getOrCreateRawMessage(messageId);
 
     const content = rawMessage.content || (rawMessage.content = []);
 
@@ -281,8 +305,7 @@ export default class Contactor extends EventEmmiter {
   handleUpdateToolCall(e) {
     const { tool_call, messageId } = e;
 
-    const rawMessage = this.getRawMessage(messageId);
-    if (!rawMessage) return;
+    const rawMessage = this.getOrCreateRawMessage(messageId);
 
     const content = rawMessage.content || (rawMessage.content = []);
 
@@ -350,8 +373,7 @@ export default class Contactor extends EventEmmiter {
 
     this.updateLastUpdate();
 
-    const rawMessage = this.getRawMessage(messageId);
-    if (!rawMessage) return;
+    const rawMessage = this.getOrCreateRawMessage(messageId);
 
     rawMessage.status = "completed";
 
@@ -371,8 +393,7 @@ export default class Contactor extends EventEmmiter {
 
     this.updateLastUpdate();
 
-    const rawMessage = this.getRawMessage(messageId);
-    if (!rawMessage) return;
+    const rawMessage = this.getOrCreateRawMessage(messageId);
 
     const errorText = this.formatLLMError(e.error);
 
@@ -677,6 +698,30 @@ export default class Contactor extends EventEmmiter {
   }
 
   /**
+   * 终止指定消息的生成
+   */
+  async interruptMessage(messageId) {
+    const message = this.getMessageById(messageId);
+    if (!message) return;
+
+    // 通过 kernel 发送终止信号 (LLM 协议)
+    // 注意：Openai 类中需要实现 interruptGeneration 方法
+    try {
+      if (typeof this.kernel.interruptGeneration === "function") {
+        await this.kernel.interruptGeneration(messageId);
+      }
+    } catch (error) {
+      console.error("[Contactor] 发送中断信号失败:", error);
+    }
+
+    // 本地 UI 状态更新
+    if (["pending", "retrying"].includes(message.status)) {
+      message.status = "interrupted";
+      this.emitMessageUpdated();
+    }
+  }
+
+  /**
    * 接收到消息
    * @param {string} id - ID of the contactor
    * @param {object} message - Message received from contactor
@@ -700,14 +745,17 @@ export default class Contactor extends EventEmmiter {
    */
   delMessage(message_id) {
     for (let i = 0; i < this.messageChain.length; i++) {
-      // 如果不是bot发的消息，跳过
-      if (
-        this.messageChain[i].id === message_id &&
-        this.messageChain[i].role === "other"
-      ) {
+      if (this.messageChain[i].id === message_id) {
+        const message = this.messageChain[i];
+
+        // 如果消息正在生成，联动触发中断
+        if (["pending", "retrying"].includes(message.status)) {
+          this.interruptMessage(message_id);
+        }
+
         if (this.active) this.emit("delMessage", i);
-        else this.acting.messageChain.splice(i, 1);
-        this.makeSystemMessage(`${this.name}撤回了一条消息`);
+        else this.messageChain.splice(i, 1);
+
         return true; // 删除成功
       }
     }

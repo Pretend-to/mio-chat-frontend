@@ -113,4 +113,12 @@ export default class Openai extends Adapter {
 
     client.socket.streamCompletions(data, metaData);
   }
+
+  /**
+   * 中断生成任务
+   */
+  async interruptGeneration(messageId) {
+    if (!client.socket) return;
+    client.socket.interruptGeneration(messageId, this.id);
+  }
 }

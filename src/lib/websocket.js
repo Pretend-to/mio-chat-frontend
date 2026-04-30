@@ -317,4 +317,24 @@ export default class Socket extends EventEmitter {
     this.sendMessage(request);
     console.log("WebSocket sending enter_chat", request);
   }
+
+  /**
+   * 发送中断生成信号
+   * @param {string} messageId - 消息 ID
+   * @param {string} contactorId - 联系人 ID
+   */
+  interruptGeneration(messageId, contactorId) {
+    if (!this.socket || !this.socket.connected) return;
+
+    // 遵循 spec.md 中的直接事件发送方式
+    this.socket.emit("interruptGeneration", {
+      contactorId,
+      messageId,
+    });
+
+    console.log("WebSocket emitting interruptGeneration", {
+      contactorId,
+      messageId,
+    });
+  }
 }
