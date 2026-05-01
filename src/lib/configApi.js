@@ -448,6 +448,34 @@ class PluginAPI {
   }
 }
 
+/**
+ * 技能管理 API
+ */
+class SkillAPI {
+  constructor(configAPI) {
+    this.configAPI = configAPI;
+  }
+
+  /**
+   * 获取所有可用技能列表
+   * @returns {Promise<object>} 技能目录数据
+   */
+  async getSkills() {
+    return this.configAPI.request('/api/skills');
+  }
+
+  /**
+   * 重新扫描并加载技能
+   * @returns {Promise<object>} 更新后的技能目录
+   */
+  async reloadSkills() {
+    return this.configAPI.request('/api/skills/reload', {
+      method: 'POST'
+    });
+  }
+}
+
 // 导出单例实例
 export const configAPI = new ConfigAPI();
 export const pluginAPI = new PluginAPI(configAPI);
+export const skillAPI = new SkillAPI(configAPI);

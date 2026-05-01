@@ -100,6 +100,33 @@
           </div>
         </div>
       </div>
+
+      <div class="settings-block skills-block">
+        <div class="block-title">
+          <span>Agent Skills 技能库</span>
+          <el-button type="primary" link :loading="reloadingSkills" @click="handleReloadSkills" class="sync-link">
+            <i class="iconfont reset"></i>
+            同步
+          </el-button>
+        </div>
+        <div class="block-content">
+          <div class="skills-grid">
+            <div v-if="availableSkills.length === 0" class="no-skills">
+              <i class="iconfont robot"></i>
+              <p>暂无可用技能</p>
+            </div>
+            <div v-for="skill in availableSkills" :key="skill.name" class="skill-item">
+              <div class="skill-icon">
+                <i class="iconfont robot"></i>
+              </div>
+              <div class="skill-body">
+                <div class="skill-name">{{ skill.name }}</div>
+                <div class="skill-description" :title="skill.description">{{ skill.description }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div v-if="isGeminiAdapter" class="settings-block">
@@ -172,6 +199,7 @@
 <script>
 import PresetsList from "@/components/PresetsList.vue";
 import { config } from "@/lib/runtime.js";
+import { skillAPI } from "@/lib/configApi.js";
 
 export default {
   name: "ContactorSettings",
@@ -229,6 +257,9 @@ export default {
       showPresetsDetail: false,
       showInternalTools: false,
       showSafetySettings: false,
+
+      availableSkills: [],
+      reloadingSkills: false,
       // Moved from parent
       sliderTypes: {
         a: { min: 0, max: 2, step: 0.1 },
@@ -294,6 +325,31 @@ export default {
         );
       }
       this.updateEnabledTools();
+      this.fetchSkills();
+    },
+    async fetchSkills() {
+      try {
+        const res = await skillAPI.getSkills();
+        if (res.success) {
+          this.availableSkills = res.data;
+        }
+      } catch (err) {
+        console.error("获取技能列表失败:", err);
+      }
+    },
+    async handleReloadSkills() {
+      this.reloadingSkills = true;
+      try {
+        const res = await skillAPI.reloadSkills();
+        if (res.success) {
+          this.availableSkills = res.data;
+          if (this.$message) this.$message.success("技能库已同步");
+        }
+      } catch (err) {
+        if (this.$message) this.$message.error("同步失败: " + err.message);
+      } finally {
+        this.reloadingSkills = false;
+      }
     },
     updateEnabledTools() {
       const enabledTools = this.modelValue.toolCallSettings?.tools || [];
@@ -429,3 +485,111 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.skills-block .block-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sync-link {
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sync-link i {
+  font-size: 14px;
+}
+
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.skill-item {
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.skill-item:hover {
+  background: #fff;
+  border-color: #409eff;
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+.skill-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #f0f7ff 0%, #e1f0ff 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.skill-icon i {
+  font-size: 18px;
+  color: #409eff;
+}
+
+.skill-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f1f1f;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.skill-description {
+  font-size: 11px;
+  color: #8c8c8c;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  height: 30px;
+}
+
+.no-skills {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  color: #bfbfbf;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 12px;
+  border: 1px dashed rgba(0, 0, 0, 0.1);
+}
+
+.no-skills i {
+  font-size: 32px;
+}
+
+.no-skills p {
+  font-size: 12px;
+  margin: 0;
+}
+
+.settings-block :deep(.el-button--small) {
+  padding: 5px 15px;
+}
+</style>

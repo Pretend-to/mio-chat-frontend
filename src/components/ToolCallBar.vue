@@ -11,8 +11,17 @@
     <!-- 中间信息区 -->
     <div class="tool-content" @click="toggleExtraInfo">
       <div class="tool-main">
-        <span class="tool-name">{{ toolCall.name.split("_mid_")[0] }}</span>
-        <span class="tool-status-text">{{ call_status }}</span>
+        <template v-if="toolCall.name === 'Skill'">
+          <span class="tool-name skill-style">
+            <i class="iconfont icon-book" style="margin-right: 4px;"></i>
+            {{ getSkillName(toolCall.parameters) }}
+          </span>
+          <span class="tool-status-text skill-status">{{ skill_status_text }}</span>
+        </template>
+        <template v-else>
+          <span class="tool-name">{{ toolCall.name.split("_mid_")[0] }}</span>
+          <span class="tool-status-text">{{ call_status }}</span>
+        </template>
       </div>
     </div>
 
@@ -102,9 +111,21 @@ export default {
         const obj = typeof r === "string" ? JSON.parse(r) : r;
         return JSON.stringify(obj, null, 2);
       } catch (e) { return String(r); }
+    },
+    skill_status_text() {
+      if (this.toolCall.action === "running" || this.toolCall.action === "pending") return "正在研读专家指南...";
+      if (this.toolCallSuccess) return "已掌握该技能";
+      return this.call_status;
     }
   },
   methods: {
+    getSkillName(parameters) {
+      if (!parameters) return "Skill";
+      try {
+        const p = typeof parameters === "string" ? JSON.parse(parameters) : parameters;
+        return p.skill_name || "Skill";
+      } catch (e) { return "Skill"; }
+    },
     async copyToClipboard(text) {
       try {
         await navigator.clipboard.writeText(text);
@@ -178,6 +199,25 @@ export default {
 .tool-call-bar.is-success { background: #f6ffed; border-color: #d9f7be; }
 .tool-call-bar.is-fail { background: #fff1f0; border-color: #ffccc7; }
 .tool-call-bar.running, .tool-call-bar.pending { background: #e6f7ff; border-color: #91d5ff; }
+
+/* Skill Specialized Styles */
+.skill-style {
+  color: #722ed1 !important;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  letter-spacing: 0.5px;
+}
+.skill-status {
+  color: #9254de !important;
+  font-style: italic;
+}
+.tool-call-bar:has(.skill-style) {
+  background: #f9f0ff;
+  border-color: #d3adf7;
+}
+.tool-call-bar:has(.skill-style).is-success {
+  background: #f6ffed;
+  border-color: #b7eb8f;
+}
 
 .status-indicator {
   display: flex;
