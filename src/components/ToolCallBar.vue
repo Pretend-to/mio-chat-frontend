@@ -7,11 +7,11 @@
       <div v-else-if="toolCallFail" class="dot fail"></div>
       <div v-else class="dot started"></div>
     </div>
-    
+
     <!-- 中间信息区 -->
     <div class="tool-content" @click="toggleExtraInfo">
       <div class="tool-main">
-        <template v-if="toolCall.name === 'Skill'">
+        <template v-if="toolCall.name.startsWith('Skill_mid_')">
           <span class="tool-name skill-style">
             <i class="iconfont icon-book" style="margin-right: 4px;"></i>
             {{ getSkillName(toolCall.parameters) }}
@@ -27,27 +27,19 @@
 
     <!-- 右侧操作区 -->
     <div class="tool-actions">
-      <button
-        ref="show-extra-info"
-        :class="{ active: showExtraInfo, 'action-btn': true }"
-        @click="toggleExtraInfo"
-      >
+      <button ref="show-extra-info" :class="{ active: showExtraInfo, 'action-btn': true }" @click="toggleExtraInfo">
         <svg class="chevron" viewBox="0 0 1024 1024" width="14" height="14">
-          <path d="M778.965749 128.759549l-383.064442 383.063419 388.097062 388.096039-0.070608 0.033769c12.709463 13.137205 20.529569 31.024597 20.529569 50.731428 0 40.376593-32.736589 73.112158-73.115228 73.112158-19.705807 0-37.591153-7.819083-50.730405-20.528546l-0.034792 0.035816L241.890654 564.622498l0.035816-0.035816c-13.779841-13.281491-22.3838-31.915897-22.3838-52.585659 0-0.071631 0-0.106424 0-0.178055 0-0.072655 0-0.10847 0-0.144286 0-20.669762 8.603959-39.341007 22.3838-52.622498l-0.035816-0.034792L680.573835 20.337187l0.180102 0.179079c13.139252-12.5662 30.950919-20.313651 50.587142-20.313651 40.378639 0 73.115228 32.736589 73.115228 73.114205C804.455283 95.485725 794.567076 115.334795 778.965749 128.759549z" fill="currentColor"></path>
+          <path
+            d="M778.965749 128.759549l-383.064442 383.063419 388.097062 388.096039-0.070608 0.033769c12.709463 13.137205 20.529569 31.024597 20.529569 50.731428 0 40.376593-32.736589 73.112158-73.115228 73.112158-19.705807 0-37.591153-7.819083-50.730405-20.528546l-0.034792 0.035816L241.890654 564.622498l0.035816-0.035816c-13.779841-13.281491-22.3838-31.915897-22.3838-52.585659 0-0.071631 0-0.106424 0-0.178055 0-0.072655 0-0.10847 0-0.144286 0-20.669762 8.603959-39.341007 22.3838-52.622498l-0.035816-0.034792L680.573835 20.337187l0.180102 0.179079c13.139252-12.5662 30.950919-20.313651 50.587142-20.313651 40.378639 0 73.115228 32.736589 73.115228 73.114205C804.455283 95.485725 794.567076 115.334795 778.965749 128.759549z"
+            fill="currentColor"></path>
         </svg>
       </button>
     </div>
 
     <teleport to="body">
       <transition name="panel-fade">
-        <div
-          v-if="showExtraInfo"
-          ref="teleportContent"
-          class="detail-panel"
-          :class="{ upward: openUp }"
-          :style="teleportStyle"
-          @click.stop
-        >
+        <div v-if="showExtraInfo" ref="teleportContent" class="detail-panel" :class="{ upward: openUp }"
+          :style="teleportStyle" @click.stop>
           <div class="detail-header">
             <span class="header-title">执行细节</span>
             <div class="header-actions">
@@ -130,7 +122,7 @@ export default {
       try {
         await navigator.clipboard.writeText(text);
         if (this.$message) this.$message({ message: "已复制", type: "success", duration: 1500 });
-      } catch (e) {}
+      } catch (e) { }
     },
     copyParameters() { this.copyToClipboard(this.formattedParameters); },
     copyResult() { this.copyToClipboard(this.formattedResult); },
@@ -191,16 +183,29 @@ export default {
   height: 40px;
   border-radius: 10px;
   margin: 8px 0;
-  background: #f0f7ff; /* Default Blue Tint (Option A) */
+  background: #f0f7ff;
+  /* Default Blue Tint (Option A) */
   border: 1px solid #d9ecff;
   transition: all 0.2s ease;
   user-select: none;
 }
 
 /* 状态配色 (Option A Style) */
-.tool-call-bar.is-success { background: #f6ffed; border-color: #d9f7be; }
-.tool-call-bar.is-fail { background: #fff1f0; border-color: #ffccc7; }
-.tool-call-bar.running, .tool-call-bar.pending { background: #e6f7ff; border-color: #91d5ff; }
+.tool-call-bar.is-success {
+  background: #f6ffed;
+  border-color: #d9f7be;
+}
+
+.tool-call-bar.is-fail {
+  background: #fff1f0;
+  border-color: #ffccc7;
+}
+
+.tool-call-bar.running,
+.tool-call-bar.pending {
+  background: #e6f7ff;
+  border-color: #91d5ff;
+}
 
 /* Skill Specialized Styles */
 .skill-style {
@@ -208,14 +213,17 @@ export default {
   font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
   letter-spacing: 0.5px;
 }
+
 .skill-status {
   color: #9254de !important;
   font-style: italic;
 }
+
 .tool-call-bar:has(.skill-style) {
   background: #f9f0ff;
   border-color: #d3adf7;
 }
+
 .tool-call-bar:has(.skill-style).is-success {
   background: #f6ffed;
   border-color: #b7eb8f;
@@ -234,9 +242,20 @@ export default {
   height: 8px;
   border-radius: 50%;
 }
-.dot.success { background: #52c41a; box-shadow: 0 0 6px rgba(82, 196, 26, 0.4); }
-.dot.fail { background: #ff4d4f; box-shadow: 0 0 6px rgba(255, 77, 79, 0.4); }
-.dot.started { background: #bfbfbf; }
+
+.dot.success {
+  background: #52c41a;
+  box-shadow: 0 0 6px rgba(82, 196, 26, 0.4);
+}
+
+.dot.fail {
+  background: #ff4d4f;
+  box-shadow: 0 0 6px rgba(255, 77, 79, 0.4);
+}
+
+.dot.started {
+  background: #bfbfbf;
+}
 
 .mini-spinner {
   width: 14px;
@@ -247,7 +266,11 @@ export default {
   animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 .tool-content {
   flex-grow: 1;
@@ -273,7 +296,8 @@ export default {
 .tool-status-text {
   font-size: 11px;
   color: #8c8c8c;
-  min-width: 48px; /* 固定宽度，防止字数变化引起抖动 */
+  min-width: 48px;
+  /* 固定宽度，防止字数变化引起抖动 */
   text-align: left;
   flex-shrink: 0;
 }
@@ -288,9 +312,19 @@ export default {
   align-items: center;
   transition: all 0.2s;
 }
-.action-btn:hover { color: #595959; }
-.action-btn.active .chevron { transform: rotate(-90deg); }
-.chevron { transition: transform 0.3s ease; transform: rotate(90deg); }
+
+.action-btn:hover {
+  color: #595959;
+}
+
+.action-btn.active .chevron {
+  transform: rotate(-90deg);
+}
+
+.chevron {
+  transition: transform 0.3s ease;
+  transform: rotate(90deg);
+}
 
 /* Detail Panel */
 .detail-panel {
@@ -312,9 +346,18 @@ export default {
   align-items: center;
 }
 
-.header-title { font-size: 11px; font-weight: 600; color: #8c8c8c; text-transform: uppercase; }
+.header-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8c8c8c;
+  text-transform: uppercase;
+}
 
-.header-actions { display: flex; gap: 4px; }
+.header-actions {
+  display: flex;
+  gap: 4px;
+}
+
 .mini-btn {
   background: white;
   border: 1px solid #d9d9d9;
@@ -324,7 +367,11 @@ export default {
   cursor: pointer;
   color: #595959;
 }
-.mini-btn:hover { border-color: #40a9ff; color: #40a9ff; }
+
+.mini-btn:hover {
+  border-color: #40a9ff;
+  color: #40a9ff;
+}
 
 .detail-body {
   padding: 10px;
@@ -340,10 +387,25 @@ export default {
   white-space: pre-wrap;
   word-break: break-all;
 }
-.error-text { color: #ff4d4f; }
-.divider { height: 1px; background: #f0f0f0; margin: 8px 0; }
 
-.panel-fade-enter-active, .panel-fade-leave-active { transition: opacity 0.2s, transform 0.2s; }
-.panel-fade-enter-from, .panel-fade-leave-to { opacity: 0; transform: translateY(5px); }
+.error-text {
+  color: #ff4d4f;
+}
+
+.divider {
+  height: 1px;
+  background: #f0f0f0;
+  margin: 8px 0;
+}
+
+.panel-fade-enter-active,
+.panel-fade-leave-active {
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.panel-fade-enter-from,
+.panel-fade-leave-to {
+  opacity: 0;
+  transform: translateY(5px);
+}
 </style>
-
