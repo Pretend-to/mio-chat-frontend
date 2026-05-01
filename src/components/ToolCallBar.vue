@@ -172,7 +172,9 @@ export default {
         const contentRect = content.getBoundingClientRect();
         if (rootRect.bottom + contentRect.height + 20 > window.innerHeight) {
           this.openUp = true;
-          this.teleportStyle.top = (rootRect.top - contentRect.height - 8) + "px";
+          // Fix: Use 'bottom' instead of 'top' so it grows upwards naturally
+          delete this.teleportStyle.top;
+          this.teleportStyle.bottom = (window.innerHeight - rootRect.top + 8) + "px";
         }
       });
     },
