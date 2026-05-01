@@ -188,6 +188,7 @@ export default {
   border: 1px solid #d9ecff;
   transition: all 0.2s ease;
   user-select: none;
+  min-width: 0; /* 允许收缩 */
 }
 
 /* 状态配色 (Option A Style) */
@@ -276,12 +277,14 @@ export default {
   flex-grow: 1;
   cursor: pointer;
   overflow: hidden;
+  min-width: 0; /* 关键：允许 flex 子项收缩 */
 }
 
 .tool-main {
   display: flex;
   align-items: baseline;
   gap: 8px;
+  min-width: 0; /* 关键：允许 flex 子项收缩 */
 }
 
 .tool-name {

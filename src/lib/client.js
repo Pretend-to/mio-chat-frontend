@@ -71,29 +71,72 @@ export default class Client extends EventEmitter {
       this.addConcator("onebot", onebotConfig);
     }
 
-    const options = this.config.getLLMDefaultConfig();
-    // const allTools = Object.values(this.config.llmTools).map((tool) => (
-    //   ...Object.keys(tool)
-    // ));
-    const allTools = [];
-    for (const key in this.config.llmTools) {
-      allTools.push(...Object.keys(this.config.llmTools[key]));
+    // 如果后端传回了推荐预设，则直接加载这些预设
+    if (info.recommendedPresets && info.recommendedPresets.length > 0) {
+      console.log("加载推荐预设:", info.recommendedPresets.length);
+      info.recommendedPresets.forEach((preset) => {
+        // 使用 mergeOptions 处理预设数据，确保工具名等被正确解析
+        // 注意：mergeOptions 是 FriendList 里的方法，我们这里需要一个通用的合并逻辑
+        // 或者简单地在 client 里实现一个基础合并
+        const options = this.config.getLLMDefaultConfig();
+        
+        if (preset.history) options.presetSettings.history = preset.history;
+        if (preset.opening) options.presetSettings.opening = preset.opening;
+        
+        // 处理工具映射 (short name -> full name)
+        if (preset.tools?.length > 0) {
+          const resolvedTools = [];
+          const allPluginTools = Object.values(this.config.llmTools || {});
+          for (const shortName of preset.tools) {
+            let found = false;
+            for (const pluginTools of allPluginTools) {
+              if (!pluginTools || typeof pluginTools !== 'object') continue;
+              const fullName = Object.keys(pluginTools).find(
+                name => name === shortName || name.startsWith(shortName + '_mid_')
+              );
+              if (fullName) {
+                resolvedTools.push(fullName);
+                found = true;
+                break;
+              }
+            }
+            if (found) continue;
+            // 如果没找到，退而求其次直接放入（可能此时 llmTools 还没加载完）
+            resolvedTools.push(shortName);
+          }
+          options.toolCallSettings.tools = resolvedTools;
+        }
+
+        const contactorConfig = {
+          id: this.genFakeId(),
+          name: preset.name,
+          avatar: preset.avatar || "/static/icons/512x512.png",
+          namePolicy: 1,
+          avatarPolicy: 1,
+          title: preset.name === '系统配置专家' ? 'setting' : 'chat',
+          priority: 1, // 默认不置顶
+          lastUpdate: -Infinity,
+          options,
+        };
+
+        this.addConcator("openai", contactorConfig);
+      });
+    } else {
+      // 后备方案：如果没传预设，则创建一个默认的 MioBot
+      const options = this.config.getLLMDefaultConfig();
+      const LLMDefaultConfig = {
+        id: this.genFakeId(),
+        name: "MioBot",
+        avatar: "/static/icons/512x512.png",
+        namePolicy: 1,
+        avatarPolicy: 1,
+        title: "chat",
+        priority: 1,
+        lastUpdate: -Infinity,
+        options,
+      };
+      this.addConcator("openai", LLMDefaultConfig);
     }
-    options.toolCallSettings.tools = allTools;
-
-    const LLMDefaultConfig = {
-      id: this.genFakeId(),
-      name: "MioBot",
-      avatar: "/static/icons/512x512.png",
-      namePolicy: 1,
-      avatarPolicy: 1,
-      title: "chat",
-      priority: 0,
-      lastUpdate: -Infinity,
-      options,
-    };
-
-    this.addConcator("openai", LLMDefaultConfig);
   }
 
   async addConcator(platform, config) {
@@ -417,6 +460,23 @@ export default class Client extends EventEmitter {
         this.addMsgListener();
         if (this.contactList.length == 0) {
           this.genDefaultConctor(info);
+        } else if (info.onebot_enabled) {
+          // 即使不是第一次登录，如果开启了 OneBot 且列表中没有，也补上
+          const hasOneBot = this.contactList.some(c => c.platform === 'onebot');
+          if (!hasOneBot) {
+            const onebotConfig = {
+              id: this.genFakeId(),
+              name: "OneBot",
+              namePolicy: 1,
+              avatarPolicy: 1,
+              avatar: `/p/qava?q=${this.bot_qq ?? 1099834705}`,
+              title: "云崽",
+              priority: 0,
+              options: {},
+              lastUpdate: -Infinity,
+            };
+            this.addConcator("onebot", onebotConfig);
+          }
         }
         this.setEverLogin();
         this.setLocalStorage();

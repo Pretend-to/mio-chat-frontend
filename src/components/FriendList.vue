@@ -132,10 +132,31 @@ export default {
       const defaultOptions = config.getLLMDefaultConfig();
       if (options.history)
         defaultOptions.presetSettings.history = options.history;
-      if (options.tools?.length > 0)
-        defaultOptions.toolCallSettings.tools = config.getValidTools(
-          options.tools,
-        );
+      if (options.tools?.length > 0) {
+        // 预设存储的是工具短名（如 'searchInternet'），
+        // 但前端 llmTools 使用的是带 hash 后缀的完整名（如 'searchInternet_mid_abc123'）。
+        // 这里通过前缀匹配将短名解析为完整名。
+        const resolvedTools = [];
+        const allPluginTools = Object.values(config.llmTools || {});
+        for (const shortName of options.tools) {
+          let found = false;
+          for (const pluginTools of allPluginTools) {
+            if (!pluginTools || typeof pluginTools !== 'object') continue;
+            const fullName = Object.keys(pluginTools).find(
+              name => name === shortName || name.startsWith(shortName + '_mid_')
+            );
+            if (fullName) {
+              resolvedTools.push(fullName);
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            console.warn(`[mergeOptions] 工具 "${shortName}" 未在已加载的工具列表中找到，已跳过。`);
+          }
+        }
+        defaultOptions.toolCallSettings.tools = resolvedTools;
+      }
       if (options.opening)
         defaultOptions.presetSettings.opening = options.opening;
 
