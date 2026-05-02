@@ -371,7 +371,7 @@ export default class Client extends EventEmitter {
       // TODO: 拓展 Onebot 协议功能，实现 IM
       return this.contactList.find((item) => item.platform == "onebot");
     } else {
-      return this.contactList.find((item) => item.id == id);
+      return this.contactList.find((item) => String(item.id) === String(id));
     }
   }
 
@@ -478,6 +478,27 @@ export default class Client extends EventEmitter {
             this.addConcator("onebot", onebotConfig);
           }
         }
+        if (info.pendingTasks && Array.isArray(info.pendingTasks)) {
+          console.log("[Login] 待同步任务 (pendingTasks):", info.pendingTasks);
+          console.log("[Login] 当前联系人列表:", this.contactList.map(c => ({ id: c.id, name: c.name })));
+          
+          info.pendingTasks.forEach((taskId) => {
+            const contactor = this.getContactor(taskId);
+            if (contactor) {
+              console.log(`[Login] 任务状态检查: ${contactor.name} (${taskId}), 当前活跃状态: ${contactor.active}`);
+              
+              // 只有当该 Agent 不是当前活跃窗口时，才显示红点并触发后台拉取
+              if (!contactor.active) {
+                contactor.hasPendingTask = true;
+                contactor.emit("updateMessageSummary");
+                this.socket.enterChat(taskId);
+              }
+            } else {
+              console.warn(`[Login] 匹配失败: 无法找到 ID 为 ${taskId} 的联系人`);
+            }
+          });
+        }
+
         this.setEverLogin();
         this.setLocalStorage();
         resolve(info);

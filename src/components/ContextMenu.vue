@@ -116,6 +116,7 @@ export default {
       }
     },
     copyText() {
+      console.log("[DEBUG-MENU] 复制全文, messageId:", this.message.id);
       let text = "";
       this.message.content.forEach((element) => {
         if (element.type === "text") {
@@ -125,9 +126,12 @@ export default {
         }
       });
       this.copyTextToClipboard(text);
+      this.$emit("close");
     },
     copySeletedText() {
+      console.log("[DEBUG-MENU] 复制选中文字, messageId:", this.message.id);
       this.copyTextToClipboard(this.seletedText);
+      this.$emit("close");
     },
     retryMessage() {
       this.$emit("message-option", "retry");

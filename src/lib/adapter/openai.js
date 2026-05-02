@@ -43,10 +43,8 @@ export default class Openai extends Adapter {
 
   handleMessageEvent(chunk) {
     const data = chunk.data;
-
-    const messageId = data.metaData.messageId;
-
-    delete data.metaData;
+    const metaData = data?.metaData;
+    const messageId = metaData?.messageId;
 
     const emitEvent = (eventName, detail) => {
       this.emit(eventName, { ...detail, messageId });
@@ -64,10 +62,10 @@ export default class Openai extends Adapter {
           emitEvent("syncMessage", {
             chunks: data.chunks,
             status: data.status,
+            metaData: metaData,
           }),
       };
 
-      const data = chunk.data;
       // 如果消息类型是 sync，直接调用 sync 处理函数
       if (chunk.message === "sync") {
         updateHandlers.sync(data);

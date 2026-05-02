@@ -1,12 +1,12 @@
 import { client } from "@/lib/runtime.js";
 import { ElMessage } from "element-plus";
 import { createRouter, createWebHistory } from "vue-router";
+const BlankView = () => import("../views/BlankView.vue");
 const ChatView = () => import("../views/ChatView.vue");
 const HomeView = () => import("../views/HomeView.vue");
 const ProfileView = () => import("../views/ProfileView.vue");
 const SettingsView = () => import("../views/SettingsView.vue");
 const AuthView = () => import("../views/AuthView.vue");
-const BlankView = () => import("../views/BlankView.vue");
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -50,12 +50,12 @@ const router = createRouter({
       beforeEnter: async (to, from, next) => {
         // Handle direct share links
         const shareId = to.params.shareId;
-        
+
         // Ensure client is initialized (wait for it if necessary)
         if (!client.inited) {
           // Pre-init isn't complete, let the App.vue or main.js handle the initialization
           // But since this route is matched, we can just load the contactor
-          await client.preInit(); 
+          await client.preInit();
         }
 
         ElMessage.info("正在获取远程 Agent 信息...");
@@ -67,7 +67,7 @@ const router = createRouter({
           ElMessage.error("分享链接无效或已过期");
           next("/");
         }
-      }
+      },
     },
     {
       path: "/settings",

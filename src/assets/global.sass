@@ -119,6 +119,17 @@ body
         font-size: 0.625rem
         padding-top: 0.0625rem
         color: rgb(120, 124, 127)
+        display: flex
+        align-items: center
+
+        .task-indicator
+            margin-left: 0.25rem
+            font-size: 0.75rem
+            color: #ff9800
+            cursor: help
+            
+            &::before
+                content: "\e62e"
 
     & > .title
         font-size: 0.375rem

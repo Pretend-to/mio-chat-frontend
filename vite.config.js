@@ -71,17 +71,22 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (id.includes("node_modules")) {
-              if (/node_modules\/.pnpm\/.+element-plus/.test(id) || /element-plus/.test(id)) return "vendor_element_plus";
-              if (/mio-previewer/.test(id)) return "vendor_editor_preview";
-              if (/socket.io-client/.test(id)) return "vendor_socketio";
-              if (/emoji-picker/.test(id) || /emoji-picker-element/.test(id)) return "vendor_emoji";
-              if (/vue|@?vue[/\\]/.test(id)) return "vendor_vue";
-              // fall back to vendor misc
+              if (id.includes("element-plus")) {
+                if (id.includes("@element-plus/icons-vue")) return "vendor_element_plus_icons";
+                return "vendor_element_plus";
+              }
+              if (id.includes("mio-previewer")) {
+                // 识别 mio-previewer 内部的各种图表插件，统一归类到 mermaid
+                if (id.includes("mermaid") || id.includes("Diagram") || id.includes("dagre") || id.includes("cytoscape") || id.includes("graphlib") || id.includes("d3")) return "vendor_mermaid";
+                if (id.includes("katex")) return "vendor_katex";
+                return "vendor_editor_preview";
+              }
+              if (id.includes("prismjs")) return "vendor_prism";
+              if (id.includes("markdown-it")) return "vendor_markdown";
+              if (id.includes("socket.io-client")) return "vendor_socketio";
+              if (id.includes("emoji-picker")) return "vendor_emoji";
+              if (id.includes("vue") || id.includes("pinia") || id.includes("vue-router")) return "vendor_vue";
               return "vendor_misc";
-            }
-            if (id.includes("src/")) {
-              if (id.includes("components/")) return "components";
-              if (id.includes("views/")) return "views";
             }
           },
           chunkFileNames: `assets/js/[name]-[hash].js`,

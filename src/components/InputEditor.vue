@@ -511,6 +511,7 @@ export default {
     async send() {
       if (!this.hasInput()) return;
       this.$emit("toButtom");
+      const backupHtml = this.textareaRef.innerHTML; // 备份内容
       const container = this.presend();
       try {
         const message_id = await this.activeContactor.webSend(container);
@@ -520,6 +521,8 @@ export default {
         this.uploaded.files = [];
       } catch (error) {
         this.$message.error(error.message || "发送消息失败");
+        this.textareaRef.innerHTML = backupHtml; // 还原内容
+        this.adjustTextareaHeight();
       }
     },
     getSafeText(text) {

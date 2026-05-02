@@ -221,6 +221,7 @@ export default {
       console.log(this.inputBarTop);
     }
     client.on("plugins_updated", this.handlePluginsUpdated);
+    window.addEventListener("beforeunload", this.handleBeforeUnload);
   },
   updated() {
     if (this.toupdate && this.autoScroll && this.retryList.length === 0) {
@@ -231,12 +232,19 @@ export default {
   beforeUnmount() {
     // 移除事件监听
     client.off("plugins_updated", this.handlePluginsUpdated);
+    window.removeEventListener("beforeunload", this.handleBeforeUnload);
+    
+    // 离开前强制保存一次当前对话状态
+    client.saveNow();
     this.disableContactor(this.activeContactor);
     this.chatWindowRef.removeEventListener("scroll", this.scrollHandler);
   },
   methods: {
     handlePluginsUpdated() {
       this.$message.success("插件系统已同步，对话能力已实时刷新");
+    },
+    handleBeforeUnload() {
+      client.saveNow();
     },
     handleMouseUp() {
       const selectedText = window.getSelection().toString();
@@ -458,6 +466,11 @@ export default {
       const trySync = () => {
         if (client.socket && client.socket.available) {
           client.socket.enterChat(contactor.id);
+          // 清除待同步状态
+          if (contactor.hasPendingTask) {
+            contactor.hasPendingTask = false;
+            client.setLocalStorage();
+          }
           return true;
         }
         return false;
@@ -1078,6 +1091,7 @@ export default {
                 </div>
                 <div class="name">
                   {{ item.role === "other" ? activeContactor.name : client.name }}
+                  <i v-if="item.isTask" class="iconfont task-indicator" title="来自计划任务"></i>
                 </div>
               </div>
               <div :class="['content', item.status]" @mouseup="handleMouseUp"

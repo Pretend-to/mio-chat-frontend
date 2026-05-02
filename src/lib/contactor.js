@@ -42,6 +42,7 @@ export default class Contactor extends EventEmmiter {
     this.active = false;
     this.lastUpdate = config.lastUpdate || Date.now(); // 使用 Date.now()
     this.createTime = config.createTime || Date.now(); // 使用 Date.now()
+    this.hasPendingTask = config.hasPendingTask || false; // 是否有待同步的任务结果
     this.lastMessageSummary = this.getLastMessageSummary();
     this.options = this.loadOptions(config.options);
     this.kernel =
@@ -71,6 +72,7 @@ export default class Contactor extends EventEmmiter {
       active: this.active,
       lastUpdate: this.lastUpdate,
       createTime: this.createTime,
+      hasPendingTask: this.hasPendingTask,
       lastMessageSummary: this.lastMessageSummary,
       firstMessageIndex: this.firstMessageIndex,
     };
@@ -89,9 +91,14 @@ export default class Contactor extends EventEmmiter {
    * 处理全量结构化同步消息 (确保顺序)
    */
   handleSyncMessage(e) {
-    const { chunks, status, messageId } = e;
+    const { chunks, status, messageId, metaData } = e;
 
     const rawMessage = this.getOrCreateRawMessage(messageId);
+    console.log(`[Sync] 处理同步消息, ID: ${messageId}`);
+
+    if (metaData?.isTask) {
+      rawMessage.isTask = true;
+    }
 
     const newContent = [];
 
@@ -151,6 +158,7 @@ export default class Contactor extends EventEmmiter {
     }
 
     rawMessage.content = newContent;
+    this.lastMessageSummary = this.getLastMessageSummary(rawMessage);
 
     if (status === "completed") {
       rawMessage.status = "completed";
@@ -158,7 +166,7 @@ export default class Contactor extends EventEmmiter {
       rawMessage.status = "failed";
     }
 
-    this.emitMessageUpdated();
+    this.emitMessageUpdated(!this.active && rawMessage.role === "other");
   }
 
   /**
@@ -196,7 +204,11 @@ export default class Contactor extends EventEmmiter {
   /**
    * 统一触发消息更新
    */
-  emitMessageUpdated() {
+  emitMessageUpdated(isBackground = false) {
+    this.lastUpdate = Date.now();
+    if (isBackground) {
+      this.hasPendingTask = true;
+    }
     this.emit("updateMessage");
     this.emit("updateMessageSummary");
   }
@@ -248,7 +260,7 @@ export default class Contactor extends EventEmmiter {
       this.replaceBlankOrAppend(rawMessage, msgElm);
     }
 
-    this.emitMessageUpdated();
+    this.emitMessageUpdated(!this.active && rawMessage.role === "other");
   }
 
   /**
@@ -283,7 +295,7 @@ export default class Contactor extends EventEmmiter {
       });
     }
 
-    this.emitMessageUpdated();
+    this.emitMessageUpdated(!this.active && rawMessage.role === "other");
   }
 
   /**
@@ -320,7 +332,7 @@ export default class Contactor extends EventEmmiter {
 
     if (last?.type === "blank") {
       content.splice(content.length - 1, 1, msgElm);
-      this.emitMessageUpdated();
+      this.emitMessageUpdated(!this.active && rawMessage.role === "other");
       return;
     }
 
@@ -336,7 +348,7 @@ export default class Contactor extends EventEmmiter {
       content.splice(index, 1, this.mergeToolCall(content[index], tool_call));
     }
 
-    this.emitMessageUpdated();
+    this.emitMessageUpdated(!this.active && rawMessage.role === "other");
   }
 
   /**
@@ -895,7 +907,8 @@ export default class Contactor extends EventEmmiter {
     }
 
     return msg.content?.length > 0
-      ? getMessageText(msg.content[0])
+      ? msg.content.find((c) => c.type === "text")?.data.text ||
+          getMessageText(msg.content[0])
       : "[未知消息]";
   }
 

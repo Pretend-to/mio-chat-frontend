@@ -284,7 +284,6 @@ export default {
     },
 
     addReactiveListener() {
-      console.log("addReactiveListener");
       this.contactorList.map((contactor) => {
         contactor.on("updateMessageSummary", () => {
           contactor.lastMessageSummary = contactor.getLastMessageSummary();
@@ -319,6 +318,7 @@ export default {
           <div class="name">{{ item.name }}</div>
           <div id="time" class="msginfo">{{ item.getLastTime() }}</div>
           <div id="msgctt" class="msginfo">{{ item.lastMessageSummary }}</div>
+          <div v-if="item.hasPendingTask" class="unread-badge">1</div>
         </div>
       </div>
     </div>
@@ -469,6 +469,28 @@ button#addcont {
   scale: 0.9;
 }
 
+.unread-badge {
+  position: absolute;
+  right: 0rem;
+  bottom: 0.6rem;
+  background-color: #ff4d4f;
+  color: white;
+  font-size: 0.55rem;
+  font-weight: bold;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+}
+
+.avatar {
+  position: relative;
+}
+
 .info {
   height: 100%;
   display: flex;
@@ -477,6 +499,7 @@ button#addcont {
   flex: 0 0 calc(100% - 2.65rem);
   max-width: calc(100% - 2.65rem);
   flex-wrap: wrap;
+  position: relative;
 }
 
 .lists#active * {
