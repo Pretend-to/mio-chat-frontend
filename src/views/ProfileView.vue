@@ -244,13 +244,36 @@ export default {
     this.delayInterval = setInterval(() => {
       this.currentDelay = client.socket.delay;
     }, 3000);
+    client.on("plugins_updated", this.handlePluginsUpdated);
   },
   beforeUnmount() {
+    client.off("plugins_updated", this.handlePluginsUpdated);
     if (this.delayInterval) {
       clearInterval(this.delayInterval);
     }
   },
   methods: {
+    handlePluginsUpdated() {
+      console.log("[ProfileView] 检测到后端插件更新，正在刷新工具数据...");
+      this.refreshAllLLMTools();
+      this.$message.success("工具箱定义已实时刷新");
+    },
+    refreshAllLLMTools() {
+      const allLLMTools = [];
+      for (const key in config.llmTools) {
+        const toolsObject = config.llmTools[key];
+        const toolsList = Object.keys(toolsObject).map((toolKey) => ({
+          enabled: false, // Initial state, child component will sync with options
+          ...toolsObject[toolKey],
+        }));
+        allLLMTools.push({
+          name: key,
+          tools: toolsList,
+          collapsed: true,
+        });
+      }
+      this.allLLMTools = allLLMTools;
+    },
     initContactor() {
       // Deep clone options to avoid direct mutation of contactor's options by child
       // The watcher on `this.options` will handle persisting changes.
@@ -387,9 +410,12 @@ export default {
   align-items: center;
   justify-content: flex-start;
   max-width: calc(100% - 5rem);
+}
+.tool-group-name {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 1;
 }
 .item-content {
   transform: scale(0.9);

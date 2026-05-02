@@ -90,7 +90,10 @@ export default {
       this.$router.push({ name: "settings" });
     },
     async loadAvatar(adminId) {
-      const adminAvatar = `/p/qava?q=${adminId}`;
+      let adminAvatar = `/p/qava?q=${adminId}`;
+      if (typeof adminId === "string" && (adminId.startsWith("http") || adminId.startsWith("/"))) {
+        adminAvatar = adminId;
+      }
       try {
         this.processedImage = await this.processImage(adminAvatar);
       } catch (error) {

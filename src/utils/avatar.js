@@ -1,20 +1,5 @@
-const AVATAR_BASE_PATH =
-  "https://registry.npmmirror.com/@lobehub/icons-static-svg/latest/files/icons";
+// 模型头像映射已移动至后端处理 (/p/mava)
 
-const AVATAR_MAP = {
-  OpenAI: "openai.svg",
-  Cohere: "cohere-color.svg",
-  Anthropic: "claude-color.svg",
-  Google: "gemini-color.svg",
-  "X.AI": "grok.svg",
-  DeepSeek: "deepseek-color.svg",
-  智谱清言: "zhipu-color.svg",
-  豆包: "doubao-color.svg",
-  "月之暗面 (kimi)": "moonshot.svg",
-  科大讯飞: "spark-color.svg",
-  通义千问: "qwen-color.svg",
-  腾讯混元: "hunyuan-color.svg",
-};
 
 /**
  * 根据模型所有者获取头像 URL
@@ -22,28 +7,7 @@ const AVATAR_MAP = {
  * @returns {string} - 头像 URL
  */
 export function getAvatarByOwner(modelOwner) {
-  if (Object.keys(AVATAR_MAP).includes(modelOwner)) {
-    return `${AVATAR_BASE_PATH}/${AVATAR_MAP[modelOwner]}`;
-  }
-  return `${AVATAR_BASE_PATH}/openai.svg`;
-}
-
-/**
- * 根据适配器类型获取对应的图标文件名
- * @param {string} adapterType - 适配器类型 (openai, gemini, vertex, onebot)
- * @returns {string} - 图标文件名
- */
-export function getIconByAdapterType(adapterType) {
-  const iconMap = {
-    openai: "openai.svg",
-    gemini: "gemini-color.svg",
-    vertex: "gemini-color.svg", // Vertex AI 使用 Gemini 图标
-    onebot: "openai.svg", // OneBot 暂时使用 OpenAI 图标作为默认
-    deepseek: "deepseek-color.svg",
-    anthropic: "claude-color.svg",
-    cohere: "cohere-color.svg",
-  };
-  return iconMap[adapterType?.toLowerCase()] || "openai.svg";
+  return `/p/mava?provider=${modelOwner || "OpenAI"}`;
 }
 
 /**
@@ -52,8 +16,7 @@ export function getIconByAdapterType(adapterType) {
  * @returns {string} - 完整的头像 URL
  */
 export function getAvatarByAdapterType(adapterType) {
-  const iconFile = getIconByAdapterType(adapterType);
-  return `${AVATAR_BASE_PATH}/${iconFile}`;
+  return `/p/mava?adapter=${adapterType}`;
 }
 
-export { AVATAR_BASE_PATH, AVATAR_MAP };
+

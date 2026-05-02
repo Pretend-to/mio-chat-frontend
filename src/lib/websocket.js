@@ -71,9 +71,12 @@ export default class Socket extends EventEmitter {
   handleDisconnect(reason) {
     this.available = false;
     console.error(`SocketIO disconnected. Reason: ${reason}`);
-    // 如果是 'io server disconnect' 或 'io client disconnect'，可能不需要自动重连或回退
-    // 如果是 'transport close' 或 'transport error'，Socket.IO 的 reconnection 机制会尝试处理
-    // 这里我们主要依赖 connect_error 来处理初始连接失败的回退
+    // 如果是 'io server disconnect'，Socket.IO 客户端不会自动重连，必须手动调用 connect()
+    if (reason === "io server disconnect") {
+      console.warn("Server forcefully disconnected the client. Attempting manual reconnection...");
+      this.socket.connect();
+    }
+    // 如果是 'transport close' 或 'transport error'，Socket.IO 的 reconnection 机制会自动处理
   }
 
   /**

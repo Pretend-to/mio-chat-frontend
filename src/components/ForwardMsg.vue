@@ -30,7 +30,7 @@
       >
         <div v-if="message.type === 'node'" id="other" class="message-body">
           <div class="avatar">
-            <img :src="`/p/qava/?q=${message.data.uin}`" :alt="message.data.name" />
+            <img :src="getAvatarUrl(message.data.uin)" :alt="message.data.name" />
           </div>
           <div class="msg">
             <div class="wholename">
@@ -135,6 +135,14 @@ export default {
       },
       false,
     );
+  },
+  methods: {
+    getAvatarUrl(uin) {
+      if (typeof uin === "string" && (uin.startsWith("http") || uin.startsWith("/"))) {
+        return uin;
+      }
+      return `/p/qava/?q=${uin || 1099834705}`;
+    },
   },
 };
 </script>

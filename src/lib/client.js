@@ -62,7 +62,7 @@ export default class Client extends EventEmitter {
         name: "OneBot",
         namePolicy: 1,
         avatarPolicy: 1,
-        avatar: `/p/qava?q=${this.bot_qq ?? 1099834705}`,
+        avatar: (typeof this.bot_qq === "string" && (this.bot_qq.startsWith("http") || this.bot_qq.startsWith("/"))) ? this.bot_qq : `/p/qava?q=${this.bot_qq ?? 1099834705}`,
         title: "云崽",
         priority: 0,
         options: {},
@@ -469,7 +469,7 @@ export default class Client extends EventEmitter {
               name: "OneBot",
               namePolicy: 1,
               avatarPolicy: 1,
-              avatar: `/p/qava?q=${this.bot_qq ?? 1099834705}`,
+              avatar: (typeof this.bot_qq === "string" && (this.bot_qq.startsWith("http") || this.bot_qq.startsWith("/"))) ? this.bot_qq : `/p/qava?q=${this.bot_qq ?? 1099834705}`,
               title: "云崽",
               priority: 0,
               options: {},
@@ -538,8 +538,20 @@ export default class Client extends EventEmitter {
 
     this.socket.on("system_message", (e) => {
       try {
+        if (!e) return;
+
+        // 支持后端推送的 plugins 更新
+        if (e.type === "plugins_updated") {
+          console.log("[Plugin System] 检测到后端插件更新，正在刷新数据...");
+          if (this.config && typeof this.config.loadllmTools === "function") {
+            this.config.loadllmTools();
+          }
+          this.emit("plugins_updated", e.data);
+          return;
+        }
+
         // 支持后端推送的 models/providers 更新
-        if (e && e.type === "models_updated" && e.data) {
+        if (e.type === "models_updated" && e.data) {
           const { providers, models, default_model } = e.data;
 
           // 更新 Config 中的 llmModels
@@ -619,11 +631,19 @@ export default class Client extends EventEmitter {
     this.admin_qq = data.admin_qq;
     this.bot_qq = data.bot_qq;
 
-    this.avatar = `/p/qava?q=${this.admin_qq}`;
+    if (typeof this.admin_qq === "string" && (this.admin_qq.startsWith("http") || this.admin_qq.startsWith("/"))) {
+      this.avatar = this.admin_qq;
+    } else {
+      this.avatar = `/p/qava?q=${this.admin_qq}`;
+    }
 
     const onebotContactor = this.getContactor(null, 10000);
     if (onebotContactor) {
-      onebotContactor.avatar = `/p/qava?q=${this.bot_qq}`;
+      if (typeof this.bot_qq === "string" && (this.bot_qq.startsWith("http") || this.bot_qq.startsWith("/"))) {
+        onebotContactor.avatar = this.bot_qq;
+      } else {
+        onebotContactor.avatar = `/p/qava?q=${this.bot_qq}`;
+      }
     }
   }
 

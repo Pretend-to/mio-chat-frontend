@@ -220,6 +220,7 @@ export default {
       this.inputBarTop = pageHeight - element.offsetTop;
       console.log(this.inputBarTop);
     }
+    client.on("plugins_updated", this.handlePluginsUpdated);
   },
   updated() {
     if (this.toupdate && this.autoScroll && this.retryList.length === 0) {
@@ -229,10 +230,14 @@ export default {
   },
   beforeUnmount() {
     // 移除事件监听
+    client.off("plugins_updated", this.handlePluginsUpdated);
     this.disableContactor(this.activeContactor);
     this.chatWindowRef.removeEventListener("scroll", this.scrollHandler);
   },
   methods: {
+    handlePluginsUpdated() {
+      this.$message.success("插件系统已同步，对话能力已实时刷新");
+    },
     handleMouseUp() {
       const selectedText = window.getSelection().toString();
       if (selectedText) {

@@ -54,8 +54,10 @@
             </div>
           </div>
           <transition name="expand-slide">
-            <div v-show="showPresetsDetail" class="block-content-item" style="overflow: hidden">
-              <PresetsList :presets-history="presetsHistoryData" @update-presets="handleUpdatePresets" />
+            <div v-show="showPresetsDetail" class="block-content-item preset-details-container">
+              <el-scrollbar max-height="400px" style="width: 100%">
+                <PresetsList :presets-history="presetsHistoryData" @update-presets="handleUpdatePresets" />
+              </el-scrollbar>
             </div>
           </transition>
         </div>
@@ -75,7 +77,11 @@
             </div>
           </div>
           <div v-for="(plugin, index) in localAllLLMTools" :key="index" class="block-content-item parent-item">
-            <div class="item-title">{{ plugin.name }}</div>
+            <div class="item-title">
+              <span class="tool-group-name">{{ plugin.name }}</span>
+              <el-switch v-model="plugin.isAllEnabled" size="small" style="margin-left: 8px; flex-shrink: 0;"
+                @change="(val) => handleToggleAllTools(plugin, val)" />
+            </div>
             <div class="item-content">
               <button :class="{
                 active: !plugin.collapsed,
@@ -110,21 +116,26 @@
           </el-button>
         </div>
         <div class="block-content">
-          <div class="skills-grid">
-            <div v-if="availableSkills.length === 0" class="no-skills">
-              <i class="iconfont robot"></i>
-              <p>暂无可用技能</p>
-            </div>
-            <div v-for="skill in availableSkills" :key="skill.name" class="skill-item">
-              <div class="skill-icon">
-                <i class="iconfont robot"></i>
+          <el-scrollbar max-height="360px" class="skills-scrollbar">
+            <div class="skills-grid">
+              <div v-if="availableSkills.length === 0" class="no-skills">
+                <div class="empty-icon-wrapper">
+                  <i class="iconfont robot"></i>
+                </div>
+                <p>暂无可用技能</p>
+                <span>点击上方“同步”按钮刷新技能库</span>
               </div>
-              <div class="skill-body">
-                <div class="skill-name">{{ skill.name }}</div>
+              <div v-for="skill in availableSkills" :key="skill.name" class="skill-item">
+                <div class="skill-header">
+                  <div class="skill-icon">
+                    <i class="iconfont robot"></i>
+                  </div>
+                  <div class="skill-name">{{ skill.name }}</div>
+                </div>
                 <div class="skill-description" :title="skill.description">{{ skill.description }}</div>
               </div>
             </div>
-          </div>
+          </el-scrollbar>
         </div>
       </div>
     </div>
@@ -198,7 +209,7 @@
 
 <script>
 import PresetsList from "@/components/PresetsList.vue";
-import { config } from "@/lib/runtime.js";
+import { client, config } from "@/lib/runtime.js";
 import { skillAPI } from "@/lib/configApi.js";
 
 export default {
@@ -309,10 +320,20 @@ export default {
       deep: true,
     },
   },
-  created() {
+  mounted() {
     this.initializeSettings();
+    client.on("plugins_updated", this.handlePluginsUpdated);
+  },
+  beforeUnmount() {
+    client.off("plugins_updated", this.handlePluginsUpdated);
+    window.removeEventListener("resize", this.handleResize);
   },
   methods: {
+    handlePluginsUpdated() {
+      console.log("[Plugin System] 检测到后端插件更新，正在刷新技能列表...");
+      this.fetchSkills();
+      this.$message.success("插件技能库已同步");
+    },
     initializeSettings() {
       this.localLlmGeneralKeys = {
         ...this.modelValue.base,
@@ -353,13 +374,39 @@ export default {
     },
     updateEnabledTools() {
       const enabledTools = this.modelValue.toolCallSettings?.tools || [];
-      this.localAllLLMTools = this.localAllLLMTools.map((plugin) => ({
-        ...plugin,
-        tools: plugin.tools.map((tool) => ({
+      
+      // 1. 同步 modelValue 中的已启用工具
+      this.localAllLLMTools = this.localAllLLMTools.map((plugin) => {
+        const updatedTools = plugin.tools.map((tool) => ({
           ...tool,
           enabled: enabledTools.includes(tool.name),
-        })),
-      }));
+        }));
+        return {
+          ...plugin,
+          tools: updatedTools,
+        };
+      });
+
+      // 2. 检查是否有 Skill 工具被启用
+      const isSkillEnabled = this.localAllLLMTools.some(plugin =>
+        plugin.tools.some(tool => tool.name.toLowerCase().startsWith('skill') && tool.enabled)
+      );
+
+      if (isSkillEnabled) {
+        // 如果启用了 Skill，强制同步激活 terminal 插件的所有工具
+        this.localAllLLMTools.forEach(plugin => {
+          if (plugin.name.toLowerCase().includes('terminal')) {
+            plugin.tools.forEach(tool => {
+              tool.enabled = true;
+            });
+          }
+        });
+      }
+
+      // 3. 重新计算每个 plugin 的 isAllEnabled 状态
+      this.localAllLLMTools.forEach(plugin => {
+        plugin.isAllEnabled = plugin.tools.length > 0 && plugin.tools.every(t => t.enabled);
+      });
     },
     getShownKey(key) {
       const shownNameMap = {
@@ -455,7 +502,33 @@ export default {
       this.emitUpdate();
     },
     handleToolEnableChange() {
+      // 检查是否有 Skill 工具被启用
+      const isSkillEnabled = this.localAllLLMTools.some(plugin =>
+        plugin.tools.some(tool => tool.name.toLowerCase().startsWith('skill') && tool.enabled)
+      );
+
+      if (isSkillEnabled) {
+        // 如果启用了 Skill，强制同步激活 terminal 插件的所有工具
+        this.localAllLLMTools.forEach(plugin => {
+          if (plugin.name.toLowerCase().includes('terminal')) {
+            plugin.tools.forEach(tool => {
+              tool.enabled = true;
+            });
+          }
+        });
+      }
+
+      // 重新计算每个 plugin 的 isAllEnabled 状态
+      this.localAllLLMTools.forEach(plugin => {
+        plugin.isAllEnabled = plugin.tools.length > 0 && plugin.tools.every(t => t.enabled);
+      });
       this.emitUpdate();
+    },
+    handleToggleAllTools(plugin, value) {
+      plugin.tools.forEach(tool => {
+        tool.enabled = value;
+      });
+      this.handleToolEnableChange();
     },
     handleGeminiSettingsChange() {
       this.emitUpdate();
@@ -505,66 +578,76 @@ export default {
   font-size: 14px;
 }
 
+.skills-scrollbar {
+  padding: 8px 12px;
+}
+
 .skills-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
-  padding: 4px 0;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
 }
 
 .skill-item {
   display: flex;
   flex-direction: column;
-  padding: 14px;
-  background: rgba(255, 255, 255, 0.5);
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.4);
   border: 1px solid rgba(0, 0, 0, 0.04);
   border-radius: 12px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
+  cursor: default;
 }
 
 .skill-item:hover {
-  background: #fff;
-  border-color: #409eff;
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.12);
-  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #409eff50;
+}
+
+.skill-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .skill-icon {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #f0f7ff 0%, #e1f0ff 100%);
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #409eff 0%, #3a8ee6 100%);
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 10px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 8px rgba(64, 158, 255, 0.2);
 }
 
 .skill-icon i {
-  font-size: 18px;
-  color: #409eff;
+  font-size: 20px;
+  color: #fff;
 }
 
 .skill-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  color: #1f1f1f;
-  margin-bottom: 4px;
+  color: #2c3e50;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .skill-description {
-  font-size: 11px;
-  color: #8c8c8c;
-  line-height: 1.4;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.6;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  height: 30px;
+  height: 38px;
+  opacity: 0.85;
 }
 
 .no-skills {
@@ -573,21 +656,39 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 0;
-  color: #bfbfbf;
-  gap: 10px;
-  background: rgba(0, 0, 0, 0.02);
-  border-radius: 12px;
-  border: 1px dashed rgba(0, 0, 0, 0.1);
+  padding: 60px 0;
+  color: #94a3b8;
+  background: rgba(248, 250, 252, 0.5);
+  border-radius: 20px;
+  border: 2px dashed rgba(0, 0, 0, 0.05);
+}
+
+.empty-icon-wrapper {
+  width: 64px;
+  height: 64px;
+  background: #f1f5f9;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
 }
 
 .no-skills i {
   font-size: 32px;
+  color: #cbd5e1;
 }
 
 .no-skills p {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0 0 8px 0;
+  color: #64748b;
+}
+
+.no-skills span {
   font-size: 12px;
-  margin: 0;
+  opacity: 0.6;
 }
 
 .settings-block :deep(.el-button--small) {

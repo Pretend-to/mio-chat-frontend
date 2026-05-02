@@ -470,6 +470,7 @@
 <script setup>
 import LoadingSkeleton from '@/components/settings/LoadingSkeleton.vue';
 import { pluginAPI } from '@/lib/configApi.js';
+import { client } from '@/lib/runtime.js';
 import {
   Box,
   CircleCheck,
@@ -486,7 +487,7 @@ import {
   View
 } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 const loading = ref(false);
 const refreshing = ref(false);
@@ -528,6 +529,13 @@ const loadPlugins = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+// 实时更新监听
+const handlePluginsUpdated = () => {
+  console.log('[PluginsView] 检测到后端插件更新，正在自动刷新列表...');
+  loadPlugins();
+  ElMessage.success('插件列表已实时刷新');
 };
 
 // 刷新插件
@@ -762,6 +770,11 @@ const handleExecuteDebug = async () => {
 // 初始化
 onMounted(() => {
   loadPlugins();
+  client.on('plugins_updated', handlePluginsUpdated);
+});
+
+onUnmounted(() => {
+  client.off('plugins_updated', handlePluginsUpdated);
 });
 </script>
 
@@ -1052,282 +1065,49 @@ onMounted(() => {
   margin-top: 16px;
 }
 
-  .tool-info-card,
-  .params-schema-card,
-  .params-input-card {
-    margin-bottom: 16px;
+.tool-info-card,
+.params-schema-card,
+.params-input-card {
+  margin-bottom: 16px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.result-card {
+  margin-top: 16px;
+  margin-bottom: 0;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  color: #303133;
+}
+
+.tool-info {
+  .info-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
 
     &:last-child {
       margin-bottom: 0;
     }
-  }
 
-  .result-card {
-    margin-top: 16px;
-    margin-bottom: 0;
-  }
-
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-weight: 600;
-    color: #303133;
-  }
-
-  .tool-info {
-    .info-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-
-      label {
-        min-width: 80px;
-        font-weight: 600;
-        color: #606266;
-      }
-
-      span {
-        color: #303133;
-      }
-    }
-  }
-
-  .params-schema {
-    .param-item {
-      padding: 12px;
-      background: #f5f7fa;
-      border-radius: 4px;
-      margin-bottom: 12px;
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-
-      .param-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 8px;
-
-        .param-name {
-          font-weight: 600;
-          color: #303133;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-      }
-
-      .param-description {
-        font-size: 13px;
-        color: #606266;
-        margin-bottom: 4px;
-      }
-
-      .param-enum,
-      .param-items {
-        font-size: 12px;
-        color: #909399;
-        margin-top: 4px;
-      }
-    }
-  }
-
-  .params-textarea {
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    font-size: 13px;
-  }
-  .debug-result-wrapper {
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid;
-    transition: all 0.3s ease;
-
-    &.status-success {
-      border-color: #e1f3d8;
-      background-color: #f0f9eb;
-
-      .result-header {
-        background-color: #e1f3d8;
-        color: #67c23a;
-      }
-    }
-
-    &.status-error {
-      border-color: #fde2e2;
-      background-color: #fef0f0;
-
-      .result-header {
-        background-color: #fde2e2;
-        color: #f56c6c;
-      }
-    }
-
-    .result-header {
-      padding: 10px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 14px;
+    label {
+      min-width: 80px;
       font-weight: 600;
-
-      .status-indicator {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        
-        .icon {
-          display: flex;
-          align-items: center;
-        }
-      }
-
-      .execution-meta {
-        font-size: 12px;
-        opacity: 0.9;
-      }
-    }
-
-    .result-body {
-      padding: 16px;
-    }
-
-    .plugin-info-bar {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-      font-size: 13px;
       color: #606266;
-      padding-bottom: 12px;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-
-      .info-item {
-        display: flex;
-        gap: 6px;
-
-        .label {
-          color: #909399;
-        }
-        
-        .value {
-          font-weight: 500;
-          color: #303133;
-        }
-      }
-
-      .divider {
-        color: #dcdfe6;
-      }
     }
 
-    .json-viewer-container {
-      .viewer-label {
-        font-size: 12px;
-        color: #909399;
-        margin-bottom: 8px;
-      }
-
-      .json-content {
-        background-color: #ffffff;
-        border-radius: 4px;
-        border: 1px solid #dcdfe6;
-        padding: 12px;
-        
-        pre {
-          margin: 0;
-          font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-          font-size: 12px;
-          color: #303133;
-          white-space: pre-wrap;
-          word-break: break-all;
-          max-height: 300px;
-          overflow-y: auto;
-
-          &::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-          }
-
-          &::-webkit-scrollbar-thumb {
-            background: #c0c4cc;
-            border-radius: 3px;
-          }
-        }
-      }
+    span {
+      color: #303133;
     }
-
-    .error-content {
-      .error-message-box {
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-        color: #f56c6c;
-        font-weight: 600;
-        margin-bottom: 16px;
-        font-size: 14px;
-        
-        .error-icon {
-          margin-top: 2px;
-        }
-      }
-
-      .error-stack {
-        .stack-label {
-          font-size: 12px;
-          color: #909399;
-          margin-bottom: 8px;
-        }
-
-        .stack-content {
-          margin: 0;
-          padding: 12px;
-          background-color: #fff;
-          border: 1px solid #fde2e2;
-          border-radius: 4px;
-          font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-          font-size: 11px;
-          color: #f56c6c;
-          overflow-x: auto;
-          white-space: pre;
-        }
-      }
-    }
-  }
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes loading {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
   }
 }
 </style>
