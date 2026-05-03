@@ -1,9 +1,14 @@
 <template>
-  <div class="reason-block">
+  <div class="reason-block" :class="{ 'is-collapsed': !show }">
     <div class="head-bar" @click="toggleShow">
-      <div class="reason-info">{{ getReasonInfo }}</div>
+      <div class="reason-info">
+        {{ getReasonInfo }}
+        <span v-if="!endTime" class="thinking-dot">...</span>
+      </div>
       <button :class="{ active: show, 'extra-info-button': true }">
-        <i class="iconfont icon-return" />
+        <svg class="chevron" viewBox="0 0 1024 1024" width="10" height="10">
+          <path d="M338.752 104.704a64 64 0 0 0 0 90.496l316.8 316.8-316.8 316.8a64 64 0 0 0 90.496 90.496l362.048-362.048a64 64 0 0 0 0-90.496L429.248 14.208a64 64 0 0 0-90.496 90.496z" fill="currentColor"></path>
+        </svg>
       </button>
     </div>
     <div 
@@ -12,7 +17,9 @@
       :class="{ 'is-expanded': show }"
       @scroll="handleScroll"
     >
-      {{ content }}
+      <div class="content-text">
+        {{ content }}
+      </div>
     </div>
   </div>
 </template>
@@ -37,7 +44,7 @@ export default {
   },
   data() {
     return {
-      show: true,
+      show: !this.endTime, // 正在思考时默认展开，思考完默认收起
       isUserScrolledUp: false,
     };
   },
@@ -45,13 +52,19 @@ export default {
     getReasonInfo() {
       if (this.endTime) {
         const timeDiff = this.endTime - this.startTime;
-        return `已深度思考（耗时 ${(timeDiff / 1000).toFixed(2)} 秒）`;
+        return `已深度思考 (${(timeDiff / 1000).toFixed(1)}s)`;
       } else {
-        return `正在深度思考......`;
+        return `正在深度思考`;
       }
     },
   },
   watch: {
+    endTime(newVal) {
+      // 当思考结束时，自动收起
+      if (newVal) {
+        this.show = false;
+      }
+    },
     content() {
       if (this.show) {
         this.$nextTick(() => {
@@ -72,7 +85,6 @@ export default {
     },
     handleScroll(e) {
       const el = e.target;
-      // 距离底部超过20px则认为用户已经主动向上滚动
       this.isUserScrolledUp = el.scrollHeight - el.scrollTop - el.clientHeight > 20;
     },
     scrollToBottomIfNeeded() {
@@ -88,55 +100,73 @@ export default {
 
 <style scoped>
 .reason-block {
-  margin-bottom: 10px;
+  margin: 2px 0;
   display: flex;
   flex-direction: column;
 }
 
-.reason-info {
-  margin: 0.5rem 0;
-  font-size: 0.8rem;
-  min-width: 8rem;
-  flex-basis: 10rem;
-  text-wrap: nowrap;
-}
-
 .head-bar {
-  flex-basis: 1rem;
-  margin: 0.5rem 0;
   display: flex;
-  flex-wrap: nowrap;
-  justify-content: flex-start;
   align-items: center;
+  gap: 6px;
+  height: 32px;
+  cursor: pointer;
+  user-select: none;
   width: fit-content;
-  background-color: #f5f5f5;
-  border-radius: 10px;
-  padding: 0px 0.5rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
-.head-bar:hover {
-  background-color: #ededed;
+.head-bar .reason-info {
+  color: #555; /* 正常状态加深 */
 }
 
-.head-bar button {
-  flex-basis: 1rem;
-  margin-left: 0.5rem;
-  background-color: transparent;
+.head-bar:hover .reason-info {
+  color: #222; /* 悬浮状态进一步加深 */
+}
+
+.head-bar .extra-info-button {
+  color: #bbb;
+}
+
+.head-bar:hover .extra-info-button {
+  color: #888;
+}
+
+.reason-info {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.thinking-dot {
+  display: inline-block;
+  animation: dot-blink 1.5s infinite;
+}
+
+@keyframes dot-blink {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
+
+.extra-info-button {
+  background: transparent;
   border: none;
-  cursor: pointer;
-  transition: transform 0.3s ease-in-out;
+  color: #bbb; /* 统一颜色 */
   display: flex;
   align-items: center;
-  gap: 2px;
+  padding: 0;
+  transition: transform 0.3s ease;
+  cursor: pointer;
 }
 
-.head-bar button i {
-  font-size: 0.8rem;
+.chevron {
+  transition: transform 0.3s ease;
+  transform: rotate(90deg);
 }
 
-.head-bar button.active {
+.extra-info-button.active .chevron {
   transform: rotate(-90deg);
 }
 
@@ -144,38 +174,37 @@ export default {
   max-width: 100%;
   max-height: 0;
   overflow: hidden;
-  word-break: break-word;
-  user-select: text;
-  font-size: 0.8rem;
-  color: #6f6f6f;
-  white-space: pre-line;
-  border-left: 2px solid transparent;
-  transition: max-height 0.3s ease-in-out, margin 0.3s ease-in-out, border-color 0.3s ease-in-out, opacity 0.3s ease-in-out;
-  padding-left: 1rem;
-  margin-top: 0;
-  margin-bottom: 0;
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
   opacity: 0;
+  will-change: max-height; /* 性能优化 */
 }
 
 .reason-content.is-expanded {
-  max-height: 400px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  border-left-color: #ccc;
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
+  max-height: 120px;
+  overflow-y: auto; /* 开启滚动 */
   opacity: 1;
+  margin-bottom: 4px;
 }
 
-/* 隐藏 reason-content 的默认粗大滚动条，美化一下 */
+.content-text {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #666;
+  white-space: pre-line;
+  word-break: break-word;
+  padding: 4px 12px;
+  border-left: 2px solid #efefef;
+  margin-left: 1px;
+}
+
 .reason-content::-webkit-scrollbar {
-  width: 6px;
+  width: 3px;
 }
 .reason-content::-webkit-scrollbar-thumb {
-  background-color: #d1d1d1;
-  border-radius: 3px;
-}
-.reason-content::-webkit-scrollbar-track {
-  background: transparent;
+  background-color: #eee;
+  border-radius: 2px;
 }
 </style>
+
+
+

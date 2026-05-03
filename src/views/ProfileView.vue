@@ -14,7 +14,7 @@
             <div class="id">ID {{ activeContactor.id }}</div>
             <div class="status">
               <span :class="'delay-status ' + getDelayStatus"></span>
-              在线
+              {{ isConnected ? '在线' : '离线' }}
             </div>
           </div>
           <!-- LLM Provider select is now inside ContactorSettings -->
@@ -171,9 +171,10 @@ export default {
     ];
 
     return {
+      client: client, // 导出 client 到模板
       activeContactor: contactor,
       options: null, // Will be initialized in initContactor
-      currentDelay: 0,
+      isConnected: client.socket?.available || false,
       centerDialogVisible: false,
       avatarPolicyList: avatarPolicyList,
       namePolicyList: namePolicyList,
@@ -190,13 +191,7 @@ export default {
   },
   computed: {
     getDelayStatus() {
-      return this.currentDelay > 1000
-        ? "high"
-        : this.currentDelay > 500
-          ? "mid"
-          : this.currentDelay > 100
-            ? "low"
-            : "ultra";
+      return this.isConnected ? "ultra" : "offline";
     },
     getAvatarPolicyValue() {
       return this.basicInfo.avatarPolicy === 1 ? "自定义" : "跟随模型";
@@ -241,16 +236,19 @@ export default {
     this.initContactor();
   },
   mounted() {
-    this.delayInterval = setInterval(() => {
-      this.currentDelay = client.socket.delay;
-    }, 3000);
+    // 监听 Socket 连接状态以实现响应式更新
+    if (client.socket) {
+      client.socket.on("connect", () => { this.isConnected = true; });
+      client.socket.on("disconnect", () => { this.isConnected = false; });
+    }
+    client.on("socket_ready", (socket) => {
+       socket.on("connect", () => { this.isConnected = true; });
+       socket.on("disconnect", () => { this.isConnected = false; });
+    });
     client.on("plugins_updated", this.handlePluginsUpdated);
   },
   beforeUnmount() {
     client.off("plugins_updated", this.handlePluginsUpdated);
-    if (this.delayInterval) {
-      clearInterval(this.delayInterval);
-    }
   },
   methods: {
     handlePluginsUpdated() {
@@ -571,16 +569,12 @@ export default {
   width: 1rem
   height: 1rem
   border-radius: 50%
-  transform: translateY(.25rem)
+  transform: translateY(.15rem)
   margin-right: .25rem
   &:hover + .delay-num
     display: inline-block
   &.ultra
     background-color: rgb(53, 233, 146)
-  &.low
-    background-color: rgb(255, 204, 0)
-  &.mid
-    background-color: rgb(255, 102, 102)
-  &.high
+  &.offline
     background-color: #ccc
 </style>

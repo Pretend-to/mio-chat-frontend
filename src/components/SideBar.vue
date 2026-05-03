@@ -12,6 +12,7 @@ export default {
     return {
       processedImage: "/p/qava?q=1099834705",
       activePage: PageStatus.NONE,
+      isConnected: client.socket?.available || false,
     };
   },
   computed: {
@@ -45,6 +46,16 @@ export default {
         false,
       );
     }
+    
+    // 监听 Socket 连接状态以实现响应式更新
+    if (client.socket) {
+      client.socket.on("connect", () => { this.isConnected = true; });
+      client.socket.on("disconnect", () => { this.isConnected = false; });
+    }
+    client.on("socket_ready", (socket) => {
+       socket.on("connect", () => { this.isConnected = true; });
+       socket.on("disconnect", () => { this.isConnected = false; });
+    });
   },
   methods: {
     async processImage(imageUrl) {
@@ -119,7 +130,7 @@ export default {
 <template>
   <div id="sidebar">
     <div class="admin-avatar">
-      <div class="status"></div>
+      <div :class="['status', isConnected ? 'online' : 'offline']"></div>
       <img :src="processedImage" alt="admin-avatar" />
     </div>
     <div id="side" class="options">
@@ -222,7 +233,13 @@ export default {
   width: 0.7rem;
   height: 0.7rem;
   border-radius: 50%;
+  border: 1px solid #fff;
+}
+.status.online {
   background: linear-gradient(to bottom, rgb(52, 238, 143), rgb(54, 221, 150));
+}
+.status.offline {
+  background: #ccc;
 }
 .side-icon {
   display: flex;

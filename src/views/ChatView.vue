@@ -89,7 +89,7 @@ export default {
       extraOptions: [],
       wraperPresets: {},
       selectedOption: null,
-      currentDelay: 0,
+      isConnected: client.socket?.available || false,
       toupdate: false,
       seletedText: "",
       seletedImage: "",
@@ -150,13 +150,7 @@ export default {
       }
     },
     getDelayStatus() {
-      return this.currentDelay > 1000
-        ? "high"
-        : this.currentDelay > 500
-          ? "mid"
-          : this.currentDelay > 100
-            ? "low"
-            : "ultra";
+      return this.isConnected ? "ultra" : "offline";
     },
     mdOptions() {
       return { breaks: this.activeContactor.platform === 'onebot' };
@@ -208,10 +202,19 @@ export default {
     if (!this.preview && this.scroll) this.toButtom();
     this.scroll = true;
     this.initContactor(this.activeContactor);
-    this.fullScreen = this.client.fullScreen;
-    // setInterval(() => {
-    //   this.currentDelay = this.client.socket.delay;
-    // }, 3000);
+    this.fullScreen = this.client.socket?.fullScreen;
+    
+    // 监听 Socket 连接状态以实现响应式更新
+    if (this.client.socket) {
+      this.client.socket.on("connect", () => { this.isConnected = true; });
+      this.client.socket.on("disconnect", () => { this.isConnected = false; });
+    }
+
+    client.on("socket_ready", (socket) => {
+       socket.on("connect", () => { this.isConnected = true; });
+       socket.on("disconnect", () => { this.isConnected = false; });
+    });
+    
     // 获取.input-bar在页面中的高度，给inputBarTop赋值
     const element = document.querySelector(".input-bar");
     if (element) {
@@ -1042,8 +1045,7 @@ export default {
       </div>
       <div class="name-area" @click="toProfile">
         <div class="contactor-name">{{ activeContactor.name }}</div>
-        <span :class="'delay-status ' + getDelayStatus"></span>
-        <span class="delay-num">当前延迟: {{ currentDelay }} ms</span>
+        <span :class="'delay-status ' + getDelayStatus" :title="client.socket?.connected ? '在线' : '离线'"></span>
       </div>
       <ul class="options">
         <li class="share" @click="share()">
@@ -1464,7 +1466,7 @@ $icon-hover: #09f
             border-radius: 50%
             margin-left: .5rem
             position: relative
-            top: .2rem
+            top: .1rem
 
             @media screen and (max-width: $mobile)
               display: none
@@ -1476,26 +1478,8 @@ $icon-hover: #09f
             &.ultra
                 background-color: rgb(53, 233, 146)
 
-            &.low
-                background-color: rgb(255, 204, 0)
-
-            &.mid
-                background-color: rgb(255, 102, 102)
-
-            &.high
+            &.offline
                 background-color: #ccc
-
-        .delay-num
-            display: none
-            position: absolute
-            font-size: 0.8rem
-            bottom: 0rem
-            background-color: #fff
-            border: 1px dashed #000
-            border-radius: 0.25rem
-            padding: 0.125rem 0.25rem
-            margin-left: 1rem
-            white-space: nowrap
 
     .options
         flex-basis: 10rem
@@ -1560,6 +1544,11 @@ $icon-hover: #09f
     max-width: 50%
 .inner-content
   display: flex
+  flex-direction: column
+  width: 100%
+  
+  & > *
+    margin: 2px 0
 
 .background img
     position: absolute
