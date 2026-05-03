@@ -30,7 +30,7 @@ export default class Contactor extends EventEmmiter {
   constructor(platform, config) {
     super();
     this.platform = platform;
-    this.id = config.id;
+    this.id = String(config.id);
     this.namePolicy = config.namePolicy || 0;
     this.avatarPolicy = config.avatarPolicy || 0;
     this.title = config.title;

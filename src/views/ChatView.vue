@@ -45,7 +45,7 @@ export default {
       scroll = params.get("scroll") || "true";
     }
 
-    const currentId = parseInt(this.$route.params.id);
+    const currentId = this.$route.params.id;
     try {
       contactor = client.getContactor(currentId);
       if (!contactor) {
