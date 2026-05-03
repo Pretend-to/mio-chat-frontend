@@ -162,8 +162,10 @@ export default class Contactor extends EventEmmiter {
 
     if (status === "completed") {
       rawMessage.status = "completed";
+      this.closeReasoningBlocks(rawMessage); // 核心修复：同步完成后闭合所有思考块
     } else if (status === "failed") {
       rawMessage.status = "failed";
+      this.closeReasoningBlocks(rawMessage); // 失败时也应闭合
     }
 
     this.emitMessageUpdated(!this.active && rawMessage.role === "other");

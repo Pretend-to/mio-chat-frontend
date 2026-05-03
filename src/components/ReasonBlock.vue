@@ -52,6 +52,9 @@ export default {
     getReasonInfo() {
       if (this.endTime) {
         const timeDiff = this.endTime - this.startTime;
+        if (timeDiff <= 0) {
+          return `已深度思考`;
+        }
         return `已深度思考 (${(timeDiff / 1000).toFixed(1)}s)`;
       } else {
         return `正在深度思考`;
