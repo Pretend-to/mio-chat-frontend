@@ -949,19 +949,26 @@ export default {
         // 等待所有图片加载（含消息内嵌图、头像、二维码等）
         const allImgs = Array.from(exportEl.querySelectorAll('img'));
         const imgPromises = allImgs.map(img => {
-          // 跨域图片必须在 src 赋值前设置 crossOrigin，克隆节点时已经有 src 了
-          // 需要重置 src 才能触发带 CORS 头的请求
-          if (img.src && img.src.startsWith('http') && !img.src.includes(window.location.host)) {
-            const originalSrc = img.src;
-            img.crossOrigin = 'anonymous';
-            img.src = '';
-            img.src = originalSrc;
-          }
-          if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+          // 强制启用立即加载，防止 lazy-loading 导致截图空白
+          img.setAttribute('loading', 'eager');
+          
+          // 既然已经信任 MioPreviewer 且头像已带 crossorigin，这里只需等待加载即可
+          const needsReload = false;
+          
+          // 如果不需要重载且已经加载完成，则直接 resolve
+          if (!needsReload && img.complete && img.naturalWidth > 0) return Promise.resolve();
+          
           return new Promise(resolve => {
-            img.onload = resolve;
-            img.onerror = resolve;
-            setTimeout(resolve, 2000); // 2s 超时兜底，防止永久卡住
+            img.onload = () => {
+              console.log("[Export] Image loaded success:", img.src);
+              resolve();
+            };
+            img.onerror = () => {
+              console.warn("[Export] Image load failed:", img.src);
+              // 失败也要 resolve，否则会导致整个截图流程挂起
+              resolve();
+            };
+            setTimeout(resolve, 5000); // 增加到 5s 超时，为大图提供充足时间
           });
         });
 
@@ -1077,8 +1084,8 @@ export default {
           <div :id="item.role" class="message-body" :style="{ pointerEvents: isMultiSelect ? 'none' : 'auto' }">
             <div v-if="item.role !== 'mio_system'" class="avatar">
               <img v-if="item.role === 'other'" :src="activeContactor.avatar" :alt="activeContactor.name"
-                @click="toProfile" />
-              <img v-else :src="client.avatar" :alt="client.name" />
+                crossorigin="anonymous" @click="toProfile" />
+              <img v-else :src="client.avatar" :alt="client.name" crossorigin="anonymous" />
             </div>
             <div v-if="item.role !== 'mio_system'" class="msg">
               <div class="wholename">
@@ -1102,7 +1109,7 @@ export default {
                     " :custom-plugins="mioPlugins" :markdown-it-plugins="katexPluginList"
                     :markdown-it-options="mdOptions" />
                   <MdRenderer v-if="element.type === 'image'" :md="`![image](${element.data.file})`"
-                    :custom-plugins="mioPlugins" :theme="'github'" :key="element.data.file" />
+                    :custom-plugins="mioPlugins" :markdown-it-plugins="katexPluginList" :theme="'github'" :key="element.data.file" />
                   <div v-else-if="element.type === 'reply'" class="reply-block">
                     {{ getReplyText(element.data.id) }}
                   </div>

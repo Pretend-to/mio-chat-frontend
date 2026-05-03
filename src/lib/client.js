@@ -297,7 +297,14 @@ export default class Client extends EventEmitter {
         );
       }
 
-      // 1. Unregister all service workers
+      // 1. Clear the Cache Storage API (if available)
+      if (window.caches) {
+        console.log("Clearing Cache Storage API...");
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      }
+
+      // 2. Unregister all service workers
       const registrations = await navigator.serviceWorker.getRegistrations();
       if (registrations && registrations.length > 0) {
         console.log(
