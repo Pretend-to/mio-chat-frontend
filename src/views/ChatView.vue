@@ -206,13 +206,11 @@ export default {
     
     // 监听 Socket 连接状态以实现响应式更新
     if (this.client.socket) {
-      this.client.socket.on("connect", () => { this.isConnected = true; });
-      this.client.socket.on("disconnect", () => { this.isConnected = false; });
+      this.client.socket.on("connection_changed", (val) => { this.isConnected = val; });
     }
 
     client.on("socket_ready", (socket) => {
-       socket.on("connect", () => { this.isConnected = true; });
-       socket.on("disconnect", () => { this.isConnected = false; });
+       socket.on("connection_changed", (val) => { this.isConnected = val; });
     });
     
     // 获取.input-bar在页面中的高度，给inputBarTop赋值

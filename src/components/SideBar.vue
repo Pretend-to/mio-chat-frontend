@@ -49,12 +49,10 @@ export default {
     
     // 监听 Socket 连接状态以实现响应式更新
     if (client.socket) {
-      client.socket.on("connect", () => { this.isConnected = true; });
-      client.socket.on("disconnect", () => { this.isConnected = false; });
+      client.socket.on("connection_changed", (val) => { this.isConnected = val; });
     }
     client.on("socket_ready", (socket) => {
-       socket.on("connect", () => { this.isConnected = true; });
-       socket.on("disconnect", () => { this.isConnected = false; });
+       socket.on("connection_changed", (val) => { this.isConnected = val; });
     });
   },
   methods: {

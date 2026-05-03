@@ -62,7 +62,7 @@ export default class Socket extends EventEmitter {
     this.isAttemptingWebSocket = false; // Reset attempt flag
     const transport = this.socket.io?.engine?.transport?.name || "unknown";
     console.log(`SocketIO connected successfully via: ${transport}`);
-    this.emit("connect"); // 向外广播连接成功
+    this.emit("connection_changed", true); // 改名，避免与登录 connect 冲突
   }
 
   /**
@@ -72,7 +72,7 @@ export default class Socket extends EventEmitter {
   handleDisconnect(reason) {
     this.available = false;
     console.error(`SocketIO disconnected. Reason: ${reason}`);
-    this.emit("disconnect", reason); // 向外广播断开连接
+    this.emit("connection_changed", false); // 改名
     // 如果是 'io server disconnect'，Socket.IO 客户端不会自动重连，必须手动调用 connect()
     if (reason === "io server disconnect") {
       console.warn("Server forcefully disconnected the client. Attempting manual reconnection...");
