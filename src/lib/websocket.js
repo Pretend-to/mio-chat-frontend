@@ -296,7 +296,7 @@ export default class Socket extends EventEmitter {
    * @returns {AsyncGenerator<any>} - Completion data generator
    */
   streamCompletions(data, metaData) {
-    const request_id = randomString(16);
+    const request_id = metaData?.messageId || randomString(16);
     const request = {
       request_id,
       protocol: "llm",
