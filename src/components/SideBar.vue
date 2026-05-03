@@ -106,7 +106,8 @@ export default {
       try {
         this.processedImage = await this.processImage(adminAvatar);
       } catch (error) {
-        console.error("Error loading avatar:", error);
+        console.error("Error processing avatar, falling back to original:", error);
+        this.processedImage = adminAvatar; // 降级：如果 Canvas 处理失败，直接用原图
       }
     },
     getPageStatusFromRoute(route = this.$route) {

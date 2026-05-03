@@ -1084,8 +1084,8 @@ export default {
           <div :id="item.role" class="message-body" :style="{ pointerEvents: isMultiSelect ? 'none' : 'auto' }">
             <div v-if="item.role !== 'mio_system'" class="avatar">
               <img v-if="item.role === 'other'" :src="activeContactor.avatar" :alt="activeContactor.name"
-                crossorigin="anonymous" @click="toProfile" />
-              <img v-else :src="client.avatar" :alt="client.name" crossorigin="anonymous" />
+                @click="toProfile" />
+              <img v-else :src="client.avatar" :alt="client.name" />
             </div>
             <div v-if="item.role !== 'mio_system'" class="msg">
               <div class="wholename">
