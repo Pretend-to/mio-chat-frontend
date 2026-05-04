@@ -1,303 +1,329 @@
-<script>
+<script setup>
+import { ref, computed, onMounted, onBeforeUnmount, getCurrentInstance } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { client, config } from "@/lib/runtime.js";
-import AddContactor from "@/components/AddContactor.vue"
-import { shareOrCopy } from "@/utils/tools.js";
+import AddContactor from "@/components/AddContactor.vue";
 import ContextMenu from "@/components/ContextMenu.vue";
+import { shareOrCopy } from "@/utils/tools.js";
+import { processAvatarWithStatusHole, getAdminAvatarUrl } from "@/utils/avatar.js";
+import StatusDot from "@/components/StatusDot.vue";
 
-export default {
-  components: {
-    AddContactor,
-    ContextMenu,
-  },
-  data() {
-    return {
-      contactorList: [],
-      showAddWindow: false,
-      showMenu: false,
-      menuX: 0,
-      menuY: 0,
-      selectedFriend: null,
-      longPressTimer: null,
-      lastClickTime: 0,
-    };
-  },
-  computed: {
-    sortedList() {
-      return [...this.contactorList].sort((a, b) =>
-        b.priority < a.priority ? 1 : b.lastUpdate - a.lastUpdate,
-      );
-    },
-    avaliableProvideres() {
-      return config.getLLMProviders().map((item) => item.value);
-    },
-  },
-  created() {
-    if (client.getContactors().length == 0) {
-      client.on(
-        "loaded",
-        () => {
-          this.contactorList = client.getContactors();
-          this.addReactiveListener();
-        },
-        false,
-      );
-    } else {
-      this.contactorList = client.getContactors();
-      this.addReactiveListener();
-    }
-  },
-  methods: {
-    genBotByShareCode() {
-      this.showAddWindow = false;
-      this.$emit("open-share-code-window");
-    },
-    openAddWindow() {
-      this.showAddWindow = true;
-    },
-    showChat(id) {
-      // 如果当前路径 name 是 blank 或者 chat_view ，跳转到 /chat/:id
-      if (this.$route.name == "blank" || this.$route.name == "chat_view") {
-        this.$router.push({ name: "chat_view", params: { id: id } });
-      } else if (
-        this.$route.name == "contactors" ||
-        this.$route.name == "profile_view"
-      ) {
-        this.$router.push({ name: "profile_view", params: { id: id } });
-      } else {
-        // 否则，直接跳转到 /chat/:id
-        this.$router.replace({ name: "chat_view", params: { id: id } });
-      }
-    },
-    getId(item) {
-      // 获取当前页面的id
-      let currentId = this.$route.params.id;
-      // 获取当前页面的contactorId
-      let contactorId = item.id;
-      // 如果当前页面的id和contactorId相同，则返回active
-      if (currentId == contactorId) {
-        return "active";
-      } else {
-        return item.priority == 0 ? "important" : "";
-      }
-    },
-    async genBotByProvider(provider) {
-      const options = config.getLLMDefaultConfig(provider);
-      const blankConfig = {
-        id: this.genFakeId(),
-        title: options.base.model,
-        avatarPolicy: 0,
-        namePolicy: 2,
-        priority: 1,
-        options: options,
-      };
+// Emits
+const emit = defineEmits(['open-share-code-window']);
 
-      await client.addConcator("openai", blankConfig);
-      this.addReactiveListener();
-    },
-    startResize(event) {
-      this.isResizing = true;
-      this.startX = event.clientX;
-      this.startWidth = this.$refs.friendlists.offsetWidth;
-      document.addEventListener("mousemove", this.resize);
-      document.addEventListener("mouseup", this.stopResize);
-    },
-    resize(event) {
-      if (this.isResizing) {
-        // debugger;
-        let newWidth = this.startWidth + (event.clientX - this.startX);
-        const remSize = document.documentElement.style.fontSize
-          ? parseFloat(document.documentElement.style.fontSize)
-          : 16;
-        const maxWidth = 20 * remSize;
-        const minWidth = 12 * remSize;
-        newWidth =
-          newWidth > maxWidth
-            ? maxWidth
-            : newWidth < minWidth
-              ? minWidth
-              : newWidth;
-        this.$refs.friendlists.style.minWidth = newWidth + "px";
-        this.$refs.friendlists.style.maxWidth = newWidth + "px";
-      }
-    },
-    stopResize() {
-      this.isResizing = false;
-      document.removeEventListener("mousemove", this.resize);
-      document.removeEventListener("mouseup", this.stopResize);
-    },
-    genFakeId() {
-      return client.genFakeId();
-    },
-    mergeOptions(options) {
-      const defaultOptions = config.getLLMDefaultConfig();
-      if (options.history)
-        defaultOptions.presetSettings.history = options.history;
-      if (options.tools?.length > 0) {
-        // 预设存储的是工具短名（如 'searchInternet'），
-        // 但前端 llmTools 使用的是带 hash 后缀的完整名（如 'searchInternet_mid_abc123'）。
-        // 这里通过前缀匹配将短名解析为完整名。
-        const resolvedTools = [];
-        const allPluginTools = Object.values(config.llmTools || {});
-        for (const shortName of options.tools) {
-          let found = false;
-          for (const pluginTools of allPluginTools) {
-            if (!pluginTools || typeof pluginTools !== 'object') continue;
-            const fullName = Object.keys(pluginTools).find(
-              name => name === shortName || name.startsWith(shortName + '_mid_')
-            );
-            if (fullName) {
-              resolvedTools.push(fullName);
-              found = true;
-              break;
-            }
-          }
-          if (!found) {
-            console.warn(`[mergeOptions] 工具 "${shortName}" 未在已加载的工具列表中找到，已跳过。`);
-          }
-        }
-        defaultOptions.toolCallSettings.tools = resolvedTools;
-      }
-      if (options.opening)
-        defaultOptions.presetSettings.opening = options.opening;
+// Route & Router
+const route = useRoute();
+const router = useRouter();
 
-      if (options.model) {
-        // 先获取可用的 provider 列表
-        const availableProviders = config
-          .getLLMProviders()
-          .map((item) => item.value);
-        // 看看哪个 provider 里面有这个 model
-        const provider = availableProviders.find((provider) =>
-          config.isModelAvailable(provider, options.model),
-        );
-        if (provider) {
-          // 如果找到了 provider，就使用这个 provider
-          defaultOptions.provider = provider;
-          defaultOptions.base.model = options.model;
-        } else {
-          // 如果没有找到 provider，就使用默认的 provider
-          defaultOptions.base.model = options.model;
-          this.$message({
-            message: "预设模型不存在, 已使用默认模型",
-            type: "error",
-          });
-        }
-      }
-      return defaultOptions;
-    },
-    async addPresetContactor(preset) {
-      const contactor = {
-        id: this.genFakeId(),
-        namePolicy: 1,
-        avatarPolicy: preset.avatar ? 1 : 0,
-        avatar: preset.avatar ? preset.avatar : undefined,
-        name: preset.name,
-        title: preset.title,
-        priority: 1,
-        options: this.mergeOptions(preset),
-      };
-      await client.addConcator("openai", contactor);
-      this.addReactiveListener();
-    },
-    showFriendContextMenu(event, friend) {
-      if (event.preventDefault) event.preventDefault();
-      this.selectedFriend = friend;
-      this.menuX = event.clientX;
-      this.menuY = event.clientY;
-      this.showMenu = true;
+// Instance for $message (保持与原版 this.$message 调用一致)
+const { proxy } = getCurrentInstance();
 
-      const closeMenu = () => {
-        this.showMenu = false;
-        document.removeEventListener("click", closeMenu);
-      };
-      document.addEventListener("click", closeMenu);
-    },
+// Data
+const onPhone = ref(window.innerWidth < 600);
+const processedImage = ref(client.avatar || "/p/qava?q=1099834705");
+const isConnected = ref(client.socket?.available || false);
+const contactorList = ref([]);
+const showAddWindow = ref(false);
+const showMenu = ref(false);
+const menuX = ref(0);
+const menuY = ref(0);
+const selectedFriend = ref(null);
+const lastClickTime = ref(0);
 
-    handleTouchStart(event, item) {
-      const now = Date.now();
-      const delay = now - this.lastClickTime;
+// Refs for template
+const friendlists = ref(null);
 
-      if (delay < 350 && delay > 0) {
-        // Double tap detected
-        if (event.cancelable) event.preventDefault();
-        const touch = event.touches[0];
-        const syntheticEvent = {
-          clientX: touch.clientX,
-          clientY: touch.clientY,
-          preventDefault: () => {
-            if (event.preventDefault) event.preventDefault();
-          },
-        };
-        this.showFriendContextMenu(syntheticEvent, item);
-        this.lastClickTime = 0;
-      } else {
-        this.lastClickTime = now;
-      }
-    },
-    handleTouchEnd() { },
-    handleTouchMove() { },
+// Resizing logic
+let isResizing = false;
+let startX = 0;
+let startWidth = 0;
 
-    async handleFriendOption(option) {
-      switch (option) {
-        case "enter":
-          this.showChat(this.selectedFriend.id);
-          break;
-        case "priority":
-          this.selectedFriend.priority =
-            this.selectedFriend.priority === 0 ? 1 : 0;
-          client.setLocalStorage();
-          break;
-        case "share": {
-          const shareResult = await client.shareContactor(
-            this.selectedFriend.id,
-          );
-          if (shareResult && shareResult.shareUrl) {
-            const { shareUrl } = shareResult;
-            // 首先尝试调用分享api
-            const { success, message } = shareOrCopy(shareUrl);
-            if (success) {
-              this.$message({
-                message: message,
-                type: "success",
-              });
-            } else {
-              this.$message({
-                message: message,
-                type: "error",
-              });
-            }
-          }
-          break;
-        }
-        case "delete": {
-          let index;
-          index = this.contactorList.findIndex(
-            (c) => c.id === this.selectedFriend.id,
-          );
-          if (index !== -1) {
-            this.contactorList.splice(index, 1);
-            client.setLocalStorage();
-          }
-          break;
-        }
-      }
-      this.showMenu = false;
-    },
+// Computed
+const sortedList = computed(() => {
+  return [...contactorList.value].sort((a, b) =>
+    b.priority < a.priority ? 1 : b.lastUpdate - a.lastUpdate,
+  );
+});
 
-    addReactiveListener() {
-      this.contactorList.map((contactor) => {
-        contactor.on("updateMessageSummary", () => {
-          contactor.lastMessageSummary = contactor.getLastMessageSummary();
-          this.$forceUpdate();
-        });
-      });
-    },
-  },
+// Methods
+const handleResize = () => {
+  onPhone.value = window.innerWidth < 600;
 };
+
+const addReactiveListener = () => {
+  contactorList.value.forEach((contactor) => {
+    contactor.on("updateMessageSummary", () => {
+      contactor.lastMessageSummary = contactor.getLastMessageSummary();
+    });
+  });
+};
+
+const loadAvatar = async (adminId) => {
+  const adminAvatar = getAdminAvatarUrl(adminId);
+  try {
+    processedImage.value = await processAvatarWithStatusHole(adminAvatar);
+  } catch (error) {
+    processedImage.value = adminAvatar;
+  }
+};
+
+const initStatus = () => {
+  const adminId = client.admin_qq;
+  if (adminId) loadAvatar(adminId);
+
+  const updateStatus = () => {
+    if (client.socket) {
+      isConnected.value = !!client.socket.available;
+    }
+  };
+
+  // 初始同步一次
+  updateStatus();
+
+  if (client.socket) {
+    client.socket.on("connection_changed", (val) => { isConnected.value = val; });
+  }
+};
+
+const genFakeId = () => client.genFakeId();
+
+const openAddWindow = () => {
+  showAddWindow.value = true;
+};
+
+const genBotByShareCode = () => {
+  showAddWindow.value = false;
+  emit("open-share-code-window");
+};
+
+const showChat = (id) => {
+  if (route.name == "blank" || route.name == "chat_view") {
+    router.push({ name: "chat_view", params: { id } });
+  } else if (route.name == "contactors" || route.name == "profile_view") {
+    router.push({ name: "profile_view", params: { id } });
+  } else {
+    router.replace({ name: "chat_view", params: { id } });
+  }
+};
+
+const getId = (item) => {
+  let currentId = route.params.id;
+  if (currentId == item.id) return "active";
+  return item.priority == 0 ? "important" : "";
+};
+
+const mergeOptions = (options) => {
+  const defaultOptions = config.getLLMDefaultConfig();
+  if (options.history) defaultOptions.presetSettings.history = options.history;
+  if (options.tools?.length > 0) {
+    // 预设存储的是工具短名（如 'searchInternet'），
+    // 但前端 llmTools 使用的是带 hash 后缀的完整名（如 'searchInternet_mid_abc123'）。
+    // 这里通过前缀匹配将短名解析为完整名。
+    const resolvedTools = [];
+    const allPluginTools = Object.values(config.llmTools || {});
+    for (const shortName of options.tools) {
+      let found = false;
+      for (const pluginTools of allPluginTools) {
+        if (!pluginTools || typeof pluginTools !== 'object') continue;
+        const fullName = Object.keys(pluginTools).find(
+          name => name === shortName || name.startsWith(shortName + '_mid_')
+        );
+        if (fullName) {
+          resolvedTools.push(fullName);
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        console.warn(`[mergeOptions] 工具 "${shortName}" 未在已加载的工具列表中找到，已跳过。`);
+      }
+    }
+    defaultOptions.toolCallSettings.tools = resolvedTools;
+  }
+  if (options.opening) defaultOptions.presetSettings.opening = options.opening;
+  if (options.model) {
+    const availableProviders = config.getLLMProviders().map((item) => item.value);
+    const provider = availableProviders.find((p) => config.isModelAvailable(p, options.model));
+    if (provider) {
+      defaultOptions.provider = provider;
+      defaultOptions.base.model = options.model;
+    } else {
+      defaultOptions.base.model = options.model;
+      proxy.$message({ message: "预设模型不存在, 已使用默认模型", type: "error" });
+    }
+  }
+  return defaultOptions;
+};
+
+const addPresetContactor = async (preset) => {
+  const contactor = {
+    id: genFakeId(),
+    namePolicy: 1,
+    avatarPolicy: preset.avatar ? 1 : 0,
+    avatar: preset.avatar || undefined,
+    name: preset.name,
+    title: preset.title,
+    priority: 1,
+    options: mergeOptions(preset),
+  };
+  await client.addConcator("openai", contactor);
+  addReactiveListener();
+};
+
+const genBotByProvider = async (provider) => {
+  const options = config.getLLMDefaultConfig(provider);
+  const blankConfig = {
+    id: genFakeId(),
+    title: options.base.model,
+    avatarPolicy: 0,
+    namePolicy: 2,
+    priority: 1,
+    options: options,
+  };
+  await client.addConcator("openai", blankConfig);
+  addReactiveListener();
+};
+
+const showFriendContextMenu = (event, friend) => {
+  if (event.preventDefault) event.preventDefault();
+  selectedFriend.value = friend;
+  menuX.value = event.clientX;
+  menuY.value = event.clientY;
+  showMenu.value = true;
+  const closeMenu = () => {
+    showMenu.value = false;
+    document.removeEventListener("click", closeMenu);
+  };
+  document.addEventListener("click", closeMenu);
+};
+
+const handleTouchStart = (event, item) => {
+  const now = Date.now();
+  const delay = now - lastClickTime.value;
+  if (delay < 350 && delay > 0) {
+    if (event.cancelable) event.preventDefault();
+    const touch = event.touches[0];
+    showFriendContextMenu({
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+      preventDefault: () => event.preventDefault?.()
+    }, item);
+    lastClickTime.value = 0;
+  } else {
+    lastClickTime.value = now;
+  }
+};
+
+const handleFriendOption = async (option) => {
+  switch (option) {
+    case "enter": showChat(selectedFriend.value.id); break;
+    case "priority":
+      selectedFriend.value.priority = selectedFriend.value.priority === 0 ? 1 : 0;
+      client.setLocalStorage();
+      break;
+    case "share": {
+      const shareResult = await client.shareContactor(selectedFriend.value.id);
+      if (shareResult?.shareUrl) {
+        const { success, message } = shareOrCopy(shareResult.shareUrl);
+        proxy.$message({ message, type: success ? "success" : "error" });
+      }
+      break;
+    }
+    case "delete": {
+      const index = contactorList.value.findIndex((c) => c.id === selectedFriend.value.id);
+      if (index !== -1) {
+        contactorList.value.splice(index, 1);
+        client.setLocalStorage();
+      }
+      break;
+    }
+  }
+  showMenu.value = false;
+};
+
+const startResize = (event) => {
+  isResizing = true;
+  startX = event.clientX;
+  startWidth = friendlists.value.offsetWidth;
+  document.addEventListener("mousemove", resize);
+  document.addEventListener("mouseup", stopResize);
+};
+
+const resize = (event) => {
+  if (!isResizing) return;
+  let newWidth = startWidth + (event.clientX - startX);
+  const remSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  const maxWidth = 20 * remSize;
+  const minWidth = 12 * remSize;
+  newWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+  friendlists.value.style.minWidth = newWidth + "px";
+  friendlists.value.style.maxWidth = newWidth + "px";
+};
+
+const stopResize = () => {
+  isResizing = false;
+  document.removeEventListener("mousemove", resize);
+  document.removeEventListener("mouseup", stopResize);
+};
+
+// Lifecycle
+onMounted(() => {
+  const initList = () => {
+    contactorList.value = client.getContactors();
+    addReactiveListener();
+  };
+
+  if (client.getContactors().length === 0) {
+    client.on("loaded", initList, false);
+  } else {
+    initList();
+  }
+
+  window.addEventListener('resize', handleResize);
+
+  if (client.inited) initStatus();
+  else client.on("loaded", initStatus, false);
+
+  client.on("socket_ready", (socket) => {
+    isConnected.value = !!socket.available;
+    socket.on("connection_changed", (val) => { isConnected.value = !!val; });
+  });
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize);
+});
 </script>
 
 <template>
   <div id="friendlists" ref="friendlists">
-    <div id="friends" class="upsidebar">
+    <div v-if="onPhone" class="mobile-qq-header">
+      <div class="header-top">
+        <div class="user-info">
+          <div class="user-avatar">
+            <StatusDot :online="isConnected" size="14px" class="status-dot-mobile" />
+            <img :src="processedImage" alt="avatar" />
+          </div>
+          <div class="user-detail">
+            <div class="user-name">{{ client.name === 'user' ? '秋山 澪' : client.name }}</div>
+            <div class="user-status">
+              <StatusDot :online="isConnected" size="8px" border="none" />
+              在线 - WiFi >
+            </div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <i class="iconfont add" @click="openAddWindow"></i>
+        </div>
+      </div>
+      <div class="header-search">
+        <div class="search-bar">
+          <i class="iconfont sousuo"></i>
+          <span>搜索</span>
+        </div>
+      </div>
+    </div>
+    <div v-else id="friends" class="upsidebar">
       <div class="search">
         <i class="iconfont sousuo listicon"></i>
         <input id="main-search" type="text" placeholder="搜索" />
@@ -543,6 +569,109 @@ button#addcont {
     flex-direction: column;
     width: 100%;
     max-width: none;
+    background-color: #f8f9fb;
+  }
+
+  .mobile-qq-header {
+    padding: 1rem 1rem 0.5rem 1rem;
+    background-color: #f8f9fb;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .user-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    /* overflow: hidden; */
+    /* 移除 hidden 允许状态点溢出显示 */
+    position: relative;
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .user-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .status-dot-mobile {
+    position: absolute;
+    right: -1px;
+    bottom: -1px;
+    z-index: 2;
+  }
+
+  .user-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .user-name {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    line-height: 1.2;
+  }
+
+  .user-status {
+    font-size: 0.75rem;
+    color: #8e8e8e;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .header-actions .add {
+    font-size: 1.5rem;
+    color: #333;
+    cursor: pointer;
+  }
+
+  .header-search {
+    padding: 2px 0;
+  }
+
+  .search-bar {
+    height: 36px;
+    background-color: #fff;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #999;
+    font-size: 0.95rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  }
+
+  .search-bar .sousuo {
+    font-size: 1rem;
+  }
+
+  .people {
+    background-color: #fff;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    padding-top: 0.5rem;
+    flex-grow: 1;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.03);
   }
 }
 </style>

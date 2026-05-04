@@ -13,6 +13,7 @@ import { snapdom } from "@zumer/snapdom";
 import QRCode from "qrcode";
 import { client } from "@/lib/runtime.js";
 import { shareOrCopy } from "@/utils/tools.js";
+import StatusDot from "@/components/StatusDot.vue";
 
 export default {
   components: {
@@ -23,6 +24,7 @@ export default {
     ToolCallBar,
     FileBlock,
     ReasonBlock,
+    StatusDot,
   },
   data() {
     let preview = false;
@@ -206,11 +208,13 @@ export default {
     
     // 监听 Socket 连接状态以实现响应式更新
     if (this.client.socket) {
-      this.client.socket.on("connection_changed", (val) => { this.isConnected = val; });
+      this.isConnected = !!this.client.socket.available;
+      this.client.socket.on("connection_changed", (val) => { this.isConnected = !!val; });
     }
 
     client.on("socket_ready", (socket) => {
-       socket.on("connection_changed", (val) => { this.isConnected = val; });
+       this.isConnected = !!socket.available;
+       socket.on("connection_changed", (val) => { this.isConnected = !!val; });
     });
     
     // 获取.input-bar在页面中的高度，给inputBarTop赋值
@@ -1043,7 +1047,7 @@ export default {
       </div>
       <div class="name-area" @click="toProfile">
         <div class="contactor-name">{{ activeContactor.name }}</div>
-        <span :class="'delay-status ' + getDelayStatus" :title="client.socket?.connected ? '在线' : '离线'"></span>
+        <StatusDot :online="isConnected" size="0.8rem" class="status-dot-chat" />
       </div>
       <ul class="options">
         <li class="share" @click="share()">
@@ -1458,26 +1462,13 @@ $icon-hover: #09f
             overflow: hidden
             max-width: 10rem
 
-        .delay-status
-            width: .8rem
-            height: .8rem
-            border-radius: 50%
+        .status-dot-chat
             margin-left: .5rem
             position: relative
             top: .1rem
 
             @media screen and (max-width: $mobile)
               display: none
-
-
-            &:hover + .delay-num
-                display: inline-block
-
-            &.ultra
-                background-color: rgb(53, 233, 146)
-
-            &.offline
-                background-color: #ccc
 
     .options
         flex-basis: 10rem

@@ -1,5 +1,7 @@
 <script>
 import { client } from "@/lib/runtime.js";
+import { processAvatarWithStatusHole, getAdminAvatarUrl } from "@/utils/avatar.js";
+import StatusDot from "@/components/StatusDot.vue";
 
 const PageStatus = {
   CHAT: "chat",
@@ -8,6 +10,9 @@ const PageStatus = {
   NONE: "none",
 };
 export default {
+  components: {
+    StatusDot,
+  },
   data() {
     return {
       processedImage: "/p/qava?q=1099834705",
@@ -49,43 +54,15 @@ export default {
     
     // 监听 Socket 连接状态以实现响应式更新
     if (client.socket) {
-      client.socket.on("connection_changed", (val) => { this.isConnected = val; });
+      this.isConnected = !!client.socket.available;
+      client.socket.on("connection_changed", (val) => { this.isConnected = !!val; });
     }
     client.on("socket_ready", (socket) => {
-       socket.on("connection_changed", (val) => { this.isConnected = val; });
+       this.isConnected = !!socket.available;
+       socket.on("connection_changed", (val) => { this.isConnected = !!val; });
     });
   },
   methods: {
-    async processImage(imageUrl) {
-      return new Promise((resolve, reject) => {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        const img = new Image();
-        img.src = imageUrl;
-        img.onload = () => {
-          canvas.width = img.width;
-          canvas.height = img.height;
-          // 绘制原始图片
-          ctx.drawImage(img, 0, 0);
-          // 创建透明的缺口
-          let centerX = img.width * 0.8; // 圆心X坐标
-          let centerY = img.height * 0.86; // 圆心Y坐标
-          let radius = (5 / 24) * img.width; // 圆的半径
-          ctx.beginPath();
-          ctx.arc(centerX, centerY, radius, 0, Math.PI * 2, true);
-          ctx.clip();
-          ctx.clearRect(0, 0, img.width, img.height);
-          // 将处理后的图片转换为base64
-          canvas.toBlob((blob) => {
-            const url = URL.createObjectURL(blob);
-            resolve(url);
-          }, "image/png");
-        };
-        img.onerror = (error) => {
-          reject(error);
-        };
-      });
-    },
     async toChat() {
       this.activePage = PageStatus.CHAT;
       this.$router.push({ name: "blank" });
@@ -99,15 +76,12 @@ export default {
       this.$router.push({ name: "settings" });
     },
     async loadAvatar(adminId) {
-      let adminAvatar = `/p/qava?q=${adminId}`;
-      if (typeof adminId === "string" && (adminId.startsWith("http") || adminId.startsWith("/"))) {
-        adminAvatar = adminId;
-      }
+      const adminAvatar = getAdminAvatarUrl(adminId);
       try {
-        this.processedImage = await this.processImage(adminAvatar);
+        this.processedImage = await processAvatarWithStatusHole(adminAvatar);
       } catch (error) {
         console.error("Error processing avatar, falling back to original:", error);
-        this.processedImage = adminAvatar; // 降级：如果 Canvas 处理失败，直接用原图
+        this.processedImage = adminAvatar;
       }
     },
     getPageStatusFromRoute(route = this.$route) {
@@ -129,7 +103,7 @@ export default {
 <template>
   <div id="sidebar">
     <div class="admin-avatar">
-      <div :class="['status', isConnected ? 'online' : 'offline']"></div>
+      <StatusDot :online="isConnected" size="0.75rem" class="status-dot-pos" />
       <img :src="processedImage" alt="admin-avatar" />
     </div>
     <div id="side" class="options">
@@ -224,21 +198,12 @@ export default {
   border-radius: 50%;
   width: 60%;
 }
-.status {
+.status-dot-pos {
   position: absolute;
   left: 68%;
   top: 71%;
   transform: translate(-50%, -50%);
-  width: 0.7rem;
-  height: 0.7rem;
-  border-radius: 50%;
-  border: 1px solid #fff;
-}
-.status.online {
-  background: linear-gradient(to bottom, rgb(52, 238, 143), rgb(54, 221, 150));
-}
-.status.offline {
-  background: #ccc;
+  z-index: 11;
 }
 .side-icon {
   display: flex;
