@@ -1,9 +1,9 @@
 <template>
   <div class="reason-block" :class="{ 'is-collapsed': !show }">
     <div class="head-bar" @click="toggleShow">
-      <div class="reason-info">
+      <i class="mio-icon mio-icon-thinking" :class="{ 'is-loading': !endTime }"></i>
+      <div class="reason-info" :class="{ 'is-loading': !endTime }">
         {{ getReasonInfo }}
-        <span v-if="!endTime" class="thinking-dot">...</span>
       </div>
       <button :class="{ active: show, 'extra-info-button': true }">
         <svg class="chevron" viewBox="0 0 1024 1024" width="10" height="10">
@@ -143,13 +143,12 @@ export default {
   transition: color 0.2s;
 }
 
-.thinking-dot {
-  display: inline-block;
+.is-loading {
   animation: dot-blink 1.5s infinite;
 }
 
 @keyframes dot-blink {
-  0%, 100% { opacity: 0.2; }
+  0%, 100% { opacity: 0.35; }
   50% { opacity: 1; }
 }
 

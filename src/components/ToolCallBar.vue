@@ -1,34 +1,34 @@
 <template>
   <div class="tool-call-block">
-    <div class="tool-call-bar" :class="[toolCall.action, { 'is-success': toolCallSuccess, 'is-fail': toolCallFail }]" @click="toggleExtraInfo">
-      <!-- 信息区 -->
-      <div class="tool-content">
-        <div class="tool-main">
-          <template v-if="toolCall.name.startsWith('Skill_mid_')">
-            <span class="tool-name skill-style">
-              <i class="iconfont icon-book" style="margin-right: 4px;"></i>
-              {{ getSkillName(toolCall.parameters) }}
-            </span>
-            <span class="tool-status-text skill-status">{{ skill_status_text }}</span>
-          </template>
-          <template v-else>
-            <span class="tool-name">{{ toolCall.name.split("_mid_")[0] }}</span>
-            <span class="tool-status-text">{{ call_status }}</span>
-          </template>
-        </div>
-      </div>
+    <div class="tool-call-bar" :class="[toolCall.action, { 'is-success': toolCallSuccess, 'is-fail': toolCallFail }]"
+      @click="toggleExtraInfo">
+      <template v-if="toolCall.name.startsWith('Skill_mid_') || toolCall.name === 'Skill'">
+        <i class="mio-icon mio-icon-skill" :class="{ 'is-loading': toolCall.action === 'running' || toolCall.action === 'pending' }"></i>
+        <span class="tool-name" :class="{ 'is-loading': toolCall.action === 'running' || toolCall.action === 'pending' }">
+          {{ getSkillName(toolCall.parameters) }}
+        </span>
+        <span class="tool-status-text">{{ skill_status_text }}</span>
+      </template>
+      <template v-else>
+        <i class="mio-icon mio-icon-tool" :class="{ 'is-loading': toolCall.action === 'running' || toolCall.action === 'pending' }"></i>
+        <span class="tool-name" :class="{ 'is-loading': toolCall.action === 'running' || toolCall.action === 'pending' }">
+          {{ toolCall.name.split("_mid_")[0] }}
+        </span>
+        <span class="tool-status-text">{{ call_status }}</span>
+      </template>
 
-      <!-- 状态指示器 (仅在运行中或失败时显示) -->
-      <div v-if="toolCall.action === 'running' || toolCall.action === 'pending' || toolCallFail" class="status-indicator">
-        <div v-if="toolCall.action === 'running' || toolCall.action === 'pending'" class="mini-spinner"></div>
-        <div v-else-if="toolCallFail" class="dot fail"></div>
+      <!-- 状态指示器 (仅在失败时显示) -->
+      <div v-if="toolCallFail" class="status-indicator">
+        <div class="dot fail"></div>
       </div>
 
       <!-- 右侧操作区 -->
       <div class="tool-actions">
         <button :class="{ active: showExtraInfo, 'action-btn': true }">
           <svg class="chevron" viewBox="0 0 1024 1024" width="10" height="10">
-            <path d="M338.752 104.704a64 64 0 0 0 0 90.496l316.8 316.8-316.8 316.8a64 64 0 0 0 90.496 90.496l362.048-362.048a64 64 0 0 0 0-90.496L429.248 14.208a64 64 0 0 0-90.496 90.496z" fill="currentColor"></path>
+            <path
+              d="M338.752 104.704a64 64 0 0 0 0 90.496l316.8 316.8-316.8 316.8a64 64 0 0 0 90.496 90.496l362.048-362.048a64 64 0 0 0 0-90.496L429.248 14.208a64 64 0 0 0-90.496 90.496z"
+              fill="currentColor"></path>
           </svg>
         </button>
       </div>
@@ -104,9 +104,10 @@ export default {
       } catch (e) { return String(r); }
     },
     skill_status_text() {
-      if (this.toolCall.action === "finished") return "执行成功";
-      if (this.toolCall.action === "failed") return "执行失败";
-      return "正在处理...";
+      if (this.toolCall.action === "finished") return "已激活";
+      if (this.toolCall.action === "failed") return "失败";
+      if (this.toolCall.action === "running") return "执行中";
+      return "准备中";
     },
   },
   watch: {
@@ -145,6 +146,7 @@ export default {
 .tool-call-block {
   display: flex;
   flex-direction: column;
+  margin: 2px 0;
 }
 
 .tool-call-bar {
@@ -152,21 +154,22 @@ export default {
   align-items: center;
   width: fit-content;
   height: 32px;
-  margin: 2px 0;
   background: transparent;
   border: none;
   transition: all 0.2s;
   user-select: none;
   cursor: pointer;
-  gap: 8px;
+  gap: 6px;
 }
 
 .tool-call-bar .tool-name {
-  color: #555; /* 正常状态加深 */
+  color: #555;
+  /* 正常状态加深 */
 }
 
 .tool-call-bar:hover .tool-name {
-  color: #222; /* 悬浮状态进一步加深 */
+  color: #222;
+  /* 悬浮状态进一步加深 */
 }
 
 .tool-call-bar .tool-actions {
@@ -177,21 +180,9 @@ export default {
   color: #888;
 }
 
-.tool-content {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.tool-main {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .tool-name {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   transition: color 0.2s;
 }
 
@@ -213,25 +204,26 @@ export default {
   border-radius: 50%;
 }
 
-.dot.fail { background: #ff4d4f; }
-
-.mini-spinner {
-  width: 10px;
-  height: 10px;
-  border: 1.5px solid rgba(24, 144, 255, 0.1);
-  border-top-color: #1890ff;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+.dot.fail {
+  background: #ff4d4f;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.is-loading {
+  animation: dot-blink 1.5s infinite;
 }
+
+@keyframes dot-blink {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+
 
 .tool-actions {
   display: flex;
   align-items: center;
-  color: #bbb; /* 统一颜色 */
+  color: #bbb;
+  /* 统一颜色 */
 }
 
 .action-btn {
@@ -259,7 +251,8 @@ export default {
   overflow: hidden;
   transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
   opacity: 0;
-  will-change: max-height; /* 性能优化 */
+  will-change: max-height;
+  /* 性能优化 */
 }
 
 .tool-details.is-expanded {
@@ -302,7 +295,8 @@ export default {
 .copy-text-btn {
   background: transparent;
   border: none;
-  color: #aaa; /* 与标签一致的浅灰色 */
+  color: #aaa;
+  /* 与标签一致的浅灰色 */
   cursor: pointer;
   padding: 0;
   font-size: 10px;
@@ -313,7 +307,8 @@ export default {
 }
 
 .copy-text-btn:hover {
-  color: #1890ff; /* 悬浮时变蓝 */
+  color: #1890ff;
+  /* 悬浮时变蓝 */
   opacity: 1;
 }
 
@@ -335,17 +330,10 @@ export default {
 .tool-details::-webkit-scrollbar {
   width: 3px;
 }
+
 .tool-details::-webkit-scrollbar-thumb {
   background-color: #eee;
   border-radius: 2px;
 }
 
-.skill-style {
-  color: #722ed1 !important;
-}
-
-.skill-status {
-  color: #9254de !important;
-  opacity: 0.8;
-}
 </style>

@@ -374,7 +374,7 @@ export default {
     },
     updateEnabledTools() {
       const enabledTools = this.modelValue.toolCallSettings?.tools || [];
-      
+
       // 1. 同步 modelValue 中的已启用工具
       this.localAllLLMTools = this.localAllLLMTools.map((plugin) => {
         const updatedTools = plugin.tools.map((tool) => ({
