@@ -75,28 +75,14 @@ export default {
       <router-view></router-view>
       <sideBar v-if="!onPrivate"></sideBar>
     </div>
-    <div
-      v-else
-      class="app-desktop"
-      :class="{ fullscreen: fullScreen || isTauri }"
-    >
-      <displayButtons
-        v-if="!hideDisplayButtons"
-        :full-screen
-        @close="closeApp"
-        @set-screen="setWindowSize"
-      ></displayButtons>
+    <div v-else class="app-desktop" :class="{ fullscreen: fullScreen || isTauri }">
+      <displayButtons v-if="!hideDisplayButtons" :full-screen @close="closeApp" @set-screen="setWindowSize">
+      </displayButtons>
       <sideBar></sideBar>
       <router-view></router-view>
     </div>
   </div>
-  <a
-    v-if="beian"
-    id="beian"
-    href="https://beian.miit.gov.cn/"
-    target="_blank"
-    >{{ beian }}</a
-  >
+  <a v-if="beian" id="beian" href="https://beian.miit.gov.cn/" target="_blank">{{ beian }}</a>
 </template>
 <style scoped>
 #mio-chat {
@@ -110,9 +96,11 @@ export default {
   background-position: center;
   background-repeat: no-repeat;
 }
+
 #mio-chat.browser {
   background-image: url(/static/background/default.png);
 }
+
 #mio-chat.browser::before {
   content: "";
   position: absolute;
@@ -123,6 +111,7 @@ export default {
   background-color: rgba(0, 0, 0, 0.5);
   /* 黑色蒙版，可调整透明度 */
 }
+
 .app-desktop {
   position: relative;
   width: 60rem;
@@ -136,12 +125,14 @@ export default {
   margin: 5rem 5rem;
   min-width: 35rem;
 }
+
 .app-desktop.fullscreen {
   width: 100%;
   height: 100%;
   border-radius: 0rem;
   margin: 0rem;
 }
+
 .app-mobile {
   width: 100%;
   height: 100%;
@@ -152,7 +143,10 @@ export default {
   flex-direction: column;
   overflow: hidden;
   margin: 0;
+  background-color: rgba(255, 255, 255);
+
 }
+
 a#beian {
   position: fixed;
   bottom: 1rem;
@@ -162,6 +156,6 @@ a#beian {
   color: #fff;
   text-decoration: none;
 }
-@media (min-width: 1024px) {
-}
+
+@media (min-width: 1024px) {}
 </style>

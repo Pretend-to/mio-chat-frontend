@@ -221,8 +221,10 @@ export default {
   #sidebar {
     width: 100%;
     flex-direction: row;
-    flex-basis: 4rem;
-    background-color: #f5f4f9;
+    flex-basis: 3.5rem;
+    background-color: rgba(241, 244, 254, 0.85);
+    backdrop-filter: blur(15px);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
   }
   .admin-avatar {
     display: none;

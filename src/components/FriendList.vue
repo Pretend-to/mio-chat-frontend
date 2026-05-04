@@ -29,6 +29,37 @@ const menuX = ref(0);
 const menuY = ref(0);
 const selectedFriend = ref(null);
 const lastClickTime = ref(0);
+const swipedId = ref(null);
+const touchStartX = ref(0);
+const touchStartY = ref(0);
+const swipeOffset = ref(0);
+const isSwiping = ref(false);
+const MAX_SWIPE = 140; // 两个按钮的宽度和
+
+// Network Status
+const isOnline = ref(navigator.onLine);
+const connectionType = ref('WiFi'); // 默认值
+
+const updateNetworkStatus = () => {
+  isOnline.value = navigator.onLine;
+  if (navigator.connection) {
+    const type = navigator.connection.type;
+    if (type) {
+      const typeMap = {
+        'wifi': 'WiFi',
+        'cellular': '移动网络',
+        'ethernet': '以太网',
+        'bluetooth': '蓝牙',
+        'none': '无网络'
+      };
+      connectionType.value = typeMap[type] || '在线';
+    } else {
+      // 在桌面端，effectiveType 经常返回 '4G' 即使是在用 WiFi
+      // 如果无法确定具体物理类型（wifi/cellular），统一显示 '在线' 避免误导
+      connectionType.value = '在线';
+    }
+  }
+};
 
 // Refs for template
 const friendlists = ref(null);
@@ -198,31 +229,74 @@ const showFriendContextMenu = (event, friend) => {
 };
 
 const handleTouchStart = (event, item) => {
-  const now = Date.now();
-  const delay = now - lastClickTime.value;
-  if (delay < 350 && delay > 0) {
-    if (event.cancelable) event.preventDefault();
-    const touch = event.touches[0];
-    showFriendContextMenu({
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      preventDefault: () => event.preventDefault?.()
-    }, item);
-    lastClickTime.value = 0;
-  } else {
-    lastClickTime.value = now;
+  if (!onPhone.value) return;
+  // 如果点击的是已经展开的项，或者正在点击按钮，则不重置
+  if (event.target.closest('.swipe-actions')) return;
+  
+  touchStartX.value = event.touches[0].clientX;
+  touchStartY.value = event.touches[0].clientY;
+  isSwiping.value = false;
+  
+  // 如果点击的是非当前展开项，先关闭当前展开项
+  if (swipedId.value !== item.id) {
+    swipedId.value = null;
+    swipeOffset.value = 0;
   }
 };
 
-const handleFriendOption = async (option) => {
+const handleTouchMove = (event, item) => {
+  if (!onPhone.value) return;
+  const touchX = event.touches[0].clientX;
+  const touchY = event.touches[0].clientY;
+  const deltaX = touchX - touchStartX.value;
+  const deltaY = touchY - touchStartY.value;
+
+  // 如果垂直滑动比例过大，认为是滚动，不触发侧滑
+  if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+
+  if (deltaX < 0) { // 向左划
+    isSwiping.value = true;
+    swipeOffset.value = Math.min(Math.abs(deltaX), MAX_SWIPE);
+    swipedId.value = item.id;
+    // 阻止浏览器默认行为（如回退手势）
+    if (Math.abs(deltaX) > 10 && event.cancelable) event.preventDefault();
+  } else if (swipedId.value === item.id && deltaX > 0) { // 展开状态下向右划，收起
+    swipeOffset.value = Math.max(MAX_SWIPE - deltaX, 0);
+    if (swipeOffset.value === 0) swipedId.value = null;
+  }
+};
+
+const handleTouchEnd = (event, item) => {
+  if (!onPhone.value) return;
+  if (!isSwiping.value && swipedId.value !== item.id) return;
+
+  if (swipeOffset.value > MAX_SWIPE / 2) {
+    swipeOffset.value = MAX_SWIPE;
+    swipedId.value = item.id;
+  } else {
+    swipeOffset.value = 0;
+    swipedId.value = null;
+  }
+  isSwiping.value = false;
+};
+
+const closeSwipe = () => {
+  swipedId.value = null;
+  swipeOffset.value = 0;
+};
+
+const handleFriendOption = async (option, friendOverride) => {
+  const friend = friendOverride || selectedFriend.value;
+  if (!friend) return;
+
   switch (option) {
-    case "enter": showChat(selectedFriend.value.id); break;
+    case "enter": showChat(friend.id); break;
     case "priority":
-      selectedFriend.value.priority = selectedFriend.value.priority === 0 ? 1 : 0;
+      friend.priority = friend.priority === 0 ? 1 : 0;
       client.setLocalStorage();
       break;
     case "share": {
-      const shareResult = await client.shareContactor(selectedFriend.value.id);
+      const shareResult = await client.shareContactor(friend.id);
       if (shareResult?.shareUrl) {
         const { success, message } = shareOrCopy(shareResult.shareUrl);
         proxy.$message({ message, type: success ? "success" : "error" });
@@ -230,7 +304,7 @@ const handleFriendOption = async (option) => {
       break;
     }
     case "delete": {
-      const index = contactorList.value.findIndex((c) => c.id === selectedFriend.value.id);
+      const index = contactorList.value.findIndex((c) => c.id === friend.id);
       if (index !== -1) {
         contactorList.value.splice(index, 1);
         client.setLocalStorage();
@@ -239,6 +313,7 @@ const handleFriendOption = async (option) => {
     }
   }
   showMenu.value = false;
+  closeSwipe();
 };
 
 const startResize = (event) => {
@@ -280,6 +355,12 @@ onMounted(() => {
   }
 
   window.addEventListener('resize', handleResize);
+  window.addEventListener('online', updateNetworkStatus);
+  window.addEventListener('offline', updateNetworkStatus);
+  if (navigator.connection) {
+    navigator.connection.addEventListener('change', updateNetworkStatus);
+  }
+  updateNetworkStatus();
 
   if (client.inited) initStatus();
   else client.on("loaded", initStatus, false);
@@ -292,6 +373,11 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
+  window.removeEventListener('online', updateNetworkStatus);
+  window.removeEventListener('offline', updateNetworkStatus);
+  if (navigator.connection) {
+    navigator.connection.removeEventListener('change', updateNetworkStatus);
+  }
 });
 </script>
 
@@ -307,8 +393,7 @@ onBeforeUnmount(() => {
           <div class="user-detail">
             <div class="user-name">{{ client.name === 'user' ? '秋山 澪' : client.name }}</div>
             <div class="user-status">
-              <StatusDot :online="isConnected" size="8px" border="none" />
-              在线 - WiFi >
+              {{ isOnline ? connectionType : '离线' }} >
             </div>
           </div>
         </div>
@@ -334,17 +419,37 @@ onBeforeUnmount(() => {
         </button>
       </div>
     </div>
-    <div class="people">
-      <div v-for="(item, index) of sortedList" :id="getId(item)" :key="index" class="lists" @click="showChat(item.id)"
-        @contextmenu.prevent="showFriendContextMenu($event, item)" @touchstart="handleTouchStart($event, item)">
-        <div class="avatar" :class="item.avatarPolicy == 1 ? 'custom' : 'model'">
-          <img :src="item.avatar" :alt="item.name" />
+    <div class="people" @scroll="closeSwipe">
+      <div v-for="(item, index) of sortedList" :id="getId(item)" :key="index" 
+        class="lists-wrapper"
+        :class="{ 'swiping': swipedId === item.id }"
+      >
+        <div 
+          class="lists" 
+          @click="swipedId === item.id ? closeSwipe() : showChat(item.id)"
+          @contextmenu.prevent="onPhone ? null : showFriendContextMenu($event, item)" 
+          @touchstart="handleTouchStart($event, item)"
+          @touchmove="handleTouchMove($event, item)"
+          @touchend="handleTouchEnd($event, item)"
+          :style="swipedId === item.id ? { transform: `translateX(-${swipeOffset}px)` } : {}"
+        >
+          <div class="avatar" :class="item.avatarPolicy == 1 ? 'custom' : 'model'">
+            <img :src="item.avatar" :alt="item.name" />
+          </div>
+          <div class="info">
+            <div class="name">{{ item.name }}</div>
+            <div id="time" class="msginfo">{{ item.getLastTime() }}</div>
+            <div id="msgctt" class="msginfo">{{ item.lastMessageSummary }}</div>
+            <div v-if="item.hasPendingTask" class="unread-badge">1</div>
+          </div>
         </div>
-        <div class="info">
-          <div class="name">{{ item.name }}</div>
-          <div id="time" class="msginfo">{{ item.getLastTime() }}</div>
-          <div id="msgctt" class="msginfo">{{ item.lastMessageSummary }}</div>
-          <div v-if="item.hasPendingTask" class="unread-badge">1</div>
+        <div v-if="onPhone" class="swipe-actions" :style="swipedId === item.id ? { opacity: 1 } : { opacity: 0 }">
+          <div class="action-btn pin" @click.stop="handleFriendOption('priority', item)">
+            {{ item.priority === 0 ? '取消置顶' : '置顶' }}
+          </div>
+          <div class="action-btn delete" @click.stop="handleFriendOption('delete', item)">
+            删除
+          </div>
         </div>
       </div>
     </div>
@@ -569,15 +674,15 @@ button#addcont {
     flex-direction: column;
     width: 100%;
     max-width: none;
-    background-color: #f8f9fb;
+    background-color: #fff;
   }
 
   .mobile-qq-header {
-    padding: 1rem 1rem 0.5rem 1rem;
-    background-color: #f8f9fb;
+    padding: 0.75rem 1rem 0.5rem 1rem;
+    background-color: #F1F4FE;
     display: flex;
     flex-direction: column;
-    gap: 0.8rem;
+    gap: 0.6rem;
   }
 
   .header-top {
@@ -593,8 +698,8 @@ button#addcont {
   }
 
   .user-avatar {
-    width: 42px;
-    height: 42px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     /* overflow: hidden; */
     /* 移除 hidden 允许状态点溢出显示 */
@@ -624,7 +729,7 @@ button#addcont {
   }
 
   .user-name {
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     font-weight: 600;
     color: #1a1a1a;
     line-height: 1.2;
@@ -639,7 +744,7 @@ button#addcont {
   }
 
   .header-actions .add {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     color: #333;
     cursor: pointer;
   }
@@ -667,11 +772,68 @@ button#addcont {
 
   .people {
     background-color: #fff;
-    border-top-left-radius: 20px;
-    border-top-right-radius: 20px;
-    padding-top: 0.5rem;
+    /* 移除圆角和阴影，保持连贯性 */
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    padding-top: 0;
     flex-grow: 1;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.03);
+    box-shadow: none;
+    overflow-x: hidden;
+  }
+
+  .lists-wrapper {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background-color: #fff;
+  }
+
+  .lists {
+    position: relative;
+    z-index: 2;
+    background-color: inherit;
+    transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+  }
+
+  .lists-wrapper.swiping .lists {
+    transition: none; /* 滑动时禁用过渡 */
+  }
+
+  .swipe-actions {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 140px;
+    display: flex;
+    z-index: 1;
+    transition: opacity 0.2s;
+  }
+
+  .action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .action-btn.pin {
+    background-color: #0099ff;
+  }
+
+  .action-btn.delete {
+    background-color: #ff4d4f;
+  }
+
+  .lists#important {
+    background-color: #F1F4FE;
+  }
+
+  .lists#important:hover {
+    background-color: #E8EDFF;
   }
 }
 </style>

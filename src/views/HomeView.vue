@@ -62,14 +62,13 @@ export default {
   background-color: #f2f2f2;
 }
 
-#main > .profile-body {
+#main>.profile-body {
   margin-top: 4rem;
 }
 
 #main-mobile {
   width: 100%;
   max-height: calc(100vh - 4rem);
-  background-color: rgb(255, 255, 255);
   flex-grow: 1;
   display: flex;
 }
