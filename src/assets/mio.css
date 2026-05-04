@@ -123,9 +123,13 @@ figure {
 }
 
 @media (prefers-color-scheme: dark) {
-  .mio-previewer.markdown-body table, [data-theme="dark"] {
+  .mio-previewer.markdown-body table {
     color: #e3e3e3;
   }
+}
+
+[data-theme="dark"] .mio-previewer.markdown-body table {
+  color: #e3e3e3;
 }
 
 /* Custom Message Block Icons */
