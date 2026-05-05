@@ -1,8 +1,8 @@
 <template>
   <div class="reason-block" :class="{ 'is-collapsed': !show }">
     <div class="head-bar" @click="toggleShow">
-      <i class="mio-icon mio-icon-thinking" :class="{ 'is-loading': !endTime }"></i>
-      <div class="reason-info" :class="{ 'is-loading': !endTime }">
+      <i class="mio-icon mio-icon-thinking" :class="{ 'is-loading': isThinking }"></i>
+      <div class="reason-info" :class="{ 'is-loading': isThinking }">
         {{ getReasonInfo }}
       </div>
       <button :class="{ active: show, 'extra-info-button': true }">
@@ -73,6 +73,10 @@ export default {
       const liveDiff = this.currentTime - this.startTime;
       const seconds = Math.max(0, liveDiff / 1000).toFixed(1);
       return `正在深度思考 (${seconds}s)`;
+    },
+    isThinking() {
+      // 只有既没有 endTime 也没有正数 duration 时，才认为正在思考
+      return !this.endTime && !(this.duration > 0);
     },
   },
   watch: {
