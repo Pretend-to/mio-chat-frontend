@@ -86,6 +86,7 @@ export default class Openai extends Adapter {
     const metaData = {
       contactorId: this.id,
       messageId,
+      namePolicy: client.getContactor(this.id)?.namePolicy || 0,
     };
     // Apply settings defaults
     const data = {

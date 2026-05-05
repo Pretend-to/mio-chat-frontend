@@ -633,8 +633,10 @@ export default class Client extends EventEmitter {
             console.log(`[System] 对话标题已由后端更新: ${contactor.name} -> ${title}`);
             contactor.name = title;
             this.setLocalStorage();
-            // 触发更新事件，让 UI 刷新
+            // 触发更新事件
+            contactor.emit("name_updated", title);
             contactor.emit("updateMessageSummary");
+            contactor.emit("updateMessage");
           }
           return;
         }

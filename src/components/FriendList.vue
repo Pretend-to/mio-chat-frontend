@@ -70,7 +70,10 @@ let startX = 0;
 let startWidth = 0;
 
 // Computed
+const listVersion = ref(0);
 const sortedList = computed(() => {
+  // 增加对 listVersion 的依赖，确保手动触发更新
+  void listVersion.value;
   return [...contactorList.value].sort((a, b) => {
     if (a.priority !== b.priority) return a.priority - b.priority;
     return b.lastUpdate - a.lastUpdate;
@@ -86,6 +89,16 @@ const addReactiveListener = () => {
   contactorList.value.forEach((contactor) => {
     contactor.on("updateMessageSummary", () => {
       contactor.lastMessageSummary = contactor.getLastMessageSummary();
+      listVersion.value++;
+    });
+    contactor.on("updateMessage", () => {
+      // 触发计算属性重新计算，确保 UI 同步
+      contactorList.value = [...client.getContactors()];
+      listVersion.value++;
+    });
+    contactor.on("name_updated", () => {
+      contactorList.value = [...client.getContactors()];
+      listVersion.value++;
     });
   });
 };

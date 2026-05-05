@@ -184,6 +184,11 @@ export default {
       const contactor = client.getContactor(currentId);
       this.activeContactor = contactor;
       this.initContactor(this.activeContactor);
+      
+      // 切换对话时，强制重置滚动状态
+      this.toupdate = true;
+      this.autoScroll = true;
+      
       if (this.chatWindowRef) this.toButtom();
       if (oldVal) {
         const oldId = parseInt(oldVal);
@@ -259,21 +264,27 @@ export default {
       }
     },
     toButtom(clicked) {
-      setTimeout(() => {
-        const scrollToBottom = () => {
-          const elm =
-            this.chatWindowRef ||
-            document.getElementById("main-messages-window");
-          if (!elm) return;
+      const execScroll = () => {
+        const elm =
+          this.chatWindowRef ||
+          document.getElementById("main-messages-window");
+        if (!elm) return;
 
-          // 使用平滑滚动 or 立即滚动
-          elm.scrollTo({
-            top: elm.scrollHeight,
-            behavior: clicked ? "smooth" : "instant",
-          });
-        };
-        scrollToBottom();
-      }, 1);
+        elm.scrollTo({
+          top: elm.scrollHeight,
+          behavior: clicked ? "smooth" : "instant",
+        });
+      };
+
+      // 1. 尝试立刻滚动（应对已渲染好的内容）
+      execScroll();
+
+      // 2. 在 DOM 更新后滚动（Vue 渲染完成）
+      this.$nextTick(execScroll);
+
+      // 3. 在宏任务中滚动（应对浏览器布局和图片渲染导致的延迟）
+      setTimeout(execScroll, 30);
+      setTimeout(execScroll, 100); // 兜底，防止极慢的 Markdown 渲染
     },
     cleanScreen() {
       this.activeContactor.messageChain = [];
@@ -525,6 +536,10 @@ export default {
         this.toupdate = true;
       });
 
+      contactor.on("name_updated", () => {
+        this.$forceUpdate();
+      });
+
       contactor.on("syncMessage", () => {
         this.$forceUpdate();
         this.toupdate = true;
@@ -562,6 +577,7 @@ export default {
       if (contactor) {
         contactor.active = false;
         contactor.off(`updateMessage`);
+        contactor.off(`name_updated`);
         contactor.off(`revMessage`);
         contactor.off(`delMessage`);
         contactor.off(`completeMessage`);
