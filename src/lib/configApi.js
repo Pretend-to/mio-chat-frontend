@@ -475,7 +475,61 @@ class SkillAPI {
   }
 }
 
+/**
+ * 任务管理 API
+ */
+class TaskAPI {
+  constructor(configAPI) {
+    this.configAPI = configAPI;
+  }
+
+  /**
+   * 获取所有任务列表
+   * @returns {Promise<object>} 任务列表数据
+   */
+  async getTasks() {
+    return this.configAPI.request('/api/tasks');
+  }
+
+  /**
+   * 创建或更新任务
+   * @param {object} taskData - 任务数据
+   * @returns {Promise<object>} 响应数据
+   */
+  async upsertTask(taskData) {
+    return this.configAPI.request('/api/tasks', {
+      method: 'POST',
+      body: JSON.stringify(taskData)
+    });
+  }
+
+  /**
+   * 删除任务
+   * @param {string} id - 任务 ID
+   * @returns {Promise<object>} 响应数据
+   */
+  async deleteTask(id) {
+    return this.configAPI.request(`/api/tasks/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+  /**
+   * 切换任务状态
+   * @param {string} id - 任务 ID
+   * @param {boolean} enable - 是否启用
+   * @returns {Promise<object>} 响应数据
+   */
+  async toggleTask(id, enable) {
+    return this.configAPI.request(`/api/tasks/${id}/toggle`, {
+      method: 'POST',
+      body: JSON.stringify({ enable })
+    });
+  }
+}
+
 // 导出单例实例
 export const configAPI = new ConfigAPI();
 export const pluginAPI = new PluginAPI(configAPI);
 export const skillAPI = new SkillAPI(configAPI);
+export const taskAPI = new TaskAPI(configAPI);
