@@ -349,7 +349,7 @@ export default class Contactor extends EventEmmiter {
       return;
     }
 
-    this.closeReasoningBlocks(rawMessage);
+    this.closeReasoningBlocks(rawMessage, true);
 
     const index = content.findIndex(
       (elm) => elm.type === "tool_call" && elm.data?.id === tool_call.id,
@@ -401,6 +401,7 @@ export default class Contactor extends EventEmmiter {
     const rawMessage = this.getOrCreateRawMessage(messageId);
 
     rawMessage.status = "completed";
+    this.closeReasoningBlocks(rawMessage, true);
 
     this.emit("updateMessageSummary");
     this.emit("completeMessage", {
@@ -419,6 +420,8 @@ export default class Contactor extends EventEmmiter {
     this.updateLastUpdate();
 
     const rawMessage = this.getOrCreateRawMessage(messageId);
+    rawMessage.status = "failed";
+    this.closeReasoningBlocks(rawMessage, true);
 
     const errorText = this.formatLLMError(e.error);
 
