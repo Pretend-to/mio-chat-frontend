@@ -965,27 +965,11 @@ export default class Contactor extends EventEmmiter {
     } else if (namePolicy[this.namePolicy] == "CUSTOM") {
       name = this.name;
     } else if (namePolicy[this.namePolicy] == "SUMMARY") {
-      if (this.messageChain.length < 2) {
-        name = "新建的 Bot";
-      } else if (
-        this.messageChain.length == 2 ||
-        this.messageChain.length % 6 == 0
-      ) {
-        name = await this.getMessagesSummary();
-      }
+      // 后端会通过 chat_title_updated 事件自动更新，前端不再主动触发
+      name = this.name || "新建会话";
     }
     this.name = name;
     return name;
-  }
-
-  getMessagesSummary() {
-    if (this.platform == "openai") {
-      return this.kernel.getMessagesSummary(
-        this._getValidOpenaiMessage().slice(-4),
-      );
-    } else {
-      return "仅支持 OpenAI Chat Bot";
-    }
   }
 
   static getAvatarByModel(model) {

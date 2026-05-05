@@ -186,6 +186,7 @@ const showMobileMenu = computed(() => {
 const menuItems = [
   { index: 'overview', label: '概览', icon: Menu },
   { index: 'llm-adapters', label: 'LLM 适配器', icon: Connection },
+  { index: 'automation', label: '系统任务', icon: Connection },
   { index: 'server', label: '服务器配置', icon: Monitor },
   { index: 'web', label: 'Web 配置', icon: ChromeFilled },
   { index: 'onebot', label: 'OneBot 配置', icon: ChatDotRound },
@@ -215,6 +216,7 @@ const checkMobile = () => {
 const activeMenu = computed(() => {
   const path = route.path;
   if (path.includes('llm-adapters')) return 'llm-adapters';
+  if (path.includes('automation')) return 'automation';
   if (path.includes('server')) return 'server';
   if (path.includes('web')) return 'web';
   if (path.includes('onebot')) return 'onebot';

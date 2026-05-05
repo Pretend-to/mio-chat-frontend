@@ -86,6 +86,11 @@ const router = createRouter({
           component: () => import("../views/settings/LLMAdaptersView.vue"),
         },
         {
+          path: "automation",
+          name: "settings_automation",
+          component: () => import("../views/settings/AutomationView.vue"),
+        },
+        {
           path: "server",
           name: "settings_server",
           component: () => import("../views/settings/ServerConfigView.vue"),

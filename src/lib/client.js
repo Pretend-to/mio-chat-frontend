@@ -625,6 +625,20 @@ export default class Client extends EventEmitter {
           return;
         }
 
+        // 处理后端自动总结的标题更新
+        if (e.type === "chat_title_updated" && e.data) {
+          const { contactorId, title } = e.data;
+          const contactor = this.getContactor(contactorId);
+          if (contactor) {
+            console.log(`[System] 对话标题已由后端更新: ${contactor.name} -> ${title}`);
+            contactor.name = title;
+            this.setLocalStorage();
+            // 触发更新事件，让 UI 刷新
+            contactor.emit("updateMessageSummary");
+          }
+          return;
+        }
+
         console.log("System message received:", e);
       } catch (err) {
         console.error("Error handling system_message:", err, e);

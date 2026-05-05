@@ -244,7 +244,7 @@ export const useConfigStore = defineStore('config', () => {
       
       // 非 LLM 适配器、OneBot、Storage 和 Web 配置需要重启
       // 这些节点现在支持热更新
-      if (section !== 'llm_adapters' && section !== 'onebot' && section !== 'storage' && section !== 'web') {
+      if (section !== 'llm_adapters' && section !== 'onebot' && section !== 'storage' && section !== 'web' && section !== 'system') {
         needRestart.value = true;
       }
       
