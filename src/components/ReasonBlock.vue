@@ -41,31 +41,51 @@ export default {
       type: Number,
       default: 0,
     },
+    duration: {
+      required: false,
+      type: Number,
+      default: 0,
+    },
   },
   data() {
     return {
-      show: !this.endTime, // 正在思考时默认展开，思考完默认收起
+      show: !this.endTime && !(this.duration > 0), // 正在思考时默认展开，思考完默认收起
       isUserScrolledUp: false,
+      currentTime: Date.now(),
+      timer: null,
     };
   },
   computed: {
     getReasonInfo() {
+      // 1. 如果已有固定时长，直接显示
+      if (this.duration > 0) {
+        return `已深度思考 (${(this.duration / 1000).toFixed(1)}s)`;
+      }
+      
+      // 2. 如果已结束但只有时间戳，计算时长
       if (this.endTime) {
         const timeDiff = this.endTime - this.startTime;
-        if (timeDiff <= 0) {
-          return `已深度思考`;
-        }
+        if (timeDiff <= 0) return `已深度思考`;
         return `已深度思考 (${(timeDiff / 1000).toFixed(1)}s)`;
-      } else {
-        return `正在深度思考`;
       }
+      
+      // 3. 正在思考中，显示实时计时器
+      const liveDiff = this.currentTime - this.startTime;
+      const seconds = Math.max(0, liveDiff / 1000).toFixed(1);
+      return `正在深度思考 (${seconds}s)`;
     },
   },
   watch: {
     endTime(newVal) {
-      // 当思考结束时，自动收起
       if (newVal) {
         this.show = false;
+        this.stopTimer();
+      }
+    },
+    duration(newVal) {
+      if (newVal > 0) {
+        this.show = false;
+        this.stopTimer();
       }
     },
     content() {
@@ -76,7 +96,27 @@ export default {
       }
     },
   },
+  mounted() {
+    if (!this.endTime && !(this.duration > 0)) {
+      this.startTimer();
+    }
+  },
+  beforeUnmount() {
+    this.stopTimer();
+  },
   methods: {
+    startTimer() {
+      if (this.timer) return;
+      this.timer = setInterval(() => {
+        this.currentTime = Date.now();
+      }, 100);
+    },
+    stopTimer() {
+      if (this.timer) {
+        clearInterval(this.timer);
+        this.timer = null;
+      }
+    },
     toggleShow() {
       this.show = !this.show;
       if (this.show) {

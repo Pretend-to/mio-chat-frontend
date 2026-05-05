@@ -107,12 +107,14 @@ export default class Contactor extends EventEmmiter {
       console.warn(`[DEBUG-SYNC-TOOL] 开始处理 Sync, messageId: ${messageId}`);
 
       chunks.forEach((chunk) => {
-        if (chunk.type === "reasoningContent") {
+        // 后端格式：{ type: 'reason', data: { text, startTime, duration } }
+        if (chunk.type === "reason") {
           newContent.push({
             type: "reason",
             data: {
-              text: chunk.content,
-              startTime: now,
+              text: chunk.data?.text ?? "",
+              startTime: chunk.data?.startTime || now,
+              duration: chunk.data?.duration ?? 0,
             },
           });
         } else if (chunk.type === "content") {
@@ -162,10 +164,10 @@ export default class Contactor extends EventEmmiter {
 
     if (status === "completed") {
       rawMessage.status = "completed";
-      this.closeReasoningBlocks(rawMessage); // 核心修复：同步完成后闭合所有思考块
+      this.closeReasoningBlocks(rawMessage, true);
     } else if (status === "failed") {
       rawMessage.status = "failed";
-      this.closeReasoningBlocks(rawMessage); // 失败时也应闭合
+      this.closeReasoningBlocks(rawMessage, true);
     }
 
     this.emitMessageUpdated(!this.active && rawMessage.role === "other");
@@ -249,12 +251,14 @@ export default class Contactor extends EventEmmiter {
 
     if (last?.type === "reason") {
       last.data.text += reasoning_content;
+      if (e.duration) last.data.duration = e.duration;
     } else {
       const msgElm = {
         type: "reason",
         data: {
           text: reasoning_content,
-          startTime: now,
+          startTime: e.startTime || now,
+          duration: e.duration || 0,
           endTime: 0,
         },
       };
@@ -275,7 +279,7 @@ export default class Contactor extends EventEmmiter {
 
     const content = rawMessage.content || (rawMessage.content = []);
 
-    this.closeReasoningBlocks(rawMessage);
+    this.closeReasoningBlocks(rawMessage, true);
 
     const last = this.getLastContent(rawMessage);
 
@@ -302,13 +306,20 @@ export default class Contactor extends EventEmmiter {
 
   /**
    * 关闭所有未结束的 reasoning 块
+   * @param {object} rawMessage
+   * @param {boolean} force - true: 强制关闭所有（complete/failed 时）；false: 仅关闭后端已确认结束的块（duration > 0）
    */
-  closeReasoningBlocks(rawMessage) {
+  closeReasoningBlocks(rawMessage, force = false) {
     const now = Date.now();
 
     rawMessage.content.forEach((elm) => {
-      if (elm.type === "reason" && !elm.data.endTime) {
-        elm.data.endTime = now;
+      if (elm.type !== "reason" || elm.data.endTime || elm.data.duration > 0) return;
+      // force 模式：全部关闭（消息已完成）
+      // 非 force 模式：只关闭 duration > 0 的（已由后端确认结束），duration=0 表示仍在流式输出中
+      if (!force) return;
+      elm.data.endTime = now;
+      if (elm.data.startTime) {
+        elm.data.duration = elm.data.endTime - elm.data.startTime;
       }
     });
   }

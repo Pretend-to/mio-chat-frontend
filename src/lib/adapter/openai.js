@@ -53,20 +53,24 @@ export default class Openai extends Adapter {
     // console.log("Received chunk from LLM:", chunk);
     if (["update", "sync"].includes(chunk.message)) {
       const updateHandlers = {
-        reasoningContent: (content) =>
-          emitEvent("updateReasoning", { reasoning_content: content }),
+        // 后端格式：{ type: 'reason', data: { text, startTime, duration } }
+        reason: () =>
+          emitEvent("updateReasoning", {
+            reasoning_content: data.data?.text ?? "",
+            startTime: data.data?.startTime,
+            duration: data.data?.duration ?? 0,
+          }),
         content: (content) => emitEvent("updateMessage", { chunk: content }),
         toolCall: (tool_call) => emitEvent("updateToolCall", { tool_call }),
-        // 'sync' 类型传递全量结构化快照数组
-        sync: (data) =>
+        // sync 类型：messageId 同样来自 metaData.messageId，结构一致
+        sync: (syncData) =>
           emitEvent("syncMessage", {
-            chunks: data.chunks,
-            status: data.status,
-            metaData: metaData,
+            chunks: syncData.chunks,
+            status: syncData.status,
+            metaData: syncData.metaData,
           }),
       };
 
-      // 如果消息类型是 sync，直接调用 sync 处理函数
       if (chunk.message === "sync") {
         updateHandlers.sync(data);
       } else {

@@ -1122,7 +1122,7 @@ export default {
                   <FileBlock v-else-if="element.type === 'file'" :file-url="element.data.file" />
                   <span v-else-if="element.type === 'at'" />
                   <ReasonBlock v-else-if="element.type === 'reason'" :end-time="element.data.endTime"
-                    :start-time="element.data.startTime" :content="element.data.text" />
+                    :start-time="element.data.startTime" :content="element.data.text" :duration="element.data.duration" />
                   <div v-else-if="element.type === 'blank'" class="blank-message"
                     style="width: 10rem; height: 28.8px; position: relative">
                     <span class="blank-loader"></span>

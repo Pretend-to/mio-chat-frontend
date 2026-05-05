@@ -71,9 +71,10 @@ let startWidth = 0;
 
 // Computed
 const sortedList = computed(() => {
-  return [...contactorList.value].sort((a, b) =>
-    b.priority < a.priority ? 1 : b.lastUpdate - a.lastUpdate,
-  );
+  return [...contactorList.value].sort((a, b) => {
+    if (a.priority !== b.priority) return a.priority - b.priority;
+    return b.lastUpdate - a.lastUpdate;
+  });
 });
 
 // Methods
@@ -564,7 +565,7 @@ button#addcont {
   /* border: .0625rem solid pink; */
 }
 
-.lists#important {
+.lists-wrapper#important {
   background-color: rgb(240, 240, 240);
 }
 
@@ -573,12 +574,12 @@ button#addcont {
   /* border: .0625rem solid pink; */
 }
 
-.lists#important:hover {
+.lists-wrapper#important:hover {
   background-color: rgb(231, 231, 231);
   /* border: .0625rem solid pink; */
 }
 
-.lists#active {
+.lists-wrapper#active .lists {
   background-color: rgb(0, 153, 255);
 }
 
@@ -633,7 +634,7 @@ button#addcont {
   position: relative;
 }
 
-.lists#active * {
+.lists-wrapper#active .lists * {
   color: #f0f8ff;
 }
 
@@ -828,12 +829,12 @@ button#addcont {
     background-color: #ff4d4f;
   }
 
-  .lists#important {
+  .lists-wrapper#important {
     background-color: #F1F4FE;
   }
 
-  .lists#important:hover {
-    background-color: #E8EDFF;
+  .lists:hover, .lists-wrapper#important:hover {
+    background-color: inherit;
   }
 }
 </style>
