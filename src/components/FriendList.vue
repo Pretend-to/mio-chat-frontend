@@ -141,6 +141,19 @@ const showChat = (id) => {
   }
 };
 
+const getDraftSummary = (html) => {
+  if (!html) return "";
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const hasImage = doc.querySelector('img') !== null;
+  const text = (doc.body.textContent || "").trim();
+  const summary = text.substring(0, 50);
+  
+  if (hasImage) {
+    return `[图片] ${summary}`.trim();
+  }
+  return summary || "";
+};
+
 const getId = (item) => {
   let currentId = route.params.id;
   if (currentId == item.id) return "active";
@@ -443,7 +456,16 @@ onBeforeUnmount(() => {
           <div class="info">
             <div class="name">{{ item.name }}</div>
             <div id="time" class="msginfo">{{ item.getLastTime() }}</div>
-            <div id="msgctt" class="msginfo">{{ item.lastMessageSummary }}</div>
+            <div id="msgctt" class="msginfo">
+              <template v-if="item.draft">
+                <span v-if="!onPhone" class="mio-icon mio-icon-draft"></span>
+                <span v-else class="draft-text">[草稿] </span>
+                <span :class="{ 'draft-text': onPhone }">{{ getDraftSummary(item.draft) }}</span>
+              </template>
+              <template v-else>
+                {{ item.lastMessageSummary }}
+              </template>
+            </div>
             <div v-if="item.hasPendingTask" class="unread-badge">1</div>
           </div>
         </div>

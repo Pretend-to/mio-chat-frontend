@@ -43,6 +43,7 @@ export default class Contactor extends EventEmmiter {
     this.lastUpdate = config.lastUpdate || Date.now(); // 使用 Date.now()
     this.createTime = config.createTime || Date.now(); // 使用 Date.now()
     this.hasPendingTask = config.hasPendingTask || false; // 是否有待同步的任务结果
+    this.draft = config.draft || ""; // 输入草稿
     this.lastMessageSummary = this.getLastMessageSummary();
     this.options = this.loadOptions(config.options);
     this.kernel =
@@ -75,6 +76,7 @@ export default class Contactor extends EventEmmiter {
       hasPendingTask: this.hasPendingTask,
       lastMessageSummary: this.lastMessageSummary,
       firstMessageIndex: this.firstMessageIndex,
+      draft: this.draft,
     };
   }
 
@@ -313,7 +315,8 @@ export default class Contactor extends EventEmmiter {
     const now = Date.now();
 
     rawMessage.content.forEach((elm) => {
-      if (elm.type !== "reason" || elm.data.endTime || elm.data.duration > 0) return;
+      if (elm.type !== "reason" || elm.data.endTime || elm.data.duration > 0)
+        return;
       // force 模式：全部关闭（消息已完成）
       // 非 force 模式：只关闭 duration > 0 的（已由后端确认结束），duration=0 表示仍在流式输出中
       if (!force) return;
@@ -636,12 +639,6 @@ export default class Contactor extends EventEmmiter {
         finalMessages.push(...subArray);
       }
     });
-
-    const presetHistory = this.options.presetSettings.history;
-
-    if (presetHistory) {
-      finalMessages = presetHistory.concat(finalMessages);
-    }
 
     return finalMessages;
   }

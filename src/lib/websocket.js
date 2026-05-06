@@ -57,12 +57,12 @@ export default class Socket extends EventEmitter {
    * Handles the connect event.
    */
   handleConnect() {
+    this.available = true;
     this.hasAttemptedPollingFallback = false; // Reset fallback flag on successful connect
     this.isAttemptingWebSocket = false; // Reset attempt flag
     const transport = this.socket.io?.engine?.transport?.name || "unknown";
-    console.log(`SocketIO transport established via: ${transport}. Waiting for login...`);
-    // 注意：这里不再设置 available = true，也不触发 connection_changed
-    // 只有在 messageHandler 收到 login 确认后才算真正可用
+    console.log(`SocketIO transport established via: ${transport}. Session is active.`);
+    this.emit("connection_changed", true);
   }
 
   /**

@@ -81,8 +81,13 @@ export default {
     },
   },
   watch: {
-    "$route.params.id"() {
+    activeContactor(newVal, oldVal) {
+      if (oldVal) {
+        this.saveDraftTo(oldVal); // 显式保存到旧对象
+      }
+      this.textareaRef.innerHTML = ""; // 强制清空物理输入框
       this.loadSelected();
+      this.loadDraft();
     },
   },
   created() {
@@ -91,6 +96,7 @@ export default {
   },
   mounted() {
     this.textareaRef = this.$refs.textarea;
+    this.loadDraft();
     this.textareaRef.addEventListener("input", this.debouncedAdjustHeight);
 
     // 拖拽文件
@@ -125,9 +131,44 @@ export default {
     this.textareaRef.removeEventListener("dragleave", this.handleDragLeave);
     this.textareaRef.removeEventListener("drop", this.handleDrop);
     this.textareaRef.removeEventListener("paste", this.handlePaste);
+    this.saveDraft(); // 离开组件前保存
     this.textareaRef = null;
   },
   methods: {
+    loadDraft() {
+      if (this.activeContactor.draft) {
+        this.textareaRef.innerHTML = this.activeContactor.draft;
+        this.adjustTextareaHeight();
+      } else {
+        this.textareaRef.innerHTML = "";
+      }
+    },
+    saveDraft() {
+      this.saveDraftTo(this.activeContactor);
+    },
+    saveDraftTo(contactor) {
+      if (!contactor || !this.textareaRef) return;
+      const content = this.textareaRef.innerHTML;
+      
+      // 校验：是否有实际内容（图片或非空文字）
+      const doc = new DOMParser().parseFromString(content, 'text/html');
+      const hasImage = doc.querySelector('img') !== null;
+      const text = (doc.body.textContent || "").trim();
+
+      if (!hasImage && !text) {
+        contactor.draft = "";
+      } else {
+        contactor.draft = content;
+      }
+      
+      contactor.emit("updateMessageSummary");
+      client.setLocalStorage();
+    },
+    clearDraft() {
+      this.activeContactor.draft = "";
+      this.activeContactor.emit("updateMessageSummary");
+      client.setLocalStorage();
+    },
     unsupportedTip() {
       this.$message.warning("功能暂未开放");
     },
@@ -516,7 +557,7 @@ export default {
       try {
         const message_id = await this.activeContactor.webSend(container);
         container.id = message_id;
-        this.$emit("stroge");
+        this.clearDraft();
         this.uploaded.images = [];
         this.uploaded.files = [];
       } catch (error) {
