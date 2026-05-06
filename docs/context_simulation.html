@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MioContext | 缓冲滑动窗口上下文机制演示</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --card-bg: #16161e;
+            --primary: #7c4dff;
+            --secondary: #00e5ff;
+            --text: #e0e0e0;
+            --text-dim: #909090;
+            --success: #00c853;
+            --warning: #ffd600;
+            --danger: #ff5252;
+            --archive: #ff4081;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        p.subtitle {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 40px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--primary), #5e35b1);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 15px rgba(124, 77, 255, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(124, 77, 255, 0.5);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        button.reset {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: none;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .pane {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 30px;
+            border: 1px solid rgba(255,255,255,0.03);
+            display: flex;
+            flex-direction: column;
+            height: 800px;
+            position: relative;
+        }
+
+        .pane-header {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pane-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+
+        .stats-badge {
+            background: rgba(0, 229, 255, 0.1);
+            color: var(--secondary);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .message-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .message-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .message-list::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+
+        .msg {
+            padding: 12px 16px;
+            border-radius: 14px;
+            font-size: 0.9rem;
+            position: relative;
+            transition: all 0.5s ease;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .msg.user { background: rgba(255,255,255,0.05); border-left: 3px solid var(--text-dim); }
+        .msg.ai { background: rgba(124, 77, 255, 0.1); border-left: 3px solid var(--primary); }
+        .msg.summary { 
+            background: rgba(255, 64, 129, 0.15); 
+            border: 1px dashed var(--archive);
+            color: var(--archive);
+            font-style: italic;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .status-tag {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 800;
+        }
+
+        .msg.live .status-tag { color: var(--success); }
+        .msg.archived { opacity: 0.5; filter: grayscale(0.5); }
+        .msg.archived .status-tag { color: var(--archive); }
+        .msg.dropped { opacity: 0.2; transform: scale(0.95); }
+        .msg.dropped .status-tag { color: var(--danger); }
+
+        .metrics {
+            margin-top: 20px;
+            background: rgba(0,0,0,0.2);
+            padding: 20px;
+            border-radius: 16px;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.5s ease-out;
+        }
+
+        .info-card {
+            margin-top: 30px;
+            grid-column: span 2;
+            background: rgba(124, 77, 255, 0.05);
+            padding: 25px;
+            border-radius: 20px;
+            border: 1px solid rgba(124, 77, 255, 0.2);
+        }
+
+        .info-card h3 { color: var(--primary); margin-bottom: 10px; }
+        .info-card ul { list-style-position: inside; color: var(--text-dim); }
+        .info-card li { margin-bottom: 5px; }
+
+        .cache-pulse {
+            position: absolute;
+            bottom: 250px;
+            left: 50%;
+            transform: translateX(-50%);
+            pointer-events: none;
+            opacity: 0;
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: var(--success);
+            z-index: 10;
+        }
+
+        @keyframes pulseUp {
+            0% { opacity: 0; transform: translate(-50%, 0); }
+            50% { opacity: 1; transform: translate(-50%, -50px); }
+            100% { opacity: 0; transform: translate(-50%, -100px); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>MioContext Engine</h1>
+            <p class="subtitle">上下文优化模拟器：缓冲滑动窗口 vs 标准滑动窗口</p>
+        </header>
+
+        <div class="controls">
+            <button onclick="sendMessage()">发送下一轮对话 (User + AI)</button>
+            <button class="reset" onclick="resetSim()">重置模拟</button>
+            <div style="display: flex; align-items: center; gap: 10px; margin-left: 20px; color: var(--text-dim); font-size: 0.9rem;">
+                <span>窗口限制: 20条</span>
+                <span style="color: var(--archive)">缓冲大小: 5条</span>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <!-- 实验组：缓冲滑动窗口 -->
+            <div class="pane" id="pane-buffered">
+                <div class="pane-header">
+                    <div class="pane-title">缓冲滑动窗口机制</div>
+                    <div class="stats-badge" id="buf-reuse">REUSE: 0%</div>
+                </div>
+                <div class="message-list" id="list-buffered">
+                    <!-- Messages here -->
+                </div>
+                <div class="cache-pulse" id="pulse-buf">CACHE HIT!</div>
+                <div class="metrics">
+                    <div class="metric-row">
+                        <span>平均 KV Cache 命中率</span>
+                        <span id="buf-avg-text">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="buf-fill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 对照组：标准滑动窗口 -->
+            <div class="pane" id="pane-standard">
+                <div class="pane-header">
+                    <div class="pane-title">标准滑动窗口 (FIFO)</div>
+                    <div class="stats-badge" id="std-reuse">REUSE: 0%</div>
+                </div>
+                <div class="message-list" id="list-standard">
+                    <!-- Messages here -->
+                </div>
+                <div class="cache-pulse" id="pulse-std">CACHE HIT!</div>
+                <div class="metrics">
+                    <div class="metric-row">
+                        <span>平均 KV Cache 命中率</span>
+                        <span id="std-avg-text">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="std-fill" style="background: var(--danger)"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <h3>为什么“缓冲”机制更强？</h3>
+                <ul>
+                    <li><strong>KV Cache 友好</strong>：标准窗口每次删除首条消息都会让 Prefix 发生位移，导致模型必须重新计算所有 Token 的 KV Cache。</li>
+                    <li><strong>稳定性</strong>：缓冲机制将上下文分为“冻结的摘要”和“活跃缓冲区”。在缓冲区填满之前，前缀完全不变，命中率接近 100%。</li>
+                    <li><strong>长效记忆</strong>：即便被挤出窗口的消息，也会被归档进 System Prompt，模型依然记得“我是谁”和“我们刚才聊了什么”。</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const LIMIT = 20;
+        const BUFFER = 5;
+        let messageCounter = 0;
+
+        let bufState = {
+            allMessages: [], // [{id, role, text, status}]
+            summary: null,
+            reuseScores: [],
+            lastPrefixCount: 0
+        };
+
+        let stdState = {
+            allMessages: [],
+            reuseScores: [],
+            lastPrefixCount: 0
+        };
+
+        function sendMessage() {
+            messageCounter++;
+            const userMsg = { id: messageCounter, role: 'user', text: `这是用户发送的第 ${messageCounter} 条测试消息...` };
+            const aiMsg = { id: messageCounter, role: 'ai', text: `这是 AI 对第 ${messageCounter} 条消息的 Mock 回复内容。` };
+
+            updateStandard(userMsg, aiMsg);
+            updateBuffered(userMsg, aiMsg);
+        }
+
+        function updateStandard(u, a) {
+            // 标准逻辑：先进先出
+            stdState.allMessages.push({...u, status: 'live'});
+            stdState.allMessages.push({...a, status: 'live'});
+
+            let reuse = 0;
+            const total = stdState.allMessages.length;
+
+            if (total <= LIMIT) {
+                // 在达到限制前，每次新消息都能复用之前的缓存
+                reuse = total > 2 ? ((total - 2) / total) * 100 : 0;
+            } else {
+                // 超过限制，发生位移
+                // 模拟 FIFO：删除最老的两条
+                stdState.allMessages[total - LIMIT - 2].status = 'dropped';
+                stdState.allMessages[total - LIMIT - 1].status = 'dropped';
+                
+                // 由于 Prefix 变了，本轮 Cache 直接失效（大多数 API 逻辑）
+                reuse = 0;
+            }
+
+            stdState.reuseScores.push(reuse);
+            if (reuse > 50) showPulse('pulse-std');
+            renderPane('list-standard', stdState.allMessages, 'std');
+        }
+
+        function updateBuffered(u, a) {
+            // 缓冲逻辑
+            bufState.allMessages.push({...u, status: 'live'});
+            bufState.allMessages.push({...a, status: 'live'});
+
+            let reuse = 0;
+            const currentTotal = bufState.allMessages.filter(m => m.status === 'live').length;
+            
+            // 检查是否需要归档 (加上 summary 占用的一格位置，如果 summary 存在)
+            const effectiveLimit = bufState.summary ? LIMIT - 1 : LIMIT;
+
+            if (currentTotal > effectiveLimit) {
+                // 触发归档逻辑
+                const toArchiveCount = LIMIT - BUFFER;
+                let archived = 0;
+                for(let msg of bufState.allMessages) {
+                    if (msg.status === 'live' && archived < toArchiveCount) {
+                        msg.status = 'archived';
+                        archived++;
+                    }
+                }
+                bufState.summary = `[Archive Cycle ${Math.floor(messageCounter/10)}] 对前 ${messageCounter-BUFFER} 条消息的要点总结已注入 System Prompt...`;
+                
+                // 归档瞬间，Prefix 彻底改变，本轮 Reuse 为 0
+                reuse = 0;
+            } else {
+                // 在归档周期内，前缀是稳定的（Summary + 缓冲区消息）
+                const totalInContext = currentTotal + (bufState.summary ? 1 : 0);
+                reuse = totalInContext > 2 ? ((totalInContext - 2) / totalInContext) * 100 : 0;
+            }
+
+            bufState.reuseScores.push(reuse);
+            if (reuse > 50) showPulse('pulse-buf');
+            renderPane('list-buffered', bufState.allMessages, 'buf', bufState.summary);
+        }
+
+        function renderPane(elementId, messages, prefix, summary = null) {
+            const list = document.getElementById(elementId);
+            list.innerHTML = '';
+
+            if (summary) {
+                const sDiv = document.createElement('div');
+                sDiv.className = 'msg summary';
+                sDiv.innerHTML = `<span>${summary}</span><div class="status-tag">System Cache</div>`;
+                list.appendChild(sDiv);
+            }
+
+            messages.forEach(m => {
+                const div = document.createElement('div');
+                div.className = `msg ${m.role} ${m.status}`;
+                div.innerHTML = `
+                    <strong>${m.role.toUpperCase()}:</strong> ${m.text}
+                    <div class="status-tag">${m.status}</div>
+                `;
+                list.appendChild(div);
+            });
+
+            list.scrollTop = list.scrollHeight;
+
+            // Update stats
+            const state = prefix === 'buf' ? bufState : stdState;
+            const avg = state.reuseScores.reduce((a,b) => a+b, 0) / state.reuseScores.length;
+            const last = state.reuseScores[state.reuseScores.length - 1];
+
+            document.getElementById(`${prefix}-reuse`).innerText = `REUSE: ${Math.round(last)}%`;
+            document.getElementById(`${prefix}-avg-text`).innerText = `${Math.round(avg)}%`;
+            document.getElementById(`${prefix}-fill`).style.width = `${avg}%`;
+        }
+
+        function showPulse(id) {
+            const el = document.getElementById(id);
+            el.style.animation = 'none';
+            el.offsetHeight; /* trigger reflow */
+            el.style.animation = 'pulseUp 1s ease-out forwards';
+        }
+
+        function resetSim() {
+            location.reload();
+        }
+
+        // Init
+        renderPane('list-buffered', [], 'buf');
+        renderPane('list-standard', [], 'std');
+
+    </script>
+</body>
+</html>

@@ -68,6 +68,7 @@ export default {
     return {
       // 正在运行或准备中时默认展开细节，结束后默认收起
       showExtraInfo: this.toolCall.action === "running" || this.toolCall.action === "pending",
+      wasManuallyToggled: false,
     };
   },
   computed: {
@@ -114,15 +115,31 @@ export default {
     "toolCall.action"(newVal) {
       // 当工具执行结束或失败时，自动收起
       if (newVal === "finished" || newVal === "failed") {
-        this.showExtraInfo = false;
+        this.handleAutoCollapse();
       } else if (newVal === "running") {
-        this.showExtraInfo = true;
+        if (!this.wasManuallyToggled) {
+          this.showExtraInfo = true;
+        }
       }
     },
+  },
+  mounted() {
+    // 如果挂载时就在运行，且是实时消息，强制展开一次
+    if (this.toolCall.action === "running" || this.toolCall.action === "pending") {
+      this.showExtraInfo = true;
+    }
   },
   methods: {
     toggleExtraInfo() {
       this.showExtraInfo = !this.showExtraInfo;
+      this.wasManuallyToggled = true;
+    },
+    handleAutoCollapse() {
+      if (!this.wasManuallyToggled) {
+        setTimeout(() => {
+          this.showExtraInfo = false;
+        }, 800); // 工具调用通常稍微慢一点，给 0.8s 观察结果
+      }
     },
     getSkillName(params) {
       try {

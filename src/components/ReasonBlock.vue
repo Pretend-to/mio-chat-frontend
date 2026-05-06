@@ -50,6 +50,7 @@ export default {
   data() {
     return {
       show: !this.endTime && !(this.duration > 0), // 正在思考时默认展开，思考完默认收起
+      wasManuallyToggled: false,
       isUserScrolledUp: false,
       currentTime: Date.now(),
       timer: null,
@@ -82,17 +83,21 @@ export default {
   watch: {
     endTime(newVal) {
       if (newVal) {
-        this.show = false;
+        this.handleAutoCollapse();
         this.stopTimer();
       }
     },
     duration(newVal) {
       if (newVal > 0) {
-        this.show = false;
+        this.handleAutoCollapse();
         this.stopTimer();
       }
     },
     content() {
+      // 只要内容在更新且没有被手动折叠，确保展开
+      if (this.isThinking && !this.wasManuallyToggled) {
+        this.show = true;
+      }
       if (this.show) {
         this.$nextTick(() => {
           this.scrollToBottomIfNeeded();
@@ -101,8 +106,9 @@ export default {
     },
   },
   mounted() {
-    if (!this.endTime && !(this.duration > 0)) {
+    if (this.isThinking) {
       this.startTimer();
+      this.show = true; // 强制直播态展开
     }
   },
   beforeUnmount() {
@@ -123,11 +129,20 @@ export default {
     },
     toggleShow() {
       this.show = !this.show;
+      this.wasManuallyToggled = true; // 只要用户点过，我们就停止自动干预
       if (this.show) {
         this.isUserScrolledUp = false;
         this.$nextTick(() => {
           this.scrollToBottomIfNeeded();
         });
+      }
+    },
+    handleAutoCollapse() {
+      // 如果用户没有手动点过，我们延迟收起，给用户一点反应时间
+      if (!this.wasManuallyToggled) {
+        setTimeout(() => {
+          this.show = false;
+        }, 500); // 延迟 0.5s 收起
       }
     },
     handleScroll(e) {
