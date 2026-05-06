@@ -25,6 +25,12 @@ app.use(pinia);
 app.use(ElementPlus);
 app.use(router);
 
+// 初始化连接状态同步
+import { useConnectionStore } from "./stores/connectionStore";
+import { client } from "./lib/runtime";
+
+useConnectionStore().initSync(client);
+
 app.mount("#app");
 
 // 注册 Service Worker

@@ -57,12 +57,12 @@ export default class Socket extends EventEmitter {
    * Handles the connect event.
    */
   handleConnect() {
-    this.available = true;
     this.hasAttemptedPollingFallback = false; // Reset fallback flag on successful connect
     this.isAttemptingWebSocket = false; // Reset attempt flag
     const transport = this.socket.io?.engine?.transport?.name || "unknown";
-    console.log(`SocketIO connected successfully via: ${transport}`);
-    this.emit("connection_changed", true); // 改名，避免与登录 connect 冲突
+    console.log(`SocketIO transport established via: ${transport}. Waiting for login...`);
+    // 注意：这里不再设置 available = true，也不触发 connection_changed
+    // 只有在 messageHandler 收到 login 确认后才算真正可用
   }
 
   /**
@@ -119,11 +119,13 @@ export default class Socket extends EventEmitter {
       this.available = false;
       // 这里可以决定是否彻底放弃，或者依赖 Socket.IO 的 reconnection 机制（如果开启）
       // 如果 Socket.IO 的 reconnection 开启，它会继续尝试用 polling 重连
+      this.emit("connection_changed", false);
     } else {
       // 如果 isAttemptingWebSocket 为 true 但 hasAttemptedPollingFallback 也为 true
       // 理论上不应该发生，但作为保险
       console.warn("Unexpected state in handleConnectError.");
       this.available = false;
+      this.emit("connection_changed", false);
     }
   }
 
@@ -197,7 +199,12 @@ export default class Socket extends EventEmitter {
       if (e.protocol === "onebot") {
         this.emit("onebot_message", e);
       } else if (e.protocol === "system") {
-        if (e.type === "login") this.emit("connect", e.data);
+        if (e.type === "login") {
+          console.log("Business login successful");
+          this.available = true;
+          this.emit("connection_changed", true);
+          this.emit("connect", e.data);
+        }
         this.emit("system_message", e);
       }
       this.emit(e.request_id, e);

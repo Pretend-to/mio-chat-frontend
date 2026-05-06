@@ -14,7 +14,7 @@
             <div class="id">ID {{ activeContactor.id }}</div>
             <div class="status">
               <span :class="'delay-status ' + getDelayStatus"></span>
-              {{ isConnected ? '在线' : '离线' }}
+              {{ connectionStore.isConnected ? '在线' : '离线' }}
             </div>
           </div>
           <!-- LLM Provider select is now inside ContactorSettings -->
@@ -129,6 +129,7 @@
 <script>
 import ContactorSettings from "@/components/ContactorSettings.vue"; // Import the new component
 import { client, config } from "@/lib/runtime.js";
+import { useConnectionStore } from "@/stores/connectionStore";
 
 export default {
   components: {
@@ -174,7 +175,7 @@ export default {
       client: client, // 导出 client 到模板
       activeContactor: contactor,
       options: null, // Will be initialized in initContactor
-      isConnected: client.socket?.available || false,
+      connectionStore: useConnectionStore(),
       centerDialogVisible: false,
       avatarPolicyList: avatarPolicyList,
       namePolicyList: namePolicyList,
@@ -191,7 +192,7 @@ export default {
   },
   computed: {
     getDelayStatus() {
-      return this.isConnected ? "ultra" : "offline";
+      return this.connectionStore.isConnected ? "ultra" : "offline";
     },
     getAvatarPolicyValue() {
       return this.basicInfo.avatarPolicy === 1 ? "自定义" : "跟随模型";
@@ -236,13 +237,7 @@ export default {
     this.initContactor();
   },
   mounted() {
-    // 监听 Socket 连接状态以实现响应式更新
-    if (client.socket) {
-      client.socket.on("connection_changed", (val) => { this.isConnected = val; });
-    }
-    client.on("socket_ready", (socket) => {
-       socket.on("connection_changed", (val) => { this.isConnected = val; });
-    });
+    // Socket 连接状态现在统一通过 Pinia Store 管理
     client.on("plugins_updated", this.handlePluginsUpdated);
   },
   beforeUnmount() {

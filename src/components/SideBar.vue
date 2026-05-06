@@ -2,6 +2,7 @@
 import { client } from "@/lib/runtime.js";
 import { processAvatarWithStatusHole, getAdminAvatarUrl } from "@/utils/avatar.js";
 import StatusDot from "@/components/StatusDot.vue";
+import { useConnectionStore } from "@/stores/connectionStore";
 
 const PageStatus = {
   CHAT: "chat",
@@ -17,7 +18,7 @@ export default {
     return {
       processedImage: "/p/qava?q=1099834705",
       activePage: PageStatus.NONE,
-      isConnected: client.socket?.available || false,
+      connectionStore: useConnectionStore(),
     };
   },
   computed: {
@@ -52,15 +53,7 @@ export default {
       );
     }
     
-    // 监听 Socket 连接状态以实现响应式更新
-    if (client.socket) {
-      this.isConnected = !!client.socket.available;
-      client.socket.on("connection_changed", (val) => { this.isConnected = !!val; });
-    }
-    client.on("socket_ready", (socket) => {
-       this.isConnected = !!socket.available;
-       socket.on("connection_changed", (val) => { this.isConnected = !!val; });
-    });
+    // Socket 连接状态现在统一通过 Pinia Store 管理
   },
   methods: {
     async toChat() {
@@ -103,7 +96,7 @@ export default {
 <template>
   <div id="sidebar">
     <div class="admin-avatar">
-      <StatusDot :online="isConnected" size="0.75rem" class="status-dot-pos" />
+      <StatusDot :online="connectionStore.isConnected" size="0.75rem" class="status-dot-pos" />
       <img :src="processedImage" alt="admin-avatar" />
     </div>
     <div id="side" class="options">

@@ -7,6 +7,7 @@ import ContextMenu from "@/components/ContextMenu.vue";
 import { shareOrCopy } from "@/utils/tools.js";
 import { processAvatarWithStatusHole, getAdminAvatarUrl } from "@/utils/avatar.js";
 import StatusDot from "@/components/StatusDot.vue";
+import { useConnectionStore } from "@/stores/connectionStore";
 
 // Emits
 const emit = defineEmits(['open-share-code-window']);
@@ -21,7 +22,8 @@ const { proxy } = getCurrentInstance();
 // Data
 const onPhone = ref(window.innerWidth < 600);
 const processedImage = ref(client.avatar || "/p/qava?q=1099834705");
-const isConnected = ref(client.socket?.available || false);
+const connectionStore = useConnectionStore();
+const isConnected = computed(() => connectionStore.isConnected);
 const contactorList = ref([]);
 const showAddWindow = ref(false);
 const showMenu = ref(false);
@@ -115,19 +117,7 @@ const loadAvatar = async (adminId) => {
 const initStatus = () => {
   const adminId = client.admin_qq;
   if (adminId) loadAvatar(adminId);
-
-  const updateStatus = () => {
-    if (client.socket) {
-      isConnected.value = !!client.socket.available;
-    }
-  };
-
-  // 初始同步一次
-  updateStatus();
-
-  if (client.socket) {
-    client.socket.on("connection_changed", (val) => { isConnected.value = val; });
-  }
+  // Socket 连接状态现在统一通过 Pinia Store 管理
 };
 
 const genFakeId = () => client.genFakeId();

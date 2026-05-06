@@ -14,6 +14,7 @@ import QRCode from "qrcode";
 import { client } from "@/lib/runtime.js";
 import { shareOrCopy } from "@/utils/tools.js";
 import StatusDot from "@/components/StatusDot.vue";
+import { useConnectionStore } from "@/stores/connectionStore";
 
 export default {
   components: {
@@ -91,7 +92,6 @@ export default {
       extraOptions: [],
       wraperPresets: {},
       selectedOption: null,
-      isConnected: client.socket?.available || false,
       toupdate: false,
       seletedText: "",
       seletedImage: "",
@@ -120,6 +120,7 @@ export default {
       previewImageUrl: "",
       previewShareUrl: "",
       isMobileDevice: window.innerWidth < 768,
+      connectionStore: useConnectionStore(),
     };
   },
   computed: {
@@ -152,7 +153,7 @@ export default {
       }
     },
     getDelayStatus() {
-      return this.isConnected ? "ultra" : "offline";
+      return this.connectionStore.isConnected ? "ultra" : "offline";
     },
     mdOptions() {
       return { breaks: this.activeContactor.platform === 'onebot' };
@@ -1063,7 +1064,7 @@ export default {
       </div>
       <div class="name-area" @click="toProfile">
         <div class="contactor-name">{{ activeContactor.name }}</div>
-        <StatusDot :online="isConnected" size="0.8rem" class="status-dot-chat" />
+        <StatusDot :online="connectionStore.isConnected" size="0.8rem" class="status-dot-chat" />
       </div>
       <ul class="options">
         <li class="share" @click="share()">
