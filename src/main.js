@@ -29,7 +29,8 @@ app.use(router);
 import { useConnectionStore } from "./stores/connectionStore";
 import { client } from "./lib/runtime";
 
-useConnectionStore().initSync(client);
+const connectionStore = useConnectionStore();
+connectionStore.initSync(client);
 
 app.mount("#app");
 

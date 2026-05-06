@@ -29,10 +29,12 @@ export const useConnectionStore = defineStore('connection', () => {
    */
   function initSync(client) {
     const syncConnection = (socket) => {
+      console.log("[connectionStore] syncConnection called, initial available:", socket.available);
       isConnected.value = !!socket.available;
       client.isConnected = !!socket.available;
       
       socket.on("connection_changed", (status) => {
+        console.log("[connectionStore] connection_changed emitted with status:", status);
         isConnected.value = !!status;
         client.isConnected = !!status;
         if (!status) {
@@ -41,6 +43,7 @@ export const useConnectionStore = defineStore('connection', () => {
       });
 
       socket.on("connect_error", (err) => {
+        console.log("[connectionStore] connect_error emitted:", err);
         isConnected.value = false;
         client.isConnected = false;
         setError(err.message || "Connection error");

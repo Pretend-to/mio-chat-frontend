@@ -15,6 +15,7 @@ import { client } from "@/lib/runtime.js";
 import { shareOrCopy } from "@/utils/tools.js";
 import StatusDot from "@/components/StatusDot.vue";
 import { useConnectionStore } from "@/stores/connectionStore";
+import { mapState } from "pinia";
 
 export default {
   components: {
@@ -120,10 +121,10 @@ export default {
       previewImageUrl: "",
       previewShareUrl: "",
       isMobileDevice: window.innerWidth < 768,
-      connectionStore: useConnectionStore(),
     };
   },
   computed: {
+    ...mapState(useConnectionStore, ["isConnected"]),
     getMenuStyle() {
       // 判断屏幕宽度是否小于768px
       if (window.innerWidth < 768) {
@@ -153,7 +154,7 @@ export default {
       }
     },
     getDelayStatus() {
-      return this.connectionStore.isConnected ? "ultra" : "offline";
+      return this.isConnected ? "ultra" : "offline";
     },
     mdOptions() {
       return { breaks: this.activeContactor.platform === 'onebot' };
@@ -211,17 +212,7 @@ export default {
     this.scroll = true;
     this.initContactor(this.activeContactor);
     this.fullScreen = this.client.socket?.fullScreen;
-    
-    // 监听 Socket 连接状态以实现响应式更新
-    if (this.client.socket) {
-      this.isConnected = !!this.client.socket.available;
-      this.client.socket.on("connection_changed", (val) => { this.isConnected = !!val; });
-    }
 
-    client.on("socket_ready", (socket) => {
-       this.isConnected = !!socket.available;
-       socket.on("connection_changed", (val) => { this.isConnected = !!val; });
-    });
     
     // 获取.input-bar在页面中的高度，给inputBarTop赋值
     const element = document.querySelector(".input-bar");
@@ -1064,7 +1055,7 @@ export default {
       </div>
       <div class="name-area" @click="toProfile">
         <div class="contactor-name">{{ activeContactor.name }}</div>
-        <StatusDot :online="connectionStore.isConnected" size="0.8rem" class="status-dot-chat" />
+        <StatusDot size="0.8rem" class="status-dot-chat" />
       </div>
       <ul class="options">
         <li class="share" @click="share()">

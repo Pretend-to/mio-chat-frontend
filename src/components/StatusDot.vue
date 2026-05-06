@@ -1,11 +1,8 @@
 <script setup>
 import { computed } from 'vue';
+import { useConnectionStore } from '@/stores/connectionStore';
 
 const props = defineProps({
-  online: {
-    type: Boolean,
-    default: false
-  },
   size: {
     type: String,
     default: '12px'
@@ -16,6 +13,12 @@ const props = defineProps({
   }
 });
 
+const connectionStore = useConnectionStore();
+
+const isOnline = computed(() => {
+  return connectionStore.isConnected;
+});
+
 const dotStyle = computed(() => ({
   width: props.size,
   height: props.size,
@@ -24,7 +27,7 @@ const dotStyle = computed(() => ({
 </script>
 
 <template>
-  <div class="status-dot" :class="{ online: props.online, offline: !props.online }" :style="dotStyle"></div>
+  <div class="status-dot" :class="{ online: isOnline, offline: !isOnline }" :style="dotStyle"></div>
 </template>
 
 <style scoped>

@@ -14,7 +14,7 @@
             <div class="id">ID {{ activeContactor.id }}</div>
             <div class="status">
               <span :class="'delay-status ' + getDelayStatus"></span>
-              {{ connectionStore.isConnected ? '在线' : '离线' }}
+              {{ isConnected ? '在线' : '离线' }}
             </div>
           </div>
           <!-- LLM Provider select is now inside ContactorSettings -->
@@ -130,6 +130,7 @@
 import ContactorSettings from "@/components/ContactorSettings.vue"; // Import the new component
 import { client, config } from "@/lib/runtime.js";
 import { useConnectionStore } from "@/stores/connectionStore";
+import { mapState } from "pinia";
 
 export default {
   components: {
@@ -175,7 +176,6 @@ export default {
       client: client, // 导出 client 到模板
       activeContactor: contactor,
       options: null, // Will be initialized in initContactor
-      connectionStore: useConnectionStore(),
       centerDialogVisible: false,
       avatarPolicyList: avatarPolicyList,
       namePolicyList: namePolicyList,
@@ -191,8 +191,9 @@ export default {
     };
   },
   computed: {
+    ...mapState(useConnectionStore, ["isConnected"]),
     getDelayStatus() {
-      return this.connectionStore.isConnected ? "ultra" : "offline";
+      return this.isConnected ? "ultra" : "offline";
     },
     getAvatarPolicyValue() {
       return this.basicInfo.avatarPolicy === 1 ? "自定义" : "跟随模型";

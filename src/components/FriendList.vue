@@ -404,7 +404,7 @@ onBeforeUnmount(() => {
       <div class="header-top">
         <div class="user-info">
           <div class="user-avatar">
-            <StatusDot :online="isConnected" size="14px" class="status-dot-mobile" />
+            <StatusDot size="14px" class="status-dot-mobile" />
             <img :src="processedImage" alt="avatar" />
           </div>
           <div class="user-detail">
