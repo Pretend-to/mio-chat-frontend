@@ -1,108 +1,28 @@
 <template>
-  <div class="profile-body">
-    <div id="profile">
+  <div class="profile-body" style="background-color: #F5F5F5;">
+    <!-- Mobile Header -->
+    <div class="mobile-nav" v-if="isMobile">
+      <div class="back-btn" @click="$router.push('/chat/' + $route.params.id)">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </div>
+      <div class="nav-title">联系人详情</div>
+      <div class="more-btn"></div>
+    </div>
+
+    <div id="profile" class="profile-main">
       <div class="profile-container">
-        <div class="base-info">
-          <div class="base-info-avatar">
-            <el-image
-              :src="activeContactor.avatar"
-              :preview-src-list="[activeContactor.avatar]"
-            />
-          </div>
-          <div class="base-info-content">
-            <div class="name">{{ activeContactor.name }}</div>
-            <div class="id">ID {{ activeContactor.id }}</div>
-            <div class="status">
-              <span :class="'delay-status ' + getDelayStatus"></span>
-              {{ isConnected ? '在线' : '离线' }}
-            </div>
-          </div>
-          <!-- LLM Provider select is now inside ContactorSettings -->
-        </div>
-
         <div class="info-blocks">
-          <div class="settings-block">
-            <div class="block-title">Bot 基本配置</div>
-            <div class="block-content">
-              <div class="block-content-item">
-                <div class="contactor-name item-title">昵称</div>
-                <div class="item-content">
-                  <el-input
-                    v-model="basicInfo.name"
-                    :disabled="basicInfo.namePolicy !== 1"
-                  ></el-input>
-                </div>
-              </div>
-              <div class="block-content-item">
-                <div class="item-title">头像</div>
-                <div class="item-content">
-                  <el-input 
-                    v-if="basicInfo.avatarPolicy !== 1"
-                    :value="'跟随模型'"
-                    :disabled="true"
-                  ></el-input>
-                  <el-input 
-                    v-else
-                    v-model="basicInfo.avatar"
-                    :disabled="isOnebot"
-                  ></el-input>
-                </div>
-              </div>
-              <div v-if="!isOnebot" class="block-content-item">
-                <div class="item-title">头像策略</div>
-                <div class="item-content">
-                  <el-select v-model="basicInfo.avatarPolicy"
-                  @change="updateContactorAvatar"
-                  >
-                    <el-option
-                      v-for="item in avatarPolicyList"
-                      :key="item.value"
-                      :label="item.label"
-                      :value="item.value"
-                    />
-                  </el-select>
-                </div>
-              </div>
-              <div v-if="!isOnebot" class="block-content-item">
-                <div class="item-title">昵称策略</div>
-                <div class="item-content">
-                  <el-select
-                    v-model="basicInfo.namePolicy"
-                    @change="updateContactorName"
-                  >
-                    <el-option
-                      v-for="item in namePolicyList"
-                      :key="item.value"
-                      :label="item.label"
-                      :value="item.value"
-                    />
-                  </el-select>
-                </div>
-              </div>
-              <div class="block-content-item">
-                <div class="item-title">会话置顶</div>
-                <div class="item-content">
-                  <el-switch v-model="basicInfo.priority"> </el-switch>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="info-blocks">
-          <ContactorSettings
-            v-if="!isOnebot"
-            v-model:model-value="options"
-            :active-contactor-platform="activeContactor.platform"
-            :llm-providers-list="llmProviders"
-            :tool-call-modes-list="toolCallModes"
-            :all-llm-tools-data="allLLMTools"
-            :safety-settings-params="safetyParams"
-            :safety-simple-value-options="safetySimpleValue"
-            :presets-history-data="options.presetSettings?.history"
-            @provider-changed="handleProviderSwitched"
-            @update-presets="handleUpdateOpenaiPresets"
-          />
+          <ContactorSettings v-if="!isOnebot && options && basicInfo" v-model:model-value="options"
+            v-model:basic-info="basicInfo" :active-contactor-platform="activeContactor.platform"
+            :llm-providers-list="llmProviders" :tool-call-modes-list="toolCallModes" :all-llm-tools-data="allLLMTools"
+            :safety-settings-params="safetyParams" :safety-simple-value-options="safetySimpleValue"
+            :presets-history-data="options.presetSettings?.history" :name="activeContactor.name"
+            :avatar="activeContactor.avatar" :is-connected="isConnected" :avatar-policy-list="avatarPolicyList"
+            :name-policy-list="namePolicyList" @provider-changed="handleProviderSwitched"
+            @update-presets="handleUpdateOpenaiPresets" />
         </div>
       </div>
     </div>
@@ -179,7 +99,6 @@ export default {
       centerDialogVisible: false,
       avatarPolicyList: avatarPolicyList,
       namePolicyList: namePolicyList,
-      isOnebot: contactor.platform === "onebot",
 
       // Static config passed as props
       llmProviders: providers,
@@ -192,6 +111,13 @@ export default {
   },
   computed: {
     ...mapState(useConnectionStore, ["isConnected"]),
+    isOnebot() {
+      return this.activeContactor.platform === "onebot";
+    },
+    isMobile() {
+      // Basic mobile detection
+      return window.innerWidth <= 768;
+    },
     getDelayStatus() {
       return this.isConnected ? "ultra" : "offline";
     },
@@ -203,9 +129,6 @@ export default {
     "$route.params.id"(newVal) {
       const newId = parseInt(newVal);
       this.activeContactor = client.getContactor(newId);
-      if (this.activeContactor) {
-        this.isOnebot = this.activeContactor.platform === "onebot";
-      }
       this.initContactor();
     },
     options: {
@@ -329,216 +252,164 @@ export default {
 </script>
 
 <style>
-/* Copied from parent for .settings-block, .block-title etc. */
-.block-title {
-  font-size: 0.8rem;
-}
-.block-content {
-  margin-top: 0.5rem;
-  margin-bottom: 1rem;
-  width: 100%;
-  display: flex;
-  background-color: #fff;
-  min-height: 1rem;
-  border-radius: 0.5rem;
-  flex-direction: column;
-}
-.block-content:last-child {
-  margin-bottom: 2rem;
-}
-.block-content-item {
-  max-height: 50rem; /* Ensure this is sufficient for PresetsList */
-  overflow-y: auto;
-  transition: max-height 0.5s ease;
-  position: relative;
-  display: flex;
-  width: 100%;
-  justify-content: space-between;
-  flex-wrap: nowrap;
-}
-.block-content-item.parent-item {
-  flex-wrap: wrap;
-}
-.child-item {
-  width: calc(100% - 1rem);
-  padding-left: 1rem;
-}
-.item-hidden-content {
-  width: 100%;
-}
-/* Styles specific to settings can be moved here or kept in parent if generic enough */
+/* Shared Settings Styles for Profile View and its children */
 .settings-container {
-  width: 100%;
-}
-.base-info-provider {
-  /* Copied from parent, ensure it's styled correctly in context */
   display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  padding-right: 2rem;
-  margin-bottom: 1rem; /* Added margin for spacing */
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: transparent;
+  color: #333;
 }
 
-.plugin-tools-container {
-  max-height: 20rem;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+.settings-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 8px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
 }
-.block-content-item::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 5%;
-  width: 90%;
-  height: 1px;
-  background-color: rgba(145, 145, 145, 0.155);
+
+.group-title {
+  padding: 0 4px 12px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+  text-align: left;
 }
-.item-title {
-  font-size: 0.8rem;
-  margin-left: 1rem;
-  height: 2.5rem;
+
+.setting-field {
   display: flex;
-  flex-grow: 1;
-  align-items: center;
-  justify-content: flex-start;
-  max-width: calc(100% - 5rem);
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
 }
-.tool-group-name {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex-shrink: 1;
+
+.setting-field:last-child {
+  border-bottom: none;
 }
-.item-content {
-  transform: scale(0.9);
-  flex-basis: 2rem;
+
+.field-label {
+  width: 14rem;
+  font-size: 13px;
+  color: #999;
+  padding-top: 8px;
+  flex-shrink: 0;
+  text-align: left;
+}
+
+.field-value {
+  flex: 1;
+  max-width: 60%;
+  text-align: right;
   display: flex;
-  align-items: center;
   justify-content: flex-end;
-  margin-right: 1.5rem;
+  align-items: center;
 }
-.item-content .el-input-number,
-.item-content .el-input,
-.item-content .el-slider,
-.item-content .el-select {
-  width: 10rem;
+
+/* Global overrides for Element Plus inside field-value */
+.field-value .el-input__wrapper,
+.field-value .el-select__wrapper {
+  box-shadow: none !important;
+  background: #f5f7fa !important;
+  border-radius: 8px;
+  padding: 0 12px !important;
 }
-.sub-items {
+
+.field-value input {
+  text-align: right;
+  padding-right: 12px !important;
+}
+
+.field-value .el-switch {
+  transform: scale(0.9);
+}
+
+.field-value .el-input-number {
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  padding-left: 0; /* Reset ul default padding */
-  list-style: none; /* Reset ul default list-style */
 }
-.extra-info-button.active {
-  transform: rotate(-90deg);
+
+@media (max-width: 768px) {
+  .group-title {
+    display: none;
+  }
+
+  .settings-card {
+    margin: 0 12px 12px;
+    padding: 4px 16px;
+    border-radius: 12px;
+  }
+
+  .setting-field {
+    padding: 12px 0;
+    border-bottom: 1px solid #f9f9f9;
+  }
+
+  .field-label {
+    font-size: 13px;
+    color: #999;
+    width: 100px;
+    padding-top: 8px;
+  }
 }
-.item-content button {
-  background-color: transparent;
-  border: none; /* Ensure button is clean */
-  cursor: pointer; /* Add cursor pointer */
-  transition: transform 0.3s ease;
-}
-.block-content-item.hidden {
-  /* This style seems unused, but keeping for now */
-  min-height: 0px;
-  max-height: 0px;
-}
-/* 自定义动画 - Kept in parent as it's a general utility transition */
+
+/* Transitions */
 .expand-slide-enter-active,
 .expand-slide-leave-active {
   transition:
     max-height 0.4s cubic-bezier(0.78, 0.14, 0.15, 0.86),
     opacity 0.4s;
 }
+
 .expand-slide-enter-from,
 .expand-slide-leave-to {
   max-height: 0;
   opacity: 0;
 }
+
 .expand-slide-enter-to,
 .expand-slide-leave-from {
-  max-height: 20rem; /* Adjust if necessary for PresetsList or other content */
+  max-height: 20rem;
   opacity: 1;
 }
 </style>
 
 <style scoped>
 /* Styles from original component that are general layout */
-#profile {
-  position: relative;
-  flex-grow: 1;
+.profile-main {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.profile-container {
+  flex: 1;
+  width: 100%;
+  max-width: 36rem;
+  min-height: 0;
+  margin-top: 2rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
+}
+
+.info-blocks {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  align-items: center;
 }
-/* .sub-items and other specific styles are now in ContactorSettings.vue or can be if specific to it */
-/* Keep .base-info-provider here if it's also used for other things, or move if only for provider select */
-/* Moved to child: .base-info-provider */
 
-.profile-container {
-  overflow-y: auto;
-  margin: 2rem 0rem 0rem 0rem;
-  width: calc(100% - 8rem);
-  min-width: 20rem;
-  max-width: 40rem;
-  display: flex;
-  flex-direction: column;
-}
-.base-info {
-  background-color: #fff;
-  border-radius: 0.5rem;
-  display: flex;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #88888888;
-  flex-wrap: wrap;
-  margin-bottom: 2rem; /* This was on base-info, now applies before info-blocks */
-}
-.base-info-avatar {
-  margin-top: 1rem;
-  margin-left: 1rem;
-  flex-basis: 5.5rem;
-  height: 5.5rem;
-}
-.base-info-avatar .el-image {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-}
-.base-info-content {
-  margin-left: 1.5rem;
-  margin-top: 1rem;
-  display: flex;
-  flex-direction: column;
-}
-.base-info-content .name {
-  font-size: 1.25rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 15rem;
-}
-.base-info-content .id {
-  margin-top: 0.25rem;
-  font-size: 0.75rem;
-  color: dimgrey;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 15rem;
-}
-.base-info-content .status {
-  margin-top: 0.25rem;
-}
-.info-blocks {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
 .action-bar {
   position: sticky;
-  background-color: #f2f2f2;
+  background-color: #F5F5F5;
   bottom: 0px;
   left: 0px;
   display: flex;
@@ -548,11 +419,64 @@ export default {
   width: 100%;
   z-index: 2;
 }
+
 .profile-body {
   position: relative;
-  overflow-y: auto;
-  flex-grow: 1;
-  background-color: #f2f2f2;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: #F5F5F5;
+}
+
+/* Mobile Nav */
+.mobile-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.back-btn,
+.more-btn {
+  font-size: 20px;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-title {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .profile-body {
+    background-color: #f2f2f2 !important;
+  }
+
+  .profile-container {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    min-width: 0 !important;
+    background-color: #f2f2f2 !important;
+    padding-bottom: 0;
+
+  }
+
+  .action-bar {
+    display: none !important;
+  }
 }
 </style>
 
