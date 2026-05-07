@@ -18,17 +18,19 @@ import ElementPlus from "element-plus";
 import App from "./App.vue";
 import router from "./router";
 
-const app = createApp(App);
-const pinia = createPinia();
-
-app.use(pinia);
-app.use(ElementPlus);
-app.use(router);
-
-// 初始化连接状态同步
+// 注意：这些 import 会被 ESM 静态提升，但 useConnectionStore() 的调用
+// 发生在 app.use(pinia) 之后的执行语句中，所以是安全的
 import { useConnectionStore } from "./stores/connectionStore";
 import { client } from "./lib/runtime";
 
+const app = createApp(App);
+const pinia = createPinia();
+
+app.use(pinia); // Pinia 必须先激活
+app.use(ElementPlus);
+app.use(router);
+
+// 在 pinia 激活后才调用 useConnectionStore
 const connectionStore = useConnectionStore();
 connectionStore.initSync(client);
 

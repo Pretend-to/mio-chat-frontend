@@ -268,15 +268,11 @@ export default {
         });
       };
 
-      // 1. 尝试立刻滚动（应对已渲染好的内容）
+      // 1. 立即执行一次（应对已渲染好的内容）
       execScroll();
 
-      // 2. 在 DOM 更新后滚动（Vue 渲染完成）
-      this.$nextTick(execScroll);
-
-      // 3. 在宏任务中滚动（应对浏览器布局和图片渲染导致的延迟）
-      setTimeout(execScroll, 30);
-      setTimeout(execScroll, 100); // 兜底，防止极慢的 Markdown 渲染
+      // 2. Vue DOM 更新后，在浏览器下一帧执行（等待布局完成，避免布局抖动）
+      this.$nextTick(() => requestAnimationFrame(execScroll));
     },
     cleanScreen() {
       this.activeContactor.messageChain = [];

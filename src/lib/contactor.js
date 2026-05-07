@@ -1,6 +1,7 @@
 import { config } from "@/lib/runtime.js";
 import { getAvatarByOwner } from "@/utils/avatar.js";
 import { numberString } from "../utils/generate.js";
+import { debounce } from "../utils/tools.js";
 import Onebot from "./adapter/onebot.js";
 import Openai from "./adapter/openai.js";
 import EventEmmiter from "./event.js";
@@ -48,6 +49,11 @@ export default class Contactor extends EventEmmiter {
     this.options = this.loadOptions(config.options);
     this.kernel =
       platform === "onebot" ? new Onebot(config) : new Openai(config); // 简化条件判断
+
+    // 【性能优化】防抖发射 updateMessageSummary，避免流式输出时每个 chunk 都刷新侧边栏
+    this._debouncedEmitSummary = debounce(() => {
+      this.emit("updateMessageSummary");
+    }, 300);
 
     if (platform === "openai") {
       this.enableOpenaiListener();
@@ -209,6 +215,8 @@ export default class Contactor extends EventEmmiter {
 
   /**
    * 统一触发消息更新
+   * updateMessage: 实时触发（ChatView 流式渲染需要）
+   * updateMessageSummary: 防抖触发（侧边栏摘要刷新，无需高频）
    */
   emitMessageUpdated(isBackground = false) {
     this.lastUpdate = Date.now();
@@ -216,7 +224,7 @@ export default class Contactor extends EventEmmiter {
       this.hasPendingTask = true;
     }
     this.emit("updateMessage");
-    this.emit("updateMessageSummary");
+    this._debouncedEmitSummary();
   }
 
   /**
@@ -912,9 +920,10 @@ export default class Contactor extends EventEmmiter {
       }
     };
 
+    // 【性能修复】移除 JSON.parse/stringify 深拷贝，直接按引用读取
+    // getLastMessageSummary 只读取文本内容，无需防御性拷贝
     let msg = message || this.messageChain[this.messageChain.length - 1];
     if (!msg) return "";
-    msg = JSON.parse(JSON.stringify(msg));
     if (msg.type === "node") {
       msg = msg.data;
     }

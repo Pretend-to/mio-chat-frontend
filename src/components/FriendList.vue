@@ -93,13 +93,11 @@ const addReactiveListener = () => {
       contactor.lastMessageSummary = contactor.getLastMessageSummary();
       listVersion.value++;
     });
-    contactor.on("updateMessage", () => {
-      // 触发计算属性重新计算，确保 UI 同步
-      contactorList.value = [...client.getContactors()];
-      listVersion.value++;
-    });
+    // 【性能修复】移除 updateMessage 的监听
+    // FriendList 只负责显示列表摘要和排序，不需要跟随每个 chunk 实时刷新
+    // updateMessageSummary 已做防抖处理，流式结束后会自动触发一次，排序在那时执行即可
     contactor.on("name_updated", () => {
-      contactorList.value = [...client.getContactors()];
+      contactor.lastMessageSummary = contactor.getLastMessageSummary();
       listVersion.value++;
     });
   });
