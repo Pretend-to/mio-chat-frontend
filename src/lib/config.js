@@ -162,33 +162,36 @@ export default class Config {
    * @param {object} defaults - 包含默认值的源对象
    * @returns {object} - 修改后的目标对象
    */
-  _mergeDefaultsRecursive(target, defaults) {
+  _mergeDefaultsRecursive(target, defaults, allowUnknownKeys = false) {
     if (
       !target ||
       typeof target !== "object" ||
       !defaults ||
       typeof defaults !== "object"
     ) {
-      console.warn("递归合并需要有效的 target 和 defaults 对象。");
-      return target; // 如果输入无效，返回原始 target
+      return target;
     }
 
     // 第一步：删除目标对象中存在但默认对象中不存在的属性
-    for (const key in target) {
-      if (Object.prototype.hasOwnProperty.call(target, key)) {
-        // 如果默认对象中不存在该键，则删除
-        if (!(key in defaults)) {
-          delete target[key];
+    // 只有在不允许未知键的情况下才执行删除操作（用于清理旧版配置）
+    if (!allowUnknownKeys) {
+      for (const key in target) {
+        if (Object.prototype.hasOwnProperty.call(target, key)) {
+          if (!(key in defaults)) {
+            delete target[key];
+          }
         }
       }
     }
 
     // 第二步：按照原逻辑合并默认值
     for (const key in defaults) {
-      // 确保 key 是 defaults 自身的属性，而不是继承来的
       if (Object.prototype.hasOwnProperty.call(defaults, key)) {
         const defaultValue = defaults[key];
         const targetValue = target[key];
+
+        // 当进入 extraSettings 分支时，开启 allowUnknownKeys 允许适配器私有配置
+        const shouldAllowUnknown = allowUnknownKeys || key === 'extraSettings';
 
         // 情况 1: 目标对象中不存在该键
         if (!(key in target)) {
@@ -197,13 +200,10 @@ export default class Config {
             defaultValue !== null &&
             !Array.isArray(defaultValue)
           ) {
-            // 如果默认值是对象，进行深拷贝（通过递归创建新对象）
-            target[key] = this._mergeDefaultsRecursive({}, defaultValue);
+            target[key] = this._mergeDefaultsRecursive({}, defaultValue, shouldAllowUnknown);
           } else if (Array.isArray(defaultValue)) {
-            // 如果默认值是数组，进行浅拷贝
             target[key] = [...defaultValue];
           } else {
-            // 如果默认值是原始类型，直接赋值
             target[key] = defaultValue;
           }
         }
@@ -216,15 +216,12 @@ export default class Config {
           targetValue !== null &&
           !Array.isArray(targetValue)
         ) {
-          // 递归进入下一层进行合并（包括删除不存在的属性）
-          this._mergeDefaultsRecursive(targetValue, defaultValue);
+          this._mergeDefaultsRecursive(targetValue, defaultValue, shouldAllowUnknown);
         }
-        // 情况 3: 目标对象中存在该键，但类型不匹配或不是普通对象
-        // 则保留目标对象中的现有值，不进行任何操作
       }
     }
 
-    return target; // 返回修改后的 target 对象
+    return target;
   }
 
   // --- 初始化方法 ---

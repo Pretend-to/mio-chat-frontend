@@ -147,7 +147,7 @@ const getDraftSummary = (html) => {
   const hasImage = doc.querySelector('img') !== null;
   const text = (doc.body.textContent || "").trim();
   const summary = text.substring(0, 50);
-  
+
   if (hasImage) {
     return `[图片] ${summary}`.trim();
   }
@@ -249,11 +249,11 @@ const handleTouchStart = (event, item) => {
   if (!onPhone.value) return;
   // 如果点击的是已经展开的项，或者正在点击按钮，则不重置
   if (event.target.closest('.swipe-actions')) return;
-  
+
   touchStartX.value = event.touches[0].clientX;
   touchStartY.value = event.touches[0].clientY;
   isSwiping.value = false;
-  
+
   // 如果点击的是非当前展开项，先关闭当前展开项
   if (swipedId.value !== item.id) {
     swipedId.value = null;
@@ -381,11 +381,6 @@ onMounted(() => {
 
   if (client.inited) initStatus();
   else client.on("loaded", initStatus, false);
-
-  client.on("socket_ready", (socket) => {
-    isConnected.value = !!socket.available;
-    socket.on("connection_changed", (val) => { isConnected.value = !!val; });
-  });
 });
 
 onBeforeUnmount(() => {
@@ -437,19 +432,13 @@ onBeforeUnmount(() => {
       </div>
     </div>
     <div class="people" @scroll="closeSwipe">
-      <div v-for="(item, index) of sortedList" :id="getId(item)" :key="index" 
-        class="lists-wrapper"
-        :class="{ 'swiping': swipedId === item.id }"
-      >
-        <div 
-          class="lists" 
-          @click="swipedId === item.id ? closeSwipe() : showChat(item.id)"
-          @contextmenu.prevent="onPhone ? null : showFriendContextMenu($event, item)" 
-          @touchstart="handleTouchStart($event, item)"
-          @touchmove="handleTouchMove($event, item)"
+      <div v-for="(item, index) of sortedList" :id="getId(item)" :key="index" class="lists-wrapper"
+        :class="{ 'swiping': swipedId === item.id }">
+        <div class="lists" @click="swipedId === item.id ? closeSwipe() : showChat(item.id)"
+          @contextmenu.prevent="onPhone ? null : showFriendContextMenu($event, item)"
+          @touchstart="handleTouchStart($event, item)" @touchmove="handleTouchMove($event, item)"
           @touchend="handleTouchEnd($event, item)"
-          :style="swipedId === item.id ? { transform: `translateX(-${swipeOffset}px)` } : {}"
-        >
+          :style="swipedId === item.id ? { transform: `translateX(-${swipeOffset}px)` } : {}">
           <div class="avatar" :class="item.avatarPolicy == 1 ? 'custom' : 'model'">
             <img :src="item.avatar" :alt="item.name" />
           </div>
@@ -822,7 +811,8 @@ button#addcont {
   }
 
   .lists-wrapper.swiping .lists {
-    transition: none; /* 滑动时禁用过渡 */
+    transition: none;
+    /* 滑动时禁用过渡 */
   }
 
   .swipe-actions {
@@ -858,7 +848,8 @@ button#addcont {
     background-color: #F1F4FE;
   }
 
-  .lists:hover, .lists-wrapper#important:hover {
+  .lists:hover,
+  .lists-wrapper#important:hover {
     background-color: inherit;
   }
 }
