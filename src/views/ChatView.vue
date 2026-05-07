@@ -940,6 +940,22 @@ export default {
           clone.querySelector('.multi-select-box')?.remove();
           const wrapper = clone.querySelector('.message-flex-wrapper');
           if (wrapper) wrapper.classList.remove('is-multi-select', 'is-selected');
+
+          // 核心修复：处理克隆元素中的跨域图片
+          clone.querySelectorAll('img').forEach(img => {
+            if (img.src && !img.src.startsWith('data:') && !img.src.startsWith(window.location.origin)) {
+              img.crossOrigin = 'anonymous';
+              // 加上时间戳绕过可能存在的无 CORS 响应缓存
+              try {
+                const url = new URL(img.src);
+                url.searchParams.set('t', Date.now());
+                img.src = url.toString();
+              } catch (e) {
+                // 如果 URL 解析失败，则保持原样
+              }
+            }
+          });
+
           messageWindow.appendChild(clone);
         });
 
