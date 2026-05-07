@@ -82,12 +82,12 @@
     </div>
 
     <!-- 桌面端布局 -->
-    <div class="settings-container" :class="{ 'mobile': isMobile }">
+    <div class="admin-panel-container" :class="{ 'mobile': isMobile }">
       <!-- 侧边导航 - 仅桌面端显示 -->
-      <aside v-if="!isMobile" class="settings-sidebar">
+      <aside v-if="!isMobile" class="admin-panel-sidebar">
         <el-menu
           :default-active="activeMenu"
-          class="settings-menu"
+          class="admin-panel-menu"
           @select="handleMenuSelect"
         >
           <el-menu-item
@@ -112,7 +112,7 @@
       </aside>
 
       <!-- 内容区域 -->
-      <main class="settings-content" :class="{ 'mobile': isMobile }">
+      <main class="admin-panel-content" :class="{ 'mobile': isMobile }">
         <!-- 通用页面头部占位 -->
         <div class="content-header-spacer"></div>
         
@@ -622,7 +622,7 @@ onUnmounted(() => {
   width: 100%;
 }
 
-.settings-container {
+.admin-panel-container {
   display: flex;
   flex: 1;
   overflow: hidden;
@@ -636,7 +636,7 @@ onUnmounted(() => {
   }
 }
 
-.settings-sidebar {
+.admin-panel-sidebar {
   width: 220px;
   background: transparent; // 侧边栏背景透明
   border-right: none; // 去掉分割线
@@ -648,7 +648,7 @@ onUnmounted(() => {
   padding-right: 8px;
 }
 
-.settings-menu {
+.admin-panel-menu {
   flex: 1;
   border: none;
   background: transparent;
@@ -699,7 +699,7 @@ onUnmounted(() => {
   }
 }
 
-.settings-content {
+.admin-panel-content {
   flex: 1;
   overflow-y: auto;
   background-color: #fff; // 内容区白色背景
@@ -743,7 +743,7 @@ onUnmounted(() => {
     width: 100% !important;
   }
 
-  .settings-sidebar {
+  .admin-panel-sidebar {
     display: none !important;
   }
 
@@ -761,11 +761,11 @@ onUnmounted(() => {
     display: block !important;
   }
 
-  .settings-container {
+  .admin-panel-container {
     padding: 0 !important;
   }
 
-  .settings-content {
+  .admin-panel-content {
     border-radius: 0 !important;
     box-shadow: none !important;
   }
@@ -781,11 +781,11 @@ onUnmounted(() => {
 
 // 平板适配
 @media (min-width: 769px) and (max-width: 1024px) {
-  .settings-sidebar {
+  .admin-panel-sidebar {
     width: 180px;
   }
 
-  .settings-menu {
+  .admin-panel-menu {
     :deep(.el-menu-item) {
       span {
         font-size: 14px;
