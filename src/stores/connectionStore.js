@@ -28,35 +28,33 @@ export const useConnectionStore = defineStore('connection', () => {
    * @param {object} client - 全局 Client 实例
    */
   function initSync(client) {
-    const syncConnection = (socket) => {
-      console.log("[connectionStore] syncConnection called, initial available:", socket.available);
-      isConnected.value = !!socket.available;
-      client.isConnected = !!socket.available;
-      
-      socket.on("connection_changed", (status) => {
-        console.log("[connectionStore] connection_changed emitted with status:", status);
-        isConnected.value = !!status;
-        client.isConnected = !!status;
-        if (!status) {
-          isConnecting.value = false;
-        }
-      });
-
-      socket.on("connect_error", (err) => {
-        console.log("[connectionStore] connect_error emitted:", err);
-        isConnected.value = false;
-        client.isConnected = false;
-        setError(err.message || "Connection error");
-      });
+    const updateState = () => {
+      console.log("[connectionStore] sync state called, isConnected:", client.isConnected);
+      isConnected.value = client.isConnected;
     };
 
-    if (client.socket) {
-      syncConnection(client.socket);
-    } else {
-      client.on("socket_ready", (socket) => {
-        syncConnection(socket);
-      });
-    }
+    // 初始同步
+    updateState();
+
+    // 监听 client 的状态变化事件
+    client.on("connection_changed", (status) => {
+      console.log("[connectionStore] connection_changed received:", status);
+      isConnected.value = !!status;
+      if (!status) {
+        isConnecting.value = false;
+      }
+    });
+
+    client.on("connect_error", (err) => {
+      console.log("[connectionStore] connect_error received:", err);
+      isConnected.value = false;
+      setError(err.message || "Connection error");
+    });
+    
+    // 如果 socket 重新就绪（重新登录），确保状态也是最新的
+    client.on("socket_ready", () => {
+      updateState();
+    });
   }
 
   return {

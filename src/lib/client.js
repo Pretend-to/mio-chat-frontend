@@ -463,6 +463,7 @@ export default class Client extends EventEmitter {
         this.isConnected = true;
         this.socket = socket;
         this.emit("socket_ready", socket);
+        this.emit("connection_changed", true);
         this.config.setLlmModels(info.models);
         this.addMsgListener();
         if (this.contactList.length == 0) {
@@ -514,7 +515,15 @@ export default class Client extends EventEmitter {
       socket.on("connect_error", (error) => {
         console.log("Login failed", error);
         this.isConnected = false;
+        this.emit("connection_changed", false);
+        this.emit("connect_error", error);
         reject(error.message);
+      });
+
+      // 监听连接状态变化并同步到 client
+      socket.on("connection_changed", (status) => {
+        this.isConnected = !!status;
+        this.emit("connection_changed", status);
       });
 
       socket.connect();
