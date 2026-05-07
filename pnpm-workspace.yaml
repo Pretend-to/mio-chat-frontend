@@ -9,5 +9,3 @@ onlyBuiltDependencies:
   - pngquant-bin
   - vue-demi
 
-overrides:
-  mio-previewer: link:../mio-previewer
