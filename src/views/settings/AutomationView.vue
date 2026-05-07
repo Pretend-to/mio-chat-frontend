@@ -174,6 +174,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { ChatLineRound, AlarmClock } from '@element-plus/icons-vue';
 import { useConfigStore } from '@/stores/configStore.js';
 import { taskAPI, configAPI } from '@/lib/configApi.js';
+import { config } from '@/lib/runtime.js';
 
 const configStore = useConfigStore();
 const formRef = ref(null);
@@ -202,21 +203,14 @@ const editingTask = reactive({
   status: 'active'
 });
 
-// 获取所有适配器列表
+// 获取所有适配器列表 (渠道)
 const allAdapters = computed(() => {
-  const list = [];
-  if (configStore.adapters) {
-    Object.entries(configStore.adapters).forEach(([type, instances]) => {
-      instances.forEach((inst, index) => {
-        list.push({
-          id: inst.instanceId || `${type}:${index}`,
-          name: inst.name || `${type} #${index + 1}`,
-          type: type
-        });
-      });
-    });
-  }
-  return list;
+  // 与 AddContactor.vue 逻辑保持一致，使用 config 提供的标准列表
+  return config.getLLMProviders().map(p => ({
+    id: p.value,     // 唯一标识 (displayName/instanceId)
+    name: p.label,   // 显示名称
+    type: p.adapterType
+  }));
 });
 
 // 加载配置与任务
