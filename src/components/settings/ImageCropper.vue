@@ -22,13 +22,30 @@
             class="crop-box"
             :style="cropBoxStyle"
             @mousedown="startDrag"
+            @touchstart.passive="startDrag"
           >
             <div class="crop-overlay"></div>
             <!-- 调整手柄 -->
-            <div class="resize-handle nw" @mousedown.stop="startResize('nw')"></div>
-            <div class="resize-handle ne" @mousedown.stop="startResize('ne')"></div>
-            <div class="resize-handle sw" @mousedown.stop="startResize('sw')"></div>
-            <div class="resize-handle se" @mousedown.stop="startResize('se')"></div>
+            <div
+              class="resize-handle nw"
+              @mousedown.stop="startResize('nw')"
+              @touchstart.stop.passive="startResize('nw')"
+            ></div>
+            <div
+              class="resize-handle ne"
+              @mousedown.stop="startResize('ne')"
+              @touchstart.stop.passive="startResize('ne')"
+            ></div>
+            <div
+              class="resize-handle sw"
+              @mousedown.stop="startResize('sw')"
+              @touchstart.stop.passive="startResize('sw')"
+            ></div>
+            <div
+              class="resize-handle se"
+              @mousedown.stop="startResize('se')"
+              @touchstart.stop.passive="startResize('se')"
+            ></div>
           </div>
         </div>
 
@@ -91,10 +108,12 @@ const cropData = reactive({
   y: 0,
   width: 200,
   height: 200,
-  imageWidth: 0,
-  imageHeight: 0,
   containerWidth: 0,
-  containerHeight: 0
+  containerHeight: 0,
+  renderedWidth: 0,
+  renderedHeight: 0,
+  offsetX: 0,
+  offsetY: 0
 });
 
 // 拖拽状态
@@ -127,19 +146,42 @@ const initCropper = () => {
     const container = cropAreaRef.value;
 
     // 获取图片和容器尺寸
-    cropData.imageWidth = image.naturalWidth;
-    cropData.imageHeight = image.naturalHeight;
-    cropData.containerWidth = container.clientWidth;
-    cropData.containerHeight = container.clientHeight;
+    const imageWidth = image.naturalWidth;
+    const imageHeight = image.naturalHeight;
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+
+    cropData.imageWidth = imageWidth;
+    cropData.imageHeight = imageHeight;
+    cropData.containerWidth = containerWidth;
+    cropData.containerHeight = containerHeight;
+
+    // 计算 object-fit: contain 下图片的实际渲染尺寸和偏移
+    const containerRatio = containerWidth / containerHeight;
+    const imageRatio = imageWidth / imageHeight;
+
+    if (imageRatio > containerRatio) {
+      // 图片更宽，宽度撑满
+      cropData.renderedWidth = containerWidth;
+      cropData.renderedHeight = containerWidth / imageRatio;
+      cropData.offsetX = 0;
+      cropData.offsetY = (containerHeight - cropData.renderedHeight) / 2;
+    } else {
+      // 图片更高，高度撑满
+      cropData.renderedHeight = containerHeight;
+      cropData.renderedWidth = containerHeight * imageRatio;
+      cropData.offsetY = 0;
+      cropData.offsetX = (containerWidth - cropData.renderedWidth) / 2;
+    }
 
     // 计算初始裁剪框大小和位置
-    const minSize = Math.min(cropData.containerWidth, cropData.containerHeight);
-    const initialSize = Math.min(minSize * 0.6, 200);
+    const minSize = Math.min(cropData.renderedWidth, cropData.renderedHeight);
+    const initialSize = Math.min(minSize * 0.8, 200);
 
     cropData.width = initialSize;
     cropData.height = initialSize;
-    cropData.x = (cropData.containerWidth - initialSize) / 2;
-    cropData.y = (cropData.containerHeight - initialSize) / 2;
+    cropData.x = cropData.offsetX + (cropData.renderedWidth - initialSize) / 2;
+    cropData.y = cropData.offsetY + (cropData.renderedHeight - initialSize) / 2;
 
     updateCropBoxStyle();
     updatePreview();
@@ -165,13 +207,12 @@ const updatePreview = () => {
   const image = imageRef.value;
 
   // 计算裁剪区域在原图中的位置
-  const scaleX = cropData.imageWidth / cropData.containerWidth;
-  const scaleY = cropData.imageHeight / cropData.containerHeight;
+  const scale = cropData.imageWidth / cropData.renderedWidth;
 
-  const sourceX = cropData.x * scaleX;
-  const sourceY = cropData.y * scaleY;
-  const sourceWidth = cropData.width * scaleX;
-  const sourceHeight = cropData.height * scaleY;
+  const sourceX = (cropData.x - cropData.offsetX) * scale;
+  const sourceY = (cropData.y - cropData.offsetY) * scale;
+  const sourceWidth = cropData.width * scale;
+  const sourceHeight = cropData.height * scale;
 
   // 清空画布
   ctx.clearRect(0, 0, 120, 120);
@@ -192,34 +233,60 @@ const updatePreview = () => {
   ctx.restore();
 };
 
+// 获取事件坐标
+const getEventPos = (e) => {
+  if (e.touches && e.touches.length > 0) {
+    return {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY
+    };
+  }
+  return {
+    x: e.clientX,
+    y: e.clientY
+  };
+};
+
 // 开始拖拽
 const startDrag = (e) => {
   if (dragState.isResizing) return;
 
   dragState.isDragging = true;
-  dragState.startX = e.clientX;
-  dragState.startY = e.clientY;
+  const pos = getEventPos(e);
+  dragState.startX = pos.x;
+  dragState.startY = pos.y;
   dragState.startCropX = cropData.x;
   dragState.startCropY = cropData.y;
 
   document.addEventListener('mousemove', handleDrag);
   document.addEventListener('mouseup', stopDrag);
-  e.preventDefault();
+  document.addEventListener('touchmove', handleDrag, { passive: false });
+  document.addEventListener('touchend', stopDrag);
+
+  if (e.type === 'mousedown') {
+    e.preventDefault();
+  }
 };
 
 // 处理拖拽
 const handleDrag = (e) => {
   if (!dragState.isDragging) return;
 
-  const deltaX = e.clientX - dragState.startX;
-  const deltaY = e.clientY - dragState.startY;
+  // 阻止移动端滚动
+  if (e.type === 'touchmove') {
+    e.preventDefault();
+  }
+
+  const pos = getEventPos(e);
+  const deltaX = pos.x - dragState.startX;
+  const deltaY = pos.y - dragState.startY;
 
   let newX = dragState.startCropX + deltaX;
   let newY = dragState.startCropY + deltaY;
 
   // 边界限制
-  newX = Math.max(0, Math.min(newX, cropData.containerWidth - cropData.width));
-  newY = Math.max(0, Math.min(newY, cropData.containerHeight - cropData.height));
+  newX = Math.max(cropData.offsetX, Math.min(newX, cropData.offsetX + cropData.renderedWidth - cropData.width));
+  newY = Math.max(cropData.offsetY, Math.min(newY, cropData.offsetY + cropData.renderedHeight - cropData.height));
 
   cropData.x = newX;
   cropData.y = newY;
@@ -233,14 +300,18 @@ const stopDrag = () => {
   dragState.isDragging = false;
   document.removeEventListener('mousemove', handleDrag);
   document.removeEventListener('mouseup', stopDrag);
+  document.removeEventListener('touchmove', handleDrag);
+  document.removeEventListener('touchend', stopDrag);
 };
 
 // 开始调整大小
 const startResize = (type) => {
+  const e = event;
   dragState.isResizing = true;
   dragState.resizeType = type;
-  dragState.startX = event.clientX;
-  dragState.startY = event.clientY;
+  const pos = getEventPos(e);
+  dragState.startX = pos.x;
+  dragState.startY = pos.y;
   dragState.startCropX = cropData.x;
   dragState.startCropY = cropData.y;
   dragState.startCropWidth = cropData.width;
@@ -248,15 +319,26 @@ const startResize = (type) => {
 
   document.addEventListener('mousemove', handleResize);
   document.addEventListener('mouseup', stopResize);
-  event.preventDefault();
+  document.addEventListener('touchmove', handleResize, { passive: false });
+  document.addEventListener('touchend', stopResize);
+
+  if (e.type === 'mousedown') {
+    e.preventDefault();
+  }
 };
 
 // 处理调整大小
 const handleResize = (e) => {
   if (!dragState.isResizing) return;
 
-  const deltaX = e.clientX - dragState.startX;
-  const deltaY = e.clientY - dragState.startY;
+  // 阻止移动端滚动
+  if (e.type === 'touchmove') {
+    e.preventDefault();
+  }
+
+  const pos = getEventPos(e);
+  const deltaX = pos.x - dragState.startX;
+  const deltaY = pos.y - dragState.startY;
 
   let newX = dragState.startCropX;
   let newY = dragState.startCropY;
@@ -297,22 +379,22 @@ const handleResize = (e) => {
   if (newWidth < minSize || newHeight < minSize) return;
 
   // 边界限制
-  if (newX < 0) {
-    newWidth += newX;
+  if (newX < cropData.offsetX) {
+    newWidth += (newX - cropData.offsetX);
     newHeight = newWidth;
-    newX = 0;
+    newX = cropData.offsetX;
   }
-  if (newY < 0) {
-    newHeight += newY;
+  if (newY < cropData.offsetY) {
+    newHeight += (newY - cropData.offsetY);
     newWidth = newHeight;
-    newY = 0;
+    newY = cropData.offsetY;
   }
-  if (newX + newWidth > cropData.containerWidth) {
-    newWidth = cropData.containerWidth - newX;
+  if (newX + newWidth > cropData.offsetX + cropData.renderedWidth) {
+    newWidth = cropData.offsetX + cropData.renderedWidth - newX;
     newHeight = newWidth;
   }
-  if (newY + newHeight > cropData.containerHeight) {
-    newHeight = cropData.containerHeight - newY;
+  if (newY + newHeight > cropData.offsetY + cropData.renderedHeight) {
+    newHeight = cropData.offsetY + cropData.renderedHeight - newY;
     newWidth = newHeight;
   }
 
@@ -330,6 +412,8 @@ const stopResize = () => {
   dragState.isResizing = false;
   document.removeEventListener('mousemove', handleResize);
   document.removeEventListener('mouseup', stopResize);
+  document.removeEventListener('touchmove', handleResize);
+  document.removeEventListener('touchend', stopResize);
 };
 
 // 生成裁剪后的图片
@@ -345,13 +429,12 @@ const getCroppedImage = () => {
     canvas.height = outputSize;
 
     // 计算裁剪区域在原图中的位置
-    const scaleX = cropData.imageWidth / cropData.containerWidth;
-    const scaleY = cropData.imageHeight / cropData.containerHeight;
+    const scale = cropData.imageWidth / cropData.renderedWidth;
 
-    const sourceX = cropData.x * scaleX;
-    const sourceY = cropData.y * scaleY;
-    const sourceWidth = cropData.width * scaleX;
-    const sourceHeight = cropData.height * scaleY;
+    const sourceX = (cropData.x - cropData.offsetX) * scale;
+    const sourceY = (cropData.y - cropData.offsetY) * scale;
+    const sourceWidth = cropData.width * scale;
+    const sourceHeight = cropData.height * scale;
 
     // 绘制裁剪后的图片
     ctx.drawImage(
@@ -405,10 +488,12 @@ const handleConfirm = async () => {
   position: relative;
   width: 400px;
   height: 300px;
+  max-width: 100%;
   border: 1px solid #dcdfe6;
   border-radius: 4px;
   overflow: hidden;
   background: #f5f7fa;
+  touch-action: none;
 
   .crop-image {
     width: 100%;
@@ -519,5 +604,28 @@ const handleConfirm = async () => {
   -khtml-user-drag: none;
   -moz-user-drag: none;
   -o-user-drag: none;
+}
+// 移动端适配
+@media screen and (max-width: 768px) {
+  .cropper-dialog {
+    :deep(.el-dialog) {
+      width: 95% !important;
+      margin: 10px auto !important;
+    }
+  }
+
+  .cropper-main {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .crop-area {
+    width: 100%;
+    height: 240px;
+  }
+
+  .preview-area {
+    margin-top: 10px;
+  }
 }
 </style>
