@@ -62,23 +62,23 @@
           </div>
           <div class="stat-item">
             <span class="stat-label">常用：</span>
-            <span class="stat-value">{{ presetsStore.countByCategory.common }} 个</span>
+            <span class="stat-value">{{ presetsStore.countByCategory?.common ?? 0 }} 个</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">推荐：</span>
-            <span class="stat-value">{{ presetsStore.countByCategory.recommended }} 个</span>
+            <span class="stat-value">{{ presetsStore.countByCategory?.recommended ?? 0 }} 个</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">隐藏：</span>
-            <span class="stat-value">{{ presetsStore.countByCategory.hidden }} 个</span>
+            <span class="stat-value">{{ presetsStore.countByCategory?.hidden ?? 0 }} 个</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">内置：</span>
-            <span class="stat-value">{{ presetsStore.countBySource['built-in'] }} 个</span>
+            <span class="stat-value">{{ presetsStore.countBySource?.['built-in'] ?? 0 }} 个</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">自定义：</span>
-            <span class="stat-value">{{ presetsStore.countBySource.custom }} 个</span>
+            <span class="stat-value">{{ presetsStore.countBySource?.custom ?? 0 }} 个</span>
           </div>
         </div>
 
@@ -129,18 +129,14 @@
             </el-empty>
           </div>
 
-          <!-- 瀑布流卡片 -->
-          <div v-else class="presets-waterfall" ref="waterfallRef">
-            <preset-card
-              v-for="preset in displayedPresets"
-              :key="getPresetId(preset)"
-              :preset="preset"
-              :selected="isPresetSelected(preset)"
-              @select="(selected) => handlePresetSelect(getPresetId(preset), selected)"
-              @edit="handleEdit"
-              @delete="handleDelete"
-              @export="handleExport"
-            />
+          <!-- 真正的瀑布流 -->
+          <div v-else ref="waterfallRef" class="presets-waterfall" :style="waterfallStyle">
+            <div v-for="(card, idx) in waterfallCards" :key="card.key" ref="cardRefs" class="waterfall-item"
+              :style="card.style" :data-index="idx">
+              <preset-card :preset="card.data" :selected="isPresetSelected(card.data)"
+                @select="(s) => handlePresetSelect(getPresetId(card.data), s)" @edit="handleEdit" @delete="handleDelete"
+                @export="handleExport" />
+            </div>
           </div>
 
           <!-- 无限滚动触发器 -->
@@ -208,6 +204,7 @@ import {
 } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useWaterfall } from '@/composables/useWaterfall.js';
 
 const presetsStore = usePresetsStore();
 
@@ -222,7 +219,50 @@ const editorMode = ref('create');
 const editorPreset = ref(null);
 const fileInput = ref(null);
 const waterfallRef = ref(null);
+const cardRefs = ref([]);
 const loadTrigger = ref(null);
+
+// ─── 数据与 ID 处理 (必须在 useWaterfall 之前定义) ───
+
+// 获取预设ID的辅助函数
+const getPresetId = (preset) => {
+  return preset?.name || ''; // 根据文档，预设的唯一标识符就是 name 字段
+};
+
+// 获取预设数据
+const allPresets = computed(() => presetsStore.allPresets || []);
+const totalCount = computed(() => presetsStore.totalCount || 0);
+
+// 当前显示的预设（直接使用 store 中的数据，已经过服务端筛选和分页）
+const displayedPresets = computed(() => {
+  return allPresets.value || [];
+});
+
+// ─── 瀑布流实例 ───
+const {
+  waterfallCards,
+  waterfallStyle,
+  startObserve,
+  stopObserve,
+  observeItems,
+  layoutCards,
+} = useWaterfall(displayedPresets, waterfallRef, {
+  getId: getPresetId
+});
+
+// 监听数据变化重新布局
+watch(displayedPresets, () => {
+  nextTick(() => {
+    layoutCards();
+  });
+}, { deep: true });
+
+// 监听卡片 ref 变化，开始观察每个卡片的高度
+watch(cardRefs, (newRefs) => {
+  if (newRefs.length > 0) {
+    observeItems(newRefs);
+  }
+}, { deep: true });
 
 // 分页相关
 const currentPage = ref(1);
@@ -235,20 +275,6 @@ const shouldShowTrigger = computed(() => {
 });
 const loadingMore = ref(false);
 const loadError = ref(false);
-
-// 获取预设数据
-const allPresets = computed(() => presetsStore.allPresets || []);
-const totalCount = computed(() => presetsStore.totalCount || 0);
-
-// 当前显示的预设（直接使用 store 中的数据，已经过服务端筛选和分页）
-const displayedPresets = computed(() => {
-  return allPresets.value || [];
-});
-
-// 获取预设ID的辅助函数
-const getPresetId = (preset) => {
-  return preset.name; // 根据文档，预设的唯一标识符就是 name 字段
-};
 
 // 检查预设是否被选中
 const isPresetSelected = (preset) => {
@@ -599,19 +625,22 @@ onMounted(async () => {
   try {
     // 初始加载
     await fetchPresetsWithFilters();
-    await new Promise(resolve => setTimeout(resolve, 300));
   } catch (error) {
     ElMessage.error('加载预设失败：' + error.message);
   } finally {
     loading.value = false;
-    // 在加载完成后设置无限滚动观察器
-    await nextTick(); // 确保 DOM 已更新
+    // 必须等待 nextTick，让 v-if="!loading" 渲染出 waterfallRef 对应的 DOM
+    await nextTick();
+    startObserve();
     setupInfiniteScroll();
+    // 初始布局
+    layoutCards();
   }
 });
 
 // 清理
 onUnmounted(() => {
+  stopObserve();
   cleanupObserver();
 });
 </script>
@@ -808,17 +837,26 @@ onUnmounted(() => {
 }
 
 .presets-waterfall {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
+  position: relative;
+  width: 100%;
+  transition: min-height 0.3s ease;
+}
 
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
+.waterfall-item {
+  transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  // 入场动画
+  animation: riseIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  opacity: 0;
+}
+
+@keyframes riseIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
   }
-
-  @media (min-width: 1200px) {
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
