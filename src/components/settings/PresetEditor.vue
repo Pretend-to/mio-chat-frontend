@@ -537,18 +537,16 @@ const handleSubmit = async () => {
     const submitData = {
       name: formData.name.trim(),
       category: formData.category,
+      avatar: formData.avatar, // 包含头像
       opening: formData.opening.trim(),
       history: formData.history.map(item => ({
         role: item.role,
         content: item.content.trim()
       })).filter(item => item.content), // 过滤空内容
-      tools: formData.tools.filter(tool => tool.trim()) // 过滤空工具名
+      tools: formData.tools.filter(tool => typeof tool === 'string' && tool.trim()) // 过滤空工具名且确保是字符串
     };
 
-    // 添加头像字段（如果有的话）
-    if (formData.avatar) {
-      submitData.avatar = formData.avatar;
-    }
+
 
     // 提交数据
     emit('submit', {

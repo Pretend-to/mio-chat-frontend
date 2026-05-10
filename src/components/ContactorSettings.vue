@@ -127,13 +127,19 @@
         <div class="group-title">插件工具</div>
         <div v-for="(plugin, index) in localAllLLMTools" :key="index" class="settings-card plugin-card">
           <div class="plugin-header">
-            <span class="plugin-name">{{ plugin.name }}</span>
+            <el-tooltip :content="plugin.name" placement="top" :show-after="800">
+              <span class="plugin-name">{{ plugin.name }}</span>
+            </el-tooltip>
             <el-switch v-model="plugin.isAllEnabled" @change="(val) => handleToggleAllTools(plugin, val)" />
           </div>
           <el-scrollbar max-height="200px">
             <div class="plugin-tools-grid">
               <div v-for="(tool, toolIndex) in plugin.tools" :key="toolIndex" class="tool-mini-item">
-                <span class="tool-name">{{ tool.name.split("_mid_")[0] }}</span>
+                <div class="tool-name-wrapper">
+                  <el-tooltip :content="tool.name.split('_mid_')[0]" placement="top" :show-after="800">
+                    <span class="tool-name">{{ tool.name.split("_mid_")[0] }}</span>
+                  </el-tooltip>
+                </div>
                 <el-switch v-model="tool.enabled" size="small" @change="handleToolEnableChange" />
               </div>
             </div>
@@ -156,7 +162,9 @@
                 <i class="iconfont robot"></i>
               </div>
               <div class="skill-info">
-                <div class="skill-name">{{ skill.name }}</div>
+                <el-tooltip :content="skill.name" placement="top" :show-after="800">
+                  <div class="skill-name">{{ skill.name }}</div>
+                </el-tooltip>
                 <div class="skill-description">{{ skill.description }}</div>
               </div>
             </div>
@@ -887,49 +895,7 @@ export default {
   font-weight: 600;
 }
 
-/* Plugins */
-.plugin-block {
-  background: #f9fafb;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
-}
 
-.plugin-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.plugin-name {
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.plugin-tools-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 8px;
-}
-
-.tool-mini-item {
-  background: #fff;
-  padding: 6px 10px;
-  border-radius: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border: 1px solid rgba(0, 0, 0, 0.03);
-}
-
-.tool-name {
-  font-size: 11px;
-  color: #444;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 
 /* Skills */
 .skills-grid {
@@ -999,10 +965,19 @@ export default {
   flex-shrink: 0;
 }
 
+.skill-info {
+  flex: 1;
+  min-width: 0;
+}
+
 .skill-name {
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: help;
 }
 
 .skill-description {
@@ -1035,13 +1010,20 @@ export default {
 }
 
 .plugin-name {
+  flex: 1;
+  min-width: 0;
   font-weight: 600;
   font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 12px;
+  cursor: help;
 }
 
 .plugin-tools-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 12px;
 }
 
@@ -1052,15 +1034,25 @@ export default {
   background: #f8f9fb;
   padding: 8px 12px;
   border-radius: 8px;
+  overflow: hidden;
+}
+
+.tool-name-wrapper {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
 }
 
 .tool-name {
+  width: 100%;
   font-size: 13px;
   color: #555;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   margin-right: 8px;
+  cursor: help;
 }
 
 .skill-field {

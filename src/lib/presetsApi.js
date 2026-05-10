@@ -179,6 +179,7 @@ class PresetsAPI {
         const exportData = {
           name: presetData.data.name,
           category: presetData.data.category,
+          avatar: presetData.data.avatar,
           history: presetData.data.history,
           opening: presetData.data.opening,
           tools: presetData.data.tools

@@ -160,24 +160,27 @@ export default {
       return { breaks: this.activeContactor.platform === 'onebot' };
     },
     activeMessageChain() {
-      return this.activeContactor.options.presetSettings?.opening
-        ? [
+      return this.activeContactor.messageChain;
+    },
+    openingMessage() {
+      const opening = this.activeContactor.options.presetSettings?.opening;
+      if (!opening) return null;
+      return {
+        id: 'opening-message',
+        role: "other",
+        content: [
           {
-            id: 'opening-message',
-            role: "other",
-            content: [
-              {
-                type: "text",
-                data: {
-                  text: this.activeContactor.options.presetSettings.opening,
-                },
-              },
-            ],
-            time: this.activeContactor.createTime,
+            type: "text",
+            data: {
+              text: opening,
+            },
           },
-          ...this.activeContactor.messageChain,
-        ]
-        : this.activeContactor.messageChain;
+        ],
+        time: this.activeContactor.createTime,
+      };
+    },
+    openingTime() {
+      return this.activeContactor.getShownTime(this.activeContactor.createTime);
     },
   },
   watch: {
@@ -368,11 +371,7 @@ export default {
         }
       }
     },
-    hasOpening() {
-      return this.activeContactor.options.presetSettings?.opening
-        ? true
-        : false;
-    },
+
     getFullMessages() {
       return this.activeMessageChain;
     },
@@ -616,10 +615,7 @@ export default {
       } else {
         console.log("用户右击了非图片元素或合成事件");
       }
-      this.validMessageIndex =
-        this.activeContactor.platform === "openai" && this.hasOpening()
-          ? messageIndex - 1
-          : messageIndex;
+      this.validMessageIndex = messageIndex;
       if (event.preventDefault) event.preventDefault();
       this.showMenu = true;
       this.menuTop = event.clientY;
@@ -1085,6 +1081,32 @@ export default {
       </div>
       <ContextMenu v-show="showMenu" type="message" :message="getseletedMessage()" :seleted-text :seleted-image
         :style="getMenuStyle" @message-option="handleMessageOption" @close="showMenu = false" />
+      <!-- Opening Message -->
+      <div v-if="openingMessage" class="message-container opening-message">
+        <div class="message-time">
+          {{ openingTime }}
+        </div>
+        <div class="message-flex-wrapper">
+          <div id="other" class="message-body">
+            <div class="avatar">
+              <img :src="activeContactor.avatar" :alt="activeContactor.name" @click="toProfile" />
+            </div>
+            <div class="msg">
+              <div class="wholename">
+                <div v-if="activeContactor.title" class="title">{{ activeContactor.title }}</div>
+                <div class="name">{{ activeContactor.name }}</div>
+              </div>
+              <div class="content">
+                <div v-for="(element, elmIndex) of openingMessage.content" :key="elmIndex" class="inner-content">
+                  <MdRenderer :md="element.data.text" theme="github" :custom-plugins="mioPlugins"
+                    :markdown-it-plugins="katexPluginList" :markdown-it-options="mdOptions" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div v-for="(item, index) of activeMessageChain" :key="`${activeContactor.id}-${item.id}`" ref="message"
         class="message-container" :data-id="item.id">
         <div v-if="showTime(index).show" class="message-time">
