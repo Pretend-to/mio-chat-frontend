@@ -33,6 +33,7 @@
         <el-avatar
           v-if="preset.avatar"
           :src="preset.avatar"
+          :alt="preset.name"
           :size="48"
           class="preset-avatar"
         />

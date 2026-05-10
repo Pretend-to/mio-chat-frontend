@@ -29,7 +29,7 @@
             <el-scrollbar class="adapters-list">
               <div v-for="(provider, index) in filteredProviders" :key="index" class="adapter-item mobile">
                 <div class="adapter-icon" :style="{ backgroundColor: getProviderColor(provider.adapterType) }">
-                  <img :src="getAvatarByAdapterType(provider.adapterType)" class="adapter-icon-img" />
+                  <img :src="getAvatarByAdapterType(provider.adapterType)" class="adapter-icon-img" alt="适配器图标" />
                 </div>
                 <div class="adapter-info">
                   <div class="adapter-header">
@@ -64,10 +64,10 @@
                 @scroll="handleScroll">
                 <div v-for="(preset, index) in shownPrestsList" :key="index" class="presets-item mobile">
                   <div v-if="preset.avatar" class="preset-avatar custom">
-                    <img :src="preset.avatar" />
+                    <img :src="preset.avatar" alt="预设头像" />
                   </div>
                   <div v-else-if="preset.model" class="preset-avatar model">
-                    <img :src="Contactor.getAvatarByModel(preset.model)" />
+                    <img :src="Contactor.getAvatarByModel(preset.model)" alt="模型头像" />
                   </div>
                   <div v-else class="preset-avatar">
                     {{ preset.name.slice(0, 2) }}
@@ -131,7 +131,7 @@
           <el-scrollbar class="adapters-list">
             <div v-for="(provider, index) in filteredProviders" :key="index" class="adapter-item">
               <div class="adapter-icon" :style="{ backgroundColor: getProviderColor(provider.adapterType) }">
-                <img :src="getAvatarByAdapterType(provider.adapterType)" class="adapter-icon-img" />
+                <img :src="getAvatarByAdapterType(provider.adapterType)" class="adapter-icon-img" alt="适配器图标" />
               </div>
               <div class="adapter-info">
                 <div class="adapter-header">
@@ -166,10 +166,10 @@
               @scroll="handleScroll">
               <div v-for="(preset, index) in shownPrestsList" :key="index" class="presets-item">
                 <div v-if="preset.avatar" class="preset-avatar custom">
-                  <img :src="preset.avatar" />
+                  <img :src="preset.avatar" alt="预设头像" />
                 </div>
                 <div v-else-if="preset.model" class="preset-avatar model">
-                  <img :src="Contactor.getAvatarByModel(preset.model)" />
+                  <img :src="Contactor.getAvatarByModel(preset.model)" alt="模型头像" />
                 </div>
                 <div v-else class="preset-avatar">
                   {{ preset.name.slice(0, 2) }}

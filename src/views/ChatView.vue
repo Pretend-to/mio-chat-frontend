@@ -1216,7 +1216,7 @@ export default {
           </template>
         </el-popconfirm>
       </div>
-      <div class="close-btn" @click="cancelMultiSelect">&times;</div>
+      <button class="close-btn" @click="cancelMultiSelect" aria-label="取消多选">&times;</button>
     </div>
 
     <!-- Image Preview for Desktop -->
@@ -1228,7 +1228,7 @@ export default {
       class="desktop-preview-dialog"
     >
       <div class="preview-scroll-container" style="max-height: 60vh; overflow-y: auto; text-align: center; background: #f2f2f2; padding: 20px; border-radius: 8px;">
-        <img :src="previewImageUrl" class="preview-image" style="max-width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 12px;"/>
+        <img :src="previewImageUrl" class="preview-image" alt="图片预览" style="max-width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 12px;"/>
       </div>
       <template #footer>
         <span class="dialog-footer">
@@ -1255,7 +1255,7 @@ export default {
           <span style="width: 40px;"></span>
         </div>
         <div class="preview-scroll-container" style="flex: 1; max-height: none; padding: 20px; box-sizing: border-box; overflow-y: auto;">
-          <img :src="previewImageUrl" class="preview-image" style="width: 100%; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"/>
+          <img :src="previewImageUrl" class="preview-image" alt="分享预览图" style="width: 100%; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"/>
         </div>
         <div class="mobile-preview-footer" style="padding: 20px; background: transparent; border: none; display: flex; gap: 12px;">
           <el-button @click="shareMobilePreviewLink" size="large" style="flex: 1; border-radius: 12px; font-weight: bold;">分享链接</el-button>
@@ -1453,6 +1453,9 @@ $icon-hover: #09f
         line-height: 1
         padding: 0.25rem 0.5rem
         border-radius: 50%
+        background: transparent
+        border: none
+        outline: none
         transition: color 0.2s, background-color 0.2s
         user-select: none
 

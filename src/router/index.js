@@ -15,26 +15,31 @@ const router = createRouter({
       path: "/",
       name: "home",
       component: HomeView,
+      meta: { title: "主页" },
       children: [
         {
           path: "/",
           name: "blank",
           component: BlankView,
+          meta: { title: "开始对话" },
         },
         {
           path: "/contactors",
           name: "contactors",
           component: BlankView,
+          meta: { title: "联系人列表" },
         },
         {
           path: "/chat/:id",
           name: "chat_view",
           component: ChatView,
+          meta: { title: "正在聊天" },
         },
         {
           path: "/profile/:id",
           name: "profile_view",
           component: ProfileView,
+          meta: { title: "个人信息" },
         },
       ],
     },
@@ -42,11 +47,13 @@ const router = createRouter({
       path: "/auth",
       name: "auth",
       component: AuthView,
+      meta: { title: "身份验证" },
     },
     {
       path: "/s/:shareId",
       name: "share_link",
       component: BlankView,
+      meta: { title: "正在加载分享内容" },
       beforeEnter: async (to, from, next) => {
         // Handle direct share links
         const shareId = to.params.shareId;
@@ -74,56 +81,67 @@ const router = createRouter({
       name: "settings",
       component: SettingsView,
       redirect: "/settings",
+      meta: { title: "系统设置" },
       children: [
         {
           path: "",
           name: "settings_overview",
           component: () => import("../views/settings/OverviewView.vue"),
+          meta: { title: "设置概览" },
         },
         {
           path: "llm-adapters",
           name: "settings_llm_adapters",
           component: () => import("../views/settings/LLMAdaptersView.vue"),
+          meta: { title: "模型适配器" },
         },
         {
           path: "automation",
           name: "settings_automation",
           component: () => import("../views/settings/AutomationView.vue"),
+          meta: { title: "自动化任务" },
         },
         {
           path: "server",
           name: "settings_server",
           component: () => import("../views/settings/ServerConfigView.vue"),
+          meta: { title: "服务端配置" },
         },
         {
           path: "web",
           name: "settings_web",
           component: () => import("../views/settings/WebConfigView.vue"),
+          meta: { title: "网页端配置" },
         },
         {
           path: "onebot",
           name: "settings_onebot",
           component: () => import("../views/settings/OnebotConfigView.vue"),
+          meta: { title: "Onebot 配置" },
         },
         {
           path: "plugins",
           name: "settings_plugins",
           component: () => import("../views/settings/PluginsView.vue"),
+          meta: { title: "插件管理" },
         },
         {
           path: "presets",
           name: "settings_presets",
           component: () => import("../views/settings/PresetsView.vue"),
+          meta: { title: "预设管理" },
         },
         {
           path: "storage",
           name: "settings_storage",
           component: () => import("../views/settings/StorageConfigView.vue"),
+          meta: { title: "存储设置" },
         },
         {
           path: "logs",
           name: "settings_logs",
           component: () => import("../views/settings/LogsView.vue"),
+          meta: { title: "系统日志" },
         },
       ],
     },
@@ -145,6 +163,15 @@ router.beforeEach(async (to) => {
     // 把原本要去的地址 完整的传递给 login?redirect=
     const query = to.path === "/settings" ? null : { redirect: to.fullPath };
     return { name: "auth", query };
+  }
+});
+
+router.afterEach((to) => {
+  const pageTitle = to.meta.title;
+  if (pageTitle) {
+    document.title = `${pageTitle} - MioChat`;
+  } else {
+    document.title = "MioChat - 下一代 AI 智能对话平台";
   }
 });
 
