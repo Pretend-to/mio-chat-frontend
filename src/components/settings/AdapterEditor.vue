@@ -13,6 +13,7 @@
         <dynamic-adapter-form
           :type="type"
           :schema="currentAdapterSchema"
+          :description="currentAdapterDescription"
           v-model="formData"
           :show-api-key="showApiKey"
           @toggle-api-key="showApiKey = !showApiKey"
@@ -134,6 +135,15 @@ const formatTypeLabel = (type) => {
 const dialogTitle = computed(() => {
   const action = props.mode === 'add' ? '添加' : '编辑';
   return `${action} ${formatTypeLabel(props.type)} 适配器实例`;
+});
+
+// 获取当前适配器类型的描述
+const currentAdapterDescription = computed(() => {
+  if (!configStore?.adapterTypes?.adapters) {
+    return '';
+  }
+  const adapterInfo = configStore.adapterTypes.adapters.find(a => a.type === props.type);
+  return adapterInfo?.description || '';
 });
 
 // 获取当前适配器类型的配置模式

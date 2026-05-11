@@ -4,7 +4,6 @@
     <div class="profile-header">
       <div class="avatar-container">
         <div class="avatar" :style="{ backgroundImage: `url(${avatar || ''})` }"></div>
-        <div :class="{ 'status-dot': true, offline: !isConnected }"></div>
       </div>
       <div class="profile-info">
         <h1 class="profile-name">{{ name || 'Mio Assistant' }}</h1>
@@ -654,21 +653,6 @@ export default {
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.status-dot {
-  position: absolute;
-  bottom: 6px;
-  right: 6px;
-  width: 14px;
-  height: 14px;
-  background: #2ecc71;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  transition: background 0.3s;
-}
-
-.status-dot.offline {
-  background: #ccc;
-}
 
 .profile-info {
   flex: 1;

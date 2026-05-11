@@ -397,12 +397,12 @@ onBeforeUnmount(() => {
       <div class="header-top">
         <div class="user-info">
           <div class="user-avatar">
-            <StatusDot size="14px" class="status-dot-mobile" />
             <img :src="processedImage" alt="avatar" />
           </div>
           <div class="user-detail">
             <div class="user-name">{{ client.name === 'user' ? '秋山 澪' : client.name }}</div>
             <div class="user-status">
+              <StatusDot size="8px" />
               {{ isOnline ? connectionType : '离线' }} >
             </div>
           </div>
@@ -714,8 +714,7 @@ button#addcont {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    /* overflow: hidden; */
-    /* 移除 hidden 允许状态点溢出显示 */
+    overflow: hidden;
     position: relative;
     background-color: #fff;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -728,12 +727,6 @@ button#addcont {
     object-fit: cover;
   }
 
-  .status-dot-mobile {
-    position: absolute;
-    right: -1px;
-    bottom: -1px;
-    z-index: 2;
-  }
 
   .user-detail {
     display: flex;

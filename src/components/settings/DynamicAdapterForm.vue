@@ -1,7 +1,13 @@
 <template>
   <div class="dynamic-adapter-form">
+    <!-- 适配器描述 (支持简单 Markdown) -->
+    <div v-if="description" class="adapter-description-container">
+      <el-icon class="info-icon"><InfoFilled /></el-icon>
+      <div class="adapter-description" v-html="renderedDescription"></div>
+    </div>
+
     <!-- 基本信息 -->
-    <el-divider content-position="left">基本信息</el-divider>
+    <el-divider content-position="left">配置详情</el-divider>
     
     <!-- 动态生成的字段 -->
     <template v-for="(fieldConfig, fieldName) in schema" :key="fieldName">
@@ -152,7 +158,7 @@
 </template>
 
 <script setup>
-import { Hide, UploadFilled, View } from '@element-plus/icons-vue';
+import { Hide, InfoFilled, UploadFilled, View } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { computed, ref } from 'vue';
 
@@ -172,12 +178,47 @@ const props = defineProps({
   showApiKey: {
     type: Boolean,
     default: false
+  },
+  description: {
+    type: String,
+    default: ''
   }
 });
 
 const emit = defineEmits(['update:modelValue', 'toggle-api-key', 'json-upload']);
 
 const vertexAuthType = ref('json');
+
+// 简单的 Markdown 渲染逻辑
+const renderedDescription = computed(() => {
+  if (!props.description) return '';
+  
+  let html = props.description;
+  
+  // 处理加粗 **text**
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  
+  // 处理链接 [text](url)
+  html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" class="markdown-link">$1</a>');
+  
+  // 处理有序列表 1. 2. (特别针对多行描述)
+  const lines = html.split('\n');
+  const processedLines = lines.map(line => {
+    const trimmedLine = line.trim();
+    const listMatch = trimmedLine.match(/^(\d+)\.\s+(.*)$/);
+    if (listMatch) {
+      return `<div class="desc-list-item"><span class="desc-list-index">${listMatch[1]}</span><span class="desc-list-content">${listMatch[2]}</span></div>`;
+    }
+    return line;
+  });
+  
+  html = processedLines.join('\n');
+
+  // 处理换行
+  html = html.replace(/\n/g, '<br>');
+  
+  return html;
+});
 
 // 更新字段值
 const updateField = (fieldName, value) => {
@@ -223,6 +264,85 @@ const handleJsonUpload = (file) => {
 
 <style scoped lang="scss">
 .dynamic-adapter-form {
+  .adapter-description-container {
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #f0f7ff 0%, #f5faff 100%);
+    border-radius: 14px;
+    border: 1px solid #d9ecff;
+    margin-bottom: 24px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    box-shadow: 0 4px 15px rgba(64, 158, 255, 0.05);
+    
+    .info-icon {
+      font-size: 20px;
+      color: #409eff;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+    
+    .adapter-description {
+      font-size: 14px;
+      line-height: 1.7;
+      color: #5e6d82;
+      flex: 1;
+      
+      :deep(strong) {
+        color: #2c3e50;
+        font-weight: 600;
+      }
+      
+      :deep(.markdown-link) {
+        color: #409eff;
+        text-decoration: none;
+        font-weight: 500;
+        border-bottom: 1px solid rgba(64, 158, 255, 0.3);
+        transition: all 0.2s ease;
+        padding-bottom: 1px;
+        
+        &:hover {
+          color: #66b1ff;
+          border-bottom-color: #409eff;
+          background: rgba(64, 158, 255, 0.05);
+        }
+      }
+
+      :deep(.desc-list-item) {
+        display: flex;
+        gap: 10px;
+        margin: 6px 0;
+        align-items: flex-start;
+      }
+
+      :deep(.desc-list-index) {
+        width: 20px;
+        height: 20px;
+        background: #409eff;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: bold;
+        flex-shrink: 0;
+        margin-top: 2px;
+        box-shadow: 0 2px 4px rgba(64, 158, 255, 0.2);
+      }
+
+      :deep(.desc-list-content) {
+        flex: 1;
+      }
+
+      :deep(br) {
+        display: block;
+        margin: 4px 0;
+        content: "";
+      }
+    }
+  }
+
   .field-description {
     color: #909399;
     font-size: 12px;
