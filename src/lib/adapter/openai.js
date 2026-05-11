@@ -30,7 +30,7 @@ export default class Openai extends Adapter {
   handleMessageEvent(chunk) {
     const data = chunk.data;
     const metaData = data?.metaData;
-    const messageId = metaData?.messageId;
+    const messageId = metaData?.messageId || chunk.request_id;
 
     const emitEvent = (eventName, detail) => {
       this.emit(eventName, { ...detail, messageId });
