@@ -9,6 +9,13 @@
         </span>
         <span class="tool-status-text">{{ skill_status_text }}</span>
       </template>
+      <template v-else-if="(toolCall.name || '').split('_mid_')[0] === 'memory'">
+        <i class="mio-icon mio-icon-memory" :class="{ 'is-loading': toolCall.action === 'running' || toolCall.action === 'pending' }"></i>
+        <span class="tool-name" :class="{ 'is-loading': toolCall.action === 'running' || toolCall.action === 'pending' }">
+          记录记忆
+        </span>
+        <span class="tool-status-text">{{ call_status }}</span>
+      </template>
       <template v-else>
         <i class="mio-icon mio-icon-tool" :class="{ 'is-loading': toolCall.action === 'running' || toolCall.action === 'pending' }"></i>
         <span class="tool-name" :class="{ 'is-loading': toolCall.action === 'running' || toolCall.action === 'pending' }">
@@ -170,23 +177,29 @@ export default {
   display: flex;
   align-items: center;
   width: fit-content;
-  height: 32px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 6px;
   background: transparent;
   border: none;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   user-select: none;
   cursor: pointer;
-  gap: 6px;
+  gap: 8px;
+  margin-left: -8px; /* Offset padding */
+}
+
+.tool-call-bar:hover {
+  background-color: rgba(0, 0, 0, 0.04);
 }
 
 .tool-call-bar .tool-name {
-  color: #555;
-  /* 正常状态加深 */
+  color: #666;
+  font-weight: 450;
 }
 
 .tool-call-bar:hover .tool-name {
-  color: #222;
-  /* 悬浮状态进一步加深 */
+  color: #111;
 }
 
 .tool-call-bar .tool-actions {

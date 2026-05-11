@@ -143,11 +143,17 @@ export default class Client extends EventEmitter {
     const bot = new Contactor(platform, config);
     bot.loadName();
     bot.loadAvatar();
+    this.initContactor(bot);
 
     const list = reactive(this.contactList);
     list.push(bot);
     await this.setLocalStorage();
     return bot;
+  }
+
+  initContactor(contactor) {
+    contactor.on("updateMessage", () => this.setLocalStorage());
+    contactor.on("updateOptions", () => this.setLocalStorage());
   }
 
   rmContactor(id) {
@@ -425,9 +431,11 @@ export default class Client extends EventEmitter {
 
     // If contact list exists, instantiate as contact objects
     if (client.contactList && client.contactList.length != 0) {
-      this.contactList = client.contactList.map(
-        (item) => new Contactor(item.platform, item),
-      );
+      this.contactList = client.contactList.map((item) => {
+        const contactor = new Contactor(item.platform, item);
+        this.initContactor(contactor);
+        return contactor;
+      });
     } else {
       this.contactList = [];
     }

@@ -31,7 +31,7 @@ app.use(ElementPlus);
 app.use(router);
 
 // 在 pinia 激活后才调用 useConnectionStore
-const connectionStore = useConnectionStore();
+const connectionStore = useConnectionStore(pinia);
 connectionStore.initSync(client);
 
 app.mount("#app");

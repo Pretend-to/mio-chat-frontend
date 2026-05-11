@@ -170,20 +170,28 @@ export default {
 .head-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  height: 32px;
+  gap: 8px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 6px;
   cursor: pointer;
   user-select: none;
   width: fit-content;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-left: -8px; /* Offset padding */
+}
+
+.head-bar:hover {
+  background-color: rgba(0, 0, 0, 0.04);
 }
 
 .head-bar .reason-info {
-  color: #555; /* 正常状态加深 */
+  color: #666;
+  font-weight: 450;
 }
 
 .head-bar:hover .reason-info {
-  color: #222; /* 悬浮状态进一步加深 */
+  color: #111;
 }
 
 .head-bar .extra-info-button {

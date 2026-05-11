@@ -93,6 +93,12 @@ export default class Contactor extends EventEmmiter {
     this.kernel.on("syncMessage", this.handleSyncMessage.bind(this));
     this.kernel.on("completeMessage", this.handleCompleteMessage.bind(this));
     this.kernel.on("failedMessage", this.handleFailedMessage.bind(this));
+    this.on("recordMemory", () => {
+      if (this.platform === "openai") {
+        // Emit global event for client to save
+        this.emit("updateOptions");
+      }
+    });
   }
 
   /**
@@ -158,6 +164,13 @@ export default class Contactor extends EventEmmiter {
             `[DEBUG-SYNC-TOOL] 组装后的 tool_call data:`,
             JSON.stringify(toolCallData),
           );
+
+          // 特殊处理：记忆工具调用成功时记录到 history
+          const toolName = (toolCallData.name || "").split("_mid_")[0];
+          console.log(`[ToolCall Intercept Sync] Name: ${toolName}, Result:`, toolCallData.result);
+          if (toolName === "memory" && toolCallData.result?.success) {
+            this.recordMemory(toolCallData.parameters || toolCallData.arguments);
+          }
 
           newContent.push({
             type: "tool_call",
@@ -340,6 +353,7 @@ export default class Contactor extends EventEmmiter {
    */
   handleUpdateToolCall(e) {
     const { tool_call, messageId } = e;
+    console.log(`[ToolCall Intercept Update] Raw:`, tool_call);
 
     const rawMessage = this.getOrCreateRawMessage(messageId);
 
@@ -369,7 +383,15 @@ export default class Contactor extends EventEmmiter {
     if (index === -1) {
       content.push(msgElm);
     } else {
-      content.splice(index, 1, this.mergeToolCall(content[index], tool_call));
+      const merged = this.mergeToolCall(content[index], tool_call);
+      content.splice(index, 1, merged);
+
+      // 特殊处理：记忆工具调用成功时记录到 history
+      const toolName = (merged.data.name || "").split("_mid_")[0];
+      console.log(`[ToolCall Intercept Update] Name: ${toolName}, Result:`, merged.data.result);
+      if (toolName === "memory" && merged.data.result?.success) {
+        this.recordMemory(merged.data.parameters || merged.data.arguments);
+      }
     }
 
     this.emitMessageUpdated(!this.active && rawMessage.role === "other");
@@ -811,6 +833,60 @@ export default class Contactor extends EventEmmiter {
     };
     if (this.active) this.emit("revMessage", container);
     else this.messageChain.push(container);
+  }
+
+  /**
+   * 记录记忆到 history
+   * @param {string|object} parameters
+   */
+  recordMemory(parameters) {
+    if (!parameters) return;
+    let params = parameters;
+    if (typeof params === "string") {
+      try {
+        params = JSON.parse(params);
+      } catch (e) {
+        console.error("[Memory] 解析参数失败:", e);
+        return;
+      }
+    }
+    const { question, answer } = params;
+    if (!question || !answer) return;
+
+    // 初始化 options 结构
+    if (!this.options.presetSettings) {
+      this.options.presetSettings = { opening: "", history: [] };
+    }
+    if (!this.options.presetSettings.history) {
+      this.options.presetSettings.history = [];
+    }
+
+    // 查重：避免重复记录相同的问答对
+    const isDuplicate = this.options.presetSettings.history.some((item, idx, arr) => {
+      if (item.role === "user" && item.content === question) {
+        const next = arr[idx + 1];
+        return next && next.role === "assistant" && next.content === answer;
+      }
+      return false;
+    });
+
+    if (isDuplicate) {
+      console.log("[Memory] 跳过重复记忆:", question);
+      return;
+    }
+
+    // 追加到 history 末尾
+    this.options.presetSettings.history.push({
+      role: "user",
+      content: question,
+    });
+    this.options.presetSettings.history.push({
+      role: "assistant",
+      content: answer,
+    });
+
+    console.log(`[Memory] 已记录新记忆: Q: ${question} A: ${answer}`);
+    this.emit("recordMemory");
   }
 
   getLastTime() {

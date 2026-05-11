@@ -21,6 +21,7 @@
         <div :class="{ 'tab-item': true, active: activeTab === 'basic' }" @click="activeTab = 'basic'">基础配置</div>
         <div :class="{ 'tab-item': true, active: activeTab === 'tools' }" @click="activeTab = 'tools'">工具调用</div>
         <div :class="{ 'tab-item': true, active: activeTab === 'skills' }" @click="activeTab = 'skills'">技能库</div>
+
         <div :class="{ 'tab-item': true, active: activeTab === 'presets' }" @click="activeTab = 'presets'">历史预设</div>
         <div :class="{ 'tab-item': true, active: activeTab === 'advanced' }" @click="activeTab = 'advanced'">高级扩展</div>
       </div>
@@ -170,6 +171,8 @@
           </div>
         </div>
       </div>
+ 
+
 
       <!-- Tab: Presets -->
       <div v-if="activeTab === 'presets'" class="tab-pane">
@@ -217,11 +220,13 @@ import DynamicSettingsForm from "@/components/DynamicSettingsForm.vue";
 import { client, config } from "@/lib/runtime.js";
 import { skillAPI, configAPI } from "@/lib/configApi.js";
 
+
 export default {
   name: "ContactorSettings",
   components: {
     PresetsList,
     DynamicSettingsForm,
+
   },
   props: {
     modelValue: {
@@ -364,7 +369,8 @@ export default {
     },
     isMobile() {
       return window.innerWidth <= 768;
-    }
+    },
+
   },
   watch: {
     activeTab(newTab) {
@@ -582,6 +588,7 @@ export default {
     handleUpdatePresets(presets) {
       this.$emit("update-presets", presets); // Pass through to parent
     },
+
     handleToolCallModeChange() {
       this.emitUpdate();
     },
@@ -1050,4 +1057,5 @@ export default {
 .presets-card {
   padding: 16px 24px;
 }
+
 </style>
