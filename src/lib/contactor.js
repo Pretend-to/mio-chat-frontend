@@ -1,5 +1,5 @@
 import { config } from "@/lib/runtime.js";
-import { getAvatarByOwner } from "@/utils/avatar.js";
+import { getAvatarByOwner, getAvatarByAdapterType } from "@/utils/avatar.js";
 import { numberString } from "../utils/generate.js";
 import { debounce } from "../utils/tools.js";
 import Onebot from "./adapter/onebot.js";
@@ -1026,7 +1026,7 @@ export default class Contactor extends EventEmmiter {
     let avatar = "/static/icons/512*512.png";
     if (avatarPolicy[this.avatarPolicy] == "MODEL") {
       const model = this.options.base.model;
-      avatar = Contactor.getAvatarByModel(model);
+      avatar = Contactor.getAvatarByModel(model, this.options.provider);
     } else if (avatarPolicy[this.avatarPolicy] == "CUSTOM") {
       avatar = this.avatar;
     }
@@ -1054,8 +1054,15 @@ export default class Contactor extends EventEmmiter {
     return name;
   }
 
-  static getAvatarByModel(model) {
+  static getAvatarByModel(model, provider = null) {
     const modelOwner = config.getModelOwner(model);
+    if (!modelOwner && provider) {
+      const providers = config.baseConfig?.llm_providers || [];
+      const targetProvider = providers.find((p) => p.displayName === provider);
+      if (targetProvider?.adapterType) {
+        return getAvatarByAdapterType(targetProvider.adapterType);
+      }
+    }
     return getAvatarByOwner(modelOwner);
   }
 }

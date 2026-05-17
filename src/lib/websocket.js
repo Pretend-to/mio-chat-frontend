@@ -11,14 +11,16 @@ export default class Socket extends EventEmitter {
    * Creates a Socket instance.
    * @param {String} id - Robot QQ number
    * @param {String} code - Login token
+   * @param {Boolean} firstLogin - Whether this is a first-time login
    */
-  constructor(id, code) {
+  constructor(id, code, firstLogin = false) {
     super();
     this.available = null;
     this.url = this.getURL();
     this.socket = null;
     this.code = code;
     this.id = id;
+    this.firstLogin = firstLogin;
     this.requests = [];
     this.pendingRequests = new Set(); // Track ongoing request_ids
   }
@@ -145,7 +147,7 @@ export default class Socket extends EventEmitter {
     this.socket = io(this.url, {
       path: "/socket.io",
       transports: transports, // <-- 使用指定的 transports
-      auth: { id: this.id, token: this.code },
+      auth: { id: this.id, token: this.code, firstLogin: this.firstLogin },
       reconnection: true, // 保持开启，让 Socket.IO 处理后续的重连尝试
       reconnectionAttempts: Infinity,
       reconnectionDelay: 3000, // 固定 3 秒重连一次

@@ -464,7 +464,7 @@ export default class Client extends EventEmitter {
     this.code = code;
 
     return new Promise((resolve, reject) => {
-      const socket = new Socket(this.id, this.code);
+      const socket = new Socket(this.id, this.code, this.contactList.length === 0);
 
       socket.on("connect", async (info) => {
         console.log("Login successful");

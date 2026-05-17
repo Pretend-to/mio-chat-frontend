@@ -242,9 +242,16 @@ export const useConfigStore = defineStore('config', () => {
         config.value[section] = data;
       }
       
-      // 非 LLM 适配器、OneBot、Storage 和 Web 配置需要重启
-      // 这些节点现在支持热更新
-      if (section !== 'llm_adapters' && section !== 'onebot' && section !== 'storage' && section !== 'web' && section !== 'system') {
+      // 非 LLM 适配器、OneBot、Storage、Web、System、Debug 和 Server 配置不需要手动重启（前两者支持热更新和自动重启）
+      if (
+        section !== 'llm_adapters' && 
+        section !== 'onebot' && 
+        section !== 'storage' && 
+        section !== 'web' && 
+        section !== 'system' &&
+        section !== 'debug' &&
+        section !== 'server'
+      ) {
         needRestart.value = true;
       }
       

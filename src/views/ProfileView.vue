@@ -13,7 +13,7 @@
     </div>
 
     <div id="profile" class="profile-main">
-      <div class="profile-container">
+      <div v-if="activeContactor" class="profile-container">
         <div class="info-blocks">
           <ContactorSettings v-if="!isOnebot && options && basicInfo" v-model:model-value="options"
             v-model:basic-info="basicInfo" :active-contactor-platform="activeContactor.platform"
@@ -26,7 +26,7 @@
         </div>
       </div>
     </div>
-    <div class="action-bar">
+    <div v-if="activeContactor" class="action-bar">
       <el-button plain @click="$router.push(`/chat/${activeContactor.id}`)">
         发送消息
       </el-button>
@@ -112,7 +112,7 @@ export default {
   computed: {
     ...mapState(useConnectionStore, ["isConnected"]),
     isOnebot() {
-      return this.activeContactor.platform === "onebot";
+      return this.activeContactor?.platform === "onebot";
     },
     isMobile() {
       // Basic mobile detection
@@ -122,7 +122,7 @@ export default {
       return this.isConnected ? "ultra" : "offline";
     },
     getAvatarPolicyValue() {
-      return this.basicInfo.avatarPolicy === 1 ? "自定义" : "跟随模型";
+      return this.basicInfo?.avatarPolicy === 1 ? "自定义" : "跟随模型";
     },
   },
   watch: {
@@ -159,6 +159,9 @@ export default {
   created() {
     // Use created instead of beforeMount for data initialization
     this.initContactor();
+    if (!this.activeContactor) {
+      client.on("loaded", this.handleClientLoaded);
+    }
   },
   mounted() {
     // Socket 连接状态现在统一通过 Pinia Store 管理
@@ -166,6 +169,7 @@ export default {
   },
   beforeUnmount() {
     client.off("plugins_updated", this.handlePluginsUpdated);
+    client.off("loaded", this.handleClientLoaded);
   },
   methods: {
     handlePluginsUpdated() {
@@ -189,14 +193,25 @@ export default {
       }
       this.allLLMTools = allLLMTools;
     },
+    handleClientLoaded() {
+      console.log("[ProfileView] Client loaded, initializing contactor...");
+      const currentId = parseInt(this.$route.params.id);
+      this.activeContactor = client.getContactor(currentId);
+      this.initContactor();
+    },
     initContactor() {
+      if (!this.activeContactor) {
+        console.warn("[ProfileView] activeContactor is undefined, waiting for client initialization");
+        return;
+      }
       // Deep clone options to avoid direct mutation of contactor's options by child
       // The watcher on `this.options` will handle persisting changes.
       this.options = JSON.parse(JSON.stringify(this.activeContactor.options));
 
-      const { name, avatar, namePolicy, avatarPolicy, priority } =
+      const { id, name, avatar, namePolicy, avatarPolicy, priority } =
         this.activeContactor;
       this.basicInfo = {
+        id,
         name,
         avatar,
         namePolicy,
@@ -225,11 +240,13 @@ export default {
       }
     },
     async delContactor() {
+      if (!this.activeContactor) return;
       this.centerDialogVisible = false;
       await client.rmContactor(this.activeContactor.id);
       this.$router.push("/");
     },
     handleProviderSwitched() {
+      if (!this.activeContactor) return;
       // This event is specifically for actions parent needs to take,
       // like reloading avatar, that are outside the 'options' object.
       this.activeContactor.loadAvatar();
@@ -238,11 +255,13 @@ export default {
     },
 
     updateContactorName() {
+      if (!this.activeContactor) return;
       if (this.basicInfo.namePolicy === 0) {
         this.basicInfo.name = this.activeContactor.options.base.model;
       }
     },
     updateContactorAvatar() {
+      if (!this.activeContactor) return;
       const { avatarPolicy } = this.basicInfo;
       this.activeContactor.avatarPolicy = avatarPolicy;
       this.basicInfo.avatar = this.activeContactor.loadAvatar();

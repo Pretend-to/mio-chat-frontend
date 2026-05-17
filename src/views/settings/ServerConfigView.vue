@@ -15,13 +15,13 @@
     </div>
 
     <el-alert
-      type="warning"
+      type="info"
       :closable="false"
       show-icon
       style="margin-bottom: 24px;"
     >
       <template #title>
-        修改服务器配置需要重启服务才能生效
+        提示：修改服务器端口或绑定主机将触发系统自动重启；切换调试模式可实时热生效，无需重启。
       </template>
     </el-alert>
 
@@ -100,7 +100,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage, ElMessageBox, ElLoading } from 'element-plus';
 import { useConfigStore } from '@/stores/configStore.js';
 
 const configStore = useConfigStore();
@@ -169,18 +169,23 @@ const handleSave = async () => {
   try {
     await formRef.value.validate();
     
-    await ElMessageBox.confirm(
-      '修改服务器配置需要重启服务才能生效，是否继续？',
-      '确认保存',
-      {
-        confirmButtonText: '保存',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    );
+    // 检查是否修改了需要重启的物理服务器参数（端口或绑定主机）
+    const needsRestart = formData.port !== originalData.port || formData.host !== originalData.host;
+    
+    if (needsRestart) {
+      await ElMessageBox.confirm(
+        '修改服务器端口或绑定主机将触发服务器自动重启以绑定新端口，重启期间服务将暂时不可用。是否继续？',
+        '确认保存并重启',
+        {
+          confirmButtonText: '保存并自动重启',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+      );
+    }
 
     saving.value = true;
-
+ 
     // 更新 server 配置节点
     await configStore.updateConfigSection('server', {
       port: formData.port,
@@ -188,12 +193,26 @@ const handleSave = async () => {
       max_rate_pre_min: formData.max_rate_pre_min
     });
 
-    // 更新 debug 配置（在根节点）
-    if (configStore.config) {
-      configStore.config.debug = formData.debug;
-    }
+    // 更新 debug 配置节点，将其封装为对象以符合 Express body-parser strict 规范
+    await configStore.updateConfigSection('debug', { debug: formData.debug });
 
-    ElMessage.success('配置保存成功，请重启服务使配置生效');
+    if (needsRestart) {
+      ElMessageBox.alert(
+        `配置已成功保存！后端服务正在自动重启并绑定到新地址 <strong>${formData.host}:${formData.port}</strong>。<br/><br/>` +
+        `⚠️ <strong>物理端口/主机已更改，请注意：</strong><br/>` +
+        `1. <strong>如果是本地开发：</strong>你需要同步更新前端代码的 <code>vite.config.js</code> 或环境变量中的代理端口（Proxy Port）并重启前端 dev 服务，否则无法继续发起 API 请求。<br/>` +
+        `2. <strong>如果是生产环境：</strong>请确保你的反向代理服务（如 Nginx、Caddy）已同步更新配置指向新端口。<br/><br/>` +
+        `请在调整完相关代理/代理配置后，手动刷新页面访问。`,
+        '服务已发起重启',
+        {
+          confirmButtonText: '我知道了',
+          dangerouslyUseHTMLString: true,
+          type: 'success'
+        }
+      );
+    } else {
+      ElMessage.success('配置保存成功！调试模式已实时生效，无需重启服务');
+    }
     
     // 更新原始数据
     Object.assign(originalData, formData);
