@@ -29,6 +29,9 @@ export default {
     // 是否在 Settings 页面，用于隐藏顶部的显示控制按钮
     hideDisplayButtons() {
       return this.$route.path.includes('/settings');
+    },
+    isDashboardPage() {
+      return this.$route.path === '/dashboard';
     }
   },
   created() {
@@ -70,21 +73,33 @@ export default {
 };
 </script>
 <template>
-  <div id="mio-chat" :class="{ browser: !isTauri }">
-    <div v-if="onPhone" class="app-mobile">
-      <router-view></router-view>
-      <sideBar v-if="!onPrivate"></sideBar>
-    </div>
-    <div v-else class="app-desktop" :class="{ fullscreen: fullScreen || isTauri }">
-      <displayButtons v-if="!hideDisplayButtons" :full-screen @close="closeApp" @set-screen="setWindowSize">
-      </displayButtons>
-      <sideBar></sideBar>
-      <router-view></router-view>
-    </div>
+  <div v-if="isDashboardPage" class="app-full-viewport">
+    <router-view></router-view>
   </div>
-  <a v-if="beian" id="beian" href="https://beian.miit.gov.cn/" target="_blank">{{ beian }}</a>
+  <template v-else>
+    <div id="mio-chat" :class="{ browser: !isTauri }">
+      <div v-if="onPhone" class="app-mobile">
+        <router-view></router-view>
+        <sideBar v-if="!onPrivate"></sideBar>
+      </div>
+      <div v-else class="app-desktop" :class="{ fullscreen: fullScreen || isTauri }">
+        <displayButtons v-if="!hideDisplayButtons" :full-screen @close="closeApp" @set-screen="setWindowSize">
+        </displayButtons>
+        <sideBar></sideBar>
+        <router-view></router-view>
+      </div>
+    </div>
+    <a v-if="beian" id="beian" href="https://beian.miit.gov.cn/" target="_blank">{{ beian }}</a>
+  </template>
 </template>
 <style scoped>
+.app-full-viewport {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
 #mio-chat {
   width: 100%;
   height: 100%;

@@ -50,6 +50,12 @@ const router = createRouter({
       meta: { title: "身份验证" },
     },
     {
+      path: "/dashboard",
+      name: "dashboard",
+      component: () => import("../views/DashboardView.vue"),
+      meta: { title: "数据审计大盘" },
+    },
+    {
       path: "/s/:shareId",
       name: "share_link",
       component: BlankView,
