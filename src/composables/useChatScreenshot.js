@@ -5,25 +5,12 @@ import QRCode from "qrcode";
 import { client } from "@/lib/runtime.js";
 import { shareOrCopy } from "@/utils/tools.js";
 
-const urlToBase64 = async (url) => {
-  if (!url) return "";
-  if (url.startsWith("data:")) return url;
-  try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    const blob = await response.blob();
-    
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.onerror = () => reject(new Error("Failed to read blob as data URL"));
-      reader.readAsDataURL(blob);
-    });
-  } catch (e) {
-    console.warn("Failed to convert image to base64:", url, e);
-    return url; // fallback to original URL
-  }
+const addTimestamp = (url) => {
+  if (!url || url.startsWith("data:")) return url;
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}t=${Date.now()}`;
 };
+
 
 export function useChatScreenshot({
   chatWindowRef,
@@ -92,7 +79,7 @@ export function useChatScreenshot({
 
       const headerIcon = document.createElement('img');
       headerIcon.crossOrigin = 'anonymous';
-      headerIcon.src = await urlToBase64(window.location.origin + '/static/icons/512x512.png');
+      headerIcon.src = addTimestamp(window.location.origin + '/static/icons/512x512.png');
       headerIcon.style.cssText = 'width:64px;height:64px;margin-right:16px;border-radius:16px;box-shadow:0 3px 10px rgba(0,0,0,0.1);';
 
       const headerTitle = document.createElement('div');
@@ -120,13 +107,13 @@ export function useChatScreenshot({
         const wrapper = clone.querySelector('.message-flex-wrapper');
         if (wrapper) wrapper.classList.remove('is-multi-select', 'is-selected');
 
-        // Convert all images inside the cloned message to Base64 to prevent CORS issues
+        // Set crossOrigin + cache-busting timestamp on all images so snapdom can render them cross-origin
         const imgs = Array.from(clone.querySelectorAll('img'));
         for (const img of imgs) {
           img.setAttribute('crossorigin', 'anonymous');
           img.crossOrigin = 'anonymous';
           if (img.src && !img.src.startsWith('data:')) {
-            img.src = await urlToBase64(img.src);
+            img.src = addTimestamp(img.src);
           }
         }
 
