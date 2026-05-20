@@ -18,8 +18,11 @@ import { useChatScreenshot } from "@/composables/useChatScreenshot.js";
 
 // Stores & Libs
 import { useConnectionStore } from "@/stores/connectionStore";
+import { useContactorsStore, getShownTime } from "@/stores/contactorsStore.js";
 import { client } from "@/lib/runtime.js";
 import { shareOrCopy } from "@/utils/tools.js";
+import { gateway } from "@/lib/gateway.js";
+import { numberString } from "@/utils/generate.js";
 
 // Markdown plugins
 import { mermaidPlugin, codeBlockPlugin, cursorPlugin, imageViewerPlugin } from 'mio-previewer/plugins/custom';
@@ -28,9 +31,10 @@ import { katexPlugin } from 'mio-previewer/plugins/markdown-it';
 const route = useRoute();
 const router = useRouter();
 
-// Pinia store
+// Pinia stores
 const connectionStore = useConnectionStore();
 const { isConnected } = storeToRefs(connectionStore);
+const contactorsStore = useContactorsStore();
 
 // State definitions
 let previewVal = false;
@@ -48,14 +52,164 @@ if (params.has("scroll")) {
 const preview = ref(previewVal);
 const scroll = ref(scrollVal);
 
-const activeContactor = ref(null);
+// Sending message logic
+const sendMessage = async (msg) => {
+  const store = useContactorsStore();
+  const contactor = store.activeContactor;
+  if (!contactor) return;
+
+  contactor.lastUpdate = Date.now();
+  
+  if (contactor.platform === "onebot") {
+    contactor.messageChain.push(msg);
+    store.updateContactorSummary(contactor);
+    client.setLocalStorage();
+
+    try {
+      const messageId = await gateway.send("onebot", contactor.id, contactor.messageChain, msg.id);
+      msg.id = messageId;
+      msg.status = "completed";
+      client.setLocalStorage();
+      return messageId;
+    } catch (e) {
+      ElMessage.error(e.message || "发送失败");
+      msg.status = "failed";
+      throw e;
+    }
+  } else {
+    // OpenAI platform
+    const exists = contactor.messageChain.some(m => m.id === msg.id);
+    if (!exists) {
+      contactor.messageChain.push(msg);
+    }
+
+    // Create assistant response placeholder
+    const assistantMsgId = numberString(16);
+    const assistantMsg = store.getOrCreateMessage(contactor.id, assistantMsgId, {
+      role: "other",
+      status: "pending",
+      content: [{ type: "blank", data: {} }]
+    });
+
+    store.updateContactorSummary(contactor);
+    client.setLocalStorage();
+
+    try {
+      await gateway.send("openai", contactor.id, contactor.messageChain, assistantMsgId, contactor.options);
+      return msg.id;
+    } catch (e) {
+      ElMessage.error(e.message || "请求失败");
+      assistantMsg.status = "failed";
+      store.failedMessage(contactor.id, assistantMsgId, e.message || "请求失败");
+      throw e;
+    }
+  }
+};
+
+const activeContactor = computed(() => {
+  const contactor = contactorsStore.activeContactor;
+  if (!contactor) return null;
+
+  return new Proxy(contactor, {
+    get(target, prop, receiver) {
+      if (prop === "webSend") {
+        return (container, isRetry = true) => {
+          return sendMessage(container);
+        };
+      }
+      if (prop === "getBaseUserContainer") {
+        return () => {
+          return {
+            role: "user",
+            time: Date.now(),
+            content: [],
+            id: numberString(16),
+            status: "completed",
+          };
+        };
+      }
+      if (prop === "emit") {
+        return (event, ...args) => {
+          if (event === "updateMessageSummary") {
+            contactorsStore.updateContactorSummary(target);
+          }
+        };
+      }
+      if (prop === "getShownTime") {
+        return (timestamp) => {
+          return getShownTime(timestamp);
+        };
+      }
+      if (prop === "loadName") {
+        return () => {
+          contactorsStore.loadContactorName(target);
+        };
+      }
+      if (prop === "loadAvatar") {
+        return () => {
+          contactorsStore.loadContactorAvatar(target);
+        };
+      }
+      if (prop === "getMessageById") {
+        return (messageId) => {
+          return target.messageChain.find(m => m.id === messageId);
+        };
+      }
+      if (prop === "delMessage") {
+        return (messageId) => {
+          contactorsStore.deleteMessageById(target.id, messageId);
+        };
+      }
+      if (prop === "interruptMessage") {
+        return (messageId) => {
+          gateway.interrupt(target.platform, target.id, messageId);
+        };
+      }
+      if (prop === "makeSystemMessage") {
+        return (text) => {
+          const systemMsg = {
+            role: "mio_system",
+            time: Date.now(),
+            content: [
+              {
+                type: "text",
+                data: { text },
+              },
+            ],
+            id: numberString(16),
+            status: "completed",
+          };
+          target.messageChain.push(systemMsg);
+          client.setLocalStorage();
+        };
+      }
+      if (prop === "updateFirstMessage") {
+        return () => {
+          target.firstMessageIndex = target.messageChain.length;
+          client.setLocalStorage();
+        };
+      }
+      
+      const value = Reflect.get(target, prop, receiver);
+      return value;
+    },
+    set(target, prop, value, receiver) {
+      const result = Reflect.set(target, prop, value, receiver);
+      if (prop === "draft" || prop === "priority") {
+        client.setLocalStorage();
+      }
+      return result;
+    }
+  });
+});
+
 const currentId = route.params.id;
 try {
   const contactor = client.getContactor(currentId);
   if (!contactor) {
     throw new Error("找不到联系人");
   }
-  activeContactor.value = contactor;
+  contactorsStore.selectContactor(currentId);
 } catch (e) {
   const defaultId = client.contactList[0]?.id || 0;
   router.push({
@@ -64,7 +218,7 @@ try {
       preview: previewVal,
     },
   });
-  activeContactor.value = client.getContactor(defaultId);
+  contactorsStore.selectContactor(defaultId);
 }
 
 const showwindow = ref(true);
@@ -102,11 +256,10 @@ const mioPlugins = [
   { plugin: imageViewerPlugin }
 ];
 
-const updateTrigger = ref(0);
-const forceUpdate = () => {
-  updateTrigger.value++;
-};
-const messageVersions = reactive({});
+// updateTrigger, forceUpdate and messageVersions are no longer needed —
+// since activeContactor.value comes from Pinia reactive state, Vue 3 will
+// automatically re-render whenever messageChain changes.
+// We keep a toupdate flag for auto-scroll signalling only.
 
 // Computed Properties
 const getDelayStatus = computed(() => {
@@ -118,8 +271,6 @@ const mdOptions = computed(() => {
 });
 
 const activeMessageChain = computed(() => {
-  // Access updateTrigger to force re-computation when triggered manually
-  const _ = updateTrigger.value;
   return activeContactor.value?.messageChain || [];
 });
 
@@ -228,20 +379,25 @@ watch(
   () => route.params.id,
   (newVal, oldVal) => {
     if (!newVal) return;
-    const currentId = parseInt(newVal);
-    const contactor = client.getContactor(currentId);
-    activeContactor.value = contactor;
-    initContactor(contactor);
+    
+    // Deactivate old contactor
+    if (oldVal) {
+      const oldContactor = contactorsStore.contactors[oldVal];
+      if (oldContactor) {
+        oldContactor.active = false;
+      }
+    }
+    
+    // Switch to new contactor in store
+    contactorsStore.selectContactor(newVal);
     
     toupdate.value = true;
     autoScroll.value = true;
     
     if (chatWindow.value) toButtom();
-    if (oldVal) {
-      const oldId = parseInt(oldVal);
-      const oldContactor = client.getContactor(oldId);
-      disableContactor(oldContactor);
-    }
+    
+    // Sync with socket for the new contactor
+    trySync();
   }
 );
 
@@ -454,124 +610,15 @@ const getChatwindowScrollheight = () => {
   return scrollHeight - height;
 };
 
-let _updateRaf = null;
-const initContactor = (contactor) => {
-  contactor.active = true;
-
-  const trySync = () => {
-    if (client.socket && client.socket.available) {
-      client.socket.enterChat(contactor.id);
-      if (contactor.hasPendingTask) {
-        contactor.hasPendingTask = false;
-        client.setLocalStorage();
-      }
-      return true;
-    }
-    return false;
-  };
-
-  contactor._socketConnectHandler = () => {
-    if (contactor.active) {
-      trySync();
-    }
-  };
-
-  const bindSocketEvents = (socket) => {
-    socket.on("connect", contactor._socketConnectHandler);
-    if (contactor.active) trySync();
-  };
-
-  if (client.socket) {
-    bindSocketEvents(client.socket);
-  } 
+const trySync = () => {
+  const contactor = activeContactor.value;
+  if (!contactor) return;
   
-  client.on("socket_ready", (socket) => {
-    bindSocketEvents(socket);
-  });
-
-  contactor.on("revMessage", (message) => {
-    activeContactor.value.messageChain.push(message);
-    toupdate.value = true;
-    client.setLocalStorage();
-    forceUpdate();
-  });
-  contactor.on("delMessage", (index) => {
-    activeContactor.value.messageChain.splice(index, 1);
-    toupdate.value = true;
-    forceUpdate();
-  });
-
-  contactor.on("updateMessage", (messageId) => {
-    if (messageId) {
-      if (!messageVersions[messageId]) {
-        messageVersions[messageId] = 0;
-      }
-      messageVersions[messageId]++;
-    } else {
-      if (!_updateRaf) {
-        _updateRaf = requestAnimationFrame(() => {
-          forceUpdate();
-          _updateRaf = null;
-        });
-      }
-    }
-    toupdate.value = true;
-  });
-
-  contactor.on("name_updated", () => {
-    forceUpdate();
-  });
-
-  contactor.on("syncMessage", () => {
-    forceUpdate();
-    toupdate.value = true;
-  });
-
-  contactor.on("completeMessage", async (e) => {
-    const messageId = e.messageId;
-    const rawMessage = activeContactor.value.getMessageById(messageId);
-
-    if (retryList.value.includes(messageId)) {
-      retryList.value = retryList.value.filter((item) => item !== messageId);
-    }
-
-    rawMessage.content.forEach((element, index) => {
-      if (
-        element.type === "text" &&
-        activeContactor.value.platform === "onebot"
-      ) {
-        const formatedMessage = separateTextAndImages(element.data.text);
-        rawMessage.content.splice(index, 1, ...formatedMessage);
-      }
-    });
-
-    if (messageId) {
-      if (!messageVersions[messageId]) {
-        messageVersions[messageId] = 0;
-      }
-      messageVersions[messageId]++;
-    }
-
-    toupdate.value = true;
-    forceUpdate();
-    activeContactor.value.loadName();
-    await client.saveNow();
-  });
-};
-
-const disableContactor = (contactor) => {
-  if (contactor) {
-    contactor.active = false;
-    contactor.off("updateMessage");
-    contactor.off("name_updated");
-    contactor.off("revMessage");
-    contactor.off("delMessage");
-    contactor.off("completeMessage");
-    contactor.off("syncMessage");
-
-    if (contactor._socketConnectHandler) {
-      client.socket?.off("connect", contactor._socketConnectHandler);
-      delete contactor._socketConnectHandler;
+  if (client.socket && client.socket.available) {
+    client.socket.enterChat(contactor.id);
+    if (contactor.hasPendingTask) {
+      contactor.hasPendingTask = false;
+      client.setLocalStorage();
     }
   }
 };
@@ -685,38 +732,50 @@ const handleMessageOption = async (option) => {
       break;
     case "retry":
       if (activeContactor.value.platform === "onebot") {
-        if (message.role === "user") {
-          activeContactor.value.webSend(message);
-        } else {
-          activeContactor.value.webSend({
-            ...message,
-            role: "user",
-          });
-        }
+        const msgToSend = message.role === "user" ? message : { ...message, role: "user" };
+        activeContactor.value.webSend(msgToSend);
         ElMessage.success("消息已重新发送");
       } else {
+        const contactor = contactorsStore.activeContactor;
         const targetIndex =
           message.role === "user"
             ? validMessageIndex.value + 1
             : validMessageIndex.value;
-        let validMessage = activeContactor.value.messageChain[targetIndex];
+        let validMessage = contactor.messageChain[targetIndex];
         if (!validMessage || validMessage.role !== "other") {
-          const baseContainer = activeContactor.value.getBaseUserContainer();
-          baseContainer.role = "other";
-          activeContactor.value.insertMessage(baseContainer, targetIndex);
-          validMessage = baseContainer;
+          // Insert a fresh assistant placeholder at the target index
+          validMessage = {
+            role: "other",
+            time: Date.now(),
+            content: [{ type: "blank", data: {} }],
+            id: numberString(16),
+            status: "pending",
+          };
+          contactor.messageChain.splice(targetIndex, 0, validMessage);
+          client.setLocalStorage();
+        } else {
+          // make the existing assistant message editable and reset its content
+          validMessage.content = [{ type: "blank", data: {} }];
+          validMessage.time = Date.now();
         }
         if (validMessage.status === "retrying") {
           ElMessage.warning("该消息正在重试中");
           return;
         }
+        validMessage.status = "retrying";
+        retryList.value.push(validMessage.id);
         try {
-          await activeContactor.value.retryMessage(validMessage.id);
-          validMessage.status = "retrying";
-          retryList.value.push(validMessage.id);
+          await gateway.send(
+            contactor.platform,
+            contactor.id,
+            contactor.messageChain,
+            validMessage.id,
+            contactor.options
+          );
           client.saveNow();
         } catch (error) {
           ElMessage.error(error.message || "重试失败");
+          validMessage.status = "failed";
           return;
         }
       }
@@ -765,7 +824,16 @@ onMounted(() => {
   
   if (!preview.value && scroll.value) toButtom();
   
-  initContactor(activeContactor.value);
+  // Sync with socket on mount
+  trySync();
+  if (client.socket) {
+    client.socket.on("connect", trySync);
+  }
+  client.on("socket_ready", (socket) => {
+    socket.on("connect", trySync);
+    trySync();
+  });
+
   fullScreen.value = client.socket?.fullScreen;
 
   resizeHandler.value = () => {
@@ -799,10 +867,20 @@ onUpdated(() => {
 
 onBeforeUnmount(() => {
   client.off("plugins_updated", handlePluginsUpdated);
+  client.off("socket_ready");
   window.removeEventListener("beforeunload", handleBeforeUnload);
   
+  if (client.socket) {
+    client.socket.off("connect", trySync);
+  }
+
+  // Mark contactor as inactive on leave
+  const contactor = contactorsStore.activeContactor;
+  if (contactor) {
+    contactor.active = false;
+  }
+  
   client.saveNow();
-  disableContactor(activeContactor.value);
   
   if (chatWindow.value) {
     chatWindow.value.removeEventListener("scroll", scrollHandler);
@@ -867,7 +945,7 @@ onBeforeUnmount(() => {
         :key="`${activeContactor.id}-${item.id}`"
         :item="item"
         :index="index"
-        :updateTrigger="messageVersions[item.id] || 0"
+        :updateTrigger="0"
         :activeContactor="activeContactor"
         :isMultiSelect="isMultiSelect"
         :isSelected="selectedMessages.includes(item.id)"

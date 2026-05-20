@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, getCurrentInstance } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { client, config } from "@/lib/runtime.js";
+import { useContactorsStore, getContactorLastTime } from "@/stores/contactorsStore.js";
 import AddContactor from "@/components/AddContactor.vue";
 import ContextMenu from "@/components/ContextMenu.vue";
 import { shareOrCopy } from "@/utils/tools.js";
@@ -23,8 +24,8 @@ const { proxy } = getCurrentInstance();
 const onPhone = ref(window.innerWidth < 768);
 const processedImage = ref(client.avatar || "/p/qava?q=1099834705");
 const connectionStore = useConnectionStore();
+const contactorsStore = useContactorsStore();
 const isConnected = computed(() => connectionStore.isConnected);
-const contactorList = ref([]);
 const showAddWindow = ref(false);
 const showMenu = ref(false);
 const menuX = ref(0);
@@ -71,37 +72,15 @@ let isResizing = false;
 let startX = 0;
 let startWidth = 0;
 
-// Computed
-const listVersion = ref(0);
-const sortedList = computed(() => {
-  // 增加对 listVersion 的依赖，确保手动触发更新
-  void listVersion.value;
-  return [...contactorList.value].sort((a, b) => {
-    if (a.priority !== b.priority) return a.priority - b.priority;
-    return b.lastUpdate - a.lastUpdate;
-  });
-});
+// Computed — directly wired to Pinia reactive state, no local copy needed
+const sortedList = computed(() => contactorsStore.sortedContactors);
 
 // Methods
 const handleResize = () => {
   onPhone.value = window.innerWidth < 768;
 };
 
-const addReactiveListener = () => {
-  contactorList.value.forEach((contactor) => {
-    contactor.on("updateMessageSummary", () => {
-      contactor.lastMessageSummary = contactor.getLastMessageSummary();
-      listVersion.value++;
-    });
-    // 【性能修复】移除 updateMessage 的监听
-    // FriendList 只负责显示列表摘要和排序，不需要跟随每个 chunk 实时刷新
-    // updateMessageSummary 已做防抖处理，流式结束后会自动触发一次，排序在那时执行即可
-    contactor.on("name_updated", () => {
-      contactor.lastMessageSummary = contactor.getLastMessageSummary();
-      listVersion.value++;
-    });
-  });
-};
+// No longer needed — Pinia store is reactive, Vue 3 updates the template automatically
 
 const loadAvatar = async (adminId) => {
   const adminAvatar = getAdminAvatarUrl(adminId);
@@ -213,7 +192,6 @@ const addPresetContactor = async (preset) => {
     options: mergeOptions(preset),
   };
   await client.addConcator("openai", contactor);
-  addReactiveListener();
 };
 
 const genBotByProvider = async (provider) => {
@@ -227,7 +205,6 @@ const genBotByProvider = async (provider) => {
     options: options,
   };
   await client.addConcator("openai", blankConfig);
-  addReactiveListener();
 };
 
 const showFriendContextMenu = (event, friend) => {
@@ -307,8 +284,7 @@ const handleFriendOption = async (option, friendOverride) => {
   switch (option) {
     case "enter": showChat(friend.id); break;
     case "priority":
-      friend.priority = friend.priority === 0 ? 1 : 0;
-      client.setLocalStorage();
+      contactorsStore.setPriority(friend.id, friend.priority === 0 ? 1 : 0);
       break;
     case "share": {
       const shareResult = await client.shareContactor(friend.id);
@@ -318,14 +294,9 @@ const handleFriendOption = async (option, friendOverride) => {
       }
       break;
     }
-    case "delete": {
-      const index = contactorList.value.findIndex((c) => c.id === friend.id);
-      if (index !== -1) {
-        contactorList.value.splice(index, 1);
-        client.setLocalStorage();
-      }
+    case "delete":
+      client.rmContactor(friend.id);
       break;
-    }
   }
   showMenu.value = false;
   closeSwipe();
@@ -358,17 +329,6 @@ const stopResize = () => {
 
 // Lifecycle
 onMounted(() => {
-  const initList = () => {
-    contactorList.value = client.getContactors();
-    addReactiveListener();
-  };
-
-  if (client.getContactors().length === 0) {
-    client.on("loaded", initList, false);
-  } else {
-    initList();
-  }
-
   window.addEventListener('resize', handleResize);
   window.addEventListener('online', updateNetworkStatus);
   window.addEventListener('offline', updateNetworkStatus);
@@ -442,7 +402,7 @@ onBeforeUnmount(() => {
           </div>
           <div class="info">
             <div class="name">{{ item.name }}</div>
-            <div id="time" class="msginfo">{{ item.getLastTime() }}</div>
+            <div id="time" class="msginfo">{{ getContactorLastTime(item.messageChain) }}</div>
             <div id="msgctt" class="msginfo">
               <template v-if="item.draft">
                 <span v-if="!onPhone" class="mio-icon mio-icon-draft"></span>
@@ -485,6 +445,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   position: relative;
   background-color: transparent;
+  border-right: 1px solid #ebebeb;
 }
 
 .resizer {
@@ -694,6 +655,7 @@ button#addcont:hover {
     width: 100%;
     max-width: none;
     background-color: #fff;
+    border-right: none;
   }
 
   .mobile-qq-header {

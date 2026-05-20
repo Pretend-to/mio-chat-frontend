@@ -161,12 +161,13 @@ export default {
         contactor.draft = content;
       }
       
-      contactor.emit("updateMessageSummary");
+      // emit is handled by the Proxy — this triggers contactorsStore.updateContactorSummary
+      if (contactor.emit) contactor.emit("updateMessageSummary");
       client.setLocalStorage();
     },
     clearDraft() {
       this.activeContactor.draft = "";
-      this.activeContactor.emit("updateMessageSummary");
+      if (this.activeContactor.emit) this.activeContactor.emit("updateMessageSummary");
       client.setLocalStorage();
     },
     unsupportedTip() {
