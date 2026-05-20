@@ -30,6 +30,17 @@ app.use(pinia); // Pinia 必须先激活
 app.use(ElementPlus);
 app.use(router);
 
+// Flush any contactors that were loaded from IndexedDB before Pinia was ready.
+// preInit() is async (reads IndexedDB), so we listen on the "loaded" event
+// which fires after preInit() completes — by then Pinia is guaranteed active.
+if (client.inited) {
+  client.replayToStore();
+} else {
+  client.on("loaded", () => {
+    client.replayToStore();
+  }, false);
+}
+
 // 在 pinia 激活后才调用 useConnectionStore
 const connectionStore = useConnectionStore(pinia);
 connectionStore.initSync(client);

@@ -1,10 +1,18 @@
 import localforage from "localforage";
-import { reactive } from "vue";
+// reactive import removed — state is now managed in Pinia store
 import { debounce } from "../utils/tools.js";
 import UploadWorker from "../worker/fileUpload.js?worker";
-import Contactor from "./contactor.js";
 import EventEmitter from "./event.js";
 import Socket from "./websocket.js";
+import { getActivePinia } from "pinia";
+import { useContactorsStore } from "@/stores/contactorsStore.js";
+import { gateway } from "@/lib/gateway.js";
+
+// Safe accessor: returns null if called before app.use(pinia)
+function getStore() {
+  if (!getActivePinia()) return null;
+  return useContactorsStore();
+}
 
 // Configure localforage
 localforage.config({
@@ -18,7 +26,6 @@ export default class Client extends EventEmitter {
     this.id = null; // Loaded from storage
     this.code = null; // Loaded from storage
     this.isConnected = false; // Dynamic
-    this.contactList = []; // Loaded from storage
     this.socket = null; // Dynamic
     this.qq = null; // Web
     this.bot_qq = null; // Web
@@ -31,6 +38,21 @@ export default class Client extends EventEmitter {
     this.saveNow = this._setLocalStorage.bind(this); // 立即持久化，用于关键节点
     this.setLocalStorage = debounce(this.saveNow, 500); // 防抖版本，用于高频更新
   }
+
+  get contactList() {
+    try {
+      const store = getStore();
+      if (!store) return [];
+      return Object.values(store.contactors);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  set contactList(val) {
+    // Read-only proxy to store
+  }
+
 
   /**
    * Prepare initialization
@@ -140,31 +162,22 @@ export default class Client extends EventEmitter {
   }
 
   async addConcator(platform, config) {
-    const bot = new Contactor(platform, config);
-    bot.loadName();
-    bot.loadAvatar();
-    this.initContactor(bot);
-
-    const list = reactive(this.contactList);
-    list.push(bot);
-    await this.setLocalStorage();
+    const store = getStore();
+    if (!store) return null;
+    const bot = store.addContactor(platform, config);
     return bot;
   }
 
   initContactor(contactor) {
-    contactor.on("updateMessage", () => this.setLocalStorage());
-    contactor.on("updateOptions", () => this.setLocalStorage());
+    // No-op: listeners are handled reactively in the store
   }
 
   rmContactor(id) {
-    const list = reactive(this.contactList);
-    const index = list.findIndex((item) => item.id == id);
-
-    if (index != -1) {
-      list.splice(index, 1);
-      this.setLocalStorage();
-    }
+    const store = getStore();
+    if (!store) return;
+    store.removeContactor(id);
   }
+
 
   async loadOriginalContactors(shareId) {
     const path = `/api/share?id=${shareId}`;
@@ -376,17 +389,21 @@ export default class Client extends EventEmitter {
   }
 
   getContactors() {
-    return this.contactList;
+    const store = getStore();
+    if (!store) return [];
+    return Object.values(store.contactors);
   }
 
   getContactor(id, onebotId = null) {
+    const store = getStore();
+    if (!store) return null;
     if (onebotId) {
-      // TODO: 拓展 Onebot 协议功能，实现 IM
-      return this.contactList.find((item) => item.platform == "onebot");
+      return Object.values(store.contactors).find((item) => item.platform === "onebot");
     } else {
-      return this.contactList.find((item) => String(item.id) === String(id));
+      return store.contactors[id] || null;
     }
   }
+
 
   /**
    * 生成一个保证唯一的10位纯数字ID
@@ -429,15 +446,29 @@ export default class Client extends EventEmitter {
     this.id = client.id;
     this.code = client.code;
 
-    // If contact list exists, instantiate as contact objects
+    const store = getStore();
+    if (!store) {
+      // Pinia not ready yet — cache for replay once mounted
+      this._pendingContactList = client.contactList || [];
+      return;
+    }
     if (client.contactList && client.contactList.length != 0) {
-      this.contactList = client.contactList.map((item) => {
-        const contactor = new Contactor(item.platform, item);
-        this.initContactor(contactor);
-        return contactor;
-      });
+      store.loadContactors(client.contactList);
     } else {
-      this.contactList = [];
+      store.loadContactors([]);
+    }
+  }
+
+  /**
+   * Replay cached contactors into the store once Pinia is active.
+   * Call this from main.js immediately after app.use(pinia).
+   */
+  replayToStore() {
+    const store = getStore();
+    if (!store) return;
+    if (this._pendingContactList !== undefined) {
+      store.loadContactors(this._pendingContactList);
+      this._pendingContactList = undefined;
     }
   }
 
@@ -445,14 +476,16 @@ export default class Client extends EventEmitter {
    * Save user information to localStorage
    */
   async _setLocalStorage() {
-    // await localforage.setItem("client", JSON.stringify(this));
+    const store = getStore();
+    if (!store) return;
     const client = {
       id: this.id,
       code: this.code,
-      contactList: this.contactList,
+      contactList: store.toJSON(),
     };
     await localforage.setItem("client", JSON.stringify(client));
     console.log("Client saved");
+
   }
 
   /**
@@ -506,7 +539,6 @@ export default class Client extends EventEmitter {
               // 只有当该 Agent 不是当前活跃窗口时，才显示红点并触发后台拉取
               if (!contactor.active) {
                 contactor.hasPendingTask = true;
-                contactor.emit("updateMessageSummary");
                 this.socket.enterChat(taskId);
               }
             } else {
@@ -540,45 +572,11 @@ export default class Client extends EventEmitter {
 
   addMsgListener() {
     this.socket.on("onebot_message", (e) => {
-      console.log(e);
-      const data = e.data;
-      const id = data.id;
-      const content = data.content;
-      const type = data.type;
-
-      if (type == "message") {
-        const contactor = this.getContactor(id, 10000);
-        if (contactor) {
-          contactor.revMessage(content);
-          this.setLocalStorage();
-        } else {
-          console.log("Contactor not found");
-        }
-      } else if (type == "del_msg") {
-        const onebotContactors = this.contactList.filter(
-          (item) => item.platform == "onebot",
-        );
-        for (const onebotContactor of onebotContactors) {
-          const deleted = onebotContactor.delMessage(content.message_id);
-          if (deleted) {
-            this.setLocalStorage();
-            console.log("Message deleted successfully");
-            break;
-          }
-        }
-      }
+      gateway.handleOnebotMessageEvent(e);
     });
 
     this.socket.on("llm_message", (e) => {
-      const data = e.data;
-      const { metaData } = data || {};
-      
-      if (metaData?.contactorId) {
-        const contactor = this.getContactor(metaData.contactorId);
-        if (contactor) {
-          contactor.handleLLMMessageEvent(e);
-        }
-      }
+      gateway.handleLlmMessageEvent(e);
     });
 
     this.socket.on("system_message", (e) => {
@@ -645,15 +643,14 @@ export default class Client extends EventEmitter {
         // 处理后端自动总结的标题更新
         if (e.type === "chat_title_updated" && e.data) {
           const { contactorId, title } = e.data;
-          const contactor = this.getContactor(contactorId);
+          const store = getStore();
+          const contactor = store.contactors[contactorId];
           if (contactor) {
             console.log(`[System] 对话标题已由后端更新: ${contactor.name} -> ${title}`);
             contactor.name = title;
+            store.loadContactorName(contactor);
+            store.updateContactorSummary(contactor);
             this.setLocalStorage();
-            // 触发更新事件
-            contactor.emit("name_updated", title);
-            contactor.emit("updateMessageSummary");
-            contactor.emit("updateMessage");
           }
           return;
         }

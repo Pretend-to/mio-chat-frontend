@@ -67,7 +67,7 @@
                     <img :src="preset.avatar" alt="预设头像" />
                   </div>
                   <div v-else-if="preset.model" class="preset-avatar model">
-                    <img :src="Contactor.getAvatarByModel(preset.model)" alt="模型头像" />
+                    <img :src="getAvatarByModel(preset.model)" alt="模型头像" />
                   </div>
                   <div v-else class="preset-avatar">
                     {{ preset.name.slice(0, 2) }}
@@ -169,7 +169,7 @@
                   <img :src="preset.avatar" alt="预设头像" />
                 </div>
                 <div v-else-if="preset.model" class="preset-avatar model">
-                  <img :src="Contactor.getAvatarByModel(preset.model)" alt="模型头像" />
+                  <img :src="getAvatarByModel(preset.model)" alt="模型头像" />
                 </div>
                 <div v-else class="preset-avatar">
                   {{ preset.name.slice(0, 2) }}
@@ -218,7 +218,7 @@ import { Loading, Search } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import Contactor from "../lib/contactor";
+import { getAvatarByModel } from "@/stores/contactorsStore.js";
 
 // Props
 const props = defineProps({

@@ -1,0 +1,658 @@
+import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
+import { getAvatarByOwner, getAvatarByAdapterType } from "@/utils/avatar.js";
+import { numberString } from "@/utils/generate.js";
+import { config, client } from "@/lib/runtime.js";
+
+const avatarPolicy = ["MODEL", "CUSTOM"];
+const namePolicy = ["MODEL", "CUSTOM", "SUMMARY"];
+
+// Helper function to format timestamps for contact list view
+export function getContactorLastTime(messageChain) {
+  const last = messageChain?.[messageChain.length - 1];
+  if (!last) {
+    return "";
+  }
+
+  const currentTime = Date.now();
+  const lastTime = new Date(last.time);
+  const timeDiff = currentTime - lastTime.getTime();
+
+  if (timeDiff < 24 * 60 * 60 * 1000) {
+    const hours = lastTime.getHours().toString().padStart(2, "0");
+    const minutes = lastTime.getMinutes().toString().padStart(2, "0");
+    return `${hours}:${minutes}`;
+  } else if (timeDiff < 48 * 60 * 60 * 1000) {
+    return "昨天";
+  } else if (timeDiff < 7 * 24 * 60 * 60 * 1000) {
+    const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
+    const weekday = lastTime.getDay();
+    return `星期${weekdays[weekday]}`;
+  } else {
+    const year = lastTime.getFullYear();
+    const month = (lastTime.getMonth() + 1).toString().padStart(2, "0");
+    const day = lastTime.getDate().toString().padStart(2, "0");
+    return `${year}/${month}/${day}`;
+  }
+}
+
+// Helper function to format timestamp in chat bubbles
+export function getShownTime(timestamp) {
+  const currentTime = Date.now();
+  const timeDiff = currentTime - timestamp;
+  if (timeDiff < 24 * 60 * 60 * 1000) {
+    const hours = new Date(timestamp).getHours().toString().padStart(2, "0");
+    const minutes = new Date(timestamp).getMinutes().toString().padStart(2, "0");
+    return `${hours}:${minutes}`;
+  } else if (timeDiff < 48 * 60 * 60 * 1000) {
+    const hours = new Date(timestamp).getHours().toString().padStart(2, "0");
+    const minutes = new Date(timestamp).getMinutes().toString().padStart(2, "0");
+    return `昨天 ${hours}:${minutes}`;
+  } else if (timeDiff < 7 * 24 * 60 * 60 * 1000) {
+    const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
+    const weekday = new Date(timestamp).getDay();
+    const hours = new Date(timestamp).getHours().toString().padStart(2, "0");
+    const minutes = new Date(timestamp).getMinutes().toString().padStart(2, "0");
+    return `星期${weekdays[weekday]} ${hours}:${minutes}`;
+  } else {
+    const year = new Date(timestamp).getFullYear();
+    const month = (new Date(timestamp).getMonth() + 1).toString().padStart(2, "0");
+    const day = new Date(timestamp).getDate().toString().padStart(2, "0");
+    const hours = new Date(timestamp).getHours().toString().padStart(2, "0");
+    const minutes = new Date(timestamp).getMinutes().toString().padStart(2, "0");
+    return `${year}/${month}/${day} ${hours}:${minutes}`;
+  }
+}
+
+export function getAvatarByModel(model, provider = null) {
+  const modelOwner = config.getModelOwner(model);
+  if (!modelOwner && provider) {
+    const providers = config.baseConfig?.llm_providers || [];
+    const targetProvider = providers.find((p) => p.displayName === provider);
+    if (targetProvider?.adapterType) {
+      return getAvatarByAdapterType(targetProvider.adapterType);
+    }
+  }
+  return getAvatarByOwner(modelOwner);
+}
+
+export function getMessageText(element) {
+  switch (element.type) {
+    case "text":
+      return element.data.text;
+    case "image":
+      return "[图片]";
+    case "record":
+      return "[语音]";
+    case "video":
+      return "[视频]";
+    case "file":
+      return "[文件]";
+    case "tool_call":
+      return `[调用工具] ${element.data.name}`;
+    case "reason":
+      return element.data.text;
+    case "blank":
+      return "正在思考中...";
+    case "reply":
+      return "";
+    case "nodes":
+      return "[转发消息]";
+    default:
+      return "[未知消息类型] " + element.type;
+  }
+}
+
+export function getLastMessageSummary(messageChain, message = null) {
+  let msg = message || messageChain[messageChain.length - 1];
+  if (!msg) return "";
+  if (msg.type === "node") {
+    msg = msg.data;
+  }
+
+  return msg.content?.length > 0
+    ? msg.content.find((c) => c.type === "text")?.data.text ||
+        getMessageText(msg.content[0])
+    : "[未知消息]";
+}
+
+export const useContactorsStore = defineStore('contactors', () => {
+  // State
+  const contactors = ref({});
+  const activeContactorId = ref(null);
+
+  // Getters
+  const sortedContactors = computed(() => {
+    return Object.values(contactors.value).sort((a, b) => {
+      if (a.priority !== b.priority) return a.priority - b.priority;
+      return b.lastUpdate - a.lastUpdate;
+    });
+  });
+
+  const activeContactor = computed(() => {
+    if (!activeContactorId.value) return null;
+    return contactors.value[activeContactorId.value] || null;
+  });
+
+  // Actions
+  function loadContactors(list) {
+    const newContactors = {};
+    list.forEach(item => {
+      newContactors[item.id] = {
+        platform: item.platform,
+        id: String(item.id),
+        namePolicy: item.namePolicy ?? 0,
+        avatarPolicy: item.avatarPolicy ?? 0,
+        title: item.title,
+        name: item.name,
+        avatar: item.avatar,
+        priority: item.priority ?? 1,
+        firstMessageIndex: item.firstMessageIndex ?? 0,
+        messageChain: item.messageChain ?? [],
+        active: false,
+        lastUpdate: item.lastUpdate ?? Date.now(),
+        createTime: item.createTime ?? Date.now(),
+        hasPendingTask: item.hasPendingTask ?? false,
+        draft: item.draft ?? "",
+        options: item.options || {},
+        lastMessageSummary: ""
+      };
+      
+      // Auto initialize details
+      loadContactorName(newContactors[item.id]);
+      loadContactorAvatar(newContactors[item.id]);
+      updateContactorSummary(newContactors[item.id]);
+    });
+    contactors.value = newContactors;
+  }
+
+  function addContactor(platform, data) {
+    const id = String(data.id || numberString(16));
+    const newContactor = {
+      platform,
+      id,
+      namePolicy: data.namePolicy ?? 0,
+      avatarPolicy: data.avatarPolicy ?? 0,
+      title: data.title,
+      name: data.name,
+      avatar: data.avatar,
+      priority: data.priority ?? 1,
+      firstMessageIndex: data.firstMessageIndex ?? 0,
+      messageChain: data.messageChain ?? [],
+      active: false,
+      lastUpdate: data.lastUpdate || Date.now(),
+      createTime: data.createTime || Date.now(),
+      hasPendingTask: data.hasPendingTask ?? false,
+      draft: data.draft ?? "",
+      options: data.options || {},
+      lastMessageSummary: ""
+    };
+
+    loadContactorName(newContactor);
+    loadContactorAvatar(newContactor);
+    updateContactorSummary(newContactor);
+
+    contactors.value[id] = newContactor;
+    client.setLocalStorage();
+    return newContactor;
+  }
+
+  function removeContactor(id) {
+    if (contactors.value[id]) {
+      delete contactors.value[id];
+      if (activeContactorId.value === id) {
+        activeContactorId.value = null;
+      }
+      client.setLocalStorage();
+    }
+  }
+
+  function selectContactor(id) {
+    activeContactorId.value = id;
+    
+    // Set active status flags
+    Object.keys(contactors.value).forEach(cid => {
+      contactors.value[cid].active = (cid === id);
+    });
+
+    if (id && contactors.value[id]) {
+      contactors.value[id].hasPendingTask = false;
+    }
+  }
+
+  function updateDraft(id, draftText) {
+    const contactor = contactors.value[id];
+    if (contactor) {
+      contactor.draft = draftText;
+      client.setLocalStorage();
+    }
+  }
+
+  function setPriority(id, priority) {
+    const contactor = contactors.value[id];
+    if (contactor) {
+      contactor.priority = priority;
+      client.setLocalStorage();
+    }
+  }
+
+  function loadContactorAvatar(contactor) {
+    let avatar = "/static/icons/512*512.png";
+    if (avatarPolicy[contactor.avatarPolicy] === "MODEL") {
+      const model = contactor.options?.base?.model;
+      avatar = getAvatarByModel(model, contactor.options?.provider);
+    } else if (avatarPolicy[contactor.avatarPolicy] === "CUSTOM") {
+      avatar = contactor.avatar || avatar;
+    }
+
+    if (contactor.platform === "openai" && contactor.options?.base?.model) {
+      contactor.title = contactor.options.base.model;
+    }
+
+    contactor.avatar = avatar;
+  }
+
+  function loadContactorName(contactor) {
+    let name = contactor.name ?? "未命名 Bot";
+    if (namePolicy[contactor.namePolicy] === "MODEL") {
+      const model = contactor.options?.base?.model || contactor.options?.model;
+      name = model || name;
+    } else if (namePolicy[contactor.namePolicy] === "CUSTOM") {
+      name = contactor.name;
+    } else if (namePolicy[contactor.namePolicy] === "SUMMARY") {
+      name = contactor.name || "新建会话";
+    }
+    contactor.name = name;
+  }
+
+  function updateContactorSummary(contactor) {
+    contactor.lastMessageSummary = getLastMessageSummary(contactor.messageChain);
+  }
+
+  // Messaging operations
+  function getOrCreateMessage(contactorId, messageId, defaults = {}) {
+    const contactor = contactors.value[contactorId];
+    if (!contactor) return null;
+
+    let message = contactor.messageChain.find(msg => msg.id === messageId);
+    if (!message) {
+      message = {
+        role: defaults.role || "other",
+        time: defaults.time || Date.now(),
+        status: defaults.status || "pending",
+        id: messageId,
+        content: defaults.content || [{ type: "blank", data: {} }]
+      };
+      contactor.messageChain.push(message);
+    }
+    return message;
+  }
+
+  function appendOrUpdateMessage(contactorId, messageId, data, type) {
+    const contactor = contactors.value[contactorId];
+    if (!contactor) return;
+
+    const message = getOrCreateMessage(contactorId, messageId);
+    if (!message) return;
+
+    contactor.lastUpdate = Date.now();
+    if (!contactor.active) {
+      contactor.hasPendingTask = true;
+    }
+
+    const content = message.content;
+
+    if (type === "reason") {
+      const last = content[content.length - 1];
+      if (last?.type === "reason") {
+        last.data.text += data.reasoning_content;
+        if (data.duration) last.data.duration = data.duration;
+      } else {
+        const msgElm = {
+          type: "reason",
+          data: {
+            text: data.reasoning_content,
+            startTime: data.startTime || Date.now(),
+            duration: data.duration || 0,
+            endTime: 0
+          }
+        };
+        replaceBlankOrAppend(content, msgElm);
+      }
+    } else if (type === "content") {
+      closeReasoningBlocks(content, true);
+      const last = content[content.length - 1];
+      if (last?.type === "text") {
+        last.data.text += data.chunk;
+      } else {
+        const msgElm = {
+          type: "text",
+          data: { text: data.chunk }
+        };
+        replaceBlankOrAppend(content, msgElm);
+      }
+    } else if (type === "tool_call") {
+      closeReasoningBlocks(content, true);
+      const tool_call = data.tool_call;
+      const index = content.findIndex(elm => elm.type === "tool_call" && elm.data?.id === tool_call.id);
+      
+      const msgElm = {
+        type: "tool_call",
+        data: { ...tool_call }
+      };
+
+      if (index === -1) {
+        replaceBlankOrAppend(content, msgElm);
+      } else {
+        const merged = mergeToolCall(content[index], tool_call);
+        content.splice(index, 1, merged);
+
+        // Check memory tool calls
+        const toolName = (merged.data.name || "").split("_mid_")[0];
+        if (toolName === "memory" && merged.data.result?.success) {
+          recordMemory(contactorId, merged.data.parameters || merged.data.arguments);
+        }
+      }
+    }
+
+    updateContactorSummary(contactor);
+  }
+
+  function replaceBlankOrAppend(content, element) {
+    if (!content.length) {
+      content.push(element);
+      return;
+    }
+    const blankIndex = content.findIndex(elm => elm.type === "blank");
+    if (blankIndex !== -1) {
+      content.splice(blankIndex, 1, element);
+    } else {
+      content.push(element);
+    }
+  }
+
+  function closeReasoningBlocks(content, force = false) {
+    const now = Date.now();
+    content.forEach(elm => {
+      if (elm.type !== "reason" || elm.data.endTime || elm.data.duration > 0) return;
+      if (!force) return;
+      elm.data.endTime = now;
+      if (elm.data.startTime) {
+        elm.data.duration = elm.data.endTime - elm.data.startTime;
+      }
+    });
+  }
+
+  function mergeToolCall(previousElm, incomingToolCall) {
+    const previousData = previousElm.data || {};
+    const merged = {
+      ...previousElm,
+      data: {
+        ...previousData,
+        ...incomingToolCall
+      }
+    };
+    if (incomingToolCall.action === "pending") {
+      merged.data.parameters = String(previousData.parameters || "") + String(incomingToolCall.parameters || "");
+    }
+    return merged;
+  }
+
+  function recordMemory(contactorId, parameters) {
+    const contactor = contactors.value[contactorId];
+    if (!contactor || !parameters) return;
+
+    let params = parameters;
+    if (typeof params === "string") {
+      try {
+        params = JSON.parse(params);
+      } catch (e) {
+        console.error("[Memory] 解析参数失败:", e);
+        return;
+      }
+    }
+    const { question, answer } = params;
+    if (!question || !answer) return;
+
+    if (!contactor.options.presetSettings) {
+      contactor.options.presetSettings = { opening: "", history: [] };
+    }
+    if (!contactor.options.presetSettings.history) {
+      contactor.options.presetSettings.history = [];
+    }
+
+    const isDuplicate = contactor.options.presetSettings.history.some((item, idx, arr) => {
+      if (item.role === "user" && item.content === question) {
+        const next = arr[idx + 1];
+        return next && next.role === "assistant" && next.content === answer;
+      }
+      return false;
+    });
+
+    if (isDuplicate) return;
+
+    contactor.options.presetSettings.history.push({ role: "user", content: question });
+    contactor.options.presetSettings.history.push({ role: "assistant", content: answer });
+    
+    client.setLocalStorage();
+  }
+
+  function syncMessage(contactorId, e) {
+    const contactor = contactors.value[contactorId];
+    if (!contactor) return;
+
+    const { chunks, status, messageId, metaData } = e;
+    const message = getOrCreateMessage(contactorId, messageId);
+
+    if (metaData?.isTask) {
+      message.isTask = true;
+    }
+
+    const newContent = [];
+    if (chunks && Array.isArray(chunks)) {
+      const now = Date.now();
+      chunks.forEach(chunk => {
+        if (chunk.type === "reason") {
+          newContent.push({
+            type: "reason",
+            data: {
+              text: chunk.data?.text ?? "",
+              startTime: chunk.data?.startTime || now,
+              duration: chunk.data?.duration ?? 0
+            }
+          });
+        } else if (chunk.type === "content") {
+          newContent.push({
+            type: "text",
+            data: { text: chunk.content }
+          });
+        } else if (chunk.type === "toolCall") {
+          let callStatus = "waiting";
+          if (chunk.content.result) {
+            callStatus = "done";
+          } else if (chunk.content.action === "running" || chunk.content.action === "pending") {
+            callStatus = "running";
+          }
+
+          const toolCallData = {
+            ...chunk.content,
+            arguments: chunk.content.arguments || chunk.content.parameters || "",
+            status: callStatus
+          };
+
+          // Special memory tool handler
+          const toolName = (toolCallData.name || "").split("_mid_")[0];
+          if (toolName === "memory" && toolCallData.result?.success) {
+            recordMemory(contactorId, toolCallData.parameters || toolCallData.arguments);
+          }
+
+          newContent.push({
+            type: "tool_call",
+            data: toolCallData
+          });
+        }
+      });
+    }
+
+    message.content = newContent;
+    updateContactorSummary(contactor);
+
+    if (status === "completed") {
+      message.status = "completed";
+      closeReasoningBlocks(message.content, true);
+    } else if (status === "failed") {
+      message.status = "failed";
+      closeReasoningBlocks(message.content, true);
+    }
+
+    contactor.lastUpdate = Date.now();
+    if (!contactor.active) {
+      contactor.hasPendingTask = true;
+    }
+  }
+
+  function completeMessage(contactorId, messageId) {
+    const contactor = contactors.value[contactorId];
+    if (!contactor) return;
+
+    const message = getOrCreateMessage(contactorId, messageId);
+    message.status = "completed";
+    closeReasoningBlocks(message.content, true);
+    
+    contactor.lastUpdate = Date.now();
+    updateContactorSummary(contactor);
+    client.setLocalStorage();
+  }
+
+  function failedMessage(contactorId, messageId, error) {
+    const contactor = contactors.value[contactorId];
+    if (!contactor) return;
+
+    const message = getOrCreateMessage(contactorId, messageId);
+    message.status = "failed";
+    closeReasoningBlocks(message.content, true);
+
+    const errorJson = JSON.stringify(
+      typeof error === "string" ? { message: error } : error,
+      null,
+      2
+    );
+    const errorText = `Error : LLM 响应失败！\n\`\`\`json\n${errorJson}\n\`\`\``;
+
+    replaceBlankOrAppend(message.content, {
+      type: "text",
+      data: { text: errorText }
+    });
+
+    message.status = "completed";
+    contactor.lastUpdate = Date.now();
+    updateContactorSummary(contactor);
+    client.setLocalStorage();
+  }
+
+  function deleteMessage(contactorId, index) {
+    const contactor = contactors.value[contactorId];
+    if (contactor && contactor.messageChain[index]) {
+      const message = contactor.messageChain[index];
+      // Interrupt stream if it's pending/retrying
+      if (["pending", "retrying"].includes(message.status)) {
+        client.socket?.interruptGeneration(message.id, contactorId);
+      }
+      contactor.messageChain.splice(index, 1);
+      updateContactorSummary(contactor);
+      client.setLocalStorage();
+    }
+  }
+
+  function deleteMessageById(contactorId, messageId) {
+    const contactor = contactors.value[contactorId];
+    if (!contactor) return;
+    const index = contactor.messageChain.findIndex(msg => msg.id === messageId);
+    if (index !== -1) {
+      deleteMessage(contactorId, index);
+    }
+  }
+
+  function clearHistory(contactorId) {
+    const contactor = contactors.value[contactorId];
+    if (contactor) {
+      contactor.messageChain = [];
+      contactor.firstMessageIndex = 0;
+      updateContactorSummary(contactor);
+      client.setLocalStorage();
+    }
+  }
+
+  function insertSystemMessage(contactorId, text) {
+    const contactor = contactors.value[contactorId];
+    if (!contactor) return;
+
+    const systemMsg = {
+      role: "mio_system",
+      time: Date.now(),
+      id: numberString(16),
+      content: [
+        {
+          type: "text",
+          data: { text }
+        }
+      ]
+    };
+    contactor.messageChain.push(systemMsg);
+    contactor.lastUpdate = Date.now();
+    updateContactorSummary(contactor);
+    client.setLocalStorage();
+  }
+
+  function toJSON() {
+    return Object.values(contactors.value).map(item => ({
+      platform: item.platform,
+      id: item.id,
+      options: item.options,
+      namePolicy: item.namePolicy,
+      avatarPolicy: item.avatarPolicy,
+      title: item.title,
+      name: item.name,
+      avatar: item.avatar,
+      priority: item.priority,
+      messageChain: item.messageChain,
+      active: item.active,
+      lastUpdate: item.lastUpdate,
+      createTime: item.createTime,
+      hasPendingTask: item.hasPendingTask,
+      firstMessageIndex: item.firstMessageIndex,
+      draft: item.draft
+    }));
+  }
+
+  return {
+    // State
+    contactors,
+    activeContactorId,
+
+    // Getters
+    sortedContactors,
+    activeContactor,
+
+    // Actions
+    loadContactors,
+    addContactor,
+    removeContactor,
+    selectContactor,
+    updateDraft,
+    setPriority,
+    loadContactorAvatar,
+    loadContactorName,
+    updateContactorSummary,
+    appendOrUpdateMessage,
+    getOrCreateMessage,
+    syncMessage,
+    completeMessage,
+    failedMessage,
+    deleteMessage,
+    deleteMessageById,
+    clearHistory,
+    insertSystemMessage,
+    toJSON
+  };
+});
