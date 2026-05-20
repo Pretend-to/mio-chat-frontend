@@ -121,6 +121,9 @@ export default {
       previewImageUrl: "",
       previewShareUrl: "",
       isMobileDevice: window.innerWidth < 768,
+      generatingImage: false,
+      exportWidthMode: "narrow",
+      qrUrl: "",
     };
   },
   computed: {
@@ -199,6 +202,11 @@ export default {
         const oldId = parseInt(oldVal);
         const oldContactor = client.getContactor(oldId);
         this.disableContactor(oldContactor);
+      }
+    },
+    showImagePreview(val) {
+      if (!val) {
+        this.cancelMultiSelect();
       }
     },
   },
@@ -881,23 +889,49 @@ export default {
     },
     async handleMultiShareImage() {
       if (this.selectedMessages.length === 0) return;
-      let exportEl = null;
-
       try {
-        this.$message({ message: "正在生成图片预览...", type: "info" });
+        this.$message({ message: "正在获取分享信息...", type: "info" });
         const shareResult = await client.shareMessages(this.activeContactor.id, this.selectedMessages);
         const shareUrl = shareResult?.shareUrl ?? window.location.origin;
         this.previewShareUrl = shareUrl;
 
-        // Generate QR code locally as a Data URI
-        const qrUrl = await QRCode.toDataURL(shareUrl, { width: 120, margin: 1 });
+        // Generate QR code locally as a Data URI and save it in state
+        this.qrUrl = await QRCode.toDataURL(shareUrl, { width: 120, margin: 1 });
+        
+        // Reset export width mode and display preview
+        this.exportWidthMode = 'narrow';
+        this.isMobileDevice = window.innerWidth < 768;
+        this.showImagePreview = true;
+        
+        // Generate the screenshot
+        await this.generateScreenshot();
+      } catch (err) {
+        console.error("分享失败", err);
+        this.$message({ message: "获取分享信息失败", type: "error" });
+      }
+    },
+    async onExportWidthModeChange() {
+      await this.generateScreenshot();
+    },
+    async generateScreenshot() {
+      this.generatingImage = true;
+      this.previewImageUrl = ""; // clear old preview
+      let exportEl = null;
 
-        // Build export container with broader width, mirroring chatwindow bg
+      try {
+        const width = this.exportWidthMode === 'wide' ? '850px' : '500px';
+
+        // Build export container with selected width, mirroring chatwindow bg
         exportEl = document.createElement('div');
         exportEl.id = 'chat-window';
-        // 核心修复：增加 .is-exporting 类，用于在 CSS 中强制禁用 content-visibility
         exportEl.className = 'is-exporting';
-        exportEl.style.cssText = 'position:fixed;left:-9999px;top:0;width:500px;background-color:#f2f2f2;padding:0;box-sizing:border-box;overflow:hidden;';
+        exportEl.style.cssText = `position:fixed;left:-9999px;top:0;width:${width};background-color:#f2f2f2;padding:0;box-sizing:border-box;overflow:hidden;`;
+        
+        // Also support wide mode styling on the inner message items
+        if (this.exportWidthMode === 'wide') {
+          exportEl.classList.add('is-wide-export');
+        }
+
         document.body.appendChild(exportEl);
 
         // Header with Icon and Slogan
@@ -933,17 +967,16 @@ export default {
           const wrapper = clone.querySelector('.message-flex-wrapper');
           if (wrapper) wrapper.classList.remove('is-multi-select', 'is-selected');
 
-          // 核心修复：处理克隆元素中的跨域图片
+          // 处理克隆元素中的跨域图片
           clone.querySelectorAll('img').forEach(img => {
             if (img.src && !img.src.startsWith('data:') && !img.src.startsWith(window.location.origin)) {
               img.crossOrigin = 'anonymous';
-              // 加上时间戳绕过可能存在的无 CORS 响应缓存
               try {
                 const url = new URL(img.src);
                 url.searchParams.set('t', Date.now());
                 img.src = url.toString();
               } catch (e) {
-                // 如果 URL 解析失败，则保持原样
+                // Ignore
               }
             }
           });
@@ -959,7 +992,7 @@ export default {
         textDiv.innerHTML = '<div style="font-weight:800;font-size:16px;color:#2c3e50;">扫码接续对话</div><div style="font-size:12px;color:#7f8c8d;margin-top:5px;line-height:1.4;">长按或扫描二维码<br>立即参与精彩聊天</div>';
 
         const qrImg = document.createElement('img');
-        qrImg.src = qrUrl;
+        qrImg.src = this.qrUrl;
         qrImg.style.cssText = 'width:68px;height:68px;flex-shrink:0;border:2px solid #f8f9fa;border-radius:8px;';
         qrImg.crossOrigin = 'anonymous';
 
@@ -967,52 +1000,33 @@ export default {
         footer.appendChild(qrImg);
         exportEl.appendChild(footer);
 
-        // 等待所有图片加载（含消息内嵌图、头像、二维码等）
+        // 等待所有图片加载
         const allImgs = Array.from(exportEl.querySelectorAll('img'));
         const imgPromises = allImgs.map(img => {
-          // 强制启用立即加载，防止 lazy-loading 导致截图空白
           img.setAttribute('loading', 'eager');
-          
-          // 既然已经信任 MioPreviewer 且头像已带 crossorigin，这里只需等待加载即可
-          const needsReload = false;
-          
-          // 如果不需要重载且已经加载完成，则直接 resolve
-          if (!needsReload && img.complete && img.naturalWidth > 0) return Promise.resolve();
+          if (img.complete && img.naturalWidth > 0) return Promise.resolve();
           
           return new Promise(resolve => {
-            img.onload = () => {
-              console.log("[Export] Image loaded success:", img.src);
-              resolve();
-            };
-            img.onerror = () => {
-              console.warn("[Export] Image load failed:", img.src);
-              // 失败也要 resolve，否则会导致整个截图流程挂起
-              resolve();
-            };
-            setTimeout(resolve, 5000); // 增加到 5s 超时，为大图提供充足时间
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+            setTimeout(resolve, 5000);
           });
         });
 
         await Promise.all(imgPromises);
-        // 双帧 RAF 确保浏览器完成回流重绘
         await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-        // Explicitly set dpr: 1 to override the mobile device's high devicePixelRatio (e.g., 3).
-        // This ensures the canvas width strictly remains 500 * 2 = 1000px, 
-        // matching the desktop output and preventing the 64MP canvas limit crash.
+        // snapdom drawing config
         const result = await snapdom(exportEl, { scale: 2, dpr: 1 });
         const img = await result.toPng();
         this.previewImageUrl = img.src;
-        this.isMobileDevice = window.innerWidth < 768;
-        this.showImagePreview = true;
-
-        this.$message({ message: "预览生成成功", type: "success" });
+        this.$message({ message: "图片预览生成成功", type: "success" });
       } catch (err) {
         console.error("生成图片失败", err);
-        this.$message({ message: "生成图片失败", type: "error" });
+        this.$message({ message: "生成图片预览失败", type: "error" });
       } finally {
         exportEl?.remove();
-        this.cancelMultiSelect();
+        this.generatingImage = false;
       }
     },
     downloadPreviewImage() {
@@ -1227,14 +1241,26 @@ export default {
       width="60%"
       class="desktop-preview-dialog"
     >
-      <div class="preview-scroll-container" style="max-height: 60vh; overflow-y: auto; text-align: center; background: #f2f2f2; padding: 20px; border-radius: 8px;">
-        <img :src="previewImageUrl" class="preview-image" alt="图片预览" style="max-width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 12px;"/>
+      <div style="margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; background-color: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <div style="font-size: 14px; color: #475569; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+          <span>图片尺寸：</span>
+          <el-radio-group v-model="exportWidthMode" size="small" @change="onExportWidthModeChange">
+            <el-radio-button label="narrow">竖屏窄图 (500px)</el-radio-button>
+            <el-radio-button label="wide">宽屏模式 (850px)</el-radio-button>
+          </el-radio-group>
+        </div>
+        <div style="font-size: 12px; color: #94a3b8; font-weight: 400;">
+          宽屏模式更适合包含长代码、表格或大图的聊天记录
+        </div>
+      </div>
+      <div v-loading="generatingImage" class="preview-scroll-container" style="max-height: 60vh; min-height: 200px; overflow-y: auto; text-align: center; background: #f2f2f2; padding: 20px; border-radius: 8px; position: relative;">
+        <img v-if="previewImageUrl" :src="previewImageUrl" class="preview-image" alt="图片预览" style="max-width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 12px;"/>
       </div>
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="showImagePreview = false">取消</el-button>
-          <el-button @click="copyPreviewImage">复制到剪贴板</el-button>
-          <el-button type="primary" @click="downloadPreviewImage">下载图片</el-button>
+          <el-button :disabled="generatingImage || !previewImageUrl" @click="copyPreviewImage">复制到剪贴板</el-button>
+          <el-button :disabled="generatingImage || !previewImageUrl" type="primary" @click="downloadPreviewImage">下载图片</el-button>
         </span>
       </template>
     </el-dialog>
@@ -1250,16 +1276,25 @@ export default {
     >
       <div style="height: 100%; display: flex; flex-direction: column; background: #f2f2f2;">
         <div class="mobile-preview-header" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background-color: #fff; border-bottom: 1px solid #ebeef5;">
-          <span @click="showImagePreview = false" style="font-size: 16px; color: #606266; cursor: pointer;"><i class="iconfont icon-return"></i> 取消</span>
+          <span @click="showImagePreview = false" style="font-size: 16px; color: #606266; cursor: pointer;"><i class="iconfont icon-return"></i> 返回</span>
           <span class="title" style="font-size: 16px; font-weight: 600;">分享预览</span>
           <span style="width: 40px;"></span>
         </div>
-        <div class="preview-scroll-container" style="flex: 1; max-height: none; padding: 20px; box-sizing: border-box; overflow-y: auto;">
-          <img :src="previewImageUrl" class="preview-image" alt="分享预览图" style="width: 100%; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"/>
+        
+        <!-- Width Mode Toggle for Mobile -->
+        <div style="padding: 10px 20px; background-color: #fff; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: center;">
+          <el-radio-group v-model="exportWidthMode" size="default" @change="onExportWidthModeChange">
+            <el-radio-button label="narrow">竖屏窄图</el-radio-button>
+            <el-radio-button label="wide">宽屏模式</el-radio-button>
+          </el-radio-group>
+        </div>
+
+        <div v-loading="generatingImage" class="preview-scroll-container" style="flex: 1; max-height: none; padding: 20px; box-sizing: border-box; overflow-y: auto; position: relative;">
+          <img v-if="previewImageUrl" :src="previewImageUrl" class="preview-image" alt="分享预览图" style="width: 100%; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"/>
         </div>
         <div class="mobile-preview-footer" style="padding: 20px; background: transparent; border: none; display: flex; gap: 12px;">
           <el-button @click="shareMobilePreviewLink" size="large" style="flex: 1; border-radius: 12px; font-weight: bold;">分享链接</el-button>
-          <el-button type="primary" @click="downloadPreviewImage" size="large" style="flex: 1; border-radius: 12px; font-weight: bold;">保存图片</el-button>
+          <el-button :disabled="generatingImage || !previewImageUrl" type="primary" @click="downloadPreviewImage" size="large" style="flex: 1; border-radius: 12px; font-weight: bold;">保存图片</el-button>
         </div>
       </div>
     </el-drawer>
