@@ -20,7 +20,7 @@ const router = useRouter();
 const { proxy } = getCurrentInstance();
 
 // Data
-const onPhone = ref(window.innerWidth < 600);
+const onPhone = ref(window.innerWidth < 768);
 const processedImage = ref(client.avatar || "/p/qava?q=1099834705");
 const connectionStore = useConnectionStore();
 const isConnected = computed(() => connectionStore.isConnected);
@@ -84,7 +84,7 @@ const sortedList = computed(() => {
 
 // Methods
 const handleResize = () => {
-  onPhone.value = window.innerWidth < 600;
+  onPhone.value = window.innerWidth < 768;
 };
 
 const addReactiveListener = () => {
@@ -484,7 +484,7 @@ onBeforeUnmount(() => {
   max-width: 14rem;
   flex-direction: column;
   position: relative;
-  background-color: #fff;
+  background-color: transparent;
 }
 
 .resizer {
@@ -502,7 +502,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   display: flex;
   flex-direction: row;
-  background-color: rgb(255, 255, 255);
+  background-color: transparent;
   flex: 0 0 4rem;
   align-items: flex-end;
   -webkit-app-region: drag;
@@ -515,7 +515,7 @@ onBeforeUnmount(() => {
   margin-top: 0.1875rem;
   padding-left: 0.3125rem;
   height: 1.125rem;
-  background-color: rgb(244, 244, 244);
+  background-color: transparent;
   border: 0rem;
 }
 
@@ -536,7 +536,7 @@ button#searchButton {
   flex-grow: 1;
   flex-basis: 1rem;
   border-radius: 0.3125rem;
-  background: rgb(244, 244, 244);
+  background-color: #ebebeb;
   height: 2rem;
   display: flex;
   align-items: center;
@@ -562,7 +562,13 @@ button#addcont {
   width: 100%;
   height: 100%;
   border: none;
-  background-color: rgb(244, 244, 244);
+  background-color: #ebebeb;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+button#addcont:hover {
+  background-color: #e0e0e0;
 }
 
 .lists {
@@ -578,7 +584,7 @@ button#addcont {
 }
 
 .lists-wrapper#important {
-  background-color: rgb(240, 240, 240);
+  background-color: #ebebeb;
 }
 
 .lists:hover {
@@ -587,7 +593,7 @@ button#addcont {
 }
 
 .lists-wrapper#important:hover {
-  background-color: rgb(231, 231, 231);
+  background-color: #e0e0e0;
   /* border: .0625rem solid pink; */
 }
 
@@ -681,7 +687,7 @@ button#addcont {
   overflow-y: auto;
 }
 
-@media screen and (max-width: 600px) {
+@media screen and (max-width: 768px) {
   #friendlists {
     display: flex;
     flex-direction: column;

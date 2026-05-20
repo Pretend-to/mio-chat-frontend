@@ -134,9 +134,9 @@ export default {
   flex-basis: 3.8rem;
   flex-shrink: 0;
   flex-direction: column;
-  background-color: hsla(0, 0%, 100%, 0.8);
-  backdrop-filter: blur(10px);
+  background-color: transparent;
   -webkit-app-region: drag;
+  border-right: 1px solid #ebebeb;
 }
 .options {
   display: flex;
@@ -208,7 +208,7 @@ export default {
   color: #007bff;
 }
 
-@media screen and (max-width: 600px) {
+@media screen and (max-width: 768px) {
   .options {
     justify-content: space-evenly;
   }
@@ -219,6 +219,7 @@ export default {
     background-color: rgba(241, 244, 254, 0.85);
     backdrop-filter: blur(15px);
     border-top: 1px solid rgba(0, 0, 0, 0.05);
+    border-right: none;
   }
   .admin-avatar {
     display: none;

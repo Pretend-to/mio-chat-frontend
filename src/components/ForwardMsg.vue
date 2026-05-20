@@ -122,7 +122,7 @@ export default {
     };
   },
   created() {
-    this.onPhone = window.innerWidth < 600;
+    this.onPhone = window.innerWidth < 768;
 
     client.on(
       "device-change",

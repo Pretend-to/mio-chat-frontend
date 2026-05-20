@@ -61,7 +61,7 @@ figure {
   color: rgb(0, 153, 255);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .code-block {
     font-size: 0.6rem;
   }

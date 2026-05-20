@@ -110,21 +110,6 @@
             </span>
           </template>
         </el-form-item>
-
-        <el-divider />
-
-        <el-form-item label="全屏模式" prop="full_screen">
-          <el-switch
-            v-model="formData.full_screen"
-            active-text="开启"
-            inactive-text="关闭"
-          />
-          <template #extra>
-            <span class="form-item-tip">
-              开启后界面将占据整个浏览器窗口
-            </span>
-          </template>
-        </el-form-item>
       </el-form>
     </el-card>
   </div>

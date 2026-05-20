@@ -624,7 +624,7 @@ export default {
 </script>
 
 <style lang="sass" scoped>
-$mobile: 600px
+$mobile: 768px
 $icon-hover: #09f
 
 i:hover

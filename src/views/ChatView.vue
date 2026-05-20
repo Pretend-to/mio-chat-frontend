@@ -1,1093 +1,846 @@
-<script>
-import ForwardMsg from "@/components/ForwardMsg.vue";
-import InputEditor from "@/components/InputEditor.vue";
-import FileBlock from "@/components/FileBlock.vue";
-import ToolCallBar from "@/components/ToolCallBar.vue";
-import ReasonBlock from "@/components/ReasonBlock.vue";
-import ContextMenu from "@/components/ContextMenu.vue";
-import MdRenderer from "mio-previewer";
-import { mermaidPlugin, codeBlockPlugin, cursorPlugin, imageViewerPlugin } from 'mio-previewer/plugins/custom';
-import { katexPlugin } from 'mio-previewer/plugins/markdown-it';
-import "emoji-picker-element";
+<script setup>
+import { ref, reactive, computed, watch, onMounted, onUpdated, onBeforeUnmount, nextTick } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { storeToRefs } from "pinia";
+import { ElMessage } from "element-plus";
 import { snapdom } from "@zumer/snapdom";
-import QRCode from "qrcode";
+
+// Components
+import ChatHeader from "@/components/chat/ChatHeader.vue";
+import MessageItem from "@/components/chat/MessageItem.vue";
+import ScreenshotPreview from "@/components/chat/ScreenshotPreview.vue";
+import InputEditor from "@/components/InputEditor.vue";
+import ContextMenu from "@/components/ContextMenu.vue";
+
+// Composables
+import { useChatSelection } from "@/composables/useChatSelection.js";
+import { useChatScreenshot } from "@/composables/useChatScreenshot.js";
+
+// Stores & Libs
+import { useConnectionStore } from "@/stores/connectionStore";
 import { client } from "@/lib/runtime.js";
 import { shareOrCopy } from "@/utils/tools.js";
-import StatusDot from "@/components/StatusDot.vue";
-import { useConnectionStore } from "@/stores/connectionStore";
-import { mapState } from "pinia";
 
-export default {
-  components: {
-    MdRenderer,
-    ContextMenu,
-    ForwardMsg,
-    InputEditor,
-    ToolCallBar,
-    FileBlock,
-    ReasonBlock,
-    StatusDot,
+// Markdown plugins
+import { mermaidPlugin, codeBlockPlugin, cursorPlugin, imageViewerPlugin } from 'mio-previewer/plugins/custom';
+import { katexPlugin } from 'mio-previewer/plugins/markdown-it';
+
+const route = useRoute();
+const router = useRouter();
+
+// Pinia store
+const connectionStore = useConnectionStore();
+const { isConnected } = storeToRefs(connectionStore);
+
+// State definitions
+let previewVal = false;
+let scrollVal = true;
+
+const url = new URL(window.location.href);
+const params = url.searchParams;
+if (params.has("preview")) {
+  previewVal = params.get("preview") === "true";
+}
+if (params.has("scroll")) {
+  scrollVal = params.get("scroll") !== "false";
+}
+
+const preview = ref(previewVal);
+const scroll = ref(scrollVal);
+
+const activeContactor = ref(null);
+const currentId = route.params.id;
+try {
+  const contactor = client.getContactor(currentId);
+  if (!contactor) {
+    throw new Error("找不到联系人");
+  }
+  activeContactor.value = contactor;
+} catch (e) {
+  const defaultId = client.contactList[0]?.id || 0;
+  router.push({
+    path: `/chat/${defaultId}`,
+    query: {
+      preview: previewVal,
+    },
+  });
+  activeContactor.value = client.getContactor(defaultId);
+}
+
+const showwindow = ref(true);
+const showemoji = ref(false);
+const userInput = ref("");
+const extraOptions = ref([]);
+const wraperPresets = ref({});
+const selectedOption = ref(null);
+const toupdate = ref(false);
+const seletedText = ref("");
+const seletedImage = ref("");
+const retryList = ref([]);
+const showMenu = ref(false);
+const menuTop = ref(0);
+const menuLeft = ref(0);
+const validMessageIndex = ref(-1);
+const repliedMessageId = ref(-1);
+const autoScroll = ref(false);
+const fullScreen = ref(false);
+const chatWindow = ref(null);
+const prevScrollTop = ref(0);
+const showRollDown = ref(false);
+const inputBarTop = ref(0);
+const clearMessageTip = "以上的对话记录已清除";
+const loadingIcon = "<span id='message-loading-icon'></span>";
+const katexPluginList = [{ plugin: katexPlugin }];
+
+const mioPlugins = [
+  { plugin: codeBlockPlugin },
+  { plugin: mermaidPlugin },
+  {
+    plugin: cursorPlugin,
+    options: { shape: 'circle' }
   },
-  data() {
-    let preview = false;
-    let contactor = undefined;
-    let scroll = true;
-
-    // 获取当前页面的URL
-    const currentUrl = window.location.href;
-    // 创建一个URL对象
-    const url = new URL(currentUrl);
-    // 获取URL参数
-    const params = url.searchParams;
-    // 检查URL参数是否有preview参数
-    if (params.has("preview")) {
-      if (params.get("preview") === "true") {
-        preview = true;
-      }
-    }
-    if (params.has("scroll")) {
-      scroll = params.get("scroll") || "true";
-    }
-
-    const currentId = this.$route.params.id;
-    try {
-      contactor = client.getContactor(currentId);
-      if (!contactor) {
-        throw new Error("找不到联系人");
-      }
-    } catch (e) {
-      const defaultId = client.contactList[0].id;
-      this.$router.push({
-        path: `/chat/${defaultId}`,
-        query: {
-          preview,
-        },
-      });
-      contactor = client.getContactor(defaultId);
-    }
-    const mioPlugins = [{
-      plugin: codeBlockPlugin,
-    },
-    {
-      plugin: mermaidPlugin,
-    },
-    {
-      plugin: cursorPlugin,
-      options: {
-        shape: 'circle'
-      }
-    },
-    {
-      plugin: imageViewerPlugin,
-    }
-    ]
-
-    return {
-      scroll,
-      preview,
-      activeContactor: contactor,
-      showwindow: true,
-      showemoji: false,
-      userInput: "",
-      client: client,
-      extraOptions: [],
-      wraperPresets: {},
-      selectedOption: null,
-      toupdate: false,
-      seletedText: "",
-      seletedImage: "",
-      retryList: [],
-      showMenu: false,
-      menuTop: 0,
-      menuLeft: 0,
-      validMessageIndex: -1,
-      repliedMessageId: -1,
-      autoScroll: false,
-      fullScreen: false,
-      chatWindowRef: null,
-      prevScrollTop: 0,
-      showRollDown: false,
-      inputBarTop: 0,
-      clearMessageTip: "以上的对话记录已清除",
-      loadingIcon: "<span id='message-loading-icon'></span>",
-      katexPlugin,
-      katexPluginList: [{ plugin: katexPlugin }],
-      mioPlugins,
-      longPressTimer: null,
-      lastClickTime: 0,
-      isMultiSelect: false,
-      selectedMessages: [],
-      showImagePreview: false,
-      previewImageUrl: "",
-      previewShareUrl: "",
-      isMobileDevice: window.innerWidth < 768,
-      generatingImage: false,
-      exportWidthMode: "narrow",
-      qrUrl: "",
-    };
-  },
-  computed: {
-    ...mapState(useConnectionStore, ["isConnected"]),
-    getMenuStyle() {
-      // 判断屏幕宽度是否小于768px
-      if (window.innerWidth < 768) {
-        const basicHeight = 160;
-        // 检查向上是否超出屏幕高度
-        if (this.menuTop - basicHeight < 0) {
-          return {
-            top: basicHeight + "px",
-          };
-        }
-        return {
-          bottom: window.innerHeight - this.menuTop + 16 + "px",
-        };
-      } else {
-        // 长度超出屏幕宽度，就向左移动
-        if (this.menuLeft + 110 > window.innerWidth) {
-          return {
-            top: this.menuTop + "px",
-            left: this.menuLeft - 110 + "px",
-          };
-        } else {
-          return {
-            top: this.menuTop + "px",
-            left: this.menuLeft + "px",
-          };
-        }
-      }
-    },
-    getDelayStatus() {
-      return this.isConnected ? "ultra" : "offline";
-    },
-    mdOptions() {
-      return { breaks: this.activeContactor.platform === 'onebot' };
-    },
-    activeMessageChain() {
-      return this.activeContactor.messageChain;
-    },
-    openingMessage() {
-      const opening = this.activeContactor.options.presetSettings?.opening;
-      if (!opening) return null;
-      return {
-        id: 'opening-message',
-        role: "other",
-        content: [
-          {
-            type: "text",
-            data: {
-              text: opening,
-            },
-          },
-        ],
-        time: this.activeContactor.createTime,
-      };
-    },
-    openingTime() {
-      return this.activeContactor.getShownTime(this.activeContactor.createTime);
-    },
-  },
-  watch: {
-    ["$route.params.id"](newVal, oldVal) {
-      const currentId = parseInt(newVal);
-      const contactor = client.getContactor(currentId);
-      this.activeContactor = contactor;
-      this.initContactor(this.activeContactor);
-      
-      // 切换对话时，强制重置滚动状态
-      this.toupdate = true;
-      this.autoScroll = true;
-      
-      if (this.chatWindowRef) this.toButtom();
-      if (oldVal) {
-        const oldId = parseInt(oldVal);
-        const oldContactor = client.getContactor(oldId);
-        this.disableContactor(oldContactor);
-      }
-    },
-    showImagePreview(val) {
-      if (!val) {
-        this.cancelMultiSelect();
-      }
-    },
-  },
-  async mounted() {
-    document.addEventListener("click", () => {
-      this.showMenu = false;
-      this.seletedText = "";
-      this.seletedImage = "";
-      // if( this.showemoji) this.showemoji = false;
-    });
-    this.chatWindowRef = this.$refs.chatWindow;
-    this.chatWindowRef.addEventListener("scroll", this.scrollHandler);
-    if (!this.preview && this.scroll) this.toButtom();
-    this.scroll = true;
-    this.initContactor(this.activeContactor);
-    this.fullScreen = this.client.socket?.fullScreen;
-
-    
-    // 获取.input-bar在页面中的高度，给inputBarTop赋值
-    const element = document.querySelector(".input-bar");
-    if (element) {
-      // 获取页面高度
-      const pageHeight = window.innerHeight;
-      this.inputBarTop = pageHeight - element.offsetTop;
-      console.log(this.inputBarTop);
-    }
-    client.on("plugins_updated", this.handlePluginsUpdated);
-    window.addEventListener("beforeunload", this.handleBeforeUnload);
-  },
-  updated() {
-    if (this.toupdate && this.autoScroll && this.retryList.length === 0) {
-      this.toButtom();
-      this.toupdate = false;
-    }
-  },
-  beforeUnmount() {
-    // 移除事件监听
-    client.off("plugins_updated", this.handlePluginsUpdated);
-    window.removeEventListener("beforeunload", this.handleBeforeUnload);
-    
-    // 离开前强制保存一次当前对话状态
-    client.saveNow();
-    this.disableContactor(this.activeContactor);
-    this.chatWindowRef.removeEventListener("scroll", this.scrollHandler);
-  },
-  methods: {
-    handlePluginsUpdated() {
-      this.$message.success("插件系统已同步，对话能力已实时刷新");
-    },
-    handleBeforeUnload() {
-      client.saveNow();
-    },
-    handleMouseUp() {
-      const selectedText = window.getSelection().toString();
-      if (selectedText) {
-        this.seletedText = selectedText;
-        console.log("选中的文本：" + selectedText);
-      }
-    },
-    toButtom(clicked) {
-      const execScroll = () => {
-        const elm =
-          this.chatWindowRef ||
-          document.getElementById("main-messages-window");
-        if (!elm) return;
-
-        elm.scrollTo({
-          top: elm.scrollHeight,
-          behavior: clicked ? "smooth" : "instant",
-        });
-      };
-
-      // 1. 立即执行一次（应对已渲染好的内容）
-      execScroll();
-
-      // 2. Vue DOM 更新后，在浏览器下一帧执行（等待布局完成，避免布局抖动）
-      this.$nextTick(() => requestAnimationFrame(execScroll));
-    },
-    cleanScreen() {
-      this.activeContactor.messageChain = [];
-      this.activeContactor.updateFirstMessage();
-      client.setLocalStorage(); //持久化存储
-      this.activeContactor.emit("updateMessageSummary");
-
-      this.toupdate = true;
-      this.$message({ message: "已清除会话记录", type: "success" });
-    },
-    cleanHistory() {
-      this.activeContactor.updateFirstMessage();
-      this.$message({
-        message: "上下文信息已清除，之后的请求将不再记录上文记录",
-        type: "success",
-      });
-      // 先看看之前有没有清除提示
-      for (let i = this.activeContactor.messageChain.length - 1; i >= 0; i--) {
-        const message = this.activeContactor.messageChain[i];
-        // role 为 "mio_system"
-        if (
-          message.role === "mio_system" &&
-          message.content[0].type === "text" &&
-          message.content[0].data.text === this.clearMessageTip
-        ) {
-          this.activeContactor.messageChain.splice(i, 1);
-        }
-      }
-      this.activeContactor.makeSystemMessage(this.clearMessageTip);
-      // 持久化
-      client.setLocalStorage();
-    },
-
-    delSystemMessage(index) {
-      const message = this.activeContactor.messageChain[index];
-      // 判断是否是清除提示
-      if (
-        message.content[0].type === "text" &&
-        message.content[0].data.text === this.clearMessageTip
-      ) {
-        this.activeContactor.firstMessageIndex = 0;
-      }
-      this.activeContactor.messageChain.splice(index, 1);
-      // 持久化
-      client.setLocalStorage();
-    },
-
-    isValidInput(input) {
-      // 使用正则表达式检查用户输入是否只包含换行符和空格
-      const regex = /^[ \n]+$/;
-      const result = !regex.test(input);
-      return result;
-    },
-    waiting() {
-      this.$message({ message: "此功能尚未开放", type: "warning" });
-    },
-
-    tolist() {
-      this.$router.push({ name: "home" });
-    },
-
-    async setModel(list) {
-      const provider = list[0];
-      const model = list[2];
-      this.activeContactor.options.provider = provider;
-      this.activeContactor.options.base.model = model;
-      this.activeContactor.loadAvatar();
-      await client.setLocalStorage(); //持久化存储
-    },
-    async toimg() {
-      // 使用snapdom把 this.chatWindowRef 渲染为图片
-      const result = await snapdom(this.chatWindowRef);
-      await result.download({ format: 'png', filename: 'chat.png' });
-    },
-    async share() {
-      const shareResult = await client.shareContactor(
-        this.activeContactor.id,
-      );
-      if (shareResult && shareResult.shareUrl) {
-        const { shareUrl } = shareResult;
-        // 首先尝试调用分享api
-        const { success, message } = shareOrCopy(shareUrl);
-        if (success) {
-          this.$message({
-            message: message,
-            type: "success",
-          });
-        } else {
-          this.$message({
-            message: message,
-            type: "error",
-          });
-        }
-      }
-    },
-
-    getFullMessages() {
-      return this.activeMessageChain;
-    },
-    showTime(index) {
-      const list = this.activeMessageChain;
-      const thisTime = list[index].time;
-      if (index === 0) {
-        return {
-          show: true,
-          time: this.activeContactor.getShownTime(thisTime),
-        };
-      } else {
-        const earlyTime = list[index - 1].time;
-        if (thisTime - earlyTime > 600000) {
-          return {
-            show: true,
-            time: this.activeContactor.getShownTime(thisTime),
-          };
-        } else {
-          return {
-            show: false,
-            time: "",
-          };
-        }
-      }
-    },
-    separateTextAndImages(markdownText) {
-      // 使用正则表达式匹配Markdown图片格式
-      const regex = /!\[([^\]]*)\]\((.*)\)/g;
-      let result = [];
-      let lastIndex = 0;
-
-      // 查找所有匹配的图片
-      let matches;
-      while ((matches = regex.exec(markdownText)) !== null) {
-        // 处理匹配到的文本部分
-        if (matches.index > lastIndex) {
-          const textContent = markdownText
-            .slice(lastIndex, matches.index)
-            .trim();
-          if (textContent) {
-            result.push({
-              type: "text",
-              data: {
-                text: textContent,
-              },
-            });
-          }
-        }
-
-        // 处理匹配到的图片部分
-        result.push({
-          type: "image",
-          data: {
-            file: matches[2],
-          },
-        });
-
-        // 更新lastIndex到当前匹配结束的位置
-        lastIndex = regex.lastIndex;
-      }
-
-      // 处理最后一部分文本（如果有的话）
-      if (lastIndex < markdownText.length) {
-        const textContent = markdownText.slice(lastIndex).trim();
-        if (textContent) {
-          result.push({
-            type: "text",
-            data: {
-              text: textContent,
-            },
-          });
-        }
-      }
-
-      return result;
-    },
-
-    getChatwindowScrollheight() {
-      var scrollTop = this.chatWindowRef.scrollTop; // 当前滚动条的垂直位置
-      var clientHeight = this.chatWindowRef.clientHeight; // 可视区域高度
-      var scrollHeight = this.chatWindowRef.scrollHeight; // 内容总高度
-
-      // 计算滚动位置的实际像素长度
-      var scrollPercentage = scrollTop / (scrollHeight - clientHeight);
-      var height = scrollPercentage * scrollHeight;
-
-      return scrollHeight - height;
-    },
-
-    initContactor(contactor) {
-      contactor.active = true;
-
-      // 核心修复：处理生产环境下 socket 实例延迟初始化的竞争问题
-      const trySync = () => {
-        if (client.socket && client.socket.available) {
-          client.socket.enterChat(contactor.id);
-          // 清除待同步状态
-          if (contactor.hasPendingTask) {
-            contactor.hasPendingTask = false;
-            client.setLocalStorage();
-          }
-          return true;
-        }
-        return false;
-      };
-
-      // 绑定重连后的同步逻辑
-      contactor._socketConnectHandler = () => {
-        if (contactor.active) {
-          trySync();
-        }
-      };
-
-      const bindSocketEvents = (socket) => {
-        socket.on("connect", contactor._socketConnectHandler);
-        // 如果当前是激活状态，立即尝试同步
-        if (contactor.active) trySync();
-      };
-
-      // 1. 如果 Socket 已经存在，直接绑定
-      if (client.socket) {
-        bindSocketEvents(client.socket);
-      } 
-      
-      // 2. 无论 Socket 是否存在，都注册就绪事件
-      client.on("socket_ready", (socket) => {
-        bindSocketEvents(socket);
-      });
-
-      contactor.on("revMessage", (message) => {
-        this.activeContactor.messageChain.push(message);
-        this.toupdate = true;
-        client.setLocalStorage(); // 持久化新收到的消息（包含 blank msg）
-      });
-      contactor.on("delMessage", (index) => {
-        // 从消息链中删除消息
-        this.activeContactor.messageChain.splice(index, 1);
-        this.toupdate = true;
-      });
-
-      contactor.on("updateMessage", () => {
-        if (!this._updateRaf) {
-          this._updateRaf = requestAnimationFrame(() => {
-            this.$forceUpdate();
-            this._updateRaf = null;
-          });
-        }
-        this.toupdate = true;
-      });
-
-      contactor.on("name_updated", () => {
-        this.$forceUpdate();
-      });
-
-      contactor.on("syncMessage", () => {
-        this.$forceUpdate();
-        this.toupdate = true;
-      });
-
-      contactor.on(`completeMessage`, async (e) => {
-        const messageId = e.messageId;
-        const rawMessage = this.activeContactor.getMessageById(messageId);
-
-        if (this.retryList.includes(messageId)) {
-          this.retryList = this.retryList.filter((item) => item !== messageId);
-        }
-
-        rawMessage.content.forEach((element, index) => {
-          if (
-            element.type === "text" &&
-            this.activeContactor.platform === "onebot"
-          ) {
-            const formatedMessage = this.separateTextAndImages(
-              element.data.text,
-            );
-            // 把 formatedMessage 里的元素展开到 index 这个位置
-            rawMessage.content.splice(index, 1, ...formatedMessage);
-          }
-        });
-
-        this.toupdate = true;
-        this.$forceUpdate();
-        this.activeContactor.loadName();
-        await client.saveNow(); // 立即持久化完整消息，不走防抖
-        console.log(e);
-      });
-    },
-    disableContactor(contactor) {
-      if (contactor) {
-        contactor.active = false;
-        contactor.off(`updateMessage`);
-        contactor.off(`name_updated`);
-        contactor.off(`revMessage`);
-        contactor.off(`delMessage`);
-        contactor.off(`completeMessage`);
-        contactor.off(`syncMessage`);
-
-        if (contactor._socketConnectHandler) {
-          client.socket?.off("connect", contactor._socketConnectHandler);
-          delete contactor._socketConnectHandler;
-        }
-      }
-    },
-    getReplyText(id) {
-      let content = "";
-      const message = this.activeContactor.messageChain.find(
-        (item) => item.id === id || String(item.id) === String(id),
-      );
-      if (message) {
-        message.content.forEach((element) => {
-          if (element.type === "text") {
-            content += element.data.text;
-          } else if (element.type === "image") {
-            content += "[图片]";
-          }
-        });
-        // if (content.length > 20) {
-        //   return `${content.substr(0, 20)}...`;
-        // } else {
-        //   return `${content}`;
-        // }
-        return content.trim().slice(0, 20);
-      } else {
-        console.log("用户引用的消息不存在");
-        // 打印消息列表和索引的id
-        console.log(this.activeContactor.messageChain);
-        console.log("引用的消息id：" + id);
-        return "[消息已删除] ";
-      }
-    },
-    imageLoaded() {
-      // this.scroll && this.toButtom();
-    },
-    showMessageMenu(event, messageIndex) {
-      // 确定右击的元素类型
-      if (event.target && event.target.tagName && event.target.tagName.toLowerCase() === "img") {
-        const imgElement = event.target;
-        const imgSrc = imgElement.src;
-        this.seletedImage = imgSrc;
-      } else {
-        console.log("用户右击了非图片元素或合成事件");
-      }
-      this.validMessageIndex = messageIndex;
-      if (event.preventDefault) event.preventDefault();
-      this.showMenu = true;
-      this.menuTop = event.clientY;
-      this.menuLeft = event.clientX;
-
-      const currentSelectedText = window.getSelection().toString();
-      if (currentSelectedText) {
-        this.seletedText = currentSelectedText;
-      } else {
-        this.seletedText = "";
-      }
-    },
-    handleTouchStart(event, index) {
-      const now = Date.now();
-      const delay = now - this.lastClickTime;
-
-      if (delay < 300 && delay > 0) {
-        // Double tap detected
-        if (event.cancelable) event.preventDefault(); // 阻止浏览器缩放
-        const touch = event.touches[0];
-        const syntheticEvent = {
-          clientX: touch.clientX,
-          clientY: touch.clientY,
-          target: event.target,
-          preventDefault: () => {
-            if (event.preventDefault) event.preventDefault();
-          }
-        };
-        this.showMessageMenu(syntheticEvent, index);
-        this.lastClickTime = 0;
-      } else {
-        this.lastClickTime = now;
-      }
-    },
-    handleTouchEnd() { },
-    handleTouchMove() { },
-    toProfile() {
-      this.$router.push({
-        name: "profile_view",
-        params: {
-          id: this.activeContactor.id,
-        },
-      });
-      // 弹出维护提示
-      // this.$message({
-      //   message: "此功能正在维护中",
-      //   type: "warning",
-      // });
-    },
-    scrollHandler() {
-      // 获取当前的 scrollTop
-      const currentScrollTop = this.chatWindowRef.scrollTop;
-
-      // 判断滚动方向
-      // 如果当前 scrollTop 大于上一次的 scrollTop，说明是向下滑动
-      const isScrollingDown = currentScrollTop > this.prevScrollTop;
-      // 如果当前 scrollTop 小于上一次的 scrollTop，说明是向上滑动
-      const isScrollingUp = currentScrollTop < this.prevScrollTop;
-      // 如果相等，通常意味着没有实际的滚动位移，或者是一些内部事件
-
-      // 更新上一次的 scrollTop 为当前值，为下一次滚动做准备
-      this.prevScrollTop = currentScrollTop;
-
-      // --- 你原有的逻辑 (现在你可以根据需要使用 isScrollingDown 或 isScrollingUp) ---
-      this.showMenu = false; // 隐藏菜单
-      if (this.showemoji) this.showemoji = false; // 隐藏表情
-
-      const scrollHeight = this.getChatwindowScrollheight(); // 获取总滚动高度
-
-      this.autoScroll = scrollHeight > 100 ? false : true;
-
-      const isAtBottom = scrollHeight <= 200 - 1; // 留一个小的容差，避免浮点数问题
-
-      if (isScrollingDown && !this.autoScroll && !isAtBottom) {
-        this.showRollDown = true;
-      } else if (isScrollingUp || this.autoScroll || isAtBottom) {
-        this.showRollDown = false;
-      }
-    },
-    getseletedMessage() {
-      return this.activeContactor.messageChain[this.validMessageIndex];
-    },
-    async handleMessageOption(option) {
-      const message = this.getseletedMessage();
-      switch (option) {
-        case "multi-select":
-          this.isMultiSelect = true;
-          if (message && message.id) {
-            this.selectedMessages.push(message.id);
-          }
-          break;
-        case "retry":
-          if (this.activeContactor.platform === "onebot") {
-            // 重新发送一样的消息
-            if (message.role === "user") {
-              this.activeContactor.webSend(message);
-            } else {
-              this.activeContactor.webSend({
-                ...message,
-                role: "user",
-              });
-            }
-            this.$message({ message: "消息已重新发送", type: "success" });
-          } else {
-            const targetIndex =
-              message.role === "user"
-                ? this.validMessageIndex + 1
-                : this.validMessageIndex;
-            let validMessage = this.activeContactor.messageChain[targetIndex];
-            if (!validMessage || validMessage.role !== "other") {
-              // 是用户发送且下一条消息被删除,先插入一条空消息
-              const baseContainer = this.activeContactor.getBaseUserContainer();
-              baseContainer.role = "other";
-              this.activeContactor.insertMessage(baseContainer, targetIndex);
-              validMessage = baseContainer;
-            }
-            if (validMessage.status === "retrying") {
-              this.$message({
-                message: "该消息正在重试中",
-                type: "warning",
-              });
-              return;
-            }
-            try {
-              await this.activeContactor.retryMessage(validMessage.id);
-              validMessage.status = "retrying";
-              this.retryList.push(validMessage.id);
-              client.saveNow(); // 立即保存 blank 状态，防止刷新后旧内容复活
-            } catch (error) {
-              this.$message.error(error.message || "重试失败");
-              return;
-            }
-          }
-          this.toButtom();
-          break;
-        case "reply":
-          if (this.activeContactor.platform === "onebot") {
-            this.repliedMessageId = message.id;
-            this.$message({ message: "已引用该消息", type: "success" });
-          } else {
-            this.userInput +=
-              this.getReplyText(
-                this.activeContactor.messageChain[this.validMessageIndex].id,
-              ) + "\n\n";
-          }
-          break;
-        case "delete":
-          this.activeContactor.delMessage(message.id);
-          client.setLocalStorage();
-          break;
-        case "stop":
-          this.activeContactor.interruptMessage(message.id);
-          break;
-        default:
-          break;
-      }
-
-      this.showMenu = false
-
-    },
-    toggleSelect(id) {
-      if (!id) return;
-      const index = this.selectedMessages.indexOf(id);
-      if (index > -1) {
-        this.selectedMessages.splice(index, 1);
-      } else {
-        this.selectedMessages.push(id);
-      }
-    },
-    handleMessageClick(item) {
-      if (this.isMultiSelect && item.role !== 'mio_system') {
-        this.toggleSelect(item.id);
-      }
-    },
-    cancelMultiSelect() {
-      this.isMultiSelect = false;
-      this.selectedMessages = [];
-    },
-    handleMultiDelete() {
-      if (this.selectedMessages.length === 0) return;
-      for (let i = this.activeContactor.messageChain.length - 1; i >= 0; i--) {
-        if (this.selectedMessages.includes(this.activeContactor.messageChain[i].id)) {
-          this.activeContactor.messageChain.splice(i, 1);
-        }
-      }
-      client.setLocalStorage();
-      this.cancelMultiSelect();
-    },
-    handleMultiCopy() {
-      if (this.selectedMessages.length === 0) return;
-      let text = "";
-      this.getFullMessages().forEach((msg) => {
-        if (this.selectedMessages.includes(msg.id)) {
-          const senderName = msg.role === 'other' ? this.activeContactor.name : this.client.name;
-          const time = this.activeContactor.getShownTime(msg.time);
-          let msgText = "";
-          msg.content.forEach((element) => {
-            if (element.type === "text") {
-              msgText += element.data.text;
-            } else if (element.type === "image") {
-              msgText += `[图片]`;
-            }
-          });
-          text += `${senderName} ${time}\n${msgText}\n\n`;
-        }
-      });
-      let textarea = document.createElement("textarea");
-      textarea.style.position = "absolute";
-      textarea.style.left = "-9999px";
-      textarea.value = text.trim();
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      this.$message({ message: "已复制选中的消息", type: "success" });
-      this.cancelMultiSelect();
-    },
-    handleMultiShareMD() {
-      if (this.selectedMessages.length === 0) return;
-      let mdText = `# 与${this.activeContactor.name}的对话记录\n\n`;
-      this.getFullMessages().forEach((msg) => {
-        if (this.selectedMessages.includes(msg.id)) {
-          const senderName = msg.role === 'other' ? this.activeContactor.name : this.client.name;
-          const time = this.activeContactor.getShownTime(msg.time);
-          let msgText = "";
-          msg.content.forEach((element) => {
-            if (element.type === "text") {
-              msgText += element.data.text;
-            } else if (element.type === "image") {
-              msgText += `![图片](${element.data.file})`;
-            }
-          });
-          mdText += `### ${senderName} _${time}_\n${msgText}\n\n`;
-        }
-      });
-      const blob = new Blob([mdText], { type: 'text/markdown' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `chat_export_${new Date().getTime()}.md`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      this.$message({ message: "已导出Markdown", type: "success" });
-      this.cancelMultiSelect();
-    },
-    async handleMultiShareLink() {
-      if (this.selectedMessages.length === 0) return;
-      this.$message({ message: "正在生成分享链接...", type: "info" });
-      const shareResult = await client.shareMessages(this.activeContactor.id, this.selectedMessages);
-      if (shareResult && shareResult.shareUrl) {
-        const { success, message } = shareOrCopy(shareResult.shareUrl);
-        if (success) {
-          this.$message({ message: "分享链接已复制到剪贴板", type: "success" });
-        } else {
-          this.$message({ message: message, type: "error" });
-        }
-      } else {
-        this.$message({ message: "生成分享链接失败", type: "error" });
-      }
-      this.cancelMultiSelect();
-    },
-    async handleMultiShareImage() {
-      if (this.selectedMessages.length === 0) return;
-      try {
-        this.$message({ message: "正在获取分享信息...", type: "info" });
-        const shareResult = await client.shareMessages(this.activeContactor.id, this.selectedMessages);
-        const shareUrl = shareResult?.shareUrl ?? window.location.origin;
-        this.previewShareUrl = shareUrl;
-
-        // Generate QR code locally as a Data URI and save it in state
-        this.qrUrl = await QRCode.toDataURL(shareUrl, { width: 120, margin: 1 });
-        
-        // Reset export width mode and display preview
-        this.exportWidthMode = 'narrow';
-        this.isMobileDevice = window.innerWidth < 768;
-        this.showImagePreview = true;
-        
-        // Generate the screenshot
-        await this.generateScreenshot();
-      } catch (err) {
-        console.error("分享失败", err);
-        this.$message({ message: "获取分享信息失败", type: "error" });
-      }
-    },
-    async onExportWidthModeChange() {
-      await this.generateScreenshot();
-    },
-    async generateScreenshot() {
-      this.generatingImage = true;
-      this.previewImageUrl = ""; // clear old preview
-      let exportEl = null;
-
-      try {
-        const width = this.exportWidthMode === 'wide' ? '850px' : '500px';
-
-        // Build export container with selected width, mirroring chatwindow bg
-        exportEl = document.createElement('div');
-        exportEl.id = 'chat-window';
-        exportEl.className = 'is-exporting';
-        exportEl.style.cssText = `position:fixed;left:-9999px;top:0;width:${width};background-color:#f2f2f2;padding:0;box-sizing:border-box;overflow:hidden;`;
-        
-        // Also support wide mode styling on the inner message items
-        if (this.exportWidthMode === 'wide') {
-          exportEl.classList.add('is-wide-export');
-        }
-
-        document.body.appendChild(exportEl);
-
-        // Header with Icon and Slogan
-        const header = document.createElement('div');
-        header.style.cssText = 'display:flex;align-items:center;justify-content:flex-start;padding:1.5rem 1.25rem 0rem;margin-bottom:0.5rem;background:linear-gradient(180deg, rgba(255,255,255,1) 0%, #f2f2f2 100%);border-bottom:1px solid rgba(0,0,0,0.04);';
-
-        const headerIcon = document.createElement('img');
-        headerIcon.src = window.location.origin + '/static/icons/512x512.png';
-        headerIcon.style.cssText = 'width:64px;height:64px;margin-right:16px;border-radius:16px;box-shadow:0 3px 10px rgba(0,0,0,0.1);';
-
-        const headerTitle = document.createElement('div');
-        headerTitle.style.cssText = 'display:flex;flex-direction:column;justify-content:center;height:64px;overflow:hidden;';
-        headerTitle.innerHTML = '<div style="font-size:30px;font-weight:800;color:#2c3e50;letter-spacing:0.5px;line-height:1.2;white-space:nowrap;">Mio Chat</div><div style="font-size:16px;color:#7f8c8d;font-weight:500;line-height:1.2;margin-top:4px;white-space:nowrap;">A modern AI-powered companion</div>';
-
-        header.appendChild(headerIcon);
-        header.appendChild(headerTitle);
-        exportEl.appendChild(header);
-
-        // Wrapper to maintain CSS selector hierarchy
-        const messageWindow = document.createElement('div');
-        messageWindow.className = 'message-window';
-        exportEl.appendChild(messageWindow);
-
-        // Clone selected message DOM nodes (preserving real styles)
-        const containerEls = this.chatWindowRef.querySelectorAll('.message-container');
-        containerEls.forEach((el) => {
-          const itemId = el.getAttribute('data-id');
-          const isSelected = this.selectedMessages.some(id => String(id) === itemId);
-          if (!isSelected) return;
-          const clone = el.cloneNode(true);
-          // Remove multi-select UI artifacts
-          clone.querySelector('.multi-select-box')?.remove();
-          const wrapper = clone.querySelector('.message-flex-wrapper');
-          if (wrapper) wrapper.classList.remove('is-multi-select', 'is-selected');
-
-          // 处理克隆元素中的跨域图片
-          clone.querySelectorAll('img').forEach(img => {
-            if (img.src && !img.src.startsWith('data:') && !img.src.startsWith(window.location.origin)) {
-              img.crossOrigin = 'anonymous';
-              try {
-                const url = new URL(img.src);
-                url.searchParams.set('t', Date.now());
-                img.src = url.toString();
-              } catch (e) {
-                // Ignore
-              }
-            }
-          });
-
-          messageWindow.appendChild(clone);
-        });
-
-        // Footer with QR code in a premium card style
-        const footer = document.createElement('div');
-        footer.style.cssText = 'margin:1rem 1.25rem 1.5rem;padding:1.25rem;background-color:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;';
-
-        const textDiv = document.createElement('div');
-        textDiv.innerHTML = '<div style="font-weight:800;font-size:16px;color:#2c3e50;">扫码接续对话</div><div style="font-size:12px;color:#7f8c8d;margin-top:5px;line-height:1.4;">长按或扫描二维码<br>立即参与精彩聊天</div>';
-
-        const qrImg = document.createElement('img');
-        qrImg.src = this.qrUrl;
-        qrImg.style.cssText = 'width:68px;height:68px;flex-shrink:0;border:2px solid #f8f9fa;border-radius:8px;';
-        qrImg.crossOrigin = 'anonymous';
-
-        footer.appendChild(textDiv);
-        footer.appendChild(qrImg);
-        exportEl.appendChild(footer);
-
-        // 等待所有图片加载
-        const allImgs = Array.from(exportEl.querySelectorAll('img'));
-        const imgPromises = allImgs.map(img => {
-          img.setAttribute('loading', 'eager');
-          if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-          
-          return new Promise(resolve => {
-            img.onload = () => resolve();
-            img.onerror = () => resolve();
-            setTimeout(resolve, 5000);
-          });
-        });
-
-        await Promise.all(imgPromises);
-        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-
-        // snapdom drawing config
-        const result = await snapdom(exportEl, { scale: 2, dpr: 1 });
-        const img = await result.toPng();
-        this.previewImageUrl = img.src;
-        this.$message({ message: "图片预览生成成功", type: "success" });
-      } catch (err) {
-        console.error("生成图片失败", err);
-        this.$message({ message: "生成图片预览失败", type: "error" });
-      } finally {
-        exportEl?.remove();
-        this.generatingImage = false;
-      }
-    },
-    downloadPreviewImage() {
-      if (!this.previewImageUrl) return;
-      const a = document.createElement('a');
-      a.href = this.previewImageUrl;
-      a.download = `chat_image_export_${Date.now()}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      this.showImagePreview = false;
-    },
-    shareMobilePreviewLink() {
-      if (!this.previewShareUrl) return;
-      const { success, message } = shareOrCopy(this.previewShareUrl);
-      if (success) {
-        this.$message({ message: message, type: "success" });
-      } else {
-        this.$message({ message: message, type: "error" });
-      }
-    },
-    async copyPreviewImage() {
-      if (!this.previewImageUrl) return;
-      try {
-        const response = await fetch(this.previewImageUrl);
-        const blob = await response.blob();
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            [blob.type]: blob
-          })
-        ]);
-        this.$message({ message: "已复制到剪贴板", type: "success" });
-        this.showImagePreview = false;
-      } catch (error) {
-        console.error('复制图片失败:', error);
-        this.$message({ message: "复制图片失败，您的浏览器可能不支持该功能", type: "error" });
-      }
-    },
-  },
+  { plugin: imageViewerPlugin }
+];
+
+const updateTrigger = ref(0);
+const forceUpdate = () => {
+  updateTrigger.value++;
 };
+const messageVersions = reactive({});
+
+// Computed Properties
+const getDelayStatus = computed(() => {
+  return isConnected.value ? "ultra" : "offline";
+});
+
+const mdOptions = computed(() => {
+  return { breaks: activeContactor.value?.platform === 'onebot' };
+});
+
+const activeMessageChain = computed(() => {
+  // Access updateTrigger to force re-computation when triggered manually
+  const _ = updateTrigger.value;
+  return activeContactor.value?.messageChain || [];
+});
+
+const openingMessage = computed(() => {
+  const opening = activeContactor.value?.options?.presetSettings?.opening;
+  if (!opening) return null;
+  return {
+    id: 'opening-message',
+    role: "other",
+    content: [
+      {
+        type: "text",
+        data: {
+          text: opening,
+        },
+      },
+    ],
+    time: activeContactor.value.createTime,
+  };
+});
+
+const openingTime = computed(() => {
+  if (!activeContactor.value) return "";
+  return activeContactor.value.getShownTime(activeContactor.value.createTime);
+});
+
+const getMenuStyle = computed(() => {
+  if (window.innerWidth < 768) {
+    const basicHeight = 160;
+    if (menuTop.value - basicHeight < 0) {
+      return {
+        top: basicHeight + "px",
+      };
+    }
+    return {
+      bottom: window.innerHeight - menuTop.value + 16 + "px",
+    };
+  } else {
+    if (menuLeft.value + 110 > window.innerWidth) {
+      return {
+        top: menuTop.value + "px",
+        left: menuLeft.value - 110 + "px",
+      };
+    } else {
+      return {
+        top: menuTop.value + "px",
+        left: menuLeft.value + "px",
+      };
+    }
+  }
+});
+
+// Selection & Screenshot states
+const selectedMessages = ref([]);
+const isMultiSelect = ref(false);
+const isMobileDevice = ref(window.innerWidth < 768);
+
+// Composable invocation
+const {
+  dragSelect,
+  hasSelectedAbove,
+  hasSelectedBelow,
+  firstVisibleIndex,
+  lastVisibleIndex,
+  minSelectedIndex,
+  maxSelectedIndex,
+  toggleSelect,
+  cancelMultiSelect,
+  updateVisibilitySelectionState,
+  handleMouseDown,
+  handleMouseUpDrag,
+  selectToTopHere,
+  selectToBottomHere,
+  handleMultiDelete,
+  handleMultiCopy,
+  handleMultiShareMD,
+  handleMultiShareLink,
+} = useChatSelection({
+  chatWindowRef: chatWindow,
+  activeMessageChain,
+  selectedMessages,
+  isMultiSelect,
+  isMobileDevice,
+});
+
+const {
+  showImagePreview,
+  previewImageUrl,
+  previewShareUrl,
+  generatingImage,
+  exportWidthMode,
+  qrUrl,
+  handleMultiShareImage,
+  onExportWidthModeChange,
+  generateScreenshot,
+  downloadPreviewImage,
+  shareMobilePreviewLink,
+  copyPreviewImage,
+} = useChatScreenshot({
+  chatWindowRef: chatWindow,
+  selectedMessages,
+});
+
+// Watchers
+watch(
+  () => route.params.id,
+  (newVal, oldVal) => {
+    if (!newVal) return;
+    const currentId = parseInt(newVal);
+    const contactor = client.getContactor(currentId);
+    activeContactor.value = contactor;
+    initContactor(contactor);
+    
+    toupdate.value = true;
+    autoScroll.value = true;
+    
+    if (chatWindow.value) toButtom();
+    if (oldVal) {
+      const oldId = parseInt(oldVal);
+      const oldContactor = client.getContactor(oldId);
+      disableContactor(oldContactor);
+    }
+  }
+);
+
+watch(showImagePreview, (val) => {
+  if (!val) {
+    cancelMultiSelect();
+  }
+});
+
+watch(isMultiSelect, (val) => {
+  if (val) {
+    nextTick(() => {
+      updateVisibilitySelectionState();
+    });
+  } else {
+    hasSelectedAbove.value = false;
+    hasSelectedBelow.value = false;
+  }
+});
+
+// Methods
+const handlePluginsUpdated = () => {
+  ElMessage.success("插件系统已同步，对话能力已实时刷新");
+};
+
+const handleBeforeUnload = () => {
+  client.saveNow();
+};
+
+const handleMouseUp = () => {
+  const selectedText = window.getSelection().toString();
+  if (selectedText) {
+    seletedText.value = selectedText;
+    console.log("选中的文本：" + selectedText);
+  }
+};
+
+const toButtom = (clicked) => {
+  const execScroll = () => {
+    const elm = chatWindow.value || document.getElementById("main-messages-window");
+    if (!elm) return;
+
+    elm.scrollTo({
+      top: elm.scrollHeight,
+      behavior: clicked === true ? "smooth" : "instant",
+    });
+  };
+
+  execScroll();
+  nextTick(() => requestAnimationFrame(execScroll));
+};
+
+const cleanScreen = () => {
+  activeContactor.value.messageChain = [];
+  activeContactor.value.updateFirstMessage();
+  client.setLocalStorage();
+  activeContactor.value.emit("updateMessageSummary");
+
+  toupdate.value = true;
+  ElMessage.success("已清除会话记录");
+};
+
+const cleanHistory = () => {
+  activeContactor.value.updateFirstMessage();
+  ElMessage.success("上下文信息已清除，之后的请求将不再记录上文记录");
+  
+  for (let i = activeContactor.value.messageChain.length - 1; i >= 0; i--) {
+    const message = activeContactor.value.messageChain[i];
+    if (
+      message.role === "mio_system" &&
+      message.content[0].type === "text" &&
+      message.content[0].data.text === clearMessageTip
+    ) {
+      activeContactor.value.messageChain.splice(i, 1);
+    }
+  }
+  activeContactor.value.makeSystemMessage(clearMessageTip);
+  client.setLocalStorage();
+};
+
+const delSystemMessage = (index) => {
+  const message = activeContactor.value.messageChain[index];
+  if (
+    message.content[0].type === "text" &&
+    message.content[0].data.text === clearMessageTip
+  ) {
+    activeContactor.value.firstMessageIndex = 0;
+  }
+  activeContactor.value.messageChain.splice(index, 1);
+  client.setLocalStorage();
+};
+
+const isValidInput = (input) => {
+  const regex = /^[ \n]+$/;
+  return !regex.test(input);
+};
+
+const waiting = () => {
+  ElMessage.warning("此功能尚未开放");
+};
+
+const tolist = () => {
+  router.push({ name: "home" });
+};
+
+const setModel = async (list) => {
+  const provider = list[0];
+  const model = list[2];
+  activeContactor.value.options.provider = provider;
+  activeContactor.value.options.base.model = model;
+  activeContactor.value.loadAvatar();
+  await client.setLocalStorage();
+};
+
+const toimg = async () => {
+  const result = await snapdom(chatWindow.value);
+  await result.download({ format: 'png', filename: 'chat.png' });
+};
+
+const share = async () => {
+  const shareResult = await client.shareContactor(activeContactor.value.id);
+  if (shareResult && shareResult.shareUrl) {
+    const { shareUrl } = shareResult;
+    const { success, message } = shareOrCopy(shareUrl);
+    if (success) {
+      ElMessage.success(message);
+    } else {
+      ElMessage.error(message);
+    }
+  }
+};
+
+const showTime = (index) => {
+  const list = activeMessageChain.value;
+  const thisTime = list[index].time;
+  if (index === 0) {
+    return {
+      show: true,
+      time: activeContactor.value.getShownTime(thisTime),
+    };
+  } else {
+    const earlyTime = list[index - 1].time;
+    if (thisTime - earlyTime > 600000) {
+      return {
+        show: true,
+        time: activeContactor.value.getShownTime(thisTime),
+      };
+    } else {
+      return {
+        show: false,
+        time: "",
+      };
+    }
+  }
+};
+
+const separateTextAndImages = (markdownText) => {
+  const regex = /!\[([^\]]*)\]\((.*)\)/g;
+  let result = [];
+  let lastIndex = 0;
+
+  let matches;
+  while ((matches = regex.exec(markdownText)) !== null) {
+    if (matches.index > lastIndex) {
+      const textContent = markdownText.slice(lastIndex, matches.index).trim();
+      if (textContent) {
+        result.push({
+          type: "text",
+          data: {
+            text: textContent,
+          },
+        });
+      }
+    }
+
+    result.push({
+      type: "image",
+      data: {
+        file: matches[2],
+      },
+    });
+
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < markdownText.length) {
+    const textContent = markdownText.slice(lastIndex).trim();
+    if (textContent) {
+      result.push({
+        type: "text",
+        data: {
+          text: textContent,
+        },
+      });
+    }
+  }
+
+  return result;
+};
+
+const getChatwindowScrollheight = () => {
+  if (!chatWindow.value) return 0;
+  const scrollTop = chatWindow.value.scrollTop;
+  const clientHeight = chatWindow.value.clientHeight;
+  const scrollHeight = chatWindow.value.scrollHeight;
+
+  const scrollPercentage = scrollTop / (scrollHeight - clientHeight);
+  const height = scrollPercentage * scrollHeight;
+
+  return scrollHeight - height;
+};
+
+let _updateRaf = null;
+const initContactor = (contactor) => {
+  contactor.active = true;
+
+  const trySync = () => {
+    if (client.socket && client.socket.available) {
+      client.socket.enterChat(contactor.id);
+      if (contactor.hasPendingTask) {
+        contactor.hasPendingTask = false;
+        client.setLocalStorage();
+      }
+      return true;
+    }
+    return false;
+  };
+
+  contactor._socketConnectHandler = () => {
+    if (contactor.active) {
+      trySync();
+    }
+  };
+
+  const bindSocketEvents = (socket) => {
+    socket.on("connect", contactor._socketConnectHandler);
+    if (contactor.active) trySync();
+  };
+
+  if (client.socket) {
+    bindSocketEvents(client.socket);
+  } 
+  
+  client.on("socket_ready", (socket) => {
+    bindSocketEvents(socket);
+  });
+
+  contactor.on("revMessage", (message) => {
+    activeContactor.value.messageChain.push(message);
+    toupdate.value = true;
+    client.setLocalStorage();
+    forceUpdate();
+  });
+  contactor.on("delMessage", (index) => {
+    activeContactor.value.messageChain.splice(index, 1);
+    toupdate.value = true;
+    forceUpdate();
+  });
+
+  contactor.on("updateMessage", (messageId) => {
+    if (messageId) {
+      if (!messageVersions[messageId]) {
+        messageVersions[messageId] = 0;
+      }
+      messageVersions[messageId]++;
+    } else {
+      if (!_updateRaf) {
+        _updateRaf = requestAnimationFrame(() => {
+          forceUpdate();
+          _updateRaf = null;
+        });
+      }
+    }
+    toupdate.value = true;
+  });
+
+  contactor.on("name_updated", () => {
+    forceUpdate();
+  });
+
+  contactor.on("syncMessage", () => {
+    forceUpdate();
+    toupdate.value = true;
+  });
+
+  contactor.on("completeMessage", async (e) => {
+    const messageId = e.messageId;
+    const rawMessage = activeContactor.value.getMessageById(messageId);
+
+    if (retryList.value.includes(messageId)) {
+      retryList.value = retryList.value.filter((item) => item !== messageId);
+    }
+
+    rawMessage.content.forEach((element, index) => {
+      if (
+        element.type === "text" &&
+        activeContactor.value.platform === "onebot"
+      ) {
+        const formatedMessage = separateTextAndImages(element.data.text);
+        rawMessage.content.splice(index, 1, ...formatedMessage);
+      }
+    });
+
+    if (messageId) {
+      if (!messageVersions[messageId]) {
+        messageVersions[messageId] = 0;
+      }
+      messageVersions[messageId]++;
+    }
+
+    toupdate.value = true;
+    forceUpdate();
+    activeContactor.value.loadName();
+    await client.saveNow();
+  });
+};
+
+const disableContactor = (contactor) => {
+  if (contactor) {
+    contactor.active = false;
+    contactor.off("updateMessage");
+    contactor.off("name_updated");
+    contactor.off("revMessage");
+    contactor.off("delMessage");
+    contactor.off("completeMessage");
+    contactor.off("syncMessage");
+
+    if (contactor._socketConnectHandler) {
+      client.socket?.off("connect", contactor._socketConnectHandler);
+      delete contactor._socketConnectHandler;
+    }
+  }
+};
+
+const getReplyText = (id) => {
+  let content = "";
+  const message = activeContactor.value.messageChain.find(
+    (item) => item.id === id || String(item.id) === String(id)
+  );
+  if (message) {
+    message.content.forEach((element) => {
+      if (element.type === "text") {
+        content += element.data.text;
+      } else if (element.type === "image") {
+        content += "[图片]";
+      }
+    });
+    return content.trim().slice(0, 20);
+  } else {
+    return "[消息已删除] ";
+  }
+};
+
+const showMessageMenu = (event, messageIndex) => {
+  if (event.target && event.target.tagName && event.target.tagName.toLowerCase() === "img") {
+    const imgElement = event.target;
+    seletedImage.value = imgElement.src;
+  }
+  validMessageIndex.value = messageIndex;
+  if (event.preventDefault) event.preventDefault();
+  showMenu.value = true;
+  menuTop.value = event.clientY;
+  menuLeft.value = event.clientX;
+
+  const currentSelectedText = window.getSelection().toString();
+  if (currentSelectedText) {
+    seletedText.value = currentSelectedText;
+  } else {
+    seletedText.value = "";
+  }
+};
+
+const handleTouchStart = (event, index) => {
+  const now = Date.now();
+  const delay = now - lastClickTime.value;
+
+  if (delay < 300 && delay > 0) {
+    if (event.cancelable) event.preventDefault();
+    const touch = event.touches[0];
+    const syntheticEvent = {
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+      target: event.target,
+      preventDefault: () => {
+        if (event.preventDefault) event.preventDefault();
+      }
+    };
+    showMessageMenu(syntheticEvent, index);
+    lastClickTime.value = 0;
+  } else {
+    lastClickTime.value = now;
+  }
+};
+
+const toProfile = () => {
+  router.push({
+    name: "profile_view",
+    params: {
+      id: activeContactor.value.id,
+    },
+  });
+};
+
+const scrollHandler = () => {
+  const currentScrollTop = chatWindow.value.scrollTop;
+  const isScrollingDown = currentScrollTop > prevScrollTop.value;
+  const isScrollingUp = currentScrollTop < prevScrollTop.value;
+  prevScrollTop.value = currentScrollTop;
+
+  showMenu.value = false;
+  if (showemoji.value) showemoji.value = false;
+
+  const scrollHeight = getChatwindowScrollheight();
+  autoScroll.value = scrollHeight > 100 ? false : true;
+
+  const isAtBottom = scrollHeight <= 200 - 1;
+
+  if (isScrollingDown && !autoScroll.value && !isAtBottom) {
+    showRollDown.value = true;
+  } else if (isScrollingUp || autoScroll.value || isAtBottom) {
+    showRollDown.value = false;
+  }
+
+  if (isMultiSelect.value) {
+    updateVisibilitySelectionState();
+  }
+};
+
+const getseletedMessage = () => {
+  return activeContactor.value.messageChain[validMessageIndex.value];
+};
+
+const handleMessageOption = async (option) => {
+  const message = getseletedMessage();
+  switch (option) {
+    case "multi-select":
+      isMultiSelect.value = true;
+      if (message && message.id) {
+        selectedMessages.value.push(message.id);
+      }
+      break;
+    case "retry":
+      if (activeContactor.value.platform === "onebot") {
+        if (message.role === "user") {
+          activeContactor.value.webSend(message);
+        } else {
+          activeContactor.value.webSend({
+            ...message,
+            role: "user",
+          });
+        }
+        ElMessage.success("消息已重新发送");
+      } else {
+        const targetIndex =
+          message.role === "user"
+            ? validMessageIndex.value + 1
+            : validMessageIndex.value;
+        let validMessage = activeContactor.value.messageChain[targetIndex];
+        if (!validMessage || validMessage.role !== "other") {
+          const baseContainer = activeContactor.value.getBaseUserContainer();
+          baseContainer.role = "other";
+          activeContactor.value.insertMessage(baseContainer, targetIndex);
+          validMessage = baseContainer;
+        }
+        if (validMessage.status === "retrying") {
+          ElMessage.warning("该消息正在重试中");
+          return;
+        }
+        try {
+          await activeContactor.value.retryMessage(validMessage.id);
+          validMessage.status = "retrying";
+          retryList.value.push(validMessage.id);
+          client.saveNow();
+        } catch (error) {
+          ElMessage.error(error.message || "重试失败");
+          return;
+        }
+      }
+      toButtom();
+      break;
+    case "reply":
+      if (activeContactor.value.platform === "onebot") {
+        repliedMessageId.value = message.id;
+        ElMessage.success("已引用该消息");
+      } else {
+        userInput.value += getReplyText(activeContactor.value.messageChain[validMessageIndex.value].id) + "\n\n";
+      }
+      break;
+    case "delete":
+      activeContactor.value.delMessage(message.id);
+      client.setLocalStorage();
+      break;
+    case "stop":
+      activeContactor.value.interruptMessage(message.id);
+      break;
+  }
+  showMenu.value = false;
+};
+
+const handleMessageClick = (item) => {
+  if (isMultiSelect.value && item.role !== 'mio_system') {
+    toggleSelect(item.id);
+  }
+};
+
+// Lifecycle Hooks
+const resizeHandler = ref(null);
+const focusHandler = ref(null);
+
+onMounted(() => {
+  document.addEventListener("click", () => {
+    showMenu.value = false;
+    seletedText.value = "";
+    seletedImage.value = "";
+  });
+  
+  if (chatWindow.value) {
+    chatWindow.value.addEventListener("scroll", scrollHandler);
+    chatWindow.value.addEventListener("mousedown", handleMouseDown);
+  }
+  
+  if (!preview.value && scroll.value) toButtom();
+  
+  initContactor(activeContactor.value);
+  fullScreen.value = client.socket?.fullScreen;
+
+  resizeHandler.value = () => {
+    isMobileDevice.value = window.innerWidth < 768;
+  };
+  window.addEventListener("resize", resizeHandler.value);
+
+  focusHandler.value = () => {
+    if (dragSelect.isDown) {
+      handleMouseUpDrag();
+    }
+  };
+  window.addEventListener("blur", focusHandler.value);
+
+  const element = document.querySelector(".input-bar");
+  if (element) {
+    const pageHeight = window.innerHeight;
+    inputBarTop.value = pageHeight - element.offsetTop;
+  }
+  
+  client.on("plugins_updated", handlePluginsUpdated);
+  window.addEventListener("beforeunload", handleBeforeUnload);
+});
+
+onUpdated(() => {
+  if (toupdate.value && autoScroll.value && retryList.value.length === 0) {
+    toButtom();
+    toupdate.value = false;
+  }
+});
+
+onBeforeUnmount(() => {
+  client.off("plugins_updated", handlePluginsUpdated);
+  window.removeEventListener("beforeunload", handleBeforeUnload);
+  
+  client.saveNow();
+  disableContactor(activeContactor.value);
+  
+  if (chatWindow.value) {
+    chatWindow.value.removeEventListener("scroll", scrollHandler);
+    chatWindow.value.removeEventListener("mousedown", handleMouseDown);
+  }
+
+  window.removeEventListener("resize", resizeHandler.value);
+  window.removeEventListener("blur", focusHandler.value);
+});
 </script>
 
 <template>
   <div id="chat-window">
-    <div class="upside-bar">
-      <div class="return" @click="tolist()">
-        <i class="iconfont icon-return"></i>
+    <ChatHeader
+      :active-contactor="activeContactor"
+      @back="tolist"
+      @to-profile="toProfile"
+      @share="share"
+    />
+
+    <!-- Mobile Banners -->
+    <transition name="select-banner-fade">
+      <div v-if="isMobileDevice && isMultiSelect && hasSelectedBelow" class="mobile-select-banner top" @click="selectToTopHere">
+        <i class="iconfont down1"></i>
+        <span>选择到此处</span>
       </div>
-      <div class="name-area" @click="toProfile">
-        <div class="contactor-name">{{ activeContactor.name }}</div>
-        <StatusDot size="0.8rem" class="status-dot-chat" />
+    </transition>
+    <transition name="select-banner-fade">
+      <div v-if="isMobileDevice && isMultiSelect && hasSelectedAbove" class="mobile-select-banner bottom" @click="selectToBottomHere">
+        <i class="iconfont down1" style="transform: rotate(180deg); display: inline-block;"></i>
+        <span>选择到此处</span>
       </div>
-      <ul class="options">
-        <li class="share" @click="share()">
-          <i class="iconfont icon-share"></i>
-        </li>
-      </ul>
-    </div>
+    </transition>
+
     <div id="main-messages-window" ref="chatWindow" :class="{
       'message-window': true,
       preview: preview,
+      'is-dragging': dragSelect.active
     }">
       <div v-if="showRollDown" id="roll-buttom-button" :style="{ bottom: inputBarTop + 24 + 'px' }"
         @click="toButtom(true)">
@@ -1095,133 +848,79 @@ export default {
       </div>
       <ContextMenu v-show="showMenu" type="message" :message="getseletedMessage()" :seleted-text :seleted-image
         :style="getMenuStyle" @message-option="handleMessageOption" @close="showMenu = false" />
+      
       <!-- Opening Message -->
-      <div v-if="openingMessage" class="message-container opening-message">
-        <div class="message-time">
-          {{ openingTime }}
-        </div>
-        <div class="message-flex-wrapper">
-          <div id="other" class="message-body">
-            <div class="avatar">
-              <img :src="activeContactor.avatar" :alt="activeContactor.name" @click="toProfile" />
-            </div>
-            <div class="msg">
-              <div class="wholename">
-                <div v-if="activeContactor.title" class="title">{{ activeContactor.title }}</div>
-                <div class="name">{{ activeContactor.name }}</div>
-              </div>
-              <div class="content">
-                <div v-for="(element, elmIndex) of openingMessage.content" :key="elmIndex" class="inner-content">
-                  <MdRenderer :md="element.data.text" theme="github" :custom-plugins="mioPlugins"
-                    :markdown-it-plugins="katexPluginList" :markdown-it-options="mdOptions" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <MessageItem
+        v-if="openingMessage"
+        :item="openingMessage"
+        :index="-1"
+        :activeContactor="activeContactor"
+        :isOpening="true"
+        :mioPlugins="mioPlugins"
+        :katexPluginList="katexPluginList"
+        :mdOptions="mdOptions"
+        @to-profile="toProfile"
+      />
 
-      <div v-for="(item, index) of activeMessageChain" :key="`${activeContactor.id}-${item.id}`" ref="message"
-        class="message-container" :data-id="item.id">
-        <div v-if="showTime(index).show" class="message-time">
-          {{ showTime(index).time }}
-        </div>
-        <div class="message-flex-wrapper"
-          :class="{ 'is-multi-select': isMultiSelect && item.role !== 'mio_system', 'is-selected': isMultiSelect && selectedMessages.includes(item.id) }"
-          @click="handleMessageClick(item)">
-          <transition name="checkbox-fade">
-            <div v-if="isMultiSelect && item.role !== 'mio_system'" class="multi-select-box">
-              <div class="round-checkbox" :class="{ checked: selectedMessages.includes(item.id) }"
-                @click.stop="toggleSelect(item.id)">
-                <svg v-if="selectedMessages.includes(item.id)" viewBox="0 0 12 10" fill="none"
-                  xmlns="http://www.w3.org/2000/svg">
-                  <polyline points="1,5 4.5,8.5 11,1" stroke="white" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                </svg>
-              </div>
-            </div>
-          </transition>
-          <div :id="item.role" class="message-body" :style="{ pointerEvents: isMultiSelect ? 'none' : 'auto' }">
-            <div v-if="item.role !== 'mio_system'" class="avatar">
-              <img v-if="item.role === 'other'" :src="activeContactor.avatar" :alt="activeContactor.name"
-                @click="toProfile" />
-              <img v-else :src="client.avatar" :alt="client.name" />
-            </div>
-            <div v-if="item.role !== 'mio_system'" class="msg">
-              <div class="wholename">
-                <div v-if="
-                  item.role === 'other' ? activeContactor.title : client.title
-                " class="title">
-                  {{
-                    item.role === "other" ? activeContactor.title : client.title
-                  }}
-                </div>
-                <div class="name">
-                  {{ item.role === "other" ? activeContactor.name : client.name }}
-                  <i v-if="item.isTask" class="iconfont task-indicator" title="来自计划任务"></i>
-                </div>
-              </div>
-              <div :class="['content', item.status]" @mouseup="handleMouseUp"
-                @contextmenu="showMessageMenu($event, index)" @touchstart="handleTouchStart($event, index)">
-                <div v-for="(element, elmIndex) of item.content" :key="elmIndex" class="inner-content">
-                  <MdRenderer v-if="element.type === 'text'" :md="element.data.text" :theme="'github'" :isStreaming="['pending', 'retrying'].includes(item.status) &&
-                    item.content.length - 1 === elmIndex
-                    " :custom-plugins="mioPlugins" :markdown-it-plugins="katexPluginList"
-                    :markdown-it-options="mdOptions" />
-                  <MdRenderer v-if="element.type === 'image'" :md="`![image](${element.data.file})`"
-                    :custom-plugins="mioPlugins" :markdown-it-plugins="katexPluginList" :theme="'github'" :key="element.data.file" />
-                  <div v-else-if="element.type === 'reply'" class="reply-block">
-                    {{ getReplyText(element.data.id) }}
-                  </div>
-                  <ForwardMsg v-else-if="element.type === 'nodes'" :contactor="activeContactor"
-                    :messages="element.data.messages" />
-                  <FileBlock v-else-if="element.type === 'file'" :file-url="element.data.file" />
-                  <span v-else-if="element.type === 'at'" />
-                  <ReasonBlock v-else-if="element.type === 'reason'" :end-time="element.data.endTime"
-                    :start-time="element.data.startTime" :content="element.data.text" :duration="element.data.duration" />
-                  <div v-else-if="element.type === 'blank'" class="blank-message"
-                    style="width: 10rem; height: 28.8px; position: relative">
-                    <span class="blank-loader"></span>
-                  </div>
-                  <ToolCallBar v-else-if="element.type === 'tool_call'" :tool-call="element.data" />
-                </div>
-              </div>
-            </div>
-            <div v-else class="system-message">
-              <div class="system-message-content">
-                {{ item.content[0].data.text }}
-              </div>
-              <div class="system-message-button">
-                <i class="iconfont close" @click="delSystemMessage(index)"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <MessageItem
+        v-for="(item, index) of activeMessageChain"
+        :key="`${activeContactor.id}-${item.id}`"
+        :item="item"
+        :index="index"
+        :updateTrigger="messageVersions[item.id] || 0"
+        :activeContactor="activeContactor"
+        :isMultiSelect="isMultiSelect"
+        :isSelected="selectedMessages.includes(item.id)"
+        :showTimeInfo="showTime(index)"
+        :mioPlugins="mioPlugins"
+        :katexPluginList="katexPluginList"
+        :mdOptions="mdOptions"
+        @click-message="handleMessageClick"
+        @toggle-checkbox="toggleSelect"
+        @to-profile="toProfile"
+        @mouseup-content="handleMouseUp"
+        @contextmenu-content="showMessageMenu"
+        @touchstart-content="handleTouchStart"
+        @delete-system="delSystemMessage"
+      />
+
+      <!-- Selection Rectangle for Desktop Drag-Select -->
+      <div
+        v-if="dragSelect.active"
+        class="drag-select-rect"
+        :style="{
+          left: dragSelect.left + 'px',
+          top: dragSelect.top + 'px',
+          width: dragSelect.width + 'px',
+          height: dragSelect.height + 'px'
+        }"
+      ></div>
     </div>
+
     <InputEditor v-if="!isMultiSelect" ref="inputEditor" :active-contactor="activeContactor"
       :replied-message-id="repliedMessageId" @stroge="client.setLocalStorage()" @set-model="setModel"
       @clean-screen="cleanScreen" @clean-history="cleanHistory" @to-buttom="toButtom" />
+    
     <div v-else class="multi-select-action-bar">
       <div class="actions">
-        <div class="action-btn hide-mobile" @click="handleMultiShareMD">
+        <div class="action-btn hide-mobile" @click="handleMultiShareMD(activeContactor, client.name)">
           <span class="action-icon"><i class="iconfont icon-share"></i></span>
           <span class="action-label">导出MD</span>
         </div>
-        <div class="action-btn" @click="handleMultiShareImage">
+        <div class="action-btn" @click="handleMultiShareImage(activeContactor)">
           <span class="action-icon"><i class="iconfont icon-share"></i></span>
           <span class="action-label">导出图片</span>
         </div>
-        <div class="action-btn hide-mobile" @click="handleMultiShareLink">
+        <div class="action-btn hide-mobile" @click="handleMultiShareLink(activeContactor)">
           <span class="action-icon"><i class="iconfont icon-share"></i></span>
           <span class="action-label">分享链接</span>
         </div>
-        <div class="action-btn" @click="handleMultiCopy">
+        <div class="action-btn" @click="handleMultiCopy(activeContactor, client.name)">
           <span class="action-icon"><i class="iconfont fuzhi"></i></span>
           <span class="action-label">复制</span>
         </div>
         <el-popconfirm title="此操作不可撤销" confirm-button-text="确定" cancel-button-text="取消" placement="top"
-          @confirm="handleMultiDelete">
+          @confirm="handleMultiDelete(activeContactor)">
           <template #reference>
             <div class="action-btn">
               <span class="action-icon"><i class="iconfont shanchu"></i></span>
@@ -1233,77 +932,26 @@ export default {
       <button class="close-btn" @click="cancelMultiSelect" aria-label="取消多选">&times;</button>
     </div>
 
-    <!-- Image Preview for Desktop -->
-    <el-dialog
-      v-if="!isMobileDevice"
+    <!-- Screenshot Preview Dialog & Drawer -->
+    <ScreenshotPreview
       v-model="showImagePreview"
-      title="分享预览"
-      :width="exportWidthMode === 'wide' ? '890px' : '540px'"
-      class="desktop-preview-dialog"
-    >
-      <div style="margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; background-color: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid #e2e8f0; flex-wrap: wrap; gap: 8px;">
-        <div style="font-size: 14px; color: #475569; font-weight: 500; display: flex; align-items: center; gap: 8px;">
-          <span>图片尺寸：</span>
-          <el-radio-group v-model="exportWidthMode" size="small" @change="onExportWidthModeChange">
-            <el-radio-button label="narrow">竖屏窄图 (500px)</el-radio-button>
-            <el-radio-button label="wide">宽屏模式 (850px)</el-radio-button>
-          </el-radio-group>
-        </div>
-        <div style="font-size: 12px; color: #94a3b8; font-weight: 400;">
-          宽屏模式更适合包含长代码、表格或大图的聊天记录
-        </div>
-      </div>
-      <div v-loading="generatingImage" class="preview-scroll-container" style="max-height: 55vh; min-height: 200px; width: 100%; box-sizing: border-box; overflow-y: auto; text-align: center; background: #f2f2f2; padding: 20px; border-radius: 8px; position: relative;">
-        <img v-if="previewImageUrl" :src="previewImageUrl" class="preview-image" alt="图片预览" style="max-width: 100%; height: auto; display: block; margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 12px;"/>
-      </div>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="showImagePreview = false">取消</el-button>
-          <el-button :disabled="generatingImage || !previewImageUrl" @click="copyPreviewImage">复制到剪贴板</el-button>
-          <el-button :disabled="generatingImage || !previewImageUrl" type="primary" @click="downloadPreviewImage">下载图片</el-button>
-        </span>
-      </template>
-    </el-dialog>
-
-    <!-- Image Preview for Mobile -->
-    <el-drawer
-      v-if="isMobileDevice"
-      v-model="showImagePreview"
-      direction="btt"
-      size="100%"
-      :with-header="false"
-      class="mobile-preview-drawer"
-    >
-      <div style="height: 100%; display: flex; flex-direction: column; background: #f2f2f2;">
-        <div class="mobile-preview-header" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background-color: #fff; border-bottom: 1px solid #ebeef5;">
-          <span @click="showImagePreview = false" style="font-size: 16px; color: #606266; cursor: pointer;"><i class="iconfont icon-return"></i> 返回</span>
-          <span class="title" style="font-size: 16px; font-weight: 600;">分享预览</span>
-          <span style="width: 40px;"></span>
-        </div>
-        
-        <!-- Width Mode Toggle for Mobile -->
-        <div style="padding: 10px 20px; background-color: #fff; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: center;">
-          <el-radio-group v-model="exportWidthMode" size="default" @change="onExportWidthModeChange">
-            <el-radio-button label="narrow">竖屏窄图</el-radio-button>
-            <el-radio-button label="wide">宽屏模式</el-radio-button>
-          </el-radio-group>
-        </div>
-
-        <div v-loading="generatingImage" class="preview-scroll-container" style="flex: 1; max-height: none; padding: 20px; box-sizing: border-box; overflow-y: auto; position: relative;">
-          <img v-if="previewImageUrl" :src="previewImageUrl" class="preview-image" alt="分享预览图" style="width: 100%; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"/>
-        </div>
-        <div class="mobile-preview-footer" style="padding: 20px; background: transparent; border: none; display: flex; gap: 12px;">
-          <el-button @click="shareMobilePreviewLink" size="large" style="flex: 1; border-radius: 12px; font-weight: bold;">分享链接</el-button>
-          <el-button :disabled="generatingImage || !previewImageUrl" type="primary" @click="downloadPreviewImage" size="large" style="flex: 1; border-radius: 12px; font-weight: bold;">保存图片</el-button>
-        </div>
-      </div>
-    </el-drawer>
-
+      v-model:exportWidthMode="exportWidthMode"
+      :generatingImage="generatingImage"
+      :previewImageUrl="previewImageUrl"
+      :qrUrl="qrUrl"
+      :previewShareUrl="previewShareUrl"
+      :isMobileDevice="isMobileDevice"
+      @close="cancelMultiSelect"
+      @copy="copyPreviewImage"
+      @download="downloadPreviewImage"
+      @share-link="shareMobilePreviewLink"
+      @width-mode-change="onExportWidthModeChange"
+    />
   </div>
 </template>
 
 <style lang="sass" scoped>
-$mobile: 600px
+$mobile: 768px
 $icon-hover: #09f
 
 .preview
@@ -1324,85 +972,7 @@ $icon-hover: #09f
     flex-direction: column
 
 
-.message-container
-    content-visibility: auto
-    contain-intrinsic-size: auto 150px
 
-    // 导出图片时强制禁用懒渲染，确保截图完整
-    .is-exporting &
-        content-visibility: visible !important
-        contain: none !important
-    
-.message-flex-wrapper
-    display: flex
-    align-items: flex-start
-    width: 100%
-    position: relative
-    transition: background-color 0.15s
-
-    .message-body
-        flex: 1
-        min-width: 0
-        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)
-        transform: translateX(0)
-
-    &.is-multi-select
-        cursor: pointer
-
-        & > #other.message-body
-            transform: translateX(1.75rem)
-
-        &:hover
-            background-color: rgba(0, 0, 0, 0.04)
-
-    &.is-selected
-        background-color: rgba(0, 0, 0, 0.06)
-
-        &:hover
-            background-color: rgba(0, 0, 0, 0.08)
-
-    .checkbox-fade-enter-active, .checkbox-fade-leave-active
-        transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1)
-
-    .checkbox-fade-enter-from, .checkbox-fade-leave-to
-        opacity: 0 !important
-
-    .multi-select-box
-        position: absolute
-        left: 0.5rem
-        top: 50%
-        transform: translateY(-50%)
-        width: 1rem
-        height: 1rem
-        display: flex
-        align-items: center
-        justify-content: center
-        flex-shrink: 0
-
-        .round-checkbox
-            width: 1rem
-            height: 1rem
-            border-radius: 50%
-            border: 2px solid #ccc
-            background-color: #fff
-            display: flex
-            align-items: center
-            justify-content: center
-            cursor: pointer
-            transition: border-color 0.15s, background-color 0.15s
-            flex-shrink: 0
-
-            svg
-                width: 0.7rem
-                height: 0.7rem
-                display: block
-
-            &.checked
-                border-color: rgb(0, 153, 255)
-                background-color: rgb(0, 153, 255)
-
-            &:hover:not(.checked)
-                border-color: rgb(0, 153, 255)
 
 .multi-select-action-bar
     flex-shrink: 0
@@ -1498,77 +1068,7 @@ $icon-hover: #09f
             color: #333
             background-color: #f2f2f2
 
-.upside-bar
-    flex-basis: 4rem
-    flex-shrink: 0
-    width: 100%
-    display: flex
-    align-items: flex-end
-    justify-content: flex-start
-    border-bottom: 0.0625rem solid #ebebeb
-    -webkit-app-region: drag
 
-    @media (max-width: $mobile)
-      position: fixed
-      height: 4rem
-      z-index: 1000
-      background-color: hsla(0, 0%, 100%, 0.8)
-      backdrop-filter: blur(0.5rem)
-
-    .return
-        display: none
-
-        &:hover
-            color: $icon-hover
-
-        @media (max-width: $mobile)
-            display: block
-            margin-left: 1rem
-            margin-bottom: .8rem
-
-    .name-area
-        cursor: pointer
-        position: relative
-        display: flex
-        align-items: center
-        flex-basis: 10rem
-        flex-grow: 1
-        justify-content: flex-start
-        margin: 0 0 .5rem 1rem
-
-        .contactor-name
-            text-overflow: ellipsis
-            white-space: nowrap
-            overflow: hidden
-            max-width: 10rem
-
-        .status-dot-chat
-            margin-left: .5rem
-            position: relative
-            top: .1rem
-
-            @media screen and (max-width: $mobile)
-              display: none
-
-    .options
-        flex-basis: 10rem
-        display: flex
-        height: 2rem
-        flex-wrap: nowrap
-        flex-direction: row-reverse
-        align-items: flex-end
-        margin: 0 1rem .5rem 0
-
-        li
-            margin-left: 0.5rem
-            color: #000
-            font-weight: 580
-
-            &:hover
-              color: $icon-hover
-
-            i
-                font-size: 1.25rem
 
 
 .black-overlay
@@ -1611,31 +1111,11 @@ $icon-hover: #09f
     transform: translate(-50%, -50%)
     max-height: 75%
     max-width: 50%
-.inner-content
-  display: flex
-  flex-direction: column
-  width: 100%
-  
-  & > *
-    margin: 2px 0
-
 .background img
     position: absolute
     top: 50%
     left: 50%
     transform: translate(-50%, -50%)
-
-.message-body > .avatar
-  cursor: pointer
-  flex-basis: 2.65rem
-  min-width: 2.65rem
-  height: 2.65rem
-
-
-.avatar > img
-  width: 100%
-  height: 100%
-  border-radius: 50%
 
 
 .window-controls
@@ -1701,49 +1181,16 @@ $icon-hover: #09f
     animation: l3 1s infinite linear
     position: absolute
 
-@keyframes move
-    0%
-        left: -20% // 开始位置
-    100%
-        left: 120% // 结束位置
-
-.blank-loader
-    width: 10%
-    height: 200%
-    position: absolute
-    background: linear-gradient(to right, rgb(255, 255, 255), rgb(0, 0, 0) 50%, transparent 50%, transparent)
-    top: -50%
-    transform: rotate(30deg)
-    filter: blur(5px)
-    animation: move 1s linear infinite // 每1s循环
-
 @keyframes l
     to
         transform: rotate(1turn)
 
 @media (max-width: 600px)
-    #chatwindow
-        height: 100%
-
-    .upsidebar
-        white-space: nowrap
-        max-width: 7rem
-        text-overflow: ellipsis
-        overflow: hidden
-        background: #00a8ff linear-gradient(to right, #00d2f8, #00a8ff)
-
-    .upsidebar *
-        color: white
-        fill: white
-
     .delay-num
         color: black
 
     .window-controls
         display: none
-
-    .name-area
-        padding-bottom: 0.25rem
 
     .input-area
         overflow-y: auto
@@ -1765,4 +1212,96 @@ $icon-hover: #09f
     .el-dialog__body
         overflow: hidden !important
         padding: 20px 24px !important
+
+.message-window.is-dragging
+    user-select: none !important
+    *
+        user-select: none !important
+
+.drag-select-rect
+    position: absolute
+    background-color: rgba(9, 168, 255, 0.15)
+    border: 1.5px solid #00a8ff
+    border-radius: 4px
+    z-index: 100
+    pointer-events: none
+
+.mobile-select-banner
+    position: absolute
+    left: 0.5rem
+    background: rgba(255, 255, 255, 0.95)
+    backdrop-filter: blur(8px)
+    -webkit-backdrop-filter: blur(8px)
+    border: 1px solid rgba(0, 168, 255, 0.2)
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.02)
+    border-radius: 20px
+    padding: 6px 16px
+    display: flex
+    align-items: center
+    gap: 6px
+    color: #00a8ff
+    font-size: 0.85rem
+    font-weight: 500
+    z-index: 100
+    cursor: pointer
+    transition: opacity 0.3s, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s, box-shadow 0.2s
+    transform: translateY(0)
+    
+    &:hover
+        background: rgba(255, 255, 255, 1)
+        box-shadow: 0 6px 16px rgba(0, 168, 255, 0.15)
+        transform: scale(1.03)
+        
+    &:active
+        transform: scale(0.98)
+        
+    i
+        font-size: 0.9rem
+        font-weight: bold
+        line-height: 1
+        
+    &.top
+        top: 4.8rem
+        animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1)
+        
+    &.bottom
+        bottom: 5.8rem
+        animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1)
+
+@keyframes slideDown
+    from
+        transform: translateY(-15px)
+        opacity: 0
+    to
+        transform: translateY(0)
+        opacity: 1
+
+@keyframes slideUp
+    from
+        transform: translateY(15px)
+        opacity: 0
+    to
+        transform: translateY(0)
+        opacity: 1
+
+.select-banner-fade-enter-active, .select-banner-fade-leave-active
+    transition: opacity 0.3s, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)
+
+.select-banner-fade-enter-from, .select-banner-fade-leave-to
+    opacity: 0
+    &.top
+        transform: translateY(-15px) !important
+    &.bottom
+        transform: translateY(15px) !important
+
+:global(.is-exporting)
+    height: auto !important
+    overflow: visible !important
+    display: block !important
+
+:global(.is-exporting .message-window)
+    height: auto !important
+    overflow: visible !important
+    padding: 0 !important
+    display: block !important
 </style>

@@ -1,21 +1,18 @@
 <script>
 import { client, config } from "@/lib/runtime.js";
 import sideBar from "@/components/SideBar.vue";
-import displayButtons from "./components/DisplayButtons.vue";
+
 export default {
   components: {
     sideBar,
-    displayButtons,
   },
   data() {
     const displayConfig = config.getBaseConfig();
-    const onPhone = window.innerWidth < 600;
+    const onPhone = window.innerWidth < 768;
     return {
       onPhone,
       client: client,
-      fullScreen: displayConfig?.full_screen || false,
       beian: displayConfig?.beian || "",
-      isTauri: !!(window.__TAURI__ || window.__TAURI_INTERNALS__),
     };
   },
   computed: {
@@ -26,10 +23,6 @@ export default {
         this.$route.path.includes("/chat")
       );
     },
-    // 是否在 Settings 页面，用于隐藏顶部的显示控制按钮
-    hideDisplayButtons() {
-      return this.$route.path.includes('/settings');
-    },
     isDashboardPage() {
       return this.$route.path === '/dashboard';
     }
@@ -37,12 +30,10 @@ export default {
   created() {
     const displayConfig = config.getBaseConfig();
     if (Object.keys(displayConfig).length > 0) {
-      this.fullScreen = displayConfig.full_screen;
       this.beian = displayConfig.beian;
       document.title = displayConfig.title;
     } else {
       config.setBaseConfigCallback((data) => {
-        this.fullScreen = data.full_screen;
         this.beian = data.beian;
         document.title = data.title;
       });
@@ -54,21 +45,9 @@ export default {
     window.removeEventListener("resize", this.handleResize);
   },
   methods: {
-    setWindowSize(fullScreen) {
-      this.fullScreen = fullScreen;
-      config.updateBaseConfig({
-        full_screen: fullScreen,
-      });
-    },
     handleResize() {
-      this.onPhone = window.innerWidth < 600;
+      this.onPhone = window.innerWidth < 768;
     },
-    closeApp() {
-      this.$message({
-        message: "浏览器端暂不支持关闭",
-        type: "warning",
-      });
-    }
   },
 };
 </script>
@@ -77,14 +56,12 @@ export default {
     <router-view></router-view>
   </div>
   <template v-else>
-    <div id="mio-chat" :class="{ browser: !isTauri }">
+    <div id="mio-chat">
       <div v-if="onPhone" class="app-mobile">
         <router-view></router-view>
         <sideBar v-if="!onPrivate"></sideBar>
       </div>
-      <div v-else class="app-desktop" :class="{ fullscreen: fullScreen || isTauri }">
-        <displayButtons v-if="!hideDisplayButtons" :full-screen @close="closeApp" @set-screen="setWindowSize">
-        </displayButtons>
+      <div v-else class="app-desktop">
         <sideBar></sideBar>
         <router-view></router-view>
       </div>
@@ -107,59 +84,26 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-#mio-chat.browser {
-  background-image: url(/static/background/default.png);
-}
-
-#mio-chat.browser::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  /* 黑色蒙版，可调整透明度 */
 }
 
 .app-desktop {
   position: relative;
-  width: 60rem;
-  height: 85%;
-  min-height: 30rem;
-  z-index: 1;
-  box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.5);
-  border-radius: 1rem;
-  display: flex;
-  overflow: hidden;
-  margin: 5rem 5rem;
-  min-width: 35rem;
-}
-
-.app-desktop.fullscreen {
   width: 100%;
   height: 100%;
-  border-radius: 0rem;
-  margin: 0rem;
+  z-index: 1;
+  display: flex;
+  overflow: hidden;
+  background-color: #f5f5f5;
 }
 
 .app-mobile {
   width: 100%;
   height: 100%;
   z-index: 1;
-  box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.5);
-  border-radius: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  margin: 0;
   background-color: rgba(255, 255, 255);
-
 }
 
 a#beian {
@@ -171,6 +115,4 @@ a#beian {
   color: #fff;
   text-decoration: none;
 }
-
-@media (min-width: 1024px) {}
 </style>

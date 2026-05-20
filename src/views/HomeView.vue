@@ -25,7 +25,7 @@ export default {
     blankView,
   },
   data() {
-    const onPhone = window.innerWidth < 600;
+    const onPhone = window.innerWidth < 768;
     return {
       onPhone,
       pagePath: this.$route.path,
@@ -49,17 +49,25 @@ export default {
         false,
       );
     }
+    this.resizeHandler = () => {
+      this.onPhone = window.innerWidth < 768;
+    };
+    window.addEventListener("resize", this.resizeHandler);
+  },
+  beforeUnmount() {
+    if (this.resizeHandler) {
+      window.removeEventListener("resize", this.resizeHandler);
+    }
   },
 };
 </script>
 
 <style>
 #main {
-  background-color: rgb(255, 255, 255);
   flex-grow: 1;
   display: flex;
   width: calc(100% - 4.5rem);
-  background-color: #f2f2f2;
+  background-color: transparent;
 }
 
 #main>.profile-body {

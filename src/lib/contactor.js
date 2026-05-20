@@ -191,7 +191,7 @@ export default class Contactor extends EventEmmiter {
       this.closeReasoningBlocks(rawMessage, true);
     }
 
-    this.emitMessageUpdated(!this.active && rawMessage.role === "other");
+    this.emitMessageUpdated(!this.active && rawMessage.role === "other", messageId);
   }
 
   /**
@@ -231,12 +231,12 @@ export default class Contactor extends EventEmmiter {
    * updateMessage: 实时触发（ChatView 流式渲染需要）
    * updateMessageSummary: 防抖触发（侧边栏摘要刷新，无需高频）
    */
-  emitMessageUpdated(isBackground = false) {
+  emitMessageUpdated(isBackground = false, messageId = null) {
     this.lastUpdate = Date.now();
     if (isBackground) {
       this.hasPendingTask = true;
     }
-    this.emit("updateMessage");
+    this.emit("updateMessage", messageId);
     this._debouncedEmitSummary();
   }
 
@@ -289,7 +289,7 @@ export default class Contactor extends EventEmmiter {
       this.replaceBlankOrAppend(rawMessage, msgElm);
     }
 
-    this.emitMessageUpdated(!this.active && rawMessage.role === "other");
+    this.emitMessageUpdated(!this.active && rawMessage.role === "other", messageId);
   }
 
   /**
@@ -324,7 +324,7 @@ export default class Contactor extends EventEmmiter {
       });
     }
 
-    this.emitMessageUpdated(!this.active && rawMessage.role === "other");
+    this.emitMessageUpdated(!this.active && rawMessage.role === "other", messageId);
   }
 
   /**
@@ -370,7 +370,7 @@ export default class Contactor extends EventEmmiter {
 
     if (last?.type === "blank") {
       content.splice(content.length - 1, 1, msgElm);
-      this.emitMessageUpdated(!this.active && rawMessage.role === "other");
+      this.emitMessageUpdated(!this.active && rawMessage.role === "other", messageId);
       return;
     }
 
@@ -394,7 +394,7 @@ export default class Contactor extends EventEmmiter {
       }
     }
 
-    this.emitMessageUpdated(!this.active && rawMessage.role === "other");
+    this.emitMessageUpdated(!this.active && rawMessage.role === "other", messageId);
   }
 
   /**
@@ -772,7 +772,7 @@ export default class Contactor extends EventEmmiter {
     // 本地 UI 状态更新
     if (["pending", "retrying"].includes(message.status)) {
       message.status = "interrupted";
-      this.emitMessageUpdated();
+      this.emitMessageUpdated(false, messageId);
     }
   }
 
