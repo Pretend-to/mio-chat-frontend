@@ -1238,10 +1238,10 @@ export default {
       v-if="!isMobileDevice"
       v-model="showImagePreview"
       title="分享预览"
-      width="60%"
+      :width="exportWidthMode === 'wide' ? '890px' : '540px'"
       class="desktop-preview-dialog"
     >
-      <div style="margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; background-color: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
+      <div style="margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; background-color: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid #e2e8f0; flex-wrap: wrap; gap: 8px;">
         <div style="font-size: 14px; color: #475569; font-weight: 500; display: flex; align-items: center; gap: 8px;">
           <span>图片尺寸：</span>
           <el-radio-group v-model="exportWidthMode" size="small" @change="onExportWidthModeChange">
@@ -1253,8 +1253,8 @@ export default {
           宽屏模式更适合包含长代码、表格或大图的聊天记录
         </div>
       </div>
-      <div v-loading="generatingImage" class="preview-scroll-container" style="max-height: 60vh; min-height: 200px; overflow-y: auto; text-align: center; background: #f2f2f2; padding: 20px; border-radius: 8px; position: relative;">
-        <img v-if="previewImageUrl" :src="previewImageUrl" class="preview-image" alt="图片预览" style="max-width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 12px;"/>
+      <div v-loading="generatingImage" class="preview-scroll-container" style="max-height: 55vh; min-height: 200px; width: 100%; box-sizing: border-box; overflow-y: auto; text-align: center; background: #f2f2f2; padding: 20px; border-radius: 8px; position: relative;">
+        <img v-if="previewImageUrl" :src="previewImageUrl" class="preview-image" alt="图片预览" style="max-width: 100%; height: auto; display: block; margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 12px;"/>
       </div>
       <template #footer>
         <span class="dialog-footer">
@@ -1754,4 +1754,15 @@ $icon-hover: #09f
     .delay-status
         position: relative
         top: -.2rem
+
+:deep(.desktop-preview-dialog)
+    max-width: 90vw !important
+    margin-top: 8vh !important
+    margin-bottom: 8vh !important
+    display: flex
+    flex-direction: column
+    
+    .el-dialog__body
+        overflow: hidden !important
+        padding: 20px 24px !important
 </style>
