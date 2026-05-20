@@ -31,7 +31,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const selectedProvider = ref('All')
   const groupedProviders = ref([])
   const totalAllTokens = ref(0)
-  let rawModelDistribution = []
+  const rawModelDistribution = ref([])
 
   // Rankings
   const userRankings = ref([])
@@ -127,10 +127,10 @@ export const useDashboardStore = defineStore('dashboard', () => {
         }))
 
         // 3. Process Provider Lists and Model Breakdowns
-        rawModelDistribution = data.modelDistribution || []
-        totalAllTokens.value = rawModelDistribution.reduce((sum, item) => sum + (item.totalTokens || 0), 0)
+        rawModelDistribution.value = data.modelDistribution || []
+        totalAllTokens.value = rawModelDistribution.value.reduce((sum, item) => sum + (item.totalTokens || 0), 0)
 
-        const providerGroups = rawModelDistribution.reduce((acc, curr) => {
+        const providerGroups = rawModelDistribution.value.reduce((acc, curr) => {
           const name = curr.provider || 'openai'
           acc[name] = (acc[name] || 0) + (curr.totalTokens || 0)
           return acc
@@ -215,7 +215,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     selectedProvider,
     groupedProviders,
     totalAllTokens,
-    get rawModelDistribution() { return rawModelDistribution },
+    rawModelDistribution,
     userRankings,
     windowRankings,
     toolCallTurns,

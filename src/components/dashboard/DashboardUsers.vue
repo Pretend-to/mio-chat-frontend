@@ -42,6 +42,49 @@
       </div>
     </div>
 
+    <!-- Model Details Table Card -->
+    <div class="saas-card mt-lg">
+      <div class="card-header">
+        <span class="card-title">具体模型 Token 消耗明细 ({{ store.selectedProvider === 'All' ? '全部' : store.selectedProvider }})</span>
+      </div>
+      <div class="card-body p-none">
+        <el-table :data="filteredModelsTable" style="width: 100%" class="saas-table">
+          <el-table-column prop="model" label="模型名称" min-width="180">
+            <template #default="scope">
+              <span class="model-name-badge">{{ scope.row.model }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="provider" label="提供商" width="120" align="center">
+            <template #default="scope">
+              <el-tag size="small" :type="getProviderTagType(scope.row.provider)">
+                {{ scope.row.provider }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="callCount" label="调用次数" width="120" align="right">
+            <template #default="scope">{{ formatNumber(scope.row.callCount) }}</template>
+          </el-table-column>
+          <el-table-column prop="promptTokens" label="输入 (Prompt)" align="right">
+            <template #default="scope">{{ formatNumber(scope.row.promptTokens) }}</template>
+          </el-table-column>
+          <el-table-column prop="candidatesTokens" label="输出 (Candidates)" align="right">
+            <template #default="scope">{{ formatNumber(scope.row.candidatesTokens) }}</template>
+          </el-table-column>
+          <el-table-column prop="cacheHitTokens" label="缓存命中" align="right">
+            <template #default="scope">
+              <span v-if="scope.row.cacheHitTokens > 0" class="text-green">{{ formatNumber(scope.row.cacheHitTokens) }}</span>
+              <span v-else class="text-muted">-</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="totalTokens" label="总消耗 (Tokens)" width="150" align="right">
+            <template #default="scope">
+              <span class="token-value-text">{{ formatNumber(scope.row.totalTokens) }}</span>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </div>
+
     <!-- Rankings Row -->
     <div class="rankings-row mt-lg">
       <div class="ranking-col">
@@ -100,11 +143,51 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
 import { useDashboardStore } from '@/stores/dashboardStore'
 import * as echarts from 'echarts'
 
 const store = useDashboardStore()
+
+const filteredModelsTable = computed(() => {
+  if (!store.rawModelDistribution) return []
+  const filtered = store.selectedProvider === 'All'
+    ? store.rawModelDistribution
+    : store.rawModelDistribution.filter(m => (m.provider || 'openai') === store.selectedProvider)
+  
+  const grouped = filtered.reduce((acc, curr) => {
+    const key = `${curr.provider || 'openai'}/${curr.model}`
+    if (!acc[key]) {
+      acc[key] = {
+        model: curr.model,
+        provider: curr.provider || 'openai',
+        callCount: 0,
+        totalTokens: 0,
+        promptTokens: 0,
+        candidatesTokens: 0,
+        cacheHitTokens: 0,
+        cacheMissTokens: 0
+      }
+    }
+    acc[key].callCount += curr.callCount || 0
+    acc[key].totalTokens += curr.totalTokens || 0
+    acc[key].promptTokens += curr.promptTokens || 0
+    acc[key].candidatesTokens += curr.candidatesTokens || 0
+    acc[key].cacheHitTokens += curr.cacheHitTokens || 0
+    acc[key].cacheMissTokens += curr.cacheMissTokens || 0
+    return acc
+  }, {})
+
+  return Object.values(grouped).sort((a, b) => b.totalTokens - a.totalTokens)
+})
+
+function getProviderTagType(prov) {
+  const p = (prov || '').toLowerCase()
+  if (p.includes('openai') || p.includes('deepseek')) return 'success'
+  if (p.includes('gemini') || p.includes('google')) return 'warning'
+  if (p.includes('anthropic') || p.includes('claude')) return 'danger'
+  return 'info'
+}
 
 let modelsChart = null
 
@@ -396,5 +479,24 @@ onUnmounted(() => {
 
 :deep(.saas-table td.el-table__cell), :deep(.saas-table th.el-table__cell) {
   padding: 12px 20px !important;
+}
+
+.model-name-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  color: #1e293b;
+  background: #f8fafc;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+.text-green {
+  color: #10b981 !important;
+  font-weight: 600;
+}
+
+.text-muted {
+  color: #94a3b8;
 }
 </style>
