@@ -53,7 +53,7 @@ const preview = ref(previewVal);
 const scroll = ref(scrollVal);
 
 // Sending message logic
-const sendMessage = async (msg) => {
+const sendMessage = async (msg, toServer = true) => {
   const store = useContactorsStore();
   const contactor = store.activeContactor;
   if (!contactor) return;
@@ -64,6 +64,8 @@ const sendMessage = async (msg) => {
     contactor.messageChain.push(msg);
     store.updateContactorSummary(contactor);
     client.setLocalStorage();
+
+    if (!toServer) return msg.id;
 
     try {
       const messageId = await gateway.send("onebot", contactor.id, contactor.messageChain, msg.id);
@@ -81,6 +83,12 @@ const sendMessage = async (msg) => {
     const exists = contactor.messageChain.some(m => m.id === msg.id);
     if (!exists) {
       contactor.messageChain.push(msg);
+    }
+
+    if (!toServer) {
+      store.updateContactorSummary(contactor);
+      client.setLocalStorage();
+      return msg.id;
     }
 
     // Create assistant response placeholder
@@ -113,8 +121,8 @@ const activeContactor = computed(() => {
   return new Proxy(contactor, {
     get(target, prop, receiver) {
       if (prop === "webSend") {
-        return (container, isRetry = true) => {
-          return sendMessage(container);
+        return (container, toServer = true) => {
+          return sendMessage(container, toServer);
         };
       }
       if (prop === "getBaseUserContainer") {
