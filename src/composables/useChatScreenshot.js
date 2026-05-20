@@ -91,6 +91,7 @@ export function useChatScreenshot({
       header.style.cssText = 'display:flex;align-items:center;justify-content:flex-start;padding:1.5rem 1.25rem 0rem;margin-bottom:0.5rem;background:linear-gradient(180deg, rgba(255,255,255,1) 0%, #f2f2f2 100%);border-bottom:1px solid rgba(0,0,0,0.04);';
 
       const headerIcon = document.createElement('img');
+      headerIcon.crossOrigin = 'anonymous';
       headerIcon.src = await urlToBase64(window.location.origin + '/static/icons/512x512.png');
       headerIcon.style.cssText = 'width:64px;height:64px;margin-right:16px;border-radius:16px;box-shadow:0 3px 10px rgba(0,0,0,0.1);';
 
@@ -122,6 +123,8 @@ export function useChatScreenshot({
         // Convert all images inside the cloned message to Base64 to prevent CORS issues
         const imgs = Array.from(clone.querySelectorAll('img'));
         for (const img of imgs) {
+          img.setAttribute('crossorigin', 'anonymous');
+          img.crossOrigin = 'anonymous';
           if (img.src && !img.src.startsWith('data:')) {
             img.src = await urlToBase64(img.src);
           }

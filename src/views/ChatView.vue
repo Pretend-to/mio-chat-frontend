@@ -1390,4 +1390,10 @@ $icon-hover: #09f
     overflow: visible !important
     padding: 0 !important
     display: block !important
+
+:global(.is-exporting .content table)
+    display: table !important
+    width: 100% !important
+    table-layout: auto !important
+    word-break: break-word !important
 </style>
