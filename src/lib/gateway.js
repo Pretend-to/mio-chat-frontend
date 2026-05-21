@@ -152,20 +152,17 @@ export const gateway = {
       if (!client.isConnected) {
         throw new Error("连接已断开，请检查网络或刷新页面");
       }
-      
-      const lastMsg = messagesChain[messagesChain.length - 1];
-      const res = await fetch(`/api/onebot/message/${contactorId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(lastMsg.content)
-      });
-      
-      if (!res.ok) {
-        throw new Error(`Onebot HTTP Error: ${res.status}`);
+      if (!client.socket) {
+        throw new Error("WebSocket 链接未就绪");
       }
       
-      const resData = await res.json();
-      return resData.message_id;
+      const lastMsg = messagesChain[messagesChain.length - 1];
+      const response = await client.socket.fetch(
+        `/api/onebot/message/${contactorId}`,
+        lastMsg.content
+      );
+      
+      return response.message_id;
     } else {
       // OpenAI 平台
       if (!client.isConnected) {
@@ -278,7 +275,13 @@ export const gateway = {
     const contactorStore = useContactorsStore();
 
     if (type === "message") {
-      const contactor = contactorStore.contactors[id];
+      let contactor = contactorStore.contactors[id];
+      if (!contactor) {
+        // 兜底机制：若因 ID 不匹配（例如前端生成了随机 Fake ID），则匹配列表中首个 platform === "onebot" 的联系人
+        contactor = Object.values(contactorStore.contactors).find(
+          (c) => c.platform === "onebot"
+        );
+      }
       if (contactor) {
         const webMessage = convertOnebotMessage(content);
         contactor.messageChain.push(webMessage);
