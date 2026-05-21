@@ -3,7 +3,7 @@ import { fileURLToPath, URL } from "node:url";
 import vue from "@vitejs/plugin-vue";
 import VueDevTools from "vite-plugin-vue-devtools";
 import viteCompression from "vite-plugin-compression";
-import viteImagemin from "vite-plugin-imagemin";
+import { ViteImageOptimizer } from "vite-plugin-image-optimizer";
 import { visualizer } from "rollup-plugin-visualizer";
 
 export default defineConfig(({ mode }) => {
@@ -35,16 +35,14 @@ export default defineConfig(({ mode }) => {
         },
       }),
       mode !== "development" &&
-        viteImagemin({
-          gifsicle: { optimizationLevel: 5, interlaced: false },
-          optipng: { optimizationLevel: 5 },
-          mozjpeg: { quality: 75 },
-          pngquant: { quality: [0.8, 0.9], speed: 4 },
-          svgo: {
+        ViteImageOptimizer({
+          png: { quality: 80 },
+          jpeg: { quality: 75 },
+          webp: { quality: 80 },
+          svg: {
             plugins: [
-              { name: "removeViewBox" },
-              { name: "removeMetadata" },
-              { name: "removeEmptyAttrs", active: false },
+              { name: "removeViewBox", active: false },
+              { name: "sortAttrs" },
             ],
           },
         }),
@@ -67,27 +65,51 @@ export default defineConfig(({ mode }) => {
           pure_funcs: ["console.debug", "console.table"],
         },
       },
-      rollupOptions: {
+      rolldownOptions: {
         output: {
-          manualChunks(id) {
-            if (id.includes("node_modules")) {
-              if (
-                /node_modules\/.pnpm\/.+element-plus/.test(id) ||
-                /element-plus/.test(id)
-              )
-                return "vendor_element_plus";
-              if (/mio-previewer/.test(id)) return "vendor_editor_preview";
-              if (/socket.io-client/.test(id)) return "vendor_socketio";
-              if (/emoji-picker/.test(id) || /emoji-picker-element/.test(id))
-                return "vendor_emoji";
-              if (/vue|@?vue[/\\]/.test(id)) return "vendor_vue";
-              // fall back to vendor misc
-              return "vendor_misc";
-            }
-            if (id.includes("src/")) {
-              if (id.includes("components/")) return "components";
-              if (id.includes("views/")) return "views";
-            }
+          codeSplitting: {
+            groups: [
+              {
+                name: "vendor_element_plus",
+                test: /[\\/]node_modules[\\/](?:.*?element-plus|element-plus)/,
+                priority: 50,
+              },
+              {
+                name: "vendor_editor_preview",
+                test: /[\\/]node_modules[\\/]mio-previewer/,
+                priority: 45,
+              },
+              {
+                name: "vendor_socketio",
+                test: /[\\/]node_modules[\\/]socket\.io-client/,
+                priority: 40,
+              },
+              {
+                name: "vendor_emoji",
+                test: /[\\/]node_modules[\\/](?:emoji-picker|emoji-picker-element)/,
+                priority: 35,
+              },
+              {
+                name: "vendor_vue",
+                test: /[\\/]node_modules[\\/](?:vue|@vue)/,
+                priority: 30,
+              },
+              {
+                name: "vendor_misc",
+                test: /[\\/]node_modules[\\/]/,
+                priority: 10,
+              },
+              {
+                name: "components",
+                test: /[\\/]src[\\/]components[\\/]/,
+                priority: 20,
+              },
+              {
+                name: "views",
+                test: /[\\/]src[\\/]views[\\/]/,
+                priority: 15,
+              },
+            ],
           },
           chunkFileNames: `assets/js/[name]-[hash].js`,
           entryFileNames: `assets/js/[name]-[hash].js`,

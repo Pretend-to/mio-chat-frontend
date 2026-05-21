@@ -8,4 +8,6 @@ onlyBuiltDependencies:
   - optipng-bin
   - pngquant-bin
   - vue-demi
+  - sharp
+
 
