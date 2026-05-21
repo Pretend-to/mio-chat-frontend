@@ -30,8 +30,8 @@ importers:
         specifier: ^1.10.0
         version: 1.10.0
       mio-previewer:
-        specifier: 0.2.76
-        version: 0.2.76(vue@3.5.13)
+        specifier: 0.2.77
+        version: 0.2.77(vue@3.5.13)
       pinia:
         specifier: ^3.0.4
         version: 3.0.4(vue@3.5.13)
@@ -1733,8 +1733,8 @@ packages:
     resolution: {integrity: sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA==}
     engines: {node: '>=8.6'}
 
-  mio-previewer@0.2.76:
-    resolution: {integrity: sha512-FMo8r/XwE0DH0NjALHymlxk83ACRqKLOLT/n9v+eqDBKNjsJoRd5cq5ogNiuEWegfGZ2+8rNQY6Eklr2EYhwNA==}
+  mio-previewer@0.2.77:
+    resolution: {integrity: sha512-OV12oUYLsWsKqhBqCbz2I5yd3ZX8WNT/UxsJjcbbGkeVfIeChTtlLIub/CAtpEfCQ6ldoxxxhvdMkoXHp9IuTQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
       vue: ^3
@@ -3857,7 +3857,7 @@ snapshots:
       picomatch: 2.3.1
     optional: true
 
-  mio-previewer@0.2.76(vue@3.5.13):
+  mio-previewer@0.2.77(vue@3.5.13):
     dependencies:
       github-markdown-css: 5.9.0
       htmlparser2: 10.1.0

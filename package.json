@@ -18,7 +18,7 @@
     "element-plus": "^2.11.7",
     "emoji-picker-element": "^1.21.3",
     "localforage": "^1.10.0",
-    "mio-previewer": "0.2.76",
+    "mio-previewer": "0.2.77",
     "pinia": "^3.0.4",
     "qrcode": "^1.5.4",
     "rollup-plugin-visualizer": "^5.14.0",
