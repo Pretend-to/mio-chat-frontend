@@ -415,7 +415,7 @@ export default {
         const container = this.activeContactor.getBaseUserContainer();
         container.content.push({
           type: "file",
-          data: { file: this.host + fileUrl },
+          data: { file: fileUrl },
         });
         this.activeContactor.webSend(container, false);
       } catch (error) {
