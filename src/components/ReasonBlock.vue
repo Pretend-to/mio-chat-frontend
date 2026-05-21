@@ -1,7 +1,7 @@
 <template>
   <div class="reason-block" :class="{ 'is-collapsed': !show }">
     <div class="head-bar" @click="toggleShow">
-      <i class="mio-icon mio-icon-thinking" :class="{ 'is-loading': isThinking }"></i>
+      <i class="mio-icon mio-icon-thinking"></i>
       <div class="reason-info" :class="{ 'is-loading': isThinking }">
         {{ getReasonInfo }}
       </div>

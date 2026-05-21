@@ -3,25 +3,25 @@
     <div class="tool-call-bar" :class="[toolCall.action, { 'is-success': toolCallSuccess, 'is-fail': toolCallFail }]"
       @click="toggleExtraInfo">
       <template v-if="toolCall.name.startsWith('Skill_mid_') || toolCall.name === 'Skill'">
-        <i class="mio-icon mio-icon-skill" :class="{ 'is-loading': toolCall.action === 'running' || toolCall.action === 'pending' }"></i>
-        <span class="tool-name" :class="{ 'is-loading': toolCall.action === 'running' || toolCall.action === 'pending' }">
+        <i class="mio-icon mio-icon-skill"></i>
+        <span class="tool-name">
           {{ getSkillName(toolCall.parameters) }}
         </span>
-        <span class="tool-status-text">{{ skill_status_text }}</span>
+        <span class="tool-status-text" :class="{ 'is-loading': toolCall.action === 'running' || toolCall.action === 'pending' || toolCall.action === 'started' }">{{ skill_status_text }}</span>
       </template>
       <template v-else-if="(toolCall.name || '').split('_mid_')[0] === 'memory'">
-        <i class="mio-icon mio-icon-memory" :class="{ 'is-loading': toolCall.action === 'running' || toolCall.action === 'pending' }"></i>
-        <span class="tool-name" :class="{ 'is-loading': toolCall.action === 'running' || toolCall.action === 'pending' }">
+        <i class="mio-icon mio-icon-memory"></i>
+        <span class="tool-name">
           记录记忆
         </span>
-        <span class="tool-status-text">{{ call_status }}</span>
+        <span class="tool-status-text" :class="{ 'is-loading': toolCall.action === 'running' || toolCall.action === 'pending' || toolCall.action === 'started' }">{{ call_status }}</span>
       </template>
       <template v-else>
-        <i class="mio-icon mio-icon-tool" :class="{ 'is-loading': toolCall.action === 'running' || toolCall.action === 'pending' }"></i>
-        <span class="tool-name" :class="{ 'is-loading': toolCall.action === 'running' || toolCall.action === 'pending' }">
+        <i class="mio-icon mio-icon-tool"></i>
+        <span class="tool-name">
           {{ toolCall.name.split("_mid_")[0] }}
         </span>
-        <span class="tool-status-text">{{ call_status }}</span>
+        <span class="tool-status-text" :class="{ 'is-loading': toolCall.action === 'running' || toolCall.action === 'pending' || toolCall.action === 'started' }">{{ call_status }}</span>
       </template>
 
       <!-- 状态指示器 (仅在失败时显示) -->
@@ -73,8 +73,8 @@ export default {
   },
   data() {
     return {
-      // 正在运行或准备中时默认展开细节，结束后默认收起
-      showExtraInfo: this.toolCall.action === "running" || this.toolCall.action === "pending",
+      // 正在运行、就绪或准备中时默认展开细节，结束后默认收起
+      showExtraInfo: this.toolCall.action === "running" || this.toolCall.action === "pending" || this.toolCall.action === "started",
       wasManuallyToggled: false,
     };
   },
@@ -123,7 +123,7 @@ export default {
       // 当工具执行结束或失败时，自动收起
       if (newVal === "finished" || newVal === "failed") {
         this.handleAutoCollapse();
-      } else if (newVal === "running") {
+      } else if (newVal === "running" || newVal === "pending" || newVal === "started") {
         if (!this.wasManuallyToggled) {
           this.showExtraInfo = true;
         }
@@ -132,7 +132,7 @@ export default {
   },
   mounted() {
     // 如果挂载时就在运行，且是实时消息，强制展开一次
-    if (this.toolCall.action === "running" || this.toolCall.action === "pending") {
+    if (this.toolCall.action === "running" || this.toolCall.action === "pending" || this.toolCall.action === "started") {
       this.showExtraInfo = true;
     }
   },

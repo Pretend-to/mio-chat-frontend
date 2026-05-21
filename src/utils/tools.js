@@ -19,7 +19,6 @@ export function shareOrCopy(url) {
       .share({
         title: "从Mio Chat分享",
         text: url,
-        url: url,
       })
       .then(() => {
         console.log("Successful share");
