@@ -1391,9 +1391,33 @@ $icon-hover: #09f
     padding: 0 !important
     display: block !important
 
+:global(.is-exporting .content)
+    max-width: calc(100% - 1.5rem) !important
+
+:global(.is-exporting.is-wide-export .content)
+    max-width: calc(100% - 3rem) !important
+
 :global(.is-exporting .content table)
     display: table !important
     width: 100% !important
     table-layout: auto !important
     word-break: break-word !important
+
+:global(.is-exporting .content img), :global(.is-exporting .content > .inner-content img)
+    max-width: 100% !important
+    height: auto !important
+    max-height: 30rem !important
+
+:global(.is-exporting pre), :global(.is-exporting code), :global(.is-exporting .code-block)
+    white-space: pre-wrap !important
+    word-break: break-all !important
+    overflow-x: visible !important
+
+:global(.is-exporting *)
+    scrollbar-width: none !important
+
+:global(.is-exporting *::-webkit-scrollbar)
+    display: none !important
+    width: 0 !important
+    height: 0 !important
 </style>
