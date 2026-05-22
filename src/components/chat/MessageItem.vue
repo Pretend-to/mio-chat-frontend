@@ -69,9 +69,14 @@
                 :theme="'github'"
                 :key="element.data.file"
               />
-              <div v-else-if="element.type === 'reply'" class="reply-block">
-                {{ getReplyText(element.data.id) }}
-              </div>
+              <MdRenderer
+                v-else-if="element.type === 'reply'"
+                :md="`> ${getReplyText(element.data.id).replace(/\n/g, '\n> ')}`"
+                :theme="'github'"
+                :custom-plugins="mioPlugins"
+                :markdown-it-plugins="katexPluginList"
+                :markdown-it-options="mdOptions"
+              />
               <ForwardMsg
                 v-else-if="element.type === 'nodes'"
                 :contactor="activeContactor"
