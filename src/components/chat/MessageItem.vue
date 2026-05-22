@@ -44,61 +44,82 @@
               <i v-if="item.isTask" class="iconfont task-indicator" title="来自计划任务"></i>
             </div>
           </div>
-          <div
-            :class="['content', item.status]"
-            @mouseup="$emit('mouseup-content', $event)"
-            @contextmenu="$emit('contextmenu-content', $event, index)"
-            @touchstart="$emit('touchstart-content', $event, index)"
-            @dblclick="$emit('contextmenu-content', $event, index)"
-          >
-            <div v-for="(element, elmIndex) of item.content" :key="elmIndex" class="inner-content">
-              <MdRenderer
-                v-if="element.type === 'text'"
-                :md="element.data.text"
-                :theme="'github'"
-                :isStreaming="['pending', 'retrying'].includes(item.status) && item.content.length - 1 === elmIndex"
-                :custom-plugins="mioPlugins"
-                :markdown-it-plugins="katexPluginList"
-                :markdown-it-options="mdOptions"
-              />
-              <MdRenderer
-                v-if="element.type === 'image'"
-                :md="`![image](${element.data.file})`"
-                :custom-plugins="mioPlugins"
-                :markdown-it-plugins="katexPluginList"
-                :theme="'github'"
-                :key="element.data.file"
-              />
-              <MdRenderer
-                v-else-if="element.type === 'reply'"
-                :md="`> ${getReplyText(element.data.id).replace(/\n/g, '\n> ')}`"
-                :theme="'github'"
-                :custom-plugins="mioPlugins"
-                :markdown-it-plugins="katexPluginList"
-                :markdown-it-options="mdOptions"
-              />
-              <ForwardMsg
-                v-else-if="element.type === 'nodes'"
-                :contactor="activeContactor"
-                :messages="element.data.messages"
-              />
-              <FileBlock v-else-if="element.type === 'file'" :file-url="element.data.file" />
-              <span v-else-if="element.type === 'at'" />
-              <ReasonBlock
-                v-else-if="element.type === 'reason'"
-                :end-time="element.data.endTime"
-                :start-time="element.data.startTime"
-                :content="element.data.text"
-                :duration="element.data.duration"
-              />
-              <div
-                v-else-if="element.type === 'blank'"
-                class="blank-message"
-                style="width: 10rem; height: 28.8px; position: relative"
-              >
-                <span class="blank-loader"></span>
+          <div class="message-bubble-wrapper" :class="{ 'is-user': item.role === 'user' }">
+            <div
+              v-if="item.role === 'user' && ['pending', 'failed', 'uploading'].includes(item.status)"
+              class="message-status-indicator"
+            >
+              <el-icon v-if="item.status === 'pending' || item.status === 'uploading'" class="loading-spinner"><Loading /></el-icon>
+              
+              <el-dropdown v-else-if="item.status === 'failed'" trigger="click" @command="handleCommand">
+                <span class="error-icon-trigger">
+                  <el-icon class="error-icon"><Warning /></el-icon>
+                </span>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="retry">重新发送</el-dropdown-item>
+                    <el-dropdown-item command="delete" style="color: #f56c6c;">删除消息</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
+
+            <div
+              :class="['content', item.status]"
+              @mouseup="$emit('mouseup-content', $event)"
+              @contextmenu="$emit('contextmenu-content', $event, index)"
+              @touchstart="$emit('touchstart-content', $event, index)"
+              @dblclick="$emit('contextmenu-content', $event, index)"
+            >
+              <div v-for="(element, elmIndex) of item.content" :key="elmIndex" class="inner-content">
+                <MdRenderer
+                  v-if="element.type === 'text'"
+                  :md="element.data.text"
+                  :theme="'github'"
+                  :isStreaming="item.role === 'other' && ['pending', 'retrying'].includes(item.status) && item.content.length - 1 === elmIndex"
+                  :custom-plugins="mioPlugins"
+                  :markdown-it-plugins="katexPluginList"
+                  :markdown-it-options="mdOptions"
+                />
+                <MdRenderer
+                  v-if="element.type === 'image'"
+                  :md="`![image](${element.data.file})`"
+                  :custom-plugins="mioPlugins"
+                  :markdown-it-plugins="katexPluginList"
+                  :theme="'github'"
+                  :key="element.data.file"
+                />
+                <MdRenderer
+                  v-else-if="element.type === 'reply'"
+                  :md="`> ${getReplyText(element.data.id).replace(/\n/g, '\n> ')}`"
+                  :theme="'github'"
+                  :custom-plugins="mioPlugins"
+                  :markdown-it-plugins="katexPluginList"
+                  :markdown-it-options="mdOptions"
+                />
+                <ForwardMsg
+                  v-else-if="element.type === 'nodes'"
+                  :contactor="activeContactor"
+                  :messages="element.data.messages"
+                />
+                <FileBlock v-else-if="element.type === 'file'" :file-url="element.data.file" />
+                <span v-else-if="element.type === 'at'" />
+                <ReasonBlock
+                  v-else-if="element.type === 'reason'"
+                  :end-time="element.data.endTime"
+                  :start-time="element.data.startTime"
+                  :content="element.data.text"
+                  :duration="element.data.duration"
+                />
+                <div
+                  v-else-if="element.type === 'blank'"
+                  class="blank-message"
+                  style="width: 10rem; height: 28.8px; position: relative"
+                >
+                  <span class="blank-loader"></span>
+                </div>
+                <ToolCallBar v-else-if="element.type === 'tool_call'" :tool-call="element.data" />
               </div>
-              <ToolCallBar v-else-if="element.type === 'tool_call'" :tool-call="element.data" />
             </div>
           </div>
         </div>
@@ -122,6 +143,8 @@ import FileBlock from "@/components/FileBlock.vue";
 import ToolCallBar from "@/components/ToolCallBar.vue";
 import ReasonBlock from "@/components/ReasonBlock.vue";
 import MdRenderer from "mio-previewer";
+
+import { Loading, Warning } from "@element-plus/icons-vue";
 
 const props = defineProps({
   item: {
@@ -170,7 +193,7 @@ const props = defineProps({
   },
 });
 
-defineEmits([
+const emit = defineEmits([
   "click-message",
   "toggle-checkbox",
   "to-profile",
@@ -178,7 +201,17 @@ defineEmits([
   "contextmenu-content",
   "touchstart-content",
   "delete-system",
+  "retry-message",
+  "delete-message",
 ]);
+
+const handleCommand = (command) => {
+  if (command === "retry") {
+    emit("retry-message", props.item);
+  } else if (command === "delete") {
+    emit("delete-message", props.item);
+  }
+};
 
 const getReplyText = (id) => {
   let content = "";
@@ -317,5 +350,45 @@ $icon-hover: #09f
   transform: rotate(30deg)
   filter: blur(5px)
   animation: move 1s linear infinite
+
+.message-bubble-wrapper
+    display: flex
+    align-items: center
+    width: 100%
+    &.is-user
+        justify-content: flex-end
+    &:not(.is-user)
+        justify-content: flex-start
+
+.message-status-indicator
+    display: flex
+    align-items: center
+    justify-content: center
+    margin: 0 8px
+    flex-shrink: 0
+
+.loading-spinner
+    font-size: 16px
+    color: #a8abb2
+    animation: rotating 2s linear infinite
+
+.error-icon-trigger
+    cursor: pointer
+    display: inline-flex
+    align-items: center
+    justify-content: center
+
+.error-icon
+    font-size: 18px
+    color: #f56c6c
+    transition: transform 0.2s ease
+    &:hover
+        transform: scale(1.15)
+
+@keyframes rotating
+    from
+        transform: rotate(0deg)
+    to
+        transform: rotate(360deg)
 </style>
 

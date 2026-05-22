@@ -721,7 +721,7 @@ export default class Client extends EventEmitter {
       isImage ||
       (typeof fileOrImage === "string" && fileOrImage.startsWith("data:"))
     ) {
-      return this.uploadImage(fileOrImage);
+      return this.uploadImage(fileOrImage, options);
     }
 
     const file = fileOrImage;
@@ -799,6 +799,32 @@ export default class Client extends EventEmitter {
           return reject({ error: "Invalid file or missing hash" });
         }
 
+        // --- 秒传校验开始 ---
+        try {
+          console.log("尝试秒传校验...");
+          const response = await fetch("/api/upload/finalize", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              totalChunks: 1,
+              md5: md5Hash,
+              filename: file.name,
+            }),
+          });
+          if (response.ok) {
+            const data = await response.json();
+            // 如果后端确认文件已存在，会返回带有 data.url 的成功响应
+            if (data && data.code === 0 && data.data && data.data.url) {
+              console.log("秒传校验成功，直接返回文件 URL:", data.data.url);
+              resolve(data);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn("秒传预检失败，转向正常分片上传流程:", e);
+        }
+        // --- 秒传校验结束 ---
+
         const totalChunks = Math.ceil(file.size / chunkSize);
 
         try {
@@ -845,24 +871,46 @@ export default class Client extends EventEmitter {
   }
 
   /**
-   * Upload image (now integrated into uploadFile)
-   * @param {string|Blob} image - Base64 string or Blob
+   * Upload image with progress monitoring support
+   * @param {FormData} formData - Image form data
+   * @param {Object} options - Upload options
+   * @param {Function} options.onProgress - Progress callback
    * @returns {Promise<Object>} Upload result
    */
-  async uploadImage(formData) {
-    try {
-      const response = await fetch("/api/upload/image", {
-        method: "POST",
-        body: formData,
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}`);
+  async uploadImage(formData, options = {}) {
+    const { onProgress = null } = options;
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/upload/image", true);
+
+      if (onProgress) {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const progress = (event.loaded / event.total) * 100;
+            onProgress(Math.round(progress));
+          }
+        };
       }
-      return await response.json();
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      throw error; // Re-throw to be handled by caller
-    }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            resolve(data);
+          } catch (e) {
+            reject(new Error("Parse response failed"));
+          }
+        } else {
+          reject(new Error(`HTTP error ${xhr.status}`));
+        }
+      };
+
+      xhr.onerror = () => {
+        reject(new Error("Network Error"));
+      };
+
+      xhr.send(formData);
+    });
   }
 
   /**

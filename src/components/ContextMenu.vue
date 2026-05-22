@@ -182,45 +182,56 @@ export default {
     },
     // 封装复制图片到剪贴板的函数
     async copyImageToClipboard(imgSrc) {
+      const loadingMsg = this.$message({
+        message: "正在复制图片，请稍候...",
+        type: "info",
+        duration: 0,
+      });
       try {
-        const response = await fetch(imgSrc);
-        if (!response.ok) {
-          throw new Error("网络错误，无法获取图片");
-        }
-        const blob = await response.blob();
         const img = new Image();
-        const url = URL.createObjectURL(blob);
+        img.crossOrigin = "anonymous";
+        
+        // 加上时间戳刷新缓存，防止浏览器读取到之前缓存好的、没有跨域头的普通图片
+        const timestamp = Date.now();
+        img.src = imgSrc + (imgSrc.includes("?") ? "&" : "?") + "t_cors=" + timestamp;
+
         img.onload = async () => {
-          const canvas = document.createElement("canvas");
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0);
-          // 使用 Promise 包装 toBlob
-          const pngBlob = await new Promise((resolve) => {
-            canvas.toBlob(resolve, "image/png");
-          });
-          if (pngBlob) {
-            const item = new ClipboardItem({ "image/png": pngBlob });
-            await navigator.clipboard.write([item]); // 使用 await
-            this.$message({
-              message: "图片已复制到剪贴板",
-              type: "success",
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0);
+            // 使用 Promise 包装 toBlob
+            const pngBlob = await new Promise((resolve) => {
+              canvas.toBlob(resolve, "image/png");
             });
-          } else {
-            this.$message({
-              message: "转换为 PNG 失败",
-              type: "error",
-            });
+            loadingMsg.close();
+            if (pngBlob) {
+              const item = new ClipboardItem({ "image/png": pngBlob });
+              await navigator.clipboard.write([item]);
+              this.$message({
+                message: "图片已复制到剪贴板",
+                type: "success",
+              });
+            } else {
+              this.$message({
+                message: "转换为 PNG 失败",
+                type: "error",
+              });
+            }
+          } catch (canvasErr) {
+            loadingMsg.close();
+            console.error("Canvas操作失败（可能是跨域头未通过）：", canvasErr);
+            this.$message({ message: "复制图片失败，安全限制", type: "error" });
           }
-          URL.revokeObjectURL(url);
         };
         img.onerror = () => {
+          loadingMsg.close();
           this.$message({ message: "加载图片失败", type: "error" });
-          URL.revokeObjectURL(url); // 确保在错误时也释放 URL
         };
-        img.src = url;
       } catch (err) {
+        loadingMsg.close();
         console.error("复制图片失败:", err);
         this.$message({ message: "复制图片失败", type: "error" });
       }

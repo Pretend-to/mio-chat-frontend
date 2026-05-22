@@ -91,6 +91,7 @@ export default {
     },
   },
   created() {
+    this.pendingImageFiles = new Map();
     this.loadSelected();
     this.debouncedAdjustHeight = debounce(this.adjustTextareaHeight, 100);
   },
@@ -181,7 +182,8 @@ export default {
     },
     handleDroppedFile(file) {
       if (file.type.startsWith("image/")) {
-        this.handleUploadImage(file);
+        this.handleLocalImageInsert(file);
+        this.adjustTextareaHeight();
       } else {
         this.uploadFile(file);
       }
@@ -230,7 +232,7 @@ export default {
       selection.addRange(range);
     },
 
-    // 粘贴事件处理：文本转html插入，图片异步队列上传
+    // 粘贴事件处理：文本转html插入，图片插入本地缓存
     handlePaste(e) {
       e.preventDefault();
       const clipboardData = e.clipboardData || window.clipboardData;
@@ -253,10 +255,10 @@ export default {
       }
 
       if (imageFiles.length) {
-        this.$message.info(`检测到 ${imageFiles.length} 张图片，正在处理...`);
-        setTimeout(() => {
-          this.processImageQueue(imageFiles);
-        }, 0);
+        imageFiles.forEach(file => {
+          this.handleLocalImageInsert(file);
+        });
+        this.adjustTextareaHeight();
       }
     },
 
@@ -279,56 +281,48 @@ export default {
       selection.addRange(range);
     },
 
-    // 顺序处理图片，防止堆积卡顿
-    async processImageQueue(files) {
-      for (const file of files) {
-        await this.handleUploadImage(file);
-        // 让主线程有时间渲染
-        await new Promise(r => setTimeout(r, 0));
-      }
+    handleLocalImageInsert(file) {
+      const blobUrl = URL.createObjectURL(file);
+      this.pendingImageFiles.set(blobUrl, file);
+      this.insertImageToTextarea(blobUrl, file.name);
     },
 
-    handleUploadImage(file) {
-      return new Promise((resolve) => {
+    compressAndUploadImage(file) {
+      return new Promise((resolve, reject) => {
         const maxSizeMB = 5;
         const maxSizeByte = maxSizeMB * 1024 * 1024;
+        const fileType = file.type.toLowerCase();
 
         const img = new Image();
         const blobUrl = URL.createObjectURL(file);
         img.src = blobUrl;
 
         img.onload = () => {
-          URL.revokeObjectURL(blobUrl); // 释放内存
+          URL.revokeObjectURL(blobUrl);
 
-          const fileType = file.type.toLowerCase();
-
-          // GIF 直接上传
+          // GIF is uploaded directly
           if (fileType === 'image/gif') {
             if (file.size > maxSizeByte) {
-              this.$message.error(`GIF 图片不能超过 ${maxSizeMB}MB`);
-              resolve();
+              reject(new Error(`GIF 图片不能超过 ${maxSizeMB}MB`));
               return;
             }
             const formData = new FormData();
             formData.append('image', file, file.name);
             client.uploadImage(formData)
               .then((upload) => {
-                const imageUrl = upload.data.url;
-                this.uploaded.images.push(imageUrl);
-                this.insertImageToTextarea(imageUrl, file.name);
-                this.$message.success('上传 GIF 成功');
+                resolve(upload.data.url);
               })
-              .catch(() => this.$message.error('上传 GIF 失败'))
-              .finally(resolve);
+              .catch(reject);
             return;
           }
 
-          // 其他类型进行压缩
+          // Other image formats compressed via canvas
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
           canvas.width = img.width;
           canvas.height = img.height;
           ctx.drawImage(img, 0, 0);
+
           let mimeType, quality;
           if (fileType === 'image/png') {
             mimeType = 'image/png';
@@ -339,33 +333,33 @@ export default {
             mimeType = 'image/jpeg';
             quality = 0.7;
           }
+
           canvas.toBlob(
             (blob) => {
               if (!blob) {
-                this.$message.error('图片压缩失败');
-                resolve();
+                reject(new Error('图片压缩失败'));
                 return;
               }
               if (blob.size > maxSizeByte) {
-                this.$message.error(`压缩后仍超过 ${maxSizeMB}MB，请选小点的图片`);
-                resolve();
+                reject(new Error(`压缩后仍超过 ${maxSizeMB}MB`));
                 return;
               }
               const formData = new FormData();
               formData.append('image', blob, file.name);
               client.uploadImage(formData)
                 .then((upload) => {
-                  const imageUrl = upload.data.url;
-                  this.uploaded.images.push(imageUrl);
-                  this.insertImageToTextarea(imageUrl, file.name);
-                  this.$message.success('上传图片成功');
+                  resolve(upload.data.url);
                 })
-                .catch(() => this.$message.error('上传失败'))
-                .finally(resolve);
+                .catch(reject);
             },
             mimeType,
             quality
           );
+        };
+
+        img.onerror = () => {
+          URL.revokeObjectURL(blobUrl);
+          reject(new Error('图片加载失败'));
         };
       });
     },
@@ -400,27 +394,52 @@ export default {
         this.$message.error("文件大小超过50MB，无法上传");
         return;
       }
-      this.$message.info("文件上传中...");
       if (file.type.startsWith("image/")) {
-        this.handleUploadImage(file);
+        this.handleLocalImageInsert(file);
+        this.adjustTextareaHeight();
       } else {
         this.uploadDocumentFile(file);
       }
     },
     async uploadDocumentFile(file) {
+      const localBlobUrl = URL.createObjectURL(file);
+      const fileUrl = `${localBlobUrl}?size=${file.size}&name=${file.name}`;
+      
+      const container = this.activeContactor.getBaseUserContainer();
+      container.status = "uploading";
+      container.content.push({
+        type: "file",
+        data: { file: fileUrl },
+      });
+      
+      this.activeContactor.messageChain.push(container);
+      this.$emit("stroge");
+      this.$emit("toButtom");
+      
       try {
         const upload = await client.uploadFile(file);
+        URL.revokeObjectURL(localBlobUrl);
+        const remoteFileUrl = `${upload.data.url}?size=${file.size}&name=${file.name}`;
+        
+        // 从 messageChain 中查找响应式代理对象，更新它以正确触发 Vue 3 响应式系统
+        const msgInChain = this.activeContactor.messageChain.find(m => m.id === container.id);
+        if (msgInChain) {
+          msgInChain.content[0].data.file = remoteFileUrl;
+          msgInChain.status = "completed";
+        }
+        
+        container.content[0].data.file = remoteFileUrl;
+        container.status = "completed";
         this.$message.success("文件上传成功");
-        const fileUrl = `${upload.data.url}?size=${file.size}&name=${file.name}`;
-        const container = this.activeContactor.getBaseUserContainer();
-        container.content.push({
-          type: "file",
-          data: { file: fileUrl },
-        });
-        this.activeContactor.webSend(container, false);
       } catch (error) {
         console.error("文件上传失败:", error);
         this.$message.error("文件上传失败，请稍后再试");
+        
+        const msgInChain = this.activeContactor.messageChain.find(m => m.id === container.id);
+        if (msgInChain) {
+          msgInChain.status = "failed";
+        }
+        container.status = "failed";
       }
       this.$emit("stroge");
       this.$emit("toButtom");
@@ -553,18 +572,61 @@ export default {
     async send() {
       if (!this.hasInput()) return;
       this.$emit("toButtom");
-      const backupHtml = this.textareaRef.innerHTML; // 备份内容
+      
       const container = this.presend();
-      try {
-        const message_id = await this.activeContactor.webSend(container);
-        container.id = message_id;
-        this.clearDraft();
-        this.uploaded.images = [];
-        this.uploaded.files = [];
-      } catch (error) {
-        this.$message.error(error.message || "发送消息失败");
-        this.textareaRef.innerHTML = backupHtml; // 还原内容
-        this.adjustTextareaHeight();
+      
+      const localImageElements = container.content.filter(
+        elm => elm.type === "image" && elm.data.file.startsWith("blob:")
+      );
+      
+      const hasLocalImages = localImageElements.length > 0;
+      
+      container.status = hasLocalImages ? "uploading" : "pending";
+      this.activeContactor.messageChain.push(container);
+      this.clearDraft();
+      this.$emit("stroge");
+      this.$emit("toButtom");
+      
+      if (hasLocalImages) {
+        try {
+          const uploadPromises = localImageElements.map(async (elm) => {
+            const localUrl = elm.data.file;
+            const fileObj = this.pendingImageFiles.get(localUrl);
+            if (!fileObj) {
+              throw new Error("找不到本地图片缓存文件");
+            }
+            
+            const remoteUrl = await this.compressAndUploadImage(fileObj);
+            this.pendingImageFiles.delete(localUrl);
+            elm.data.file = remoteUrl;
+          });
+          
+          await Promise.all(uploadPromises);
+          
+          const msgInChain = this.activeContactor.messageChain.find(m => m.id === container.id);
+          if (msgInChain) {
+            msgInChain.status = "pending";
+          }
+          container.status = "pending";
+          this.$emit("stroge");
+          
+          await this.activeContactor.webSend(container);
+        } catch (error) {
+          console.error("图片上传失败:", error);
+          this.$message.error(error.message || "图片上传失败");
+          const msgInChain = this.activeContactor.messageChain.find(m => m.id === container.id);
+          if (msgInChain) {
+            msgInChain.status = "failed";
+          }
+          container.status = "failed";
+          this.$emit("stroge");
+        }
+      } else {
+        try {
+          await this.activeContactor.webSend(container);
+        } catch (error) {
+          // Handled inside sendMessage
+        }
       }
     },
     getSafeText(text) {

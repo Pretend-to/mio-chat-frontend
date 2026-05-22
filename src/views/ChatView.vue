@@ -61,8 +61,14 @@ const sendMessage = async (msg, toServer = true) => {
   autoScroll.value = false;
   contactor.lastUpdate = Date.now();
   
-  if (contactor.platform === "onebot") {
+  const exists = contactor.messageChain.some(m => m.id === msg.id);
+  if (!exists) {
     contactor.messageChain.push(msg);
+  }
+  
+  const msgInChain = contactor.messageChain.find(m => m.id === msg.id);
+  
+  if (contactor.platform === "onebot") {
     store.updateContactorSummary(contactor);
     client.setLocalStorage();
 
@@ -72,22 +78,22 @@ const sendMessage = async (msg, toServer = true) => {
 
     try {
       const messageId = await gateway.send("onebot", contactor.id, contactor.messageChain, msg.id);
+      if (msgInChain) {
+        msgInChain.id = messageId;
+      }
       msg.id = messageId;
-      msg.status = "completed";
-      client.setLocalStorage();
+      store.completeMessage(contactor.id, messageId);
       return messageId;
     } catch (e) {
       ElMessage.error(e.message || "发送失败");
-      msg.status = "failed";
+      if (msgInChain) {
+        msgInChain.status = "failed";
+      }
+      store.failedMessage(contactor.id, msg.id, e.message || "发送失败");
       throw e;
     }
   } else {
     // OpenAI platform
-    const exists = contactor.messageChain.some(m => m.id === msg.id);
-    if (!exists) {
-      contactor.messageChain.push(msg);
-    }
-
     toButtom();
 
     if (!toServer) {
@@ -109,12 +115,19 @@ const sendMessage = async (msg, toServer = true) => {
 
     toButtom();
 
+    if (msgInChain) {
+      msgInChain.status = "pending";
+    }
     try {
       await gateway.send("openai", contactor.id, contactor.messageChain, assistantMsgId, contactor.options);
+      store.completeMessage(contactor.id, msg.id);
       return msg.id;
     } catch (e) {
       ElMessage.error(e.message || "请求失败");
-      assistantMsg.status = "failed";
+      if (msgInChain) {
+        msgInChain.status = "failed";
+      }
+      store.failedMessage(contactor.id, msg.id, e.message || "请求失败");
       store.failedMessage(contactor.id, assistantMsgId, e.message || "请求失败");
       throw e;
     }
@@ -139,7 +152,7 @@ const activeContactor = computed(() => {
             time: Date.now(),
             content: [],
             id: numberString(16),
-            status: "completed",
+            status: "pending",
           };
         };
       }
@@ -721,6 +734,74 @@ const toProfile = () => {
   });
 };
 
+const handleRetryMessage = async (item) => {
+  const contactor = activeContactor.value;
+  if (!contactor) return;
+  
+  if (contactor.platform === "onebot") {
+    item.status = "pending";
+    item.time = Date.now();
+    client.setLocalStorage();
+    try {
+      await contactor.webSend(item);
+      ElMessage.success("消息已重新发送");
+    } catch (e) {
+      // Error handled in sendMessage
+    }
+  } else {
+    // OpenAI platform retry
+    const idx = contactor.messageChain.findIndex(m => m.id === item.id);
+    if (idx === -1) return;
+    
+    item.status = "pending";
+    item.time = Date.now();
+    
+    const targetIndex = idx + 1;
+    let assistantMsg = contactor.messageChain[targetIndex];
+    if (!assistantMsg || assistantMsg.role !== "other") {
+      assistantMsg = {
+        role: "other",
+        time: Date.now(),
+        content: [{ type: "blank", data: {} }],
+        id: numberString(16),
+        status: "pending",
+      };
+      contactor.messageChain.splice(targetIndex, 0, assistantMsg);
+    } else {
+      assistantMsg.content = [{ type: "blank", data: {} }];
+      assistantMsg.time = Date.now();
+      assistantMsg.status = "pending";
+    }
+    
+    client.setLocalStorage();
+    autoScroll.value = false;
+    toButtom();
+    
+    try {
+      await gateway.send(
+        contactor.platform,
+        contactor.id,
+        contactor.messageChain,
+        assistantMsg.id,
+        contactor.options
+      );
+      item.status = "completed";
+      client.setLocalStorage();
+    } catch (error) {
+      ElMessage.error(error.message || "重试失败");
+      item.status = "failed";
+      assistantMsg.status = "failed";
+      client.setLocalStorage();
+    }
+  }
+};
+
+const handleDeleteMessage = (item) => {
+  activeContactor.value.delMessage(item.id);
+  client.setLocalStorage();
+  ElMessage.success("消息已删除");
+};
+
 const scrollHandler = () => {
   const elm = chatWindow.value;
   if (!elm) return;
@@ -1001,6 +1082,8 @@ onBeforeUnmount(() => {
         @contextmenu-content="showMessageMenu"
         @touchstart-content="handleTouchStart"
         @delete-system="delSystemMessage"
+        @retry-message="handleRetryMessage"
+        @delete-message="handleDeleteMessage"
       />
 
       <!-- Selection Rectangle for Desktop Drag-Select -->

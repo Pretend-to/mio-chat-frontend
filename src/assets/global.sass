@@ -71,10 +71,10 @@ body
     &#user
         flex-direction: row-reverse
 
-        & > .msg > .content > *
+        & > .msg .content > *
             background-color: rgb(0, 153, 255)
 
-        & > .msg > .content
+        & > .msg .content
             background-color: rgb(0, 153, 255)
 
         .loader
@@ -84,7 +84,7 @@ body
     &#other
         flex-direction: row
 
-        & > .msg > .content
+        & > .msg .content
             background-color: rgb(255, 255, 255)
 
 
@@ -178,12 +178,13 @@ body
     width: 100%
 
 .content > .inner-content img
+    max-width: 20rem
     max-height: 20rem
+    object-fit: contain
+    border-radius: 8px
     margin: 0.5rem 0
-    
-    @media (min-width: 768px)
-        max-width: 20rem
-        
+    display: block
+
 // 移动端对话框全屏适配
 @media (max-width: 768px)
     // 修复遮罩层高度问题

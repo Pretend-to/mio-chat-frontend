@@ -57,11 +57,17 @@ export default {
     const url = this.fileUrl.split("?");
     const params = new URLSearchParams(url[1]);
     const bits = params.get("size");
-    this.file_name = params.get("name");
+    this.file_name = params.get("name") || "未知文件";
     this.formated_file_size = this.formatFileSize(bits);
-    // 从url中获取文件类型
-    const file_type = url[0].split(".");
-    this.file_type = file_type[file_type.length - 1];
+    
+    // 优先从名字获取类型，兼容本地 blob URL
+    const nameParts = this.file_name.split(".");
+    if (nameParts.length > 1) {
+      this.file_type = nameParts[nameParts.length - 1];
+    } else {
+      const file_type = url[0].split(".");
+      this.file_type = file_type[file_type.length - 1] || "file";
+    }
   },
   methods: {
     formatFileSize(bits) {
