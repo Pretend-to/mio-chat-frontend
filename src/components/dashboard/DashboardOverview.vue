@@ -164,41 +164,89 @@ function initCharts() {
 function renderCharts() {
   if (!store.historicalData) return
 
-  // 1. SLA Chart
+  // 1. SLA Chart 重构为柱状图
   if (slaChart) {
-    const trendsList = store.historicalData.trends || []
-    const times = trendsList.map(t => t.timeBucket.split(' ')[1] || t.timeBucket)
-    const values = trendsList.map(t => {
-      return store.slaMetric === 'ttft' ? Math.round(t.avgTtft || 0) : Math.round(t.avgLatency || 0)
+    // 过滤发生过请求的模型，并按调用次数排序
+    const modelList = (store.historicalData.modelDistribution || [])
+      .filter(m => m.callCount > 0)
+      .sort((a, b) => b.callCount - a.callCount)
+
+    const modelLabels = modelList.map(m => `[${m.provider}] ${m.model}`)
+    const modelValues = modelList.map(m => {
+      return store.slaMetric === 'ttft' ? Math.round(m.avgTtft || 0) : m.avgTps || 0
     })
+
+    const hasZoom = modelLabels.length > 7
 
     slaChart.setOption({
       ...lightChartTheme,
-      tooltip: { ...lightChartTheme.tooltip, trigger: 'axis' },
+      grid: {
+        ...lightChartTheme.grid,
+        bottom: hasZoom ? '24%' : '14%', // 留出空间给 dataZoom 滚动条与倾斜的 X 轴标签
+        containLabel: true
+      },
+      tooltip: { 
+        ...lightChartTheme.tooltip, 
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' }
+      },
       xAxis: {
         type: 'category',
-        boundaryGap: false,
-        data: times,
-        axisLine: { lineStyle: { color: '#cbd5e1' } }
+        data: modelLabels,
+        axisLine: { lineStyle: { color: '#cbd5e1' } },
+        axisLabel: {
+          interval: 0,
+          rotate: 30, // 标签倾斜，避免重叠
+          fontSize: 10,
+          color: '#64748b',
+          formatter: function (value) {
+            // 超长文本截断处理，保证 UI 美观
+            return value.length > 25 ? value.substring(0, 22) + '...' : value
+          }
+        }
       },
       yAxis: {
         type: 'value',
-        name: store.slaMetric === 'ttft' ? 'TTFT (ms)' : 'Latency (ms)',
+        name: store.slaMetric === 'ttft' ? '平均首字延迟 (ms)' : '平均生成速率 (TPS)',
         splitLine: { lineStyle: { color: '#f1f5f9' } },
         axisLine: { lineStyle: { color: '#cbd5e1' } }
       },
+      dataZoom: hasZoom ? [
+        {
+          type: 'slider',
+          show: true,
+          startValue: 0,
+          endValue: 6, // 默认每页显示 7 个模型
+          height: 8,
+          bottom: 5,
+          borderColor: 'transparent',
+          backgroundColor: '#f1f5f9',
+          fillerColor: '#cbd5e1',
+          handleSize: 0,
+          showDetail: false,
+          moveHandleSize: 0
+        },
+        {
+          type: 'inside',
+          startValue: 0,
+          endValue: 6,
+          zoomOnMouseWheel: false, // 禁用鼠标滚轮缩放，保留平滑横向移动
+          moveOnMouseMove: true,
+          moveOnMouseWheel: true
+        }
+      ] : [],
       series: [{
-        name: store.slaMetric === 'ttft' ? '首字延迟' : '端到端延迟',
-        type: 'line',
-        smooth: true,
-        data: values,
-        itemStyle: { color: '#2563eb' },
-        lineStyle: { width: 2 },
-        areaStyle: {
+        name: store.slaMetric === 'ttft' ? '平均延迟' : '生成速率',
+        type: 'bar',
+        barWidth: '35%',
+        data: modelValues,
+        itemStyle: {
+          // 极具现代科技感的渐变蓝柱体
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(37, 99, 235, 0.15)' },
-            { offset: 1, color: 'rgba(37, 99, 235, 0)' }
-          ])
+            { offset: 0, color: '#3b82f6' },
+            { offset: 1, color: '#2563eb' }
+          ]),
+          borderRadius: [4, 4, 0, 0] // 顶部圆角
         }
       }]
     }, true)
