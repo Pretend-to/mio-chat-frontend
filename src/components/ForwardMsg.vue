@@ -25,8 +25,11 @@
       <div v-if="showBox" class="forward-msg-overlay" @click="showBox = false">
         <div class="forward-msg-box" :class="{ 'on-phone': onPhone }" @click.stop>
           <div class="forward-msg-header">
+            <button v-if="onPhone" class="forward-back-btn" @click="showBox = false">
+              <i class="iconfont icon-return"></i>
+            </button>
             <div class="forward-msg-title">转发的聊天消息</div>
-            <displayButtons class="cfg-btns" @close="showBox = false" />
+            <button v-if="!onPhone" class="forward-close-btn" @click="showBox = false">&times;</button>
           </div>
           <div class="forward-msg-body">
             <div
@@ -44,10 +47,9 @@
                     <span class="name">{{ message.data.name }}</span>
                   </div>
                   <div class="bubble-wrapper">
-                    <div
+                    <template
                       v-for="(elm, elmIdx) of message.data.content" 
                       :key="elmIdx"
-                      class="bubble-elm"
                     >
                       <MdRenderer
                         v-if="elm.type === 'text'"
@@ -71,7 +73,7 @@
                         v-else
                         :md="`尚未支持的消息类型：${elm.type}`"
                       />
-                    </div>
+                    </template>
                   </div>
                 </div>
               </div>
@@ -86,7 +88,6 @@
 <script>
 import MdRenderer from "mio-previewer";
 import { client } from "@/lib/runtime.js";
-import displayButtons from "@/components/DisplayButtons.vue";
 import { imageViewerPlugin } from "mio-previewer/plugins/custom";
 import { getLastMessageSummary } from "@/stores/contactorsStore.js";
 
@@ -94,7 +95,6 @@ export default {
   name: "ForwardMsg",
   components: {
     MdRenderer,
-    displayButtons,
   },
   props: {
     messages: {
@@ -152,20 +152,14 @@ export default {
   width: 15rem;
   display: flex;
   flex-direction: column;
-  padding: 0.7rem 0.9rem;
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 12px;
+  padding: 0.2rem 0.5rem;
   cursor: pointer;
-  transition: all 0.2s ease;
   user-select: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: opacity 0.2s ease;
 }
 
 #forward-msg-preview:hover {
-  border-color: #0099ff;
-  box-shadow: 0 4px 12px rgba(0, 153, 255, 0.1);
-  transform: translateY(-1px);
+  opacity: 0.85;
 }
 
 #forward-msg-head {
@@ -202,7 +196,7 @@ export default {
   justify-content: space-between;
 }
 
-/* Glassmorphism Blurred Overlay */
+/* Glassmorphism Blurred Overlay - Removed Blur */
 .forward-msg-overlay {
   position: fixed;
   top: 0;
@@ -210,8 +204,6 @@ export default {
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -244,7 +236,7 @@ export default {
 
 .forward-msg-header {
   height: 3.5rem;
-  padding: 0 1.5rem;
+  padding: 0 0.6rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -258,9 +250,53 @@ export default {
   color: #333333;
 }
 
-.cfg-btns {
-  transform: scale(0.85);
-  transform-origin: right center;
+.forward-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #999999;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  transition: color 0.2s ease;
+  padding: 0;
+  outline: none;
+}
+
+.forward-close-btn:hover {
+  color: #ef4444;
+}
+
+/* Mobile specific styling */
+.forward-back-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #333333;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  margin-right: 0.4rem;
+  padding: 0;
+  outline: none;
+  transition: opacity 0.2s ease;
+}
+
+.forward-back-btn:active,
+.forward-back-btn:hover {
+  opacity: 0.6;
+}
+
+.forward-msg-box.on-phone .forward-msg-title {
+  font-size: 1.05rem;
+  text-align: left;
+  flex: 1;
 }
 
 .forward-msg-body {
@@ -341,15 +377,12 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-}
-
-.bubble-elm {
   font-size: 0.85rem;
   line-height: 1.4;
   color: #333333;
 }
 
-.bubble-elm :deep(p) {
+.bubble-wrapper :deep(p) {
   margin: 0;
 }
 
@@ -378,18 +411,18 @@ export default {
   opacity: 0;
 }
 
-/* Slide Up Transition for Mobile full screen */
+/* Slide Right Transition for Mobile full screen */
 .forward-fade-enter-active .forward-msg-box.on-phone {
-  transition: transform 0.3s cubic-bezier(0.1, 0.76, 0.55, 0.94);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .forward-fade-leave-active .forward-msg-box.on-phone {
-  transition: transform 0.22s cubic-bezier(0.6, -0.28, 0.735, 0.045);
+  transition: transform 0.18s cubic-bezier(0.7, 0, 0.84, 0);
 }
 
 .forward-fade-enter-from .forward-msg-box.on-phone,
 .forward-fade-leave-to .forward-msg-box.on-phone {
-  transform: translateY(100%);
+  transform: translateX(100%);
   opacity: 1;
 }
 </style>

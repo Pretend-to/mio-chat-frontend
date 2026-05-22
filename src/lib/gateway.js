@@ -298,10 +298,33 @@ export const gateway = {
           (msg) => msg.id === content.message_id
         );
         if (index !== -1) {
-          onebotContactor.messageChain.splice(index, 1);
+          const originalMsg = onebotContactor.messageChain[index];
+          if (originalMsg?.role === "user") {
+            // 阻止撤回我自己的消息：直接忽略此撤回事件，保持消息在列表中不变
+            console.log("Prevented recall of my own message");
+            break;
+          } else {
+            // 他人撤回的消息在原位置显示系统消息
+            const displayName = onebotContactor.name;
+            const systemMsg = {
+              role: "mio_system",
+              time: originalMsg?.time || Date.now(),
+              id: content.message_id,
+              status: "completed",
+              content: [
+                {
+                  type: "text",
+                  data: {
+                    text: `${displayName}撤回了一条消息`
+                  }
+                }
+              ]
+            };
+            onebotContactor.messageChain.splice(index, 1, systemMsg);
+          }
           contactorStore.updateContactorSummary(onebotContactor);
           client.setLocalStorage();
-          console.log("Message deleted successfully");
+          console.log("Message recalled successfully");
           break;
         }
       }

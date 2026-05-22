@@ -765,7 +765,13 @@ const handleMessageOption = async (option) => {
       break;
     case "retry":
       if (activeContactor.value.platform === "onebot") {
-        const msgToSend = message.role === "user" ? message : { ...message, role: "user" };
+        const msgToSend = {
+          ...message,
+          role: "user",
+          id: numberString(16),
+          status: "pending",
+          time: Date.now()
+        };
         activeContactor.value.webSend(msgToSend);
         ElMessage.success("消息已重新发送");
       } else {
