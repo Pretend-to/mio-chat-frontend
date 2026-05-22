@@ -49,6 +49,7 @@
             @mouseup="$emit('mouseup-content', $event)"
             @contextmenu="$emit('contextmenu-content', $event, index)"
             @touchstart="$emit('touchstart-content', $event, index)"
+            @dblclick="$emit('contextmenu-content', $event, index)"
           >
             <div v-for="(element, elmIndex) of item.content" :key="elmIndex" class="inner-content">
               <MdRenderer

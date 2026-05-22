@@ -58,12 +58,15 @@ const sendMessage = async (msg, toServer = true) => {
   const contactor = store.activeContactor;
   if (!contactor) return;
 
+  autoScroll.value = false;
   contactor.lastUpdate = Date.now();
   
   if (contactor.platform === "onebot") {
     contactor.messageChain.push(msg);
     store.updateContactorSummary(contactor);
     client.setLocalStorage();
+
+    toButtom();
 
     if (!toServer) return msg.id;
 
@@ -85,6 +88,8 @@ const sendMessage = async (msg, toServer = true) => {
       contactor.messageChain.push(msg);
     }
 
+    toButtom();
+
     if (!toServer) {
       store.updateContactorSummary(contactor);
       client.setLocalStorage();
@@ -101,6 +106,8 @@ const sendMessage = async (msg, toServer = true) => {
 
     store.updateContactorSummary(contactor);
     client.setLocalStorage();
+
+    toButtom();
 
     try {
       await gateway.send("openai", contactor.id, contactor.messageChain, assistantMsgId, contactor.options);
@@ -235,13 +242,14 @@ const userInput = ref("");
 const extraOptions = ref([]);
 const wraperPresets = ref({});
 const selectedOption = ref(null);
-const toupdate = ref(false);
+
 const seletedText = ref("");
 const seletedImage = ref("");
 const retryList = ref([]);
 const showMenu = ref(false);
 const menuTop = ref(0);
 const menuLeft = ref(0);
+const lastClickTime = ref(0);
 const validMessageIndex = ref(-1);
 const repliedMessageId = ref(-1);
 const autoScroll = ref(false);
@@ -399,14 +407,27 @@ watch(
     // Switch to new contactor in store
     contactorsStore.selectContactor(newVal);
     
-    toupdate.value = true;
-    autoScroll.value = true;
-    
-    if (chatWindow.value) toButtom();
+    autoScroll.value = false;
+    nextTick(() => {
+      toButtom();
+      setTimeout(() => {
+        toButtom();
+      }, 100);
+    });
     
     // Sync with socket for the new contactor
     trySync();
   }
+);
+
+watch(
+  () => activeMessageChain.value,
+  () => {
+    if (autoScroll.value) {
+      toButtom();
+    }
+  },
+  { deep: true }
 );
 
 watch(showImagePreview, (val) => {
@@ -464,7 +485,7 @@ const cleanScreen = () => {
   client.setLocalStorage();
   activeContactor.value.emit("updateMessageSummary");
 
-  toupdate.value = true;
+  autoScroll.value = false;
   ElMessage.success("已清除会话记录");
 };
 
@@ -701,23 +722,27 @@ const toProfile = () => {
 };
 
 const scrollHandler = () => {
-  const currentScrollTop = chatWindow.value.scrollTop;
-  const isScrollingDown = currentScrollTop > prevScrollTop.value;
+  const elm = chatWindow.value;
+  if (!elm) return;
+
+  const currentScrollTop = elm.scrollTop;
   const isScrollingUp = currentScrollTop < prevScrollTop.value;
   prevScrollTop.value = currentScrollTop;
 
   showMenu.value = false;
   if (showemoji.value) showemoji.value = false;
 
-  const scrollHeight = getChatwindowScrollheight();
-  autoScroll.value = scrollHeight > 100 ? false : true;
+  const distanceFromBottom = elm.scrollHeight - currentScrollTop - elm.clientHeight;
+  const isAtBottom = distanceFromBottom <= 15;
 
-  const isAtBottom = scrollHeight <= 200 - 1;
-
-  if (isScrollingDown && !autoScroll.value && !isAtBottom) {
-    showRollDown.value = true;
-  } else if (isScrollingUp || autoScroll.value || isAtBottom) {
+  if (isAtBottom) {
+    autoScroll.value = true;
     showRollDown.value = false;
+  } else {
+    if (isScrollingUp) {
+      autoScroll.value = false;
+      showRollDown.value = true;
+    }
   }
 
   if (isMultiSelect.value) {
@@ -787,6 +812,7 @@ const handleMessageOption = async (option) => {
           return;
         }
       }
+      autoScroll.value = false;
       toButtom();
       break;
     case "reply":
@@ -830,7 +856,15 @@ onMounted(() => {
     chatWindow.value.addEventListener("mousedown", handleMouseDown);
   }
   
-  if (!preview.value && scroll.value) toButtom();
+  autoScroll.value = false;
+  if (!preview.value && scroll.value) {
+    nextTick(() => {
+      toButtom();
+      setTimeout(() => {
+        toButtom();
+      }, 100);
+    });
+  }
   
   // Sync with socket on mount
   trySync();
@@ -864,13 +898,6 @@ onMounted(() => {
   
   client.on("plugins_updated", handlePluginsUpdated);
   window.addEventListener("beforeunload", handleBeforeUnload);
-});
-
-onUpdated(() => {
-  if (toupdate.value && autoScroll.value && retryList.value.length === 0) {
-    toButtom();
-    toupdate.value = false;
-  }
 });
 
 onBeforeUnmount(() => {
