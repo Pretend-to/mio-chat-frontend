@@ -293,6 +293,14 @@ class ConfigAPI {
     return this.request('/api/onebot/plugins');
   }
 
+  /**
+   * 获取 OneBot 连接状态
+   * @returns {Promise<object>} OneBot 连接与运行状态数据
+   */
+  async getOneBotStatus() {
+    return this.request('/api/onebot/status');
+  }
+
   // ========== 配置导出/导入 ==========
 
   /**

@@ -500,6 +500,19 @@ export const useConfigStore = defineStore('config', () => {
   }
 
   /**
+   * 获取 OneBot 连接与运行状态
+   */
+  async function fetchOneBotStatus() {
+    try {
+      const response = await configAPI.getOneBotStatus();
+      return response.data;
+    } catch (error) {
+      console.error('获取 OneBot 连接状态失败:', error);
+      throw error;
+    }
+  }
+
+  /**
    * 切换适配器选中状态
    */
   function toggleAdapterSelection(type, index) {
@@ -575,6 +588,7 @@ export const useConfigStore = defineStore('config', () => {
     exportConfig,
     importConfig,
     fetchOneBotPlugins,
+    fetchOneBotStatus,
     toggleAdapterSelection,
     clearAdapterSelection,
     isAdapterSelected

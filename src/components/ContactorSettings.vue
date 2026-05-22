@@ -16,7 +16,7 @@
     </div>
 
     <!-- Top Tabs -->
-    <div class="tabs-container">
+    <div class="tabs-container" v-if="activeContactorPlatform !== 'onebot'">
       <div class="segmented-tabs">
         <div :class="{ 'tab-item': true, active: activeTab === 'basic' }" @click="activeTab = 'basic'">基础配置</div>
         <div :class="{ 'tab-item': true, active: activeTab === 'tools' }" @click="activeTab = 'tools'">工具调用</div>
@@ -44,7 +44,7 @@
           <div class="setting-field">
             <div class="field-label">头像</div>
             <div class="field-value">
-              <el-input v-if="localBasicInfo.avatarPolicy !== 1" value="跟随模型" disabled />
+              <el-input v-if="localBasicInfo.avatarPolicy !== 1" :value="activeContactorPlatform === 'onebot' ? '跟随QQ头像' : '跟随模型'" disabled />
               <el-input v-else v-model="localBasicInfo.avatar" />
             </div>
           </div>
@@ -52,7 +52,7 @@
             <div class="field-label">头像策略</div>
             <div class="field-value">
               <el-select v-model="localBasicInfo.avatarPolicy" style="width: 100%">
-                <el-option v-for="item in avatarPolicyList" :key="item.value" :label="item.label" :value="item.value" />
+                <el-option v-for="item in avatarPolicyListForShow" :key="item.value" :label="item.label" :value="item.value" />
               </el-select>
             </div>
           </div>
@@ -60,7 +60,7 @@
             <div class="field-label">昵称策略</div>
             <div class="field-value">
               <el-select v-model="localBasicInfo.namePolicy" style="width: 100%">
-                <el-option v-for="item in namePolicyList" :key="item.value" :label="item.label" :value="item.value" />
+                <el-option v-for="item in namePolicyListForShow" :key="item.value" :label="item.label" :value="item.value" />
               </el-select>
             </div>
           </div>
@@ -72,8 +72,8 @@
           </div>
         </div>
 
-        <div class="group-title">LLM 基本配置</div>
-        <div class="settings-card">
+        <div v-if="activeContactorPlatform !== 'onebot'" class="group-title">LLM 基本配置</div>
+        <div v-if="activeContactorPlatform !== 'onebot'" class="settings-card">
           <div class="setting-field">
             <div class="field-label">来源渠道</div>
             <div class="field-value">
@@ -93,7 +93,7 @@
                   <el-option v-for="m in currentModelsList" :key="m" :label="m" :value="m" />
                 </el-select>
                 <el-input-number v-else-if="key === 'max_messages_num'" v-model="localLlmGeneralKeys[key]" :min="1"
-                  :step="1" style="width: 100%" @change="updateGeneralSettings" />
+                   :step="1" style="width: 100%" @change="updateGeneralSettings" />
                 <el-switch v-else-if="['stream'].includes(key)" v-model="localLlmGeneralKeys[key]"
                   @change="updateGeneralSettings" />
                 <el-slider v-else-if="['temperature'].includes(key)" v-model="localLlmGeneralKeys[key]"
@@ -291,11 +291,11 @@ export default {
   emits: ["update:modelValue", "update:basicInfo", "provider-changed", "update-presets"],
   data() {
     return {
-      localLlmProvider: this.modelValue.provider,
+      localLlmProvider: this.modelValue?.provider || '',
       localLlmGeneralKeys: {},
-      localLlmToolCallMode: this.modelValue.toolCallSettings?.mode,
-      localAllLLMTools: JSON.parse(JSON.stringify(this.allLlmToolsData)), // Deep copy
-      localExtraSettings: JSON.parse(JSON.stringify(this.modelValue.extraSettings || {})),
+      localLlmToolCallMode: this.modelValue?.toolCallSettings?.mode || '',
+      localAllLLMTools: this.allLlmToolsData ? JSON.parse(JSON.stringify(this.allLlmToolsData)) : [], // Deep copy
+      localExtraSettings: JSON.parse(JSON.stringify(this.modelValue?.extraSettings || {})),
       localBasicInfo: JSON.parse(JSON.stringify(this.basicInfo || {})),
       adapterMetadata: [], // 存储所有适配器的元数据
 
@@ -330,6 +330,24 @@ export default {
     };
   },
   computed: {
+    avatarPolicyListForShow() {
+      if (this.activeContactorPlatform === 'onebot') {
+        return [
+          { value: 0, label: "跟随QQ头像" },
+          { value: 1, label: "自定义" }
+        ];
+      }
+      return this.avatarPolicyList;
+    },
+    namePolicyListForShow() {
+      if (this.activeContactorPlatform === 'onebot') {
+        return [
+          { value: 0, label: "跟随QQ昵称" },
+          { value: 1, label: "自定义" }
+        ];
+      }
+      return this.namePolicyList;
+    },
     extraSettingsKey() {
       const adapterType = config.getProviderAdapterType(this.localLlmProvider);
       const meta = this.adapterMetadata.find(m => m.type === adapterType);
@@ -346,7 +364,7 @@ export default {
     },
     currentModelsList() {
       const provider = this.localLlmProvider;
-      // 1. 优先从 config 获取该 provider 已经加载的真实模型列表 (结构为 [{group, models:[]}, ...])
+      // 1. 优先从 config 获取该 provider 已经加载 of the true model list (结构为 [{group, models:[]}, ...])
       const modelGroups = config.getLlmModels(provider);
       if (Array.isArray(modelGroups) && modelGroups.length > 0) {
         // 展平所有分组中的模型名
@@ -415,6 +433,9 @@ export default {
     },
   },
   mounted() {
+    if (this.activeContactorPlatform === 'onebot') {
+      this.activeTab = 'basic';
+    }
     this.initializeSettings();
     this.fetchAdapterMetadata();
     client.on("plugins_updated", this.handlePluginsUpdated);
@@ -443,8 +464,8 @@ export default {
     },
     initializeSettings() {
       this.localLlmGeneralKeys = {
-        ...this.modelValue.base,
-        ...this.modelValue.chatParams,
+        ...(this.modelValue?.base || {}),
+        ...(this.modelValue?.chatParams || {}),
       };
       this.updateEnabledTools();
       this.fetchSkills();
@@ -474,11 +495,11 @@ export default {
       }
     },
     updateEnabledTools() {
-      const enabledTools = this.modelValue.toolCallSettings?.tools || [];
+      const enabledTools = this.modelValue?.toolCallSettings?.tools || [];
 
       // 1. 同步 modelValue 中的已启用工具
-      this.localAllLLMTools = this.localAllLLMTools.map((plugin) => {
-        const updatedTools = plugin.tools.map((tool) => ({
+      this.localAllLLMTools = (this.localAllLLMTools || []).map((plugin) => {
+        const updatedTools = (plugin.tools || []).map((tool) => ({
           ...tool,
           enabled: enabledTools.includes(tool.name),
         }));
@@ -533,7 +554,8 @@ export default {
       return shownNameMap[key] || key;
     },
     emitUpdate() {
-      const newOptions = JSON.parse(JSON.stringify(this.modelValue)); // Start with a copy of the prop
+      if (this.activeContactorPlatform === 'onebot') return;
+      const newOptions = JSON.parse(JSON.stringify(this.modelValue || {})); // Start with a copy of the prop
 
       const {
         model,

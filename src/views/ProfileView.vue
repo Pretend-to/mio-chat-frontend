@@ -15,7 +15,7 @@
     <div id="profile" class="profile-main">
       <div v-if="activeContactor" class="profile-container">
         <div class="info-blocks">
-          <ContactorSettings v-if="!isOnebot && options && basicInfo" v-model:model-value="options"
+          <ContactorSettings v-if="options && basicInfo" v-model:model-value="options"
             v-model:basic-info="basicInfo" :active-contactor-platform="activeContactor.platform"
             :llm-providers-list="llmProviders" :tool-call-modes-list="toolCallModes" :all-llm-tools-data="allLLMTools"
             :safety-settings-params="safetyParams" :safety-simple-value-options="safetySimpleValue"
