@@ -107,12 +107,13 @@
                 />
                 <FileBlock v-else-if="element.type === 'file'" :file-url="element.data.file" />
                 <span v-else-if="element.type === 'at'" />
-                <span v-else-if="element.type === 'tool_cmd'" class="command-badge" style="vertical-align: middle;">
-                  <i class="mio-icon mio-icon-tool" style="margin-right: 4px; vertical-align: middle;"></i>
-                  <span>{{ element.data.name }}</span>
-                </span>
-                <span v-else-if="element.type === 'skill_cmd'" class="command-badge" style="vertical-align: middle;">
-                  <i class="mio-icon mio-icon-skill" style="margin-right: 4px; vertical-align: middle;"></i>
+                <span v-else-if="element.type === 'prompt_hint'" class="command-badge" style="vertical-align: middle;">
+                  <span v-if="element.data.subtype === 'plugin'" class="cmd-plugin-icon" style="margin-right: 4px; vertical-align: middle;">
+                    <i class="mio-icon mio-icon-tool"></i>
+                    <sup class="plugin-plus">+</sup>
+                  </span>
+                  <i v-else-if="element.data.subtype === 'tool'" class="mio-icon mio-icon-tool" style="margin-right: 4px; vertical-align: middle;"></i>
+                  <i v-else-if="element.data.subtype === 'skill'" class="mio-icon mio-icon-skill" style="margin-right: 4px; vertical-align: middle;"></i>
                   <span>{{ element.data.name }}</span>
                 </span>
                 <ReasonBlock
@@ -401,5 +402,26 @@ $icon-hover: #09f
         transform: rotate(0deg)
     to
         transform: rotate(360deg)
+
+.cmd-plugin-icon
+  position: relative !important
+  display: inline-flex !important
+  align-items: center !important
+
+  .mio-icon
+    width: 11px !important
+    height: 11px !important
+    margin-right: 0 !important
+    background-color: currentColor !important
+    vertical-align: middle !important
+
+  .plugin-plus
+    position: absolute !important
+    top: -4px !important
+    right: -4px !important
+    font-size: 8px !important
+    font-weight: bold !important
+    color: rgb(0, 153, 255) !important
+    line-height: 1 !important
 </style>
 

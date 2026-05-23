@@ -37,10 +37,8 @@ export function getValidOpenaiMessage(messageChain, firstMessageIndex = 0, maxMe
     const cmds = [];
     
     message.content.forEach((elm) => {
-      if (elm.type === "tool_cmd") {
-        cmds.push(`please call tool ${elm.data.name}`);
-      } else if (elm.type === "skill_cmd") {
-        cmds.push(`please call skill tool 2 load ${elm.data.name} skill`);
+      if (elm.type === "prompt_hint" && elm.data.prompt) {
+        cmds.push(elm.data.prompt);
       }
     });
     
@@ -48,7 +46,7 @@ export function getValidOpenaiMessage(messageChain, firstMessageIndex = 0, maxMe
     let firstTextElmRef = null;
 
     message.content.forEach((elm) => {
-      if (elm.type === "tool_cmd" || elm.type === "skill_cmd") {
+      if (elm.type === "prompt_hint") {
         return;
       }
       

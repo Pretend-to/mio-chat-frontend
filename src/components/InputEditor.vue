@@ -14,16 +14,21 @@
             v-for="(cmd, idx) in filteredCommands" 
             :key="idx" 
             class="command-item" 
-            :class="{ active: idx === commandIndex }"
+            :class="{ active: idx === commandIndex, 'command-item-plugin': cmd.type === 'plugin' }"
             @click="confirmCommand(cmd)"
             @mouseenter="commandIndex = idx"
           >
             <span class="command-label">
-              <i v-if="cmd.type === 'tool'" class="mio-icon mio-icon-tool"></i>
+              <span v-if="cmd.type === 'plugin'" class="cmd-plugin-icon">
+                <i class="mio-icon mio-icon-tool"></i>
+                <sup class="plugin-plus">+</sup>
+              </span>
+              <i v-else-if="cmd.type === 'tool'" class="mio-icon mio-icon-tool"></i>
               <i v-else-if="cmd.type === 'skill'" class="mio-icon mio-icon-skill"></i>
               {{ activeContactor.platform === 'onebot' ? '/' : '' }}{{ cmd.label }}
             </span>
-            <span v-if="cmd.hash" class="command-preset">{{ cmd.hash }}</span>
+            <span v-if="cmd.type === 'plugin'" class="command-preset-plugin">启用全组</span>
+            <span v-else-if="cmd.hash" class="command-preset">{{ cmd.hash }}</span>
             <span v-else-if="activeContactor.platform === 'onebot'" class="command-preset">{{ cmd.preset }}</span>
           </div>
         </div>
@@ -146,6 +151,16 @@ export default {
           Object.keys(config.llmTools).forEach(pluginName => {
             const pluginTools = config.llmTools[pluginName];
             if (pluginTools && typeof pluginTools === 'object') {
+              const toolNames = Object.keys(pluginTools);
+              if (toolNames.length > 0) {
+                list.push({
+                  type: 'plugin',
+                  label: pluginName,
+                  value: pluginName,
+                  preset: pluginName,
+                  toolNames: toolNames
+                });
+              }
               Object.keys(pluginTools).forEach(toolName => {
                 const tool = pluginTools[toolName];
                 
@@ -717,20 +732,17 @@ export default {
       
       let msg = "";
       let isCommand = false;
-      let openaiCmdElement = null;
+      let openaiCmdElements = [];
       
-      const badge = this.textareaRef.querySelector(".command-badge");
-      if (badge) {
-        const preset = badge.getAttribute("data-preset");
-        const type = badge.getAttribute("data-type");
+      const badges = this.textareaRef.querySelectorAll(".command-badge");
+      if (badges.length > 0) {
         const clone = this.textareaRef.cloneNode(true);
-        const cloneBadge = clone.querySelector(".command-badge");
-        if (cloneBadge) {
-          cloneBadge.remove();
-        }
+        clone.querySelectorAll(".command-badge").forEach(b => b.remove());
         const remainingText = clone.innerText.trim();
         
         if (this.activeContactor.platform === "onebot") {
+          const badge = badges[0];
+          const preset = badge.getAttribute("data-preset");
           if (preset.includes("{xxx}")) {
             msg = preset.replace("{xxx}", remainingText);
           } else {
@@ -738,23 +750,101 @@ export default {
           }
           isCommand = true;
         } else if (this.activeContactor.platform === "openai") {
-          if (type === "tool") {
-            if (!this.activeContactor.options) this.activeContactor.options = {};
-            if (!this.activeContactor.options.toolCallSettings) this.activeContactor.options.toolCallSettings = {};
-            if (!Array.isArray(this.activeContactor.options.toolCallSettings.tools)) this.activeContactor.options.toolCallSettings.tools = [];
-            if (!this.activeContactor.options.toolCallSettings.tools.includes(preset)) {
-              this.activeContactor.options.toolCallSettings.tools.push(preset);
-              client.setLocalStorage();
+          let hasConfigChanged = false;
+          badges.forEach(badge => {
+            const preset = badge.getAttribute("data-preset");
+            const type = badge.getAttribute("data-type");
+            const label = badge.getAttribute("data-label") || preset;
+            
+            if (type === "tool") {
+              if (!this.activeContactor.options) this.activeContactor.options = {};
+              if (!this.activeContactor.options.toolCallSettings) this.activeContactor.options.toolCallSettings = {};
+              if (!Array.isArray(this.activeContactor.options.toolCallSettings.tools)) this.activeContactor.options.toolCallSettings.tools = [];
+              if (!this.activeContactor.options.toolCallSettings.tools.includes(preset)) {
+                this.activeContactor.options.toolCallSettings.tools.push(preset);
+                hasConfigChanged = true;
+              }
+              openaiCmdElements.push({
+                type: "prompt_hint",
+                data: {
+                  subtype: "tool",
+                  name: label,
+                  prompt: `please call tool ${preset}`
+                }
+              });
+            } else if (type === "skill") {
+              let skillToolFullNames = [];
+              let terminalToolFullNames = [];
+              if (typeof config.llmTools === 'object' && config.llmTools !== null) {
+                Object.keys(config.llmTools).forEach(pName => {
+                  const pTools = config.llmTools[pName];
+                  if (pTools && typeof pTools === 'object') {
+                    const isTerminal = pName.toLowerCase().includes('terminal');
+                    Object.keys(pTools).forEach(tName => {
+                      if (tName.toLowerCase() === 'skill' || tName.toLowerCase().startsWith('skill_mid_')) {
+                        skillToolFullNames.push(tName);
+                      }
+                      if (isTerminal) {
+                        terminalToolFullNames.push(tName);
+                      }
+                    });
+                  }
+                });
+              }
+              
+              if (!this.activeContactor.options) this.activeContactor.options = {};
+              if (!this.activeContactor.options.toolCallSettings) this.activeContactor.options.toolCallSettings = {};
+              if (!Array.isArray(this.activeContactor.options.toolCallSettings.tools)) this.activeContactor.options.toolCallSettings.tools = [];
+              
+              skillToolFullNames.forEach(stName => {
+                if (!this.activeContactor.options.toolCallSettings.tools.includes(stName)) {
+                  this.activeContactor.options.toolCallSettings.tools.push(stName);
+                  hasConfigChanged = true;
+                }
+              });
+              
+              if (skillToolFullNames.length > 0) {
+                terminalToolFullNames.forEach(ttName => {
+                  if (!this.activeContactor.options.toolCallSettings.tools.includes(ttName)) {
+                    this.activeContactor.options.toolCallSettings.tools.push(ttName);
+                    hasConfigChanged = true;
+                  }
+                });
+              }
+
+              openaiCmdElements.push({
+                type: "prompt_hint",
+                data: {
+                  subtype: "skill",
+                  name: label,
+                  prompt: `please call skill tool 2 load ${preset} skill`
+                }
+              });
+            } else if (type === "plugin") {
+              const toolNamesAttr = badge.getAttribute("data-tool-names");
+              const toolNames = JSON.parse(toolNamesAttr || "[]");
+              if (!this.activeContactor.options) this.activeContactor.options = {};
+              if (!this.activeContactor.options.toolCallSettings) this.activeContactor.options.toolCallSettings = {};
+              if (!Array.isArray(this.activeContactor.options.toolCallSettings.tools)) this.activeContactor.options.toolCallSettings.tools = [];
+              toolNames.forEach(tName => {
+                if (!this.activeContactor.options.toolCallSettings.tools.includes(tName)) {
+                  this.activeContactor.options.toolCallSettings.tools.push(tName);
+                  hasConfigChanged = true;
+                }
+              });
+              openaiCmdElements.push({
+                type: "prompt_hint",
+                data: {
+                  subtype: "plugin",
+                  name: label,
+                  prompt: ""
+                }
+              });
             }
-            openaiCmdElement = {
-              type: "tool_cmd",
-              data: { name: preset }
-            };
-          } else if (type === "skill") {
-            openaiCmdElement = {
-              type: "skill_cmd",
-              data: { name: preset }
-            };
+          });
+          
+          if (hasConfigChanged) {
+            client.setLocalStorage();
           }
           msg = remainingText;
           isCommand = true;
@@ -782,8 +872,10 @@ export default {
       this.adjustTextareaHeight();
       const container = this.activeContactor.getBaseUserContainer();
       
-      if (openaiCmdElement) {
-        container.content.push(openaiCmdElement);
+      if (openaiCmdElements.length > 0) {
+        openaiCmdElements.forEach(elm => {
+          container.content.push(elm);
+        });
       }
       
       if (wrappedMessage.trim()) {
@@ -913,6 +1005,9 @@ export default {
       }
     },
     handleKeyDown(event) {
+      if (event.isComposing || event.keyCode === 229) {
+        return;
+      }
       if (this.showCommandPopup && this.filteredCommands.length > 0) {
         const list = this.filteredCommands;
         if (event.key === "ArrowDown") {
@@ -961,12 +1056,11 @@ export default {
         return;
       }
       
+      const isOneBot = this.activeContactor.platform === 'onebot';
       const badge = this.textareaRef.querySelector(".command-badge");
+      
       const clone = this.textareaRef.cloneNode(true);
-      const cloneBadge = clone.querySelector(".command-badge");
-      if (cloneBadge) {
-        cloneBadge.remove();
-      }
+      clone.querySelectorAll(".command-badge").forEach(b => b.remove());
       const textWithoutBadge = clone.innerText || clone.textContent || "";
       
       const occurrences = [];
@@ -978,77 +1072,80 @@ export default {
         occurrences.push(slashIdx);
       }
       
-      if (badge && occurrences.length > 0) {
-        this.$message({
-          message: "指令不可重复，已自动清除先前的指令",
-          type: "warning"
-        });
-        
-        badge.remove();
-        
-        const text = this.textareaRef.innerText || this.textareaRef.textContent || "";
-        const newOccurrences = [];
-        let newMatch;
-        const newRegex = /(?:^|\s)[\/#](?!\/)/g;
-        while ((newMatch = newRegex.exec(text)) !== null) {
-          const isTriggerAtStart = newMatch[0] === '/' || newMatch[0] === '#';
-          const slashIdx = newMatch.index + (isTriggerAtStart ? 0 : 1);
-          newOccurrences.push(slashIdx);
+      if (isOneBot) {
+        if (badge && occurrences.length > 0) {
+          this.$message({
+            message: "指令不可重复，已自动清除先前的指令",
+            type: "warning"
+          });
+          
+          badge.remove();
+          
+          const text = this.textareaRef.innerText || this.textareaRef.textContent || "";
+          const newOccurrences = [];
+          let newMatch;
+          const newRegex = /(?:^|\s)[\/#](?!\/)/g;
+          while ((newMatch = newRegex.exec(text)) !== null) {
+            const isTriggerAtStart = newMatch[0] === '/' || newMatch[0] === '#';
+            const slashIdx = newMatch.index + (isTriggerAtStart ? 0 : 1);
+            newOccurrences.push(slashIdx);
+          }
+          
+          if (newOccurrences.length === 1) {
+            this.showCommandPopup = true;
+            this.commandSearchQuery = text.substring(newOccurrences[0] + 1).trim();
+            this.commandIndex = 0;
+            this.popupDismissed = false;
+          } else {
+            this.showCommandPopup = false;
+            this.commandSearchQuery = "";
+          }
+          
+          this.adjustTextareaHeight();
+          return;
         }
         
-        if (newOccurrences.length === 1) {
-          this.showCommandPopup = true;
-          this.commandSearchQuery = text.substring(newOccurrences[0] + 1).trim();
-          this.commandIndex = 0;
-          this.popupDismissed = false;
-        } else {
-          this.showCommandPopup = false;
-          this.commandSearchQuery = "";
+        if (occurrences.length > 1) {
+          this.$message({
+            message: "指令不可重复，已自动清除先前的指令",
+            type: "warning"
+          });
+          
+          let endOfCmd = textWithoutBadge.indexOf(' ', occurrences[0]);
+          if (endOfCmd === -1 || endOfCmd > occurrences[1]) {
+            endOfCmd = occurrences[0] + 1;
+          } else {
+            endOfCmd = endOfCmd + 1;
+          }
+          
+          const newText = textWithoutBadge.substring(0, occurrences[0]) + textWithoutBadge.substring(endOfCmd);
+          this.updateEditorText(newText);
+          
+          const newOccurrences = [];
+          let newMatch;
+          const newRegex = /(?:^|\s)[\/#](?!\/)/g;
+          while ((newMatch = newRegex.exec(newText)) !== null) {
+            const isTriggerAtStart = newMatch[0] === '/' || newMatch[0] === '#';
+            const slashIdx = newMatch.index + (isTriggerAtStart ? 0 : 1);
+            newOccurrences.push(slashIdx);
+          }
+          
+          if (newOccurrences.length === 1) {
+            this.showCommandPopup = true;
+            this.commandSearchQuery = newText.substring(newOccurrences[0] + 1).trim();
+            this.commandIndex = 0;
+            this.popupDismissed = false;
+          } else {
+            this.showCommandPopup = false;
+            this.commandSearchQuery = "";
+          }
+          return;
         }
-        
-        this.adjustTextareaHeight();
-        return;
       }
       
-      if (occurrences.length > 1) {
-        this.$message({
-          message: "指令不可重复，已自动清除先前的指令",
-          type: "warning"
-        });
-        
-        let endOfCmd = textWithoutBadge.indexOf(' ', occurrences[0]);
-        if (endOfCmd === -1 || endOfCmd > occurrences[1]) {
-          endOfCmd = occurrences[0] + 1;
-        } else {
-          endOfCmd = endOfCmd + 1;
-        }
-        
-        const newText = textWithoutBadge.substring(0, occurrences[0]) + textWithoutBadge.substring(endOfCmd);
-        this.updateEditorText(newText);
-        
-        const newOccurrences = [];
-        let newMatch;
-        const newRegex = /(?:^|\s)[\/#](?!\/)/g;
-        while ((newMatch = newRegex.exec(newText)) !== null) {
-          const isTriggerAtStart = newMatch[0] === '/' || newMatch[0] === '#';
-          const slashIdx = newMatch.index + (isTriggerAtStart ? 0 : 1);
-          newOccurrences.push(slashIdx);
-        }
-        
-        if (newOccurrences.length === 1) {
-          this.showCommandPopup = true;
-          this.commandSearchQuery = newText.substring(newOccurrences[0] + 1).trim();
-          this.commandIndex = 0;
-          this.popupDismissed = false;
-        } else {
-          this.showCommandPopup = false;
-          this.commandSearchQuery = "";
-        }
-        return;
-      }
-      
-      if (occurrences.length === 1) {
-        const queryStart = occurrences[0] + 1;
+      if (occurrences.length > 0) {
+        const lastSlashIdx = occurrences[occurrences.length - 1];
+        const queryStart = lastSlashIdx + 1;
         this.commandSearchQuery = textWithoutBadge.substring(queryStart).trim();
         if (!this.popupDismissed) {
           this.showCommandPopup = true;
@@ -1078,11 +1175,16 @@ export default {
         badgeEl.setAttribute("data-preset", cmd.preset);
         badgeEl.setAttribute("data-type", cmd.type || "command");
         
+        badgeEl.setAttribute("data-label", cmd.label);
+        
         const labelText = triggerChar + cmd.label;
         if (cmd.type === "tool") {
           badgeEl.innerHTML = `<i class="mio-icon mio-icon-tool" style="margin-right: 4px; vertical-align: middle;"></i><span>${labelText}</span>`;
         } else if (cmd.type === "skill") {
           badgeEl.innerHTML = `<i class="mio-icon mio-icon-skill" style="margin-right: 4px; vertical-align: middle;"></i><span>${labelText}</span>`;
+        } else if (cmd.type === "plugin") {
+          badgeEl.setAttribute("data-tool-names", JSON.stringify(cmd.toolNames));
+          badgeEl.innerHTML = `<span class="cmd-plugin-icon" style="margin-right: 4px; vertical-align: middle;"><i class="mio-icon mio-icon-tool"></i><sup class="plugin-plus">+</sup></span><span>${labelText}</span>`;
         } else {
           badgeEl.innerText = labelText;
         }
@@ -1423,6 +1525,38 @@ i
     text-align: right
     flex-shrink: 0
 
+.cmd-plugin-icon
+  position: relative
+  display: inline-flex
+  align-items: center
+  margin-right: 6px
+
+  .mio-icon
+    width: 12px !important
+    height: 12px !important
+    margin-right: 0 !important
+    color: #909399
+    flex-shrink: 0
+    vertical-align: middle
+
+  .plugin-plus
+    position: absolute
+    top: -4px
+    right: -4px
+    font-size: 8px
+    font-weight: bold
+    color: #409eff
+    line-height: 1
+
+.command-item-plugin
+  background-color: #fafafa
+  border-bottom: 1px dashed #ebeef5
+
+  .command-preset-plugin
+    font-size: 0.7rem
+    color: #409eff
+    font-weight: 500
+
 .command-badge
   display: inline-flex
   align-items: center
@@ -1470,4 +1604,26 @@ i
     margin-right: 4px !important
     background-color: currentColor !important
     vertical-align: middle !important
+
+  .cmd-plugin-icon
+    position: relative !important
+    display: inline-flex !important
+    align-items: center !important
+    margin-right: 4px !important
+
+    .mio-icon
+      width: 11px !important
+      height: 11px !important
+      margin-right: 0 !important
+      background-color: currentColor !important
+      vertical-align: middle !important
+
+    .plugin-plus
+      position: absolute !important
+      top: -4px !important
+      right: -4px !important
+      font-size: 8px !important
+      font-weight: bold !important
+      color: rgb(0, 153, 255) !important
+      line-height: 1 !important
 </style>
