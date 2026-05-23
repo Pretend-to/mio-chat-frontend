@@ -191,7 +191,7 @@ export default class Config {
         const targetValue = target[key];
 
         // 当进入 extraSettings 分支时，开启 allowUnknownKeys 允许适配器私有配置
-        const shouldAllowUnknown = allowUnknownKeys || key === 'extraSettings';
+        const shouldAllowUnknown = allowUnknownKeys || key === "extraSettings";
 
         // 情况 1: 目标对象中不存在该键
         if (!(key in target)) {
@@ -200,7 +200,11 @@ export default class Config {
             defaultValue !== null &&
             !Array.isArray(defaultValue)
           ) {
-            target[key] = this._mergeDefaultsRecursive({}, defaultValue, shouldAllowUnknown);
+            target[key] = this._mergeDefaultsRecursive(
+              {},
+              defaultValue,
+              shouldAllowUnknown,
+            );
           } else if (Array.isArray(defaultValue)) {
             target[key] = [...defaultValue];
           } else {
@@ -216,7 +220,11 @@ export default class Config {
           targetValue !== null &&
           !Array.isArray(targetValue)
         ) {
-          this._mergeDefaultsRecursive(targetValue, defaultValue, shouldAllowUnknown);
+          this._mergeDefaultsRecursive(
+            targetValue,
+            defaultValue,
+            shouldAllowUnknown,
+          );
         }
       }
     }

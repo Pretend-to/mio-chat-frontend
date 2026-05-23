@@ -53,7 +53,6 @@ export default class Client extends EventEmitter {
     // Read-only proxy to store
   }
 
-
   /**
    * Prepare initialization
    * @returns {object} Initialization information
@@ -84,7 +83,11 @@ export default class Client extends EventEmitter {
         name: "OneBot",
         namePolicy: 1,
         avatarPolicy: 1,
-        avatar: (typeof this.bot_qq === "string" && (this.bot_qq.startsWith("http") || this.bot_qq.startsWith("/"))) ? this.bot_qq : `/p/qava?q=${this.bot_qq ?? 1099834705}`,
+        avatar:
+          typeof this.bot_qq === "string" &&
+          (this.bot_qq.startsWith("http") || this.bot_qq.startsWith("/"))
+            ? this.bot_qq
+            : `/p/qava?q=${this.bot_qq ?? 1099834705}`,
         title: "云崽",
         priority: 0,
         options: {},
@@ -101,10 +104,10 @@ export default class Client extends EventEmitter {
         // 注意：mergeOptions 是 FriendList 里的方法，我们这里需要一个通用的合并逻辑
         // 或者简单地在 client 里实现一个基础合并
         const options = this.config.getLLMDefaultConfig();
-        
+
         if (preset.history) options.presetSettings.history = preset.history;
         if (preset.opening) options.presetSettings.opening = preset.opening;
-        
+
         // 处理工具映射 (short name -> full name)
         if (preset.tools?.length > 0) {
           const resolvedTools = [];
@@ -112,9 +115,10 @@ export default class Client extends EventEmitter {
           for (const shortName of preset.tools) {
             let found = false;
             for (const pluginTools of allPluginTools) {
-              if (!pluginTools || typeof pluginTools !== 'object') continue;
+              if (!pluginTools || typeof pluginTools !== "object") continue;
               const fullName = Object.keys(pluginTools).find(
-                name => name === shortName || name.startsWith(shortName + '_mid_')
+                (name) =>
+                  name === shortName || name.startsWith(shortName + "_mid_"),
               );
               if (fullName) {
                 resolvedTools.push(fullName);
@@ -135,7 +139,7 @@ export default class Client extends EventEmitter {
           avatar: preset.avatar || "/static/icons/512x512.png",
           namePolicy: 1,
           avatarPolicy: 1,
-          title: preset.name === '系统配置专家' ? 'setting' : 'chat',
+          title: preset.name === "系统配置专家" ? "setting" : "chat",
           priority: 1, // 默认不置顶
           lastUpdate: -Infinity,
           options,
@@ -177,7 +181,6 @@ export default class Client extends EventEmitter {
     if (!store) return;
     store.removeContactor(id);
   }
-
 
   async loadOriginalContactors(shareId) {
     const path = `/api/share?id=${shareId}`;
@@ -320,7 +323,7 @@ export default class Client extends EventEmitter {
       if (window.caches) {
         console.log("Clearing Cache Storage API...");
         const cacheNames = await caches.keys();
-        await Promise.all(cacheNames.map(name => caches.delete(name)));
+        await Promise.all(cacheNames.map((name) => caches.delete(name)));
       }
 
       // 2. Unregister all service workers
@@ -398,12 +401,13 @@ export default class Client extends EventEmitter {
     const store = getStore();
     if (!store) return null;
     if (onebotId) {
-      return Object.values(store.contactors).find((item) => item.platform === "onebot");
+      return Object.values(store.contactors).find(
+        (item) => item.platform === "onebot",
+      );
     } else {
       return store.contactors[id] || null;
     }
   }
-
 
   /**
    * 生成一个保证唯一的10位纯数字ID
@@ -485,7 +489,6 @@ export default class Client extends EventEmitter {
     };
     await localforage.setItem("client", JSON.stringify(client));
     console.log("Client saved");
-
   }
 
   /**
@@ -497,7 +500,11 @@ export default class Client extends EventEmitter {
     this.code = code;
 
     return new Promise((resolve, reject) => {
-      const socket = new Socket(this.id, this.code, this.contactList.length === 0);
+      const socket = new Socket(
+        this.id,
+        this.code,
+        this.contactList.length === 0,
+      );
 
       socket.on("connect", async (info) => {
         console.log("Login successful");
@@ -511,14 +518,20 @@ export default class Client extends EventEmitter {
           this.genDefaultConctor(info);
         } else if (info.onebot_enabled) {
           // 即使不是第一次登录，如果开启了 OneBot 且列表中没有，也补上
-          const hasOneBot = this.contactList.some(c => c.platform === 'onebot');
+          const hasOneBot = this.contactList.some(
+            (c) => c.platform === "onebot",
+          );
           if (!hasOneBot) {
             const onebotConfig = {
               id: this.genFakeId(),
               name: "OneBot",
               namePolicy: 1,
               avatarPolicy: 1,
-              avatar: (typeof this.bot_qq === "string" && (this.bot_qq.startsWith("http") || this.bot_qq.startsWith("/"))) ? this.bot_qq : `/p/qava?q=${this.bot_qq ?? 1099834705}`,
+              avatar:
+                typeof this.bot_qq === "string" &&
+                (this.bot_qq.startsWith("http") || this.bot_qq.startsWith("/"))
+                  ? this.bot_qq
+                  : `/p/qava?q=${this.bot_qq ?? 1099834705}`,
               title: "云崽",
               priority: 0,
               options: {},
@@ -529,20 +542,27 @@ export default class Client extends EventEmitter {
         }
         if (info.pendingTasks && Array.isArray(info.pendingTasks)) {
           console.log("[Login] 待同步任务 (pendingTasks):", info.pendingTasks);
-          console.log("[Login] 当前联系人列表:", this.contactList.map(c => ({ id: c.id, name: c.name })));
-          
+          console.log(
+            "[Login] 当前联系人列表:",
+            this.contactList.map((c) => ({ id: c.id, name: c.name })),
+          );
+
           info.pendingTasks.forEach((taskId) => {
             const contactor = this.getContactor(taskId);
             if (contactor) {
-              console.log(`[Login] 任务状态检查: ${contactor.name} (${taskId}), 当前活跃状态: ${contactor.active}`);
-              
+              console.log(
+                `[Login] 任务状态检查: ${contactor.name} (${taskId}), 当前活跃状态: ${contactor.active}`,
+              );
+
               // 只有当该 Agent 不是当前活跃窗口时，才显示红点并触发后台拉取
               if (!contactor.active) {
                 contactor.hasPendingTask = true;
                 this.socket.enterChat(taskId);
               }
             } else {
-              console.warn(`[Login] 匹配失败: 无法找到 ID 为 ${taskId} 的联系人`);
+              console.warn(
+                `[Login] 匹配失败: 无法找到 ID 为 ${taskId} 的联系人`,
+              );
             }
           });
         }
@@ -646,7 +666,9 @@ export default class Client extends EventEmitter {
           const store = getStore();
           const contactor = store.contactors[contactorId];
           if (contactor) {
-            console.log(`[System] 对话标题已由后端更新: ${contactor.name} -> ${title}`);
+            console.log(
+              `[System] 对话标题已由后端更新: ${contactor.name} -> ${title}`,
+            );
             contactor.name = title;
             store.loadContactorName(contactor);
             store.updateContactorSummary(contactor);
@@ -689,7 +711,10 @@ export default class Client extends EventEmitter {
     this.admin_qq = data.admin_qq;
     this.bot_qq = data.bot_qq;
 
-    if (typeof this.admin_qq === "string" && (this.admin_qq.startsWith("http") || this.admin_qq.startsWith("/"))) {
+    if (
+      typeof this.admin_qq === "string" &&
+      (this.admin_qq.startsWith("http") || this.admin_qq.startsWith("/"))
+    ) {
       this.avatar = this.admin_qq;
     } else {
       this.avatar = `/p/qava?q=${this.admin_qq}`;
@@ -697,7 +722,10 @@ export default class Client extends EventEmitter {
 
     const onebotContactor = this.getContactor(null, 10000);
     if (onebotContactor) {
-      if (typeof this.bot_qq === "string" && (this.bot_qq.startsWith("http") || this.bot_qq.startsWith("/"))) {
+      if (
+        typeof this.bot_qq === "string" &&
+        (this.bot_qq.startsWith("http") || this.bot_qq.startsWith("/"))
+      ) {
         onebotContactor.avatar = this.bot_qq;
       } else {
         onebotContactor.avatar = `/p/qava?q=${this.bot_qq}`;

@@ -1,5 +1,5 @@
-import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { defineStore } from "pinia";
+import { ref, computed } from "vue";
 import { getAvatarByOwner, getAvatarByAdapterType } from "@/utils/avatar.js";
 import { numberString } from "@/utils/generate.js";
 import { config, client } from "@/lib/runtime.js";
@@ -42,24 +42,38 @@ export function getShownTime(timestamp) {
   const timeDiff = currentTime - timestamp;
   if (timeDiff < 24 * 60 * 60 * 1000) {
     const hours = new Date(timestamp).getHours().toString().padStart(2, "0");
-    const minutes = new Date(timestamp).getMinutes().toString().padStart(2, "0");
+    const minutes = new Date(timestamp)
+      .getMinutes()
+      .toString()
+      .padStart(2, "0");
     return `${hours}:${minutes}`;
   } else if (timeDiff < 48 * 60 * 60 * 1000) {
     const hours = new Date(timestamp).getHours().toString().padStart(2, "0");
-    const minutes = new Date(timestamp).getMinutes().toString().padStart(2, "0");
+    const minutes = new Date(timestamp)
+      .getMinutes()
+      .toString()
+      .padStart(2, "0");
     return `昨天 ${hours}:${minutes}`;
   } else if (timeDiff < 7 * 24 * 60 * 60 * 1000) {
     const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
     const weekday = new Date(timestamp).getDay();
     const hours = new Date(timestamp).getHours().toString().padStart(2, "0");
-    const minutes = new Date(timestamp).getMinutes().toString().padStart(2, "0");
+    const minutes = new Date(timestamp)
+      .getMinutes()
+      .toString()
+      .padStart(2, "0");
     return `星期${weekdays[weekday]} ${hours}:${minutes}`;
   } else {
     const year = new Date(timestamp).getFullYear();
-    const month = (new Date(timestamp).getMonth() + 1).toString().padStart(2, "0");
+    const month = (new Date(timestamp).getMonth() + 1)
+      .toString()
+      .padStart(2, "0");
     const day = new Date(timestamp).getDate().toString().padStart(2, "0");
     const hours = new Date(timestamp).getHours().toString().padStart(2, "0");
-    const minutes = new Date(timestamp).getMinutes().toString().padStart(2, "0");
+    const minutes = new Date(timestamp)
+      .getMinutes()
+      .toString()
+      .padStart(2, "0");
     return `${year}/${month}/${day} ${hours}:${minutes}`;
   }
 }
@@ -116,7 +130,7 @@ export function getLastMessageSummary(messageChain, message = null) {
     : "[未知消息]";
 }
 
-export const useContactorsStore = defineStore('contactors', () => {
+export const useContactorsStore = defineStore("contactors", () => {
   // State
   const contactors = ref({});
   const activeContactorId = ref(null);
@@ -137,7 +151,7 @@ export const useContactorsStore = defineStore('contactors', () => {
   // Actions
   function loadContactors(list) {
     const newContactors = {};
-    list.forEach(item => {
+    list.forEach((item) => {
       newContactors[item.id] = {
         platform: item.platform,
         id: String(item.id),
@@ -155,9 +169,9 @@ export const useContactorsStore = defineStore('contactors', () => {
         hasPendingTask: item.hasPendingTask ?? false,
         draft: item.draft ?? "",
         options: item.options || {},
-        lastMessageSummary: ""
+        lastMessageSummary: "",
       };
-      
+
       // Auto initialize details
       loadContactorName(newContactors[item.id]);
       loadContactorAvatar(newContactors[item.id]);
@@ -185,7 +199,7 @@ export const useContactorsStore = defineStore('contactors', () => {
       hasPendingTask: data.hasPendingTask ?? false,
       draft: data.draft ?? "",
       options: data.options || {},
-      lastMessageSummary: ""
+      lastMessageSummary: "",
     };
 
     loadContactorName(newContactor);
@@ -209,10 +223,10 @@ export const useContactorsStore = defineStore('contactors', () => {
 
   function selectContactor(id) {
     activeContactorId.value = id;
-    
+
     // Set active status flags
-    Object.keys(contactors.value).forEach(cid => {
-      contactors.value[cid].active = (cid === id);
+    Object.keys(contactors.value).forEach((cid) => {
+      contactors.value[cid].active = cid === id;
     });
 
     if (id && contactors.value[id]) {
@@ -266,7 +280,9 @@ export const useContactorsStore = defineStore('contactors', () => {
   }
 
   function updateContactorSummary(contactor) {
-    contactor.lastMessageSummary = getLastMessageSummary(contactor.messageChain);
+    contactor.lastMessageSummary = getLastMessageSummary(
+      contactor.messageChain,
+    );
   }
 
   // Messaging operations
@@ -274,14 +290,14 @@ export const useContactorsStore = defineStore('contactors', () => {
     const contactor = contactors.value[contactorId];
     if (!contactor) return null;
 
-    let message = contactor.messageChain.find(msg => msg.id === messageId);
+    let message = contactor.messageChain.find((msg) => msg.id === messageId);
     if (!message) {
       message = {
         role: defaults.role || "other",
         time: defaults.time || Date.now(),
         status: defaults.status || "pending",
         id: messageId,
-        content: defaults.content || [{ type: "blank", data: {} }]
+        content: defaults.content || [{ type: "blank", data: {} }],
       };
       contactor.messageChain.push(message);
     }
@@ -314,8 +330,8 @@ export const useContactorsStore = defineStore('contactors', () => {
             text: data.reasoning_content,
             startTime: data.startTime || Date.now(),
             duration: data.duration || 0,
-            endTime: 0
-          }
+            endTime: 0,
+          },
         };
         replaceBlankOrAppend(content, msgElm);
       }
@@ -327,18 +343,20 @@ export const useContactorsStore = defineStore('contactors', () => {
       } else {
         const msgElm = {
           type: "text",
-          data: { text: data.chunk }
+          data: { text: data.chunk },
         };
         replaceBlankOrAppend(content, msgElm);
       }
     } else if (type === "tool_call") {
       closeReasoningBlocks(content, true);
       const tool_call = data.tool_call;
-      const index = content.findIndex(elm => elm.type === "tool_call" && elm.data?.id === tool_call.id);
-      
+      const index = content.findIndex(
+        (elm) => elm.type === "tool_call" && elm.data?.id === tool_call.id,
+      );
+
       const msgElm = {
         type: "tool_call",
-        data: { ...tool_call }
+        data: { ...tool_call },
       };
 
       if (index === -1) {
@@ -350,7 +368,10 @@ export const useContactorsStore = defineStore('contactors', () => {
         // Check memory tool calls
         const toolName = (merged.data.name || "").split("_mid_")[0];
         if (toolName === "memory" && merged.data.result?.success) {
-          recordMemory(contactorId, merged.data.parameters || merged.data.arguments);
+          recordMemory(
+            contactorId,
+            merged.data.parameters || merged.data.arguments,
+          );
         }
       }
     }
@@ -363,7 +384,7 @@ export const useContactorsStore = defineStore('contactors', () => {
       content.push(element);
       return;
     }
-    const blankIndex = content.findIndex(elm => elm.type === "blank");
+    const blankIndex = content.findIndex((elm) => elm.type === "blank");
     if (blankIndex !== -1) {
       content.splice(blankIndex, 1, element);
     } else {
@@ -373,8 +394,9 @@ export const useContactorsStore = defineStore('contactors', () => {
 
   function closeReasoningBlocks(content, force = false) {
     const now = Date.now();
-    content.forEach(elm => {
-      if (elm.type !== "reason" || elm.data.endTime || elm.data.duration > 0) return;
+    content.forEach((elm) => {
+      if (elm.type !== "reason" || elm.data.endTime || elm.data.duration > 0)
+        return;
       if (!force) return;
       elm.data.endTime = now;
       if (elm.data.startTime) {
@@ -389,11 +411,13 @@ export const useContactorsStore = defineStore('contactors', () => {
       ...previousElm,
       data: {
         ...previousData,
-        ...incomingToolCall
-      }
+        ...incomingToolCall,
+      },
     };
     if (incomingToolCall.action === "pending") {
-      merged.data.parameters = String(previousData.parameters || "") + String(incomingToolCall.parameters || "");
+      merged.data.parameters =
+        String(previousData.parameters || "") +
+        String(incomingToolCall.parameters || "");
     }
     return merged;
   }
@@ -421,19 +445,27 @@ export const useContactorsStore = defineStore('contactors', () => {
       contactor.options.presetSettings.history = [];
     }
 
-    const isDuplicate = contactor.options.presetSettings.history.some((item, idx, arr) => {
-      if (item.role === "user" && item.content === question) {
-        const next = arr[idx + 1];
-        return next && next.role === "assistant" && next.content === answer;
-      }
-      return false;
-    });
+    const isDuplicate = contactor.options.presetSettings.history.some(
+      (item, idx, arr) => {
+        if (item.role === "user" && item.content === question) {
+          const next = arr[idx + 1];
+          return next && next.role === "assistant" && next.content === answer;
+        }
+        return false;
+      },
+    );
 
     if (isDuplicate) return;
 
-    contactor.options.presetSettings.history.push({ role: "user", content: question });
-    contactor.options.presetSettings.history.push({ role: "assistant", content: answer });
-    
+    contactor.options.presetSettings.history.push({
+      role: "user",
+      content: question,
+    });
+    contactor.options.presetSettings.history.push({
+      role: "assistant",
+      content: answer,
+    });
+
     client.setLocalStorage();
   }
 
@@ -451,44 +483,51 @@ export const useContactorsStore = defineStore('contactors', () => {
     const newContent = [];
     if (chunks && Array.isArray(chunks)) {
       const now = Date.now();
-      chunks.forEach(chunk => {
+      chunks.forEach((chunk) => {
         if (chunk.type === "reason") {
           newContent.push({
             type: "reason",
             data: {
               text: chunk.data?.text ?? "",
               startTime: chunk.data?.startTime || now,
-              duration: chunk.data?.duration ?? 0
-            }
+              duration: chunk.data?.duration ?? 0,
+            },
           });
         } else if (chunk.type === "content") {
           newContent.push({
             type: "text",
-            data: { text: chunk.content }
+            data: { text: chunk.content },
           });
         } else if (chunk.type === "toolCall") {
           let callStatus = "waiting";
           if (chunk.content.result) {
             callStatus = "done";
-          } else if (chunk.content.action === "running" || chunk.content.action === "pending") {
+          } else if (
+            chunk.content.action === "running" ||
+            chunk.content.action === "pending"
+          ) {
             callStatus = "running";
           }
 
           const toolCallData = {
             ...chunk.content,
-            arguments: chunk.content.arguments || chunk.content.parameters || "",
-            status: callStatus
+            arguments:
+              chunk.content.arguments || chunk.content.parameters || "",
+            status: callStatus,
           };
 
           // Special memory tool handler
           const toolName = (toolCallData.name || "").split("_mid_")[0];
           if (toolName === "memory" && toolCallData.result?.success) {
-            recordMemory(contactorId, toolCallData.parameters || toolCallData.arguments);
+            recordMemory(
+              contactorId,
+              toolCallData.parameters || toolCallData.arguments,
+            );
           }
 
           newContent.push({
             type: "tool_call",
-            data: toolCallData
+            data: toolCallData,
           });
         }
       });
@@ -518,7 +557,7 @@ export const useContactorsStore = defineStore('contactors', () => {
     const message = getOrCreateMessage(contactorId, messageId);
     message.status = "completed";
     closeReasoningBlocks(message.content, true);
-    
+
     contactor.lastUpdate = Date.now();
     updateContactorSummary(contactor);
     client.setLocalStorage();
@@ -535,13 +574,13 @@ export const useContactorsStore = defineStore('contactors', () => {
     const errorJson = JSON.stringify(
       typeof error === "string" ? { message: error } : error,
       null,
-      2
+      2,
     );
     const errorText = `Error : LLM 响应失败！\n\`\`\`json\n${errorJson}\n\`\`\``;
 
     replaceBlankOrAppend(message.content, {
       type: "text",
-      data: { text: errorText }
+      data: { text: errorText },
     });
 
     message.status = "completed";
@@ -567,7 +606,9 @@ export const useContactorsStore = defineStore('contactors', () => {
   function deleteMessageById(contactorId, messageId) {
     const contactor = contactors.value[contactorId];
     if (!contactor) return;
-    const index = contactor.messageChain.findIndex(msg => msg.id === messageId);
+    const index = contactor.messageChain.findIndex(
+      (msg) => msg.id === messageId,
+    );
     if (index !== -1) {
       deleteMessage(contactorId, index);
     }
@@ -594,9 +635,9 @@ export const useContactorsStore = defineStore('contactors', () => {
       content: [
         {
           type: "text",
-          data: { text }
-        }
-      ]
+          data: { text },
+        },
+      ],
     };
     contactor.messageChain.push(systemMsg);
     contactor.lastUpdate = Date.now();
@@ -605,7 +646,7 @@ export const useContactorsStore = defineStore('contactors', () => {
   }
 
   function toJSON() {
-    return Object.values(contactors.value).map(item => ({
+    return Object.values(contactors.value).map((item) => ({
       platform: item.platform,
       id: item.id,
       options: item.options,
@@ -621,7 +662,7 @@ export const useContactorsStore = defineStore('contactors', () => {
       createTime: item.createTime,
       hasPendingTask: item.hasPendingTask,
       firstMessageIndex: item.firstMessageIndex,
-      draft: item.draft
+      draft: item.draft,
     }));
   }
 
@@ -653,6 +694,6 @@ export const useContactorsStore = defineStore('contactors', () => {
     deleteMessageById,
     clearHistory,
     insertSystemMessage,
-    toJSON
+    toJSON,
   };
 });

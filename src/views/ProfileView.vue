@@ -1,10 +1,18 @@
 <template>
-  <div class="profile-body" style="background-color: #F5F5F5;">
+  <div class="profile-body" style="background-color: #f5f5f5">
     <!-- Mobile Header -->
     <div class="mobile-nav" v-if="isMobile">
       <div class="back-btn" @click="$router.push('/chat/' + $route.params.id)">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5"
-          stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#333"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
       </div>
@@ -15,14 +23,25 @@
     <div id="profile" class="profile-main">
       <div v-if="activeContactor" class="profile-container">
         <div class="info-blocks">
-          <ContactorSettings v-if="options && basicInfo" v-model:model-value="options"
-            v-model:basic-info="basicInfo" :active-contactor-platform="activeContactor.platform"
-            :llm-providers-list="llmProviders" :tool-call-modes-list="toolCallModes" :all-llm-tools-data="allLLMTools"
-            :safety-settings-params="safetyParams" :safety-simple-value-options="safetySimpleValue"
-            :presets-history-data="options.presetSettings?.history" :name="activeContactor.name"
-            :avatar="activeContactor.avatar" :is-connected="isConnected" :avatar-policy-list="avatarPolicyList"
-            :name-policy-list="namePolicyList" @provider-changed="handleProviderSwitched"
-            @update-presets="handleUpdateOpenaiPresets" />
+          <ContactorSettings
+            v-if="options && basicInfo"
+            v-model:model-value="options"
+            v-model:basic-info="basicInfo"
+            :active-contactor-platform="activeContactor.platform"
+            :llm-providers-list="llmProviders"
+            :tool-call-modes-list="toolCallModes"
+            :all-llm-tools-data="allLLMTools"
+            :safety-settings-params="safetyParams"
+            :safety-simple-value-options="safetySimpleValue"
+            :presets-history-data="options.presetSettings?.history"
+            :name="activeContactor.name"
+            :avatar="activeContactor.avatar"
+            :is-connected="isConnected"
+            :avatar-policy-list="avatarPolicyList"
+            :name-policy-list="namePolicyList"
+            @provider-changed="handleProviderSwitched"
+            @update-presets="handleUpdateOpenaiPresets"
+          />
         </div>
       </div>
     </div>
@@ -33,7 +52,13 @@
       <el-button type="danger" plain @click="centerDialogVisible = true">
         删除好友
       </el-button>
-      <el-dialog v-model="centerDialogVisible" title="警告" width="300" center class="confirm-dialog">
+      <el-dialog
+        v-model="centerDialogVisible"
+        title="警告"
+        width="300"
+        center
+        class="confirm-dialog"
+      >
         <span> 确认要删除此好友吗？该操作不可逆。 </span>
         <template #footer>
           <div class="dialog-footer">
@@ -201,7 +226,9 @@ export default {
     },
     initContactor() {
       if (!this.activeContactor) {
-        console.warn("[ProfileView] activeContactor is undefined, waiting for client initialization");
+        console.warn(
+          "[ProfileView] activeContactor is undefined, waiting for client initialization",
+        );
         return;
       }
       // Deep clone options to avoid direct mutation of contactor's options by child
@@ -265,7 +292,7 @@ export default {
       const { avatarPolicy } = this.basicInfo;
       this.activeContactor.avatarPolicy = avatarPolicy;
       this.basicInfo.avatar = this.activeContactor.loadAvatar();
-    }
+    },
   },
 };
 </script>
@@ -428,7 +455,7 @@ export default {
 
 .action-bar {
   position: sticky;
-  background-color: #F5F5F5;
+  background-color: #f5f5f5;
   bottom: 0px;
   left: 0px;
   display: flex;
@@ -447,7 +474,7 @@ export default {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background-color: #F5F5F5;
+  background-color: #f5f5f5;
 }
 
 /* Mobile Nav */
@@ -490,7 +517,6 @@ export default {
     min-width: 0 !important;
     background-color: #f2f2f2 !important;
     padding-bottom: 0;
-
   }
 
   .action-bar {

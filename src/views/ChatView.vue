@@ -1,5 +1,14 @@
 <script setup>
-import { ref, reactive, computed, watch, onMounted, onUpdated, onBeforeUnmount, nextTick } from "vue";
+import {
+  ref,
+  reactive,
+  computed,
+  watch,
+  onMounted,
+  onUpdated,
+  onBeforeUnmount,
+  nextTick,
+} from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { ElMessage } from "element-plus";
@@ -25,8 +34,13 @@ import { gateway } from "@/lib/gateway.js";
 import { numberString } from "@/utils/generate.js";
 
 // Markdown plugins
-import { mermaidPlugin, codeBlockPlugin, cursorPlugin, imageViewerPlugin } from 'mio-previewer/plugins/custom';
-import { katexPlugin } from 'mio-previewer/plugins/markdown-it';
+import {
+  mermaidPlugin,
+  codeBlockPlugin,
+  cursorPlugin,
+  imageViewerPlugin,
+} from "mio-previewer/plugins/custom";
+import { katexPlugin } from "mio-previewer/plugins/markdown-it";
 import { CollectionTag, Close } from "@element-plus/icons-vue";
 
 const route = useRoute();
@@ -61,14 +75,14 @@ const sendMessage = async (msg, toServer = true) => {
 
   autoScroll.value = false;
   contactor.lastUpdate = Date.now();
-  
-  const exists = contactor.messageChain.some(m => m.id === msg.id);
+
+  const exists = contactor.messageChain.some((m) => m.id === msg.id);
   if (!exists) {
     contactor.messageChain.push(msg);
   }
-  
-  const msgInChain = contactor.messageChain.find(m => m.id === msg.id);
-  
+
+  const msgInChain = contactor.messageChain.find((m) => m.id === msg.id);
+
   if (contactor.platform === "onebot") {
     store.updateContactorSummary(contactor);
     client.setLocalStorage();
@@ -78,7 +92,12 @@ const sendMessage = async (msg, toServer = true) => {
     if (!toServer) return msg.id;
 
     try {
-      const messageId = await gateway.send("onebot", contactor.id, contactor.messageChain, msg.id);
+      const messageId = await gateway.send(
+        "onebot",
+        contactor.id,
+        contactor.messageChain,
+        msg.id,
+      );
       if (msgInChain) {
         msgInChain.id = messageId;
       }
@@ -105,11 +124,15 @@ const sendMessage = async (msg, toServer = true) => {
 
     // Create assistant response placeholder
     const assistantMsgId = numberString(16);
-    const assistantMsg = store.getOrCreateMessage(contactor.id, assistantMsgId, {
-      role: "other",
-      status: "pending",
-      content: [{ type: "blank", data: {} }]
-    });
+    const assistantMsg = store.getOrCreateMessage(
+      contactor.id,
+      assistantMsgId,
+      {
+        role: "other",
+        status: "pending",
+        content: [{ type: "blank", data: {} }],
+      },
+    );
 
     store.updateContactorSummary(contactor);
     client.setLocalStorage();
@@ -120,7 +143,13 @@ const sendMessage = async (msg, toServer = true) => {
       msgInChain.status = "pending";
     }
     try {
-      await gateway.send("openai", contactor.id, contactor.messageChain, assistantMsgId, contactor.options);
+      await gateway.send(
+        "openai",
+        contactor.id,
+        contactor.messageChain,
+        assistantMsgId,
+        contactor.options,
+      );
       store.completeMessage(contactor.id, msg.id);
       return msg.id;
     } catch (e) {
@@ -129,7 +158,11 @@ const sendMessage = async (msg, toServer = true) => {
         msgInChain.status = "failed";
       }
       store.failedMessage(contactor.id, msg.id, e.message || "请求失败");
-      store.failedMessage(contactor.id, assistantMsgId, e.message || "请求失败");
+      store.failedMessage(
+        contactor.id,
+        assistantMsgId,
+        e.message || "请求失败",
+      );
       throw e;
     }
   }
@@ -181,7 +214,7 @@ const activeContactor = computed(() => {
       }
       if (prop === "getMessageById") {
         return (messageId) => {
-          return target.messageChain.find(m => m.id === messageId);
+          return target.messageChain.find((m) => m.id === messageId);
         };
       }
       if (prop === "delMessage") {
@@ -218,7 +251,7 @@ const activeContactor = computed(() => {
           client.setLocalStorage();
         };
       }
-      
+
       const value = Reflect.get(target, prop, receiver);
       return value;
     },
@@ -228,7 +261,7 @@ const activeContactor = computed(() => {
         client.setLocalStorage();
       }
       return result;
-    }
+    },
   });
 });
 
@@ -281,9 +314,9 @@ const mioPlugins = [
   { plugin: mermaidPlugin },
   {
     plugin: cursorPlugin,
-    options: { shape: 'circle' }
+    options: { shape: "circle" },
   },
-  { plugin: imageViewerPlugin }
+  { plugin: imageViewerPlugin },
 ];
 
 // updateTrigger, forceUpdate and messageVersions are no longer needed —
@@ -297,7 +330,7 @@ const getDelayStatus = computed(() => {
 });
 
 const mdOptions = computed(() => {
-  return { breaks: activeContactor.value?.platform === 'onebot' };
+  return { breaks: activeContactor.value?.platform === "onebot" };
 });
 
 const activeMessageChain = computed(() => {
@@ -308,7 +341,7 @@ const openingMessage = computed(() => {
   const opening = activeContactor.value?.options?.presetSettings?.opening;
   if (!opening) return null;
   return {
-    id: 'opening-message',
+    id: "opening-message",
     role: "other",
     content: [
       {
@@ -357,7 +390,6 @@ const getMenuStyle = computed(() => {
 const selectedMessages = ref([]);
 const isMultiSelect = ref(false);
 const isMobileDevice = ref(window.innerWidth < 768);
-
 
 // Composable invocation
 const {
@@ -412,14 +444,14 @@ watch(
     if (!newVal) {
       router.push("/");
     }
-  }
+  },
 );
 
 watch(
   () => route.params.id,
   (newVal, oldVal) => {
     if (!newVal) return;
-    
+
     // Deactivate old contactor
     if (oldVal) {
       const oldContactor = contactorsStore.contactors[oldVal];
@@ -427,10 +459,10 @@ watch(
         oldContactor.active = false;
       }
     }
-    
+
     // Switch to new contactor in store
     contactorsStore.selectContactor(newVal);
-    
+
     autoScroll.value = false;
     nextTick(() => {
       toButtom();
@@ -438,10 +470,10 @@ watch(
         toButtom();
       }, 100);
     });
-    
+
     // Sync with socket for the new contactor
     trySync();
-  }
+  },
 );
 
 watch(
@@ -451,7 +483,7 @@ watch(
       toButtom();
     }
   },
-  { deep: true }
+  { deep: true },
 );
 
 watch(showImagePreview, (val) => {
@@ -490,7 +522,8 @@ const handleMouseUp = () => {
 
 const toButtom = (clicked) => {
   const execScroll = () => {
-    const elm = chatWindow.value || document.getElementById("main-messages-window");
+    const elm =
+      chatWindow.value || document.getElementById("main-messages-window");
     if (!elm) return;
 
     elm.scrollTo({
@@ -516,7 +549,7 @@ const cleanScreen = () => {
 const cleanHistory = () => {
   activeContactor.value.updateFirstMessage();
   ElMessage.success("上下文信息已清除，之后的请求将不再记录上文记录");
-  
+
   for (let i = activeContactor.value.messageChain.length - 1; i >= 0; i--) {
     const message = activeContactor.value.messageChain[i];
     if (
@@ -567,7 +600,7 @@ const setModel = async (list) => {
 
 const toimg = async () => {
   const result = await snapdom(chatWindow.value);
-  await result.download({ format: 'png', filename: 'chat.png' });
+  await result.download({ format: "png", filename: "chat.png" });
 };
 
 const share = async () => {
@@ -666,7 +699,7 @@ const getChatwindowScrollheight = () => {
 const trySync = () => {
   const contactor = activeContactor.value;
   if (!contactor) return;
-  
+
   if (client.socket && client.socket.available) {
     client.socket.enterChat(contactor.id);
     if (contactor.hasPendingTask) {
@@ -679,7 +712,7 @@ const trySync = () => {
 const getReplyText = (id) => {
   let content = "";
   const message = activeContactor.value.messageChain.find(
-    (item) => item.id === id || String(item.id) === String(id)
+    (item) => item.id === id || String(item.id) === String(id),
   );
   if (message) {
     message.content.forEach((element) => {
@@ -696,7 +729,11 @@ const getReplyText = (id) => {
 };
 
 const showMessageMenu = (event, messageIndex) => {
-  if (event.target && event.target.tagName && event.target.tagName.toLowerCase() === "img") {
+  if (
+    event.target &&
+    event.target.tagName &&
+    event.target.tagName.toLowerCase() === "img"
+  ) {
     const imgElement = event.target;
     seletedImage.value = imgElement.src;
   }
@@ -727,7 +764,7 @@ const handleTouchStart = (event, index) => {
       target: event.target,
       preventDefault: () => {
         if (event.preventDefault) event.preventDefault();
-      }
+      },
     };
     showMessageMenu(syntheticEvent, index);
     lastClickTime.value = 0;
@@ -748,7 +785,7 @@ const toProfile = () => {
 const handleRetryMessage = async (item) => {
   const contactor = activeContactor.value;
   if (!contactor) return;
-  
+
   if (contactor.platform === "onebot") {
     item.status = "pending";
     item.time = Date.now();
@@ -761,12 +798,12 @@ const handleRetryMessage = async (item) => {
     }
   } else {
     // OpenAI platform retry
-    const idx = contactor.messageChain.findIndex(m => m.id === item.id);
+    const idx = contactor.messageChain.findIndex((m) => m.id === item.id);
     if (idx === -1) return;
-    
+
     item.status = "pending";
     item.time = Date.now();
-    
+
     const targetIndex = idx + 1;
     let assistantMsg = contactor.messageChain[targetIndex];
     if (!assistantMsg || assistantMsg.role !== "other") {
@@ -783,18 +820,18 @@ const handleRetryMessage = async (item) => {
       assistantMsg.time = Date.now();
       assistantMsg.status = "pending";
     }
-    
+
     client.setLocalStorage();
     autoScroll.value = false;
     toButtom();
-    
+
     try {
       await gateway.send(
         contactor.platform,
         contactor.id,
         contactor.messageChain,
         assistantMsg.id,
-        contactor.options
+        contactor.options,
       );
       item.status = "completed";
       client.setLocalStorage();
@@ -824,7 +861,8 @@ const scrollHandler = () => {
   showMenu.value = false;
   if (showemoji.value) showemoji.value = false;
 
-  const distanceFromBottom = elm.scrollHeight - currentScrollTop - elm.clientHeight;
+  const distanceFromBottom =
+    elm.scrollHeight - currentScrollTop - elm.clientHeight;
   const isAtBottom = distanceFromBottom <= 15;
 
   if (isAtBottom) {
@@ -862,7 +900,7 @@ const handleMessageOption = async (option) => {
           role: "user",
           id: numberString(16),
           status: "pending",
-          time: Date.now()
+          time: Date.now(),
         };
         activeContactor.value.webSend(msgToSend);
         ElMessage.success("消息已重新发送");
@@ -901,7 +939,7 @@ const handleMessageOption = async (option) => {
             contactor.id,
             contactor.messageChain,
             validMessage.id,
-            contactor.options
+            contactor.options,
           );
           client.saveNow();
         } catch (error) {
@@ -918,7 +956,10 @@ const handleMessageOption = async (option) => {
         repliedMessageId.value = message.id;
         ElMessage.success("已引用该消息");
       } else {
-        userInput.value += getReplyText(activeContactor.value.messageChain[validMessageIndex.value].id) + "\n\n";
+        userInput.value +=
+          getReplyText(
+            activeContactor.value.messageChain[validMessageIndex.value].id,
+          ) + "\n\n";
       }
       break;
     case "delete":
@@ -940,7 +981,7 @@ const handleMessageOption = async (option) => {
 };
 
 const handleMessageClick = (item) => {
-  if (isMultiSelect.value && item.role !== 'mio_system') {
+  if (isMultiSelect.value && item.role !== "mio_system") {
     toggleSelect(item.id);
   }
 };
@@ -949,7 +990,8 @@ const handleImageLoad = (e) => {
   if (e.target.tagName === "IMG") {
     const elm = chatWindow.value;
     if (!elm) return;
-    const isNearBottom = elm.scrollHeight - elm.scrollTop - elm.clientHeight < 150;
+    const isNearBottom =
+      elm.scrollHeight - elm.scrollTop - elm.clientHeight < 150;
     if (isNearBottom) {
       toButtom();
     }
@@ -966,13 +1008,13 @@ onMounted(() => {
     seletedText.value = "";
     seletedImage.value = "";
   });
-  
+
   if (chatWindow.value) {
     chatWindow.value.addEventListener("scroll", scrollHandler);
     chatWindow.value.addEventListener("mousedown", handleMouseDown);
     chatWindow.value.addEventListener("load", handleImageLoad, true);
   }
-  
+
   autoScroll.value = false;
   if (!preview.value && scroll.value) {
     nextTick(() => {
@@ -982,7 +1024,7 @@ onMounted(() => {
       }, 100);
     });
   }
-  
+
   // Sync with socket on mount
   trySync();
   if (client.socket) {
@@ -1012,7 +1054,7 @@ onMounted(() => {
     const pageHeight = window.innerHeight;
     inputBarTop.value = pageHeight - element.offsetTop;
   }
-  
+
   client.on("plugins_updated", handlePluginsUpdated);
   window.addEventListener("beforeunload", handleBeforeUnload);
 });
@@ -1021,7 +1063,7 @@ onBeforeUnmount(() => {
   client.off("plugins_updated", handlePluginsUpdated);
   client.off("socket_ready");
   window.removeEventListener("beforeunload", handleBeforeUnload);
-  
+
   if (client.socket) {
     client.socket.off("connect", trySync);
   }
@@ -1031,9 +1073,9 @@ onBeforeUnmount(() => {
   if (contactor) {
     contactor.active = false;
   }
-  
+
   client.saveNow();
-  
+
   if (chatWindow.value) {
     chatWindow.value.removeEventListener("scroll", scrollHandler);
     chatWindow.value.removeEventListener("mousedown", handleMouseDown);
@@ -1054,32 +1096,59 @@ onBeforeUnmount(() => {
       @share="share"
     />
 
-    <!-- Mobile Banners -->
+    <!-- Selection Banners -->
     <transition name="select-banner-fade">
-      <div v-if="isMobileDevice && isMultiSelect && hasSelectedBelow" class="mobile-select-banner top" @click="selectToTopHere">
+      <div
+        v-if="isMultiSelect && hasSelectedBelow"
+        class="select-banner top"
+        @click="selectToTopHere"
+      >
         <i class="iconfont down1"></i>
         <span>选择到此处</span>
       </div>
     </transition>
     <transition name="select-banner-fade">
-      <div v-if="isMobileDevice && isMultiSelect && hasSelectedAbove" class="mobile-select-banner bottom" @click="selectToBottomHere">
-        <i class="iconfont down1" style="transform: rotate(180deg); display: inline-block;"></i>
+      <div
+        v-if="isMultiSelect && hasSelectedAbove"
+        class="select-banner bottom"
+        @click="selectToBottomHere"
+      >
+        <i
+          class="iconfont down1"
+          style="transform: rotate(180deg); display: inline-block"
+        ></i>
         <span>选择到此处</span>
       </div>
     </transition>
 
-    <div id="main-messages-window" ref="chatWindow" :class="{
-      'message-window': true,
-      preview: preview,
-      'is-dragging': dragSelect.active
-    }">
-      <div v-if="showRollDown" id="roll-buttom-button" :style="{ bottom: inputBarTop + 24 + 'px' }"
-        @click="toButtom(true)">
+    <div
+      id="main-messages-window"
+      ref="chatWindow"
+      :class="{
+        'message-window': true,
+        preview: preview,
+        'is-dragging': dragSelect.active,
+      }"
+    >
+      <div
+        v-if="showRollDown"
+        id="roll-buttom-button"
+        :style="{ bottom: inputBarTop + 24 + 'px' }"
+        @click="toButtom(true)"
+      >
         <i class="iconfont down1"></i>
       </div>
-      <ContextMenu v-show="showMenu" type="message" :message="getseletedMessage()" :seleted-text :seleted-image
-        :style="getMenuStyle" @message-option="handleMessageOption" @close="showMenu = false" />
-      
+      <ContextMenu
+        v-show="showMenu"
+        type="message"
+        :message="getseletedMessage()"
+        :seleted-text
+        :seleted-image
+        :style="getMenuStyle"
+        @message-option="handleMessageOption"
+        @close="showMenu = false"
+      />
+
       <!-- Opening Message -->
       <MessageItem
         v-if="openingMessage"
@@ -1125,18 +1194,29 @@ onBeforeUnmount(() => {
           left: dragSelect.left + 'px',
           top: dragSelect.top + 'px',
           width: dragSelect.width + 'px',
-          height: dragSelect.height + 'px'
+          height: dragSelect.height + 'px',
         }"
       ></div>
     </div>
 
-    <InputEditor v-if="!isMultiSelect" ref="inputEditor" :active-contactor="activeContactor"
-      :replied-message-id="repliedMessageId" @stroge="client.setLocalStorage()" @set-model="setModel"
-      @clean-screen="cleanScreen" @clean-history="cleanHistory" @to-buttom="toButtom" />
-    
+    <InputEditor
+      v-if="!isMultiSelect"
+      ref="inputEditor"
+      :active-contactor="activeContactor"
+      :replied-message-id="repliedMessageId"
+      @stroge="client.setLocalStorage()"
+      @set-model="setModel"
+      @clean-screen="cleanScreen"
+      @clean-history="cleanHistory"
+      @to-buttom="toButtom"
+    />
+
     <div v-else class="multi-select-action-bar">
       <div class="actions">
-        <div class="action-btn hide-mobile" @click="handleMultiShareMD(activeContactor, client.name)">
+        <div
+          class="action-btn hide-mobile"
+          @click="handleMultiShareMD(activeContactor, client.name)"
+        >
           <span class="action-icon"><i class="iconfont icon-share"></i></span>
           <span class="action-label">导出MD</span>
         </div>
@@ -1144,16 +1224,27 @@ onBeforeUnmount(() => {
           <span class="action-icon"><i class="iconfont icon-share"></i></span>
           <span class="action-label">导出图片</span>
         </div>
-        <div class="action-btn hide-mobile" @click="handleMultiShareLink(activeContactor)">
+        <div
+          class="action-btn hide-mobile"
+          @click="handleMultiShareLink(activeContactor)"
+        >
           <span class="action-icon"><i class="iconfont icon-share"></i></span>
           <span class="action-label">分享链接</span>
         </div>
-        <div class="action-btn" @click="handleMultiCopy(activeContactor, client.name)">
+        <div
+          class="action-btn"
+          @click="handleMultiCopy(activeContactor, client.name)"
+        >
           <span class="action-icon"><i class="iconfont fuzhi"></i></span>
           <span class="action-label">复制</span>
         </div>
-        <el-popconfirm title="此操作不可撤销" confirm-button-text="确定" cancel-button-text="取消" placement="top"
-          @confirm="handleMultiDelete(activeContactor)">
+        <el-popconfirm
+          title="此操作不可撤销"
+          confirm-button-text="确定"
+          cancel-button-text="取消"
+          placement="top"
+          @confirm="handleMultiDelete(activeContactor)"
+        >
           <template #reference>
             <div class="action-btn">
               <span class="action-icon"><i class="iconfont shanchu"></i></span>
@@ -1162,7 +1253,13 @@ onBeforeUnmount(() => {
           </template>
         </el-popconfirm>
       </div>
-      <button class="close-btn" @click="cancelMultiSelect" aria-label="取消多选">&times;</button>
+      <button
+        class="close-btn"
+        @click="cancelMultiSelect"
+        aria-label="取消多选"
+      >
+        &times;
+      </button>
     </div>
 
     <!-- Screenshot Preview Dialog & Drawer -->
@@ -1180,8 +1277,6 @@ onBeforeUnmount(() => {
       @share-link="shareMobilePreviewLink"
       @width-mode-change="onExportWidthModeChange"
     />
-
-
   </div>
 </template>
 
@@ -1443,7 +1538,7 @@ $icon-hover: #09f
     margin-bottom: 8vh !important
     display: flex
     flex-direction: column
-    
+
     .el-dialog__body
         overflow: hidden !important
         padding: 20px 24px !important
@@ -1461,7 +1556,7 @@ $icon-hover: #09f
     z-index: 100
     pointer-events: none
 
-.mobile-select-banner
+.select-banner
     position: absolute
     left: 0.5rem
     background: rgba(255, 255, 255, 0.95)
@@ -1481,27 +1576,30 @@ $icon-hover: #09f
     cursor: pointer
     transition: opacity 0.3s, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s, box-shadow 0.2s
     transform: translateY(0)
-    
+
     &:hover
         background: rgba(255, 255, 255, 1)
         box-shadow: 0 6px 16px rgba(0, 168, 255, 0.15)
         transform: scale(1.03)
-        
+
     &:active
         transform: scale(0.98)
-        
+
     i
         font-size: 0.9rem
         font-weight: bold
         line-height: 1
-        
+
     &.top
         top: 4.8rem
         animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1)
-        
+
     &.bottom
         bottom: 5.8rem
         animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1)
+
+        @media (min-width: $mobile + 1)
+            bottom: 11.8rem
 
 @keyframes slideDown
     from
@@ -1569,6 +1667,4 @@ $icon-hover: #09f
     display: none !important
     width: 0 !important
     height: 0 !important
-
-
 </style>

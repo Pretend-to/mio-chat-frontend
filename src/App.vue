@@ -24,8 +24,8 @@ export default {
       );
     },
     isDashboardPage() {
-      return this.$route.path === '/dashboard';
-    }
+      return this.$route.path === "/dashboard";
+    },
   },
   created() {
     const displayConfig = config.getBaseConfig();
@@ -66,7 +66,13 @@ export default {
         <router-view></router-view>
       </div>
     </div>
-    <a v-if="beian" id="beian" href="https://beian.miit.gov.cn/" target="_blank">{{ beian }}</a>
+    <a
+      v-if="beian"
+      id="beian"
+      href="https://beian.miit.gov.cn/"
+      target="_blank"
+      >{{ beian }}</a
+    >
   </template>
 </template>
 <style scoped>

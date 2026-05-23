@@ -23,7 +23,7 @@ export function shareOrCopy(url) {
       .then(() => {
         console.log("Successful share");
       })
-      .catch((error) =>{
+      .catch((error) => {
         console.error("Error sharing:", error);
         result = false;
         message = "分享失败";

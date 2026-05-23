@@ -1,22 +1,56 @@
 <template>
   <div id="settings-view" :class="{ 'mobile-layout': isMobile }">
     <!-- 移动端顶部导航栏 -->
-    <div v-if="isMobile" class="mobile-header" :class="{ 'sub-page': isInSubPage(), 'main-page': !isInSubPage() }">
+    <div
+      v-if="isMobile"
+      class="mobile-header"
+      :class="{ 'sub-page': isInSubPage(), 'main-page': !isInSubPage() }"
+    >
       <div class="mobile-header-content" :class="{ 'sub-page': isInSubPage() }">
-        <button class="back-button" @click="handleBackToHome" :title="getBackButtonTitle()">
+        <button
+          class="back-button"
+          @click="handleBackToHome"
+          :title="getBackButtonTitle()"
+        >
           <!-- 在设置子页面显示返回箭头 -->
-          <svg v-if="isInSubPage()" width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <svg
+            v-if="isInSubPage()"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <path
+              d="M19 12H5M12 19l-7-7 7-7"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
           </svg>
           <!-- 在设置首页显示关闭图标 -->
           <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path
+              d="M18 6L6 18M6 6l12 12"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
           </svg>
         </button>
         <h1 class="mobile-title">{{ getMobileTitle() }}</h1>
-        <button v-if="showMobileMenu" class="menu-button" @click="toggleMobileMenu">
+        <button
+          v-if="showMobileMenu"
+          class="menu-button"
+          @click="toggleMobileMenu"
+        >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path
+              d="M3 12h18M3 6h18M3 18h18"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
           </svg>
         </button>
       </div>
@@ -29,11 +63,13 @@
       :closable="false"
       show-icon
       class="restart-banner"
-      :class="{ 'mobile': isMobile }"
+      :class="{ mobile: isMobile }"
     >
       <template #title>
         <div class="restart-banner-content">
-          <span>{{ isMobile ? '需要重启服务' : '配置已更改，需要重启服务才能生效' }}</span>
+          <span>{{
+            isMobile ? "需要重启服务" : "配置已更改，需要重启服务才能生效"
+          }}</span>
           <el-button
             type="warning"
             :size="isMobile ? 'small' : 'small'"
@@ -46,13 +82,27 @@
     </el-alert>
 
     <!-- 移动端菜单抽屉 -->
-    <div v-if="isMobile" class="mobile-menu-overlay" :class="{ 'show': mobileMenuVisible }" @click="closeMobileMenu">
-      <div class="mobile-menu-drawer" :class="{ 'show': mobileMenuVisible }" @click.stop>
+    <div
+      v-if="isMobile"
+      class="mobile-menu-overlay"
+      :class="{ show: mobileMenuVisible }"
+      @click="closeMobileMenu"
+    >
+      <div
+        class="mobile-menu-drawer"
+        :class="{ show: mobileMenuVisible }"
+        @click.stop
+      >
         <div class="mobile-menu-header">
           <h2>设置菜单</h2>
           <button class="close-button" @click="closeMobileMenu">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path
+                d="M18 6L6 18M6 6l12 12"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
             </svg>
           </button>
         </div>
@@ -61,13 +111,13 @@
             v-for="item in menuItems"
             :key="item.index"
             class="mobile-menu-item"
-            :class="{ 'active': activeMenu === item.index }"
+            :class="{ active: activeMenu === item.index }"
             @click="handleMobileMenuSelect(item.index)"
           >
             <component :is="item.icon" class="menu-icon" />
             <span>{{ item.label }}</span>
           </div>
-          
+
           <!-- 快捷操作 -->
           <div class="mobile-quick-actions">
             <div class="quick-action-item" @click="handleReset">
@@ -82,7 +132,7 @@
     </div>
 
     <!-- 桌面端布局 -->
-    <div class="admin-panel-container" :class="{ 'mobile': isMobile }">
+    <div class="admin-panel-container" :class="{ mobile: isMobile }">
       <!-- 侧边导航 - 仅桌面端显示 -->
       <aside v-if="!isMobile" class="admin-panel-sidebar">
         <el-menu
@@ -105,26 +155,33 @@
           <el-button type="info" plain @click="handleReset" style="width: 100%">
             重置全部
           </el-button>
-          <el-button type="info" plain @click="handleResetCache" style="width: 100%">
+          <el-button
+            type="info"
+            plain
+            @click="handleResetCache"
+            style="width: 100%"
+          >
             清理缓存
           </el-button>
         </div>
       </aside>
 
       <!-- 内容区域 -->
-      <main class="admin-panel-content" :class="{ 'mobile': isMobile }">
+      <main class="admin-panel-content" :class="{ mobile: isMobile }">
         <!-- 通用页面头部占位 -->
         <div class="content-header-spacer"></div>
-        
+
         <template v-if="forbidden">
-          <div class="forbidden-container" :class="{ 'mobile': isMobile }">
+          <div class="forbidden-container" :class="{ mobile: isMobile }">
             <el-result
               icon="error"
               title="禁止访问"
               sub-title="当前访问码无权限或已失效，您无法访问配置管理页面。"
             >
               <template #extra>
-                <el-button type="primary" @click="handleSwitchAccount">切换账号</el-button>
+                <el-button type="primary" @click="handleSwitchAccount"
+                  >切换账号</el-button
+                >
                 <el-button @click="handleReturnHome">返回首页</el-button>
               </template>
             </el-result>
@@ -148,10 +205,10 @@
 </template>
 
 <script setup>
-import ErrorBoundary from '@/components/settings/ErrorBoundary.vue';
-import { client } from '@/lib/runtime.js';
-import { useConfigStore } from '@/stores/configStore.js';
-import { useLogStore } from '@/stores/logStore.js';
+import ErrorBoundary from "@/components/settings/ErrorBoundary.vue";
+import { client } from "@/lib/runtime.js";
+import { useConfigStore } from "@/stores/configStore.js";
+import { useLogStore } from "@/stores/logStore.js";
 import {
   ChatDotRound,
   ChromeFilled,
@@ -160,11 +217,11 @@ import {
   Grid,
   Menu,
   Monitor,
-  Box
-} from '@element-plus/icons-vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+  Box,
+} from "@element-plus/icons-vue";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
 const route = useRoute();
 const router = useRouter();
@@ -179,32 +236,35 @@ const mobileMenuVisible = ref(false);
 // 计算是否显示移动端菜单按钮
 const showMobileMenu = computed(() => {
   // 只在设置首页显示菜单按钮
-  return route.path === '/settings';
+  return route.path === "/settings";
 });
 
 // 菜单项配置
 const menuItems = [
-  { index: 'overview', label: '概览', icon: Menu },
-  { index: 'llm-adapters', label: 'LLM 适配器', icon: Connection },
-  { index: 'automation', label: '系统任务', icon: Connection },
-  { index: 'server', label: '服务器配置', icon: Monitor },
-  { index: 'web', label: 'Web 配置', icon: ChromeFilled },
-  { index: 'onebot', label: 'OneBot 配置', icon: ChatDotRound },
-  { index: 'plugins', label: '插件管理', icon: Grid },
-  { index: 'presets', label: '预设管理', icon: Document },
-  { index: 'storage', label: '存储配置', icon: Box },
-  { index: 'logs', label: '日志管理', icon: Document }
+  { index: "overview", label: "概览", icon: Menu },
+  { index: "llm-adapters", label: "LLM 适配器", icon: Connection },
+  { index: "automation", label: "系统任务", icon: Connection },
+  { index: "server", label: "服务器配置", icon: Monitor },
+  { index: "web", label: "Web 配置", icon: ChromeFilled },
+  { index: "onebot", label: "OneBot 配置", icon: ChatDotRound },
+  { index: "plugins", label: "插件管理", icon: Grid },
+  { index: "presets", label: "预设管理", icon: Document },
+  { index: "storage", label: "存储配置", icon: Box },
+  { index: "logs", label: "日志管理", icon: Document },
 ];
 
 // 操作：切换账号（清除 admin_code 并跳转到 /auth）
 const handleSwitchAccount = () => {
   configStore.clearAdminCode();
-  router.push({ path: '/auth', query: { redirect: route.fullPath || route.path } });
+  router.push({
+    path: "/auth",
+    query: { redirect: route.fullPath || route.path },
+  });
 };
 
 // 操作：返回首页
 const handleReturnHome = () => {
-  router.push('/');
+  router.push("/");
 };
 
 // 响应式检测
@@ -215,41 +275,41 @@ const checkMobile = () => {
 // 当前激活的菜单项
 const activeMenu = computed(() => {
   const path = route.path;
-  if (path.includes('llm-adapters')) return 'llm-adapters';
-  if (path.includes('automation')) return 'automation';
-  if (path.includes('server')) return 'server';
-  if (path.includes('web')) return 'web';
-  if (path.includes('onebot')) return 'onebot';
-  if (path.includes('plugins')) return 'plugins';
-  if (path.includes('presets')) return 'presets';
-  if (path.includes('storage')) return 'storage';
-  if (path.includes('logs')) return 'logs';
-  return 'overview';
+  if (path.includes("llm-adapters")) return "llm-adapters";
+  if (path.includes("automation")) return "automation";
+  if (path.includes("server")) return "server";
+  if (path.includes("web")) return "web";
+  if (path.includes("onebot")) return "onebot";
+  if (path.includes("plugins")) return "plugins";
+  if (path.includes("presets")) return "presets";
+  if (path.includes("storage")) return "storage";
+  if (path.includes("logs")) return "logs";
+  return "overview";
 });
 
 // 检查是否在设置子页面
 const isInSubPage = () => {
   const currentPath = route.path;
-  return currentPath !== '/settings' && currentPath.startsWith('/settings/');
+  return currentPath !== "/settings" && currentPath.startsWith("/settings/");
 };
 
 // 获取返回按钮的提示文本
 const getBackButtonTitle = () => {
-  return isInSubPage() ? '返回设置' : '关闭设置';
+  return isInSubPage() ? "返回设置" : "关闭设置";
 };
 
 // 获取移动端标题
 const getMobileTitle = () => {
   const currentPath = route.path;
-  
+
   // 如果在设置首页，显示"设置"
-  if (currentPath === '/settings') {
-    return '设置';
+  if (currentPath === "/settings") {
+    return "设置";
   }
-  
+
   // 如果在设置子页面，显示对应的页面名称
-  const currentItem = menuItems.find(item => item.index === activeMenu.value);
-  return currentItem ? currentItem.label : '设置';
+  const currentItem = menuItems.find((item) => item.index === activeMenu.value);
+  return currentItem ? currentItem.label : "设置";
 };
 
 // 移动端菜单控制
@@ -269,20 +329,20 @@ const handleMobileMenuSelect = (index) => {
 const handleBackToHome = () => {
   // 智能返回逻辑
   const currentPath = route.path;
-  
+
   // 如果在设置子页面，返回设置首页
-  if (currentPath !== '/settings' && currentPath.startsWith('/settings/')) {
-    router.push('/settings');
+  if (currentPath !== "/settings" && currentPath.startsWith("/settings/")) {
+    router.push("/settings");
   } else {
     // 如果在设置首页，返回聊天页面
-    router.push('/');
+    router.push("/");
   }
 };
 
 // 菜单选择处理
 const handleMenuSelect = (index) => {
-  if (index === 'overview') {
-    router.push('/settings');
+  if (index === "overview") {
+    router.push("/settings");
   } else {
     router.push(`/settings/${index}`);
   }
@@ -292,16 +352,16 @@ const handleMenuSelect = (index) => {
 const handleRestartService = async () => {
   try {
     await ElMessageBox.confirm(
-      '重启服务将断开所有连接，是否继续？',
-      '确认重启',
+      "重启服务将断开所有连接，是否继续？",
+      "确认重启",
       {
-        confirmButtonText: '确认',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
+        confirmButtonText: "确认",
+        cancelButtonText: "取消",
+        type: "warning",
+      },
     );
 
-    ElMessage.info('重启服务功能需要后端支持，暂未实现');
+    ElMessage.info("重启服务功能需要后端支持，暂未实现");
     // TODO: 调用后端重启 API
     // await configAPI.restartService();
   } catch (error) {
@@ -313,25 +373,25 @@ const handleRestartService = async () => {
 const handleReset = async () => {
   try {
     await ElMessageBox.confirm(
-      '此操作将重置所有配置到默认状态，是否继续？',
-      '确认重置',
+      "此操作将重置所有配置到默认状态，是否继续？",
+      "确认重置",
       {
-        confirmButtonText: '确认',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
+        confirmButtonText: "确认",
+        cancelButtonText: "取消",
+        type: "warning",
+      },
     );
 
     const result = await client.reset();
     if (result) {
-      ElMessage.success('重置成功');
+      ElMessage.success("重置成功");
       setTimeout(() => {
         window.location.reload();
       }, 500);
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('重置失败：' + error.message);
+    if (error !== "cancel") {
+      ElMessage.error("重置失败：" + error.message);
     }
   }
 };
@@ -340,23 +400,23 @@ const handleReset = async () => {
 const handleResetCache = async () => {
   try {
     await ElMessageBox.confirm(
-      '此操作将清理所有缓存数据，是否继续？',
-      '确认清理',
+      "此操作将清理所有缓存数据，是否继续？",
+      "确认清理",
       {
-        confirmButtonText: '确认',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
+        confirmButtonText: "确认",
+        cancelButtonText: "取消",
+        type: "warning",
+      },
     );
 
     await client.resetCache();
-    ElMessage.success('清理缓存成功');
+    ElMessage.success("清理缓存成功");
     setTimeout(() => {
       window.location.reload();
     }, 500);
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('清理缓存失败：' + error.message);
+    if (error !== "cancel") {
+      ElMessage.error("清理缓存失败：" + error.message);
     }
   }
 };
@@ -365,16 +425,16 @@ const handleResetCache = async () => {
 onMounted(async () => {
   // 检测移动端
   checkMobile();
-  window.addEventListener('resize', checkMobile);
-  
+  window.addEventListener("resize", checkMobile);
+
   // 初始化日志订阅
   try {
     await logStore.initialize();
-    console.log('日志订阅初始化成功');
+    console.log("日志订阅初始化成功");
   } catch (error) {
-    console.error('日志订阅初始化失败:', error);
+    console.error("日志订阅初始化失败:", error);
   }
-  
+
   // 如果有本地保存的访问码，直接用它去拉取配置以验证权限
   if (configStore.isAuthenticated) {
     try {
@@ -383,7 +443,7 @@ onMounted(async () => {
     } catch (error) {
       // 认证失败或无权限，展示禁止访问
       forbidden.value = true;
-      console.warn('当前访问码无权限或已失效', error);
+      console.warn("当前访问码无权限或已失效", error);
     }
   } else {
     // 未登录不跳转，直接展示禁止访问（保留侧边栏可用）
@@ -392,7 +452,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  window.removeEventListener('resize', checkMobile);
+  window.removeEventListener("resize", checkMobile);
 });
 </script>
 
@@ -652,18 +712,18 @@ onUnmounted(() => {
   flex: 1;
   border: none;
   background: transparent;
-  
+
   :deep(.el-menu-item) {
     height: 50px;
     line-height: 50px;
     margin-bottom: 4px;
     border-radius: 8px; // 菜单项圆角
     color: #606266;
-    
+
     &:hover {
       background-color: rgba(0, 0, 0, 0.04);
     }
-    
+
     &.is-active {
       background-color: #fff; // 选中项白色背景
       color: #409eff;
@@ -692,7 +752,7 @@ onUnmounted(() => {
     padding-left: 20px;
     border: none;
     background: rgba(255, 255, 255, 0.6);
-    
+
     &:hover {
       background: #fff;
     }
@@ -737,110 +797,22 @@ onUnmounted(() => {
 }
 </style>
 
-// 响应式样式
-@media (max-width: 768px) {
-  #settings-view {
-    width: 100% !important;
-  }
-
-  .admin-panel-sidebar {
-    display: none !important;
-  }
-
-  .restart-banner-content {
-    flex-direction: column;
-    gap: 8px;
-    align-items: flex-start;
-
-    span {
-      font-size: 14px;
-    }
-  }
-
-  .mobile-header {
-    display: block !important;
-  }
-
-  .admin-panel-container {
-    padding: 0 !important;
-  }
-
-  .admin-panel-content {
-    border-radius: 0 !important;
-    box-shadow: none !important;
-  }
-}
-
-// 确保桌面端不显示移动端组件
-@media (min-width: 769px) {
-  .mobile-header,
-  .mobile-menu-overlay {
-    display: none !important;
-  }
-}
-
-// 平板适配
-@media (min-width: 769px) and (max-width: 1024px) {
-  .admin-panel-sidebar {
-    width: 180px;
-  }
-
-  .admin-panel-menu {
-    :deep(.el-menu-item) {
-      span {
-        font-size: 14px;
-      }
-    }
-  }
-}
-// 移动端导航状态样式
-@media (max-width: 768px) {
-  .mobile-header {
-    // 在子页面时的样式
-    &.sub-page {
-      .mobile-title {
-        color: #409eff;
-      }
-      
-      .back-button {
-        color: #409eff;
-        
-        &:hover {
-          background-color: #ecf5ff;
-        }
-      }
-    }
-    
-    // 在首页时的样式
-    &.main-page {
-      .back-button {
-        color: #909399;
-        
-        &:hover {
-          background-color: #f5f7fa;
-        }
-      }
-    }
-  }
-  
-  // 面包屑导航效果
-  .mobile-header-content {
-    position: relative;
-    
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: -1px;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, transparent 0%, #409eff 50%, transparent 100%);
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    
-    &.sub-page::after {
-      opacity: 1;
-    }
-  }
-}
+// 响应式样式 @media (max-width: 768px) { #settings-view { width: 100%
+!important; } .admin-panel-sidebar { display: none !important; }
+.restart-banner-content { flex-direction: column; gap: 8px; align-items:
+flex-start; span { font-size: 14px; } } .mobile-header { display: block
+!important; } .admin-panel-container { padding: 0 !important; }
+.admin-panel-content { border-radius: 0 !important; box-shadow: none !important;
+} } // 确保桌面端不显示移动端组件 @media (min-width: 769px) { .mobile-header,
+.mobile-menu-overlay { display: none !important; } } // 平板适配 @media
+(min-width: 769px) and (max-width: 1024px) { .admin-panel-sidebar { width:
+180px; } .admin-panel-menu { :deep(.el-menu-item) { span { font-size: 14px; } }
+} } // 移动端导航状态样式 @media (max-width: 768px) { .mobile-header { //
+在子页面时的样式 &.sub-page { .mobile-title { color: #409eff; } .back-button {
+color: #409eff; &:hover { background-color: #ecf5ff; } } } // 在首页时的样式
+&.main-page { .back-button { color: #909399; &:hover { background-color:
+#f5f7fa; } } } } // 面包屑导航效果 .mobile-header-content { position: relative;
+&::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+height: 2px; background: linear-gradient(90deg, transparent 0%, #409eff 50%,
+transparent 100%); opacity: 0; transition: opacity 0.3s; } &.sub-page::after {
+opacity: 1; } } }

@@ -32,7 +32,11 @@
       </div>
       <template #extra>
         <span class="form-item-tip">
-          {{ availableModels.length > 0 ? '为所有用户设置的默认模型' : '暂无模型列表，请先获取或手动输入' }}
+          {{
+            availableModels.length > 0
+              ? "为所有用户设置的默认模型"
+              : "暂无模型列表，请先获取或手动输入"
+          }}
         </span>
       </template>
     </el-form-item>
@@ -63,7 +67,12 @@
           style="margin-top: 8px"
         >
           <template #append>
-            <el-button :icon="Plus" @click="addKeyword" class="input-append-button">添加</el-button>
+            <el-button
+              :icon="Plus"
+              @click="addKeyword"
+              class="input-append-button"
+              >添加</el-button
+            >
           </template>
         </el-input>
       </div>
@@ -119,7 +128,10 @@
         >
           {{ model }}
         </el-tag>
-        <span v-if="guestAvailableModels.length > 10" style="color: #909399; font-size: 12px;">
+        <span
+          v-if="guestAvailableModels.length > 10"
+          style="color: #909399; font-size: 12px"
+        >
           等 {{ guestAvailableModels.length }} 个模型
         </span>
       </div>
@@ -128,71 +140,71 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { Plus, Refresh } from '@element-plus/icons-vue';
+import { ref, computed } from "vue";
+import { Plus, Refresh } from "@element-plus/icons-vue";
 
 const props = defineProps({
   modelValue: {
     type: Object,
     default: () => ({
-      default: '',
+      default: "",
       guest: {
         keywords: [],
-        full_name: []
-      }
-    })
+        full_name: [],
+      },
+    }),
   },
   availableModels: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   showDefault: {
     type: Boolean,
-    default: true
+    default: true,
   },
   showFetchButton: {
     type: Boolean,
-    default: false
+    default: false,
   },
   fetchingModels: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 });
 
-const emit = defineEmits(['update:modelValue', 'fetch-models']);
+const emit = defineEmits(["update:modelValue", "fetch-models"]);
 
-const newKeyword = ref('');
+const newKeyword = ref("");
 
 // 获取模型列表
 const handleFetchModels = () => {
-  emit('fetch-models');
+  emit("fetch-models");
 };
 
 // 访客可用模型预览
 const guestAvailableModels = computed(() => {
   const keywords = props.modelValue.guest?.keywords || [];
   const fullNames = props.modelValue.guest?.full_name || [];
-  
+
   // 合并关键词匹配和完整名称
   const matched = new Set(fullNames);
-  
-  keywords.forEach(keyword => {
-    props.availableModels.forEach(model => {
+
+  keywords.forEach((keyword) => {
+    props.availableModels.forEach((model) => {
       if (model.toLowerCase().includes(keyword.toLowerCase())) {
         matched.add(model);
       }
     });
   });
-  
+
   return Array.from(matched);
 });
 
 // 更新默认模型
 const updateDefault = (value) => {
-  emit('update:modelValue', {
+  emit("update:modelValue", {
     ...props.modelValue,
-    default: value
+    default: value,
   });
 };
 
@@ -200,44 +212,44 @@ const updateDefault = (value) => {
 const addKeyword = () => {
   const keyword = newKeyword.value.trim();
   if (!keyword) return;
-  
+
   const keywords = props.modelValue.guest?.keywords || [];
   if (keywords.includes(keyword)) {
-    newKeyword.value = '';
+    newKeyword.value = "";
     return;
   }
-  
-  emit('update:modelValue', {
+
+  emit("update:modelValue", {
     ...props.modelValue,
     guest: {
       ...props.modelValue.guest,
-      keywords: [...keywords, keyword]
-    }
+      keywords: [...keywords, keyword],
+    },
   });
-  
-  newKeyword.value = '';
+
+  newKeyword.value = "";
 };
 
 // 移除关键词
 const removeKeyword = (keyword) => {
   const keywords = props.modelValue.guest?.keywords || [];
-  emit('update:modelValue', {
+  emit("update:modelValue", {
     ...props.modelValue,
     guest: {
       ...props.modelValue.guest,
-      keywords: keywords.filter(k => k !== keyword)
-    }
+      keywords: keywords.filter((k) => k !== keyword),
+    },
   });
 };
 
 // 更新完整名称列表
 const updateFullNames = (value) => {
-  emit('update:modelValue', {
+  emit("update:modelValue", {
     ...props.modelValue,
     guest: {
       ...props.modelValue.guest,
-      full_name: value
-    }
+      full_name: value,
+    },
   });
 };
 </script>
@@ -247,7 +259,7 @@ const updateFullNames = (value) => {
   :deep(.el-form-item) {
     margin-bottom: 22px;
   }
-  
+
   :deep(.el-form-item__label) {
     font-weight: 600;
   }
@@ -257,11 +269,11 @@ const updateFullNames = (value) => {
   display: flex;
   gap: 8px;
   width: 100%;
-  
+
   .model-select {
     flex: 1;
   }
-  
+
   .fetch-button {
     flex-shrink: 0;
     width: 100px;

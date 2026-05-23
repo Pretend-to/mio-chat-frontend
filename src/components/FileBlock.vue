@@ -59,7 +59,7 @@ export default {
     const bits = params.get("size");
     this.file_name = params.get("name") || "未知文件";
     this.formated_file_size = this.formatFileSize(bits);
-    
+
     // 优先从名字获取类型，兼容本地 blob URL
     const nameParts = this.file_name.split(".");
     if (nameParts.length > 1) {

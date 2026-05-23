@@ -8,35 +8,51 @@
             <span class="card-title">服务提供商 (Provider)</span>
           </div>
           <div class="provider-list-scroll">
-            <div class="provider-item" 
-                 :class="{ active: store.selectedProvider === 'All' }" 
-                 @click="selectProvider('All')">
+            <div
+              class="provider-item"
+              :class="{ active: store.selectedProvider === 'All' }"
+              @click="selectProvider('All')"
+            >
               <span class="provider-name">全部提供商 (All)</span>
               <span class="provider-tokens">
-                <i class="fa-solid fa-coins"></i> {{ formatTokens(store.totalAllTokens) }}
+                <i class="fa-solid fa-coins"></i>
+                {{ formatTokens(store.totalAllTokens) }}
               </span>
             </div>
-            
-            <div v-for="p in store.groupedProviders" :key="p.name" 
-                 class="provider-item" 
-                 :class="{ active: store.selectedProvider === p.name }" 
-                 @click="selectProvider(p.name)">
+
+            <div
+              v-for="p in store.groupedProviders"
+              :key="p.name"
+              class="provider-item"
+              :class="{ active: store.selectedProvider === p.name }"
+              @click="selectProvider(p.name)"
+            >
               <span class="provider-name">{{ p.name }}</span>
               <span class="provider-tokens">
-                <i class="fa-solid fa-coins"></i> {{ formatTokens(p.totalTokens) }}
+                <i class="fa-solid fa-coins"></i>
+                {{ formatTokens(p.totalTokens) }}
               </span>
             </div>
           </div>
         </div>
       </div>
-      
+
       <div class="right-col-8">
         <div class="saas-card chart-card">
           <div class="card-header">
-            <span class="card-title">模型 Token 消耗分布 ({{ store.selectedProvider === 'All' ? '全部' : store.selectedProvider }})</span>
+            <span class="card-title"
+              >模型 Token 消耗分布 ({{
+                store.selectedProvider === "All"
+                  ? "全部"
+                  : store.selectedProvider
+              }})</span
+            >
           </div>
           <div class="card-body-chart">
-            <div id="provider-models-chart" class="chart-container-models"></div>
+            <div
+              id="provider-models-chart"
+              class="chart-container-models"
+            ></div>
           </div>
         </div>
       </div>
@@ -45,40 +61,84 @@
     <!-- Model Details Table Card -->
     <div class="saas-card mt-lg">
       <div class="card-header">
-        <span class="card-title">具体模型 Token 消耗明细 ({{ store.selectedProvider === 'All' ? '全部' : store.selectedProvider }})</span>
+        <span class="card-title"
+          >具体模型 Token 消耗明细 ({{
+            store.selectedProvider === "All" ? "全部" : store.selectedProvider
+          }})</span
+        >
       </div>
       <div class="card-body p-none">
-        <el-table :data="filteredModelsTable" style="width: 100%" class="saas-table">
+        <el-table
+          :data="filteredModelsTable"
+          style="width: 100%"
+          class="saas-table"
+        >
           <el-table-column prop="model" label="模型名称" min-width="180">
             <template #default="scope">
               <span class="model-name-badge">{{ scope.row.model }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="provider" label="提供商" width="120" align="center">
+          <el-table-column
+            prop="provider"
+            label="提供商"
+            width="120"
+            align="center"
+          >
             <template #default="scope">
-              <el-tag size="small" :type="getProviderTagType(scope.row.provider)">
+              <el-tag
+                size="small"
+                :type="getProviderTagType(scope.row.provider)"
+              >
                 {{ scope.row.provider }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="callCount" label="调用次数" width="120" align="right">
-            <template #default="scope">{{ formatNumber(scope.row.callCount) }}</template>
+          <el-table-column
+            prop="callCount"
+            label="调用次数"
+            width="120"
+            align="right"
+          >
+            <template #default="scope">{{
+              formatNumber(scope.row.callCount)
+            }}</template>
           </el-table-column>
-          <el-table-column prop="promptTokens" label="输入 (Prompt)" align="right">
-            <template #default="scope">{{ formatNumber(scope.row.promptTokens) }}</template>
+          <el-table-column
+            prop="promptTokens"
+            label="输入 (Prompt)"
+            align="right"
+          >
+            <template #default="scope">{{
+              formatNumber(scope.row.promptTokens)
+            }}</template>
           </el-table-column>
-          <el-table-column prop="candidatesTokens" label="输出 (Candidates)" align="right">
-            <template #default="scope">{{ formatNumber(scope.row.candidatesTokens) }}</template>
+          <el-table-column
+            prop="candidatesTokens"
+            label="输出 (Candidates)"
+            align="right"
+          >
+            <template #default="scope">{{
+              formatNumber(scope.row.candidatesTokens)
+            }}</template>
           </el-table-column>
           <el-table-column prop="cacheHitTokens" label="缓存命中" align="right">
             <template #default="scope">
-              <span v-if="scope.row.cacheHitTokens > 0" class="text-green">{{ formatNumber(scope.row.cacheHitTokens) }}</span>
+              <span v-if="scope.row.cacheHitTokens > 0" class="text-green">{{
+                formatNumber(scope.row.cacheHitTokens)
+              }}</span>
               <span v-else class="text-muted">-</span>
             </template>
           </el-table-column>
-          <el-table-column prop="totalTokens" label="总消耗 (Tokens)" width="150" align="right">
+          <el-table-column
+            prop="totalTokens"
+            label="总消耗 (Tokens)"
+            width="150"
+            align="right"
+          >
             <template #default="scope">
-              <span class="token-value-text">{{ formatNumber(scope.row.totalTokens) }}</span>
+              <span class="token-value-text">{{
+                formatNumber(scope.row.totalTokens)
+              }}</span>
             </template>
           </el-table-column>
         </el-table>
@@ -93,19 +153,33 @@
             <span class="card-title">活跃用户排行 (Top 10)</span>
           </div>
           <div class="card-body p-none">
-            <el-table :data="store.userRankings" size="default" class="saas-table">
+            <el-table
+              :data="store.userRankings"
+              size="default"
+              class="saas-table"
+            >
               <el-table-column label="排名" width="80" align="center">
                 <template #default="scope">
-                  <span class="rank-badge" :class="'rank-' + (scope.$index + 1)">
+                  <span
+                    class="rank-badge"
+                    :class="'rank-' + (scope.$index + 1)"
+                  >
                     {{ scope.$index + 1 }}
                   </span>
                 </template>
               </el-table-column>
               <el-table-column prop="userId" label="用户 ID"></el-table-column>
-              <el-table-column prop="calls" label="调用次数" width="120" align="right"></el-table-column>
+              <el-table-column
+                prop="calls"
+                label="调用次数"
+                width="120"
+                align="right"
+              ></el-table-column>
               <el-table-column prop="tokens" label="消耗 Token" align="right">
                 <template #default="scope">
-                  <span class="token-value-text">{{ formatNumber(scope.row.tokens) }}</span>
+                  <span class="token-value-text">{{
+                    formatNumber(scope.row.tokens)
+                  }}</span>
                 </template>
               </el-table-column>
             </el-table>
@@ -119,19 +193,36 @@
             <span class="card-title">会话窗口排行 (Top 10)</span>
           </div>
           <div class="card-body p-none">
-            <el-table :data="store.windowRankings" size="default" class="saas-table">
+            <el-table
+              :data="store.windowRankings"
+              size="default"
+              class="saas-table"
+            >
               <el-table-column label="排名" width="80" align="center">
                 <template #default="scope">
-                  <span class="rank-badge" :class="'rank-' + (scope.$index + 1)">
+                  <span
+                    class="rank-badge"
+                    :class="'rank-' + (scope.$index + 1)"
+                  >
                     {{ scope.$index + 1 }}
                   </span>
                 </template>
               </el-table-column>
-              <el-table-column prop="contactorId" label="窗口 / 对话ID"></el-table-column>
-              <el-table-column prop="calls" label="调用次数" width="120" align="right"></el-table-column>
+              <el-table-column
+                prop="contactorId"
+                label="窗口 / 对话ID"
+              ></el-table-column>
+              <el-table-column
+                prop="calls"
+                label="调用次数"
+                width="120"
+                align="right"
+              ></el-table-column>
               <el-table-column prop="tokens" label="消耗 Token" align="right">
                 <template #default="scope">
-                  <span class="token-value-text">{{ formatNumber(scope.row.tokens) }}</span>
+                  <span class="token-value-text">{{
+                    formatNumber(scope.row.tokens)
+                  }}</span>
                 </template>
               </el-table-column>
             </el-table>
@@ -143,147 +234,187 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
-import { useDashboardStore } from '@/stores/dashboardStore'
-import * as echarts from 'echarts'
+import { onMounted, onUnmounted, watch, nextTick, computed } from "vue";
+import { useDashboardStore } from "@/stores/dashboardStore";
+import * as echarts from "echarts";
 
-const store = useDashboardStore()
+const store = useDashboardStore();
 
 const filteredModelsTable = computed(() => {
-  if (!store.rawModelDistribution) return []
-  const filtered = store.selectedProvider === 'All'
-    ? store.rawModelDistribution
-    : store.rawModelDistribution.filter(m => (m.provider || 'openai') === store.selectedProvider)
-  
+  if (!store.rawModelDistribution) return [];
+  const filtered =
+    store.selectedProvider === "All"
+      ? store.rawModelDistribution
+      : store.rawModelDistribution.filter(
+          (m) => (m.provider || "openai") === store.selectedProvider,
+        );
+
   const grouped = filtered.reduce((acc, curr) => {
-    const key = `${curr.provider || 'openai'}/${curr.model}`
+    const key = `${curr.provider || "openai"}/${curr.model}`;
     if (!acc[key]) {
       acc[key] = {
         model: curr.model,
-        provider: curr.provider || 'openai',
+        provider: curr.provider || "openai",
         callCount: 0,
         totalTokens: 0,
         promptTokens: 0,
         candidatesTokens: 0,
         cacheHitTokens: 0,
-        cacheMissTokens: 0
-      }
+        cacheMissTokens: 0,
+      };
     }
-    acc[key].callCount += curr.callCount || 0
-    acc[key].totalTokens += curr.totalTokens || 0
-    acc[key].promptTokens += curr.promptTokens || 0
-    acc[key].candidatesTokens += curr.candidatesTokens || 0
-    acc[key].cacheHitTokens += curr.cacheHitTokens || 0
-    acc[key].cacheMissTokens += curr.cacheMissTokens || 0
-    return acc
-  }, {})
+    acc[key].callCount += curr.callCount || 0;
+    acc[key].totalTokens += curr.totalTokens || 0;
+    acc[key].promptTokens += curr.promptTokens || 0;
+    acc[key].candidatesTokens += curr.candidatesTokens || 0;
+    acc[key].cacheHitTokens += curr.cacheHitTokens || 0;
+    acc[key].cacheMissTokens += curr.cacheMissTokens || 0;
+    return acc;
+  }, {});
 
-  return Object.values(grouped).sort((a, b) => b.totalTokens - a.totalTokens)
-})
+  return Object.values(grouped).sort((a, b) => b.totalTokens - a.totalTokens);
+});
 
 function getProviderTagType(prov) {
-  const p = (prov || '').toLowerCase()
-  if (p.includes('openai') || p.includes('deepseek')) return 'success'
-  if (p.includes('gemini') || p.includes('google')) return 'warning'
-  if (p.includes('anthropic') || p.includes('claude')) return 'danger'
-  return 'info'
+  const p = (prov || "").toLowerCase();
+  if (p.includes("openai") || p.includes("deepseek")) return "success";
+  if (p.includes("gemini") || p.includes("google")) return "warning";
+  if (p.includes("anthropic") || p.includes("claude")) return "danger";
+  return "info";
 }
 
-let modelsChart = null
+let modelsChart = null;
 
 function formatTokens(t) {
-  if (!t && t !== 0) return '0'
-  return t >= 1000 ? (t / 1000).toFixed(1) + 'k' : t.toString()
+  if (!t && t !== 0) return "0";
+  return t >= 1000 ? (t / 1000).toFixed(1) + "k" : t.toString();
 }
 
 function formatNumber(num) {
-  if (!num && num !== 0) return '0'
-  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  if (!num && num !== 0) return "0";
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
 const lightChartTheme = {
-  backgroundColor: 'transparent',
-  textStyle: { color: '#64748b', fontFamily: 'Plus Jakarta Sans, sans-serif' },
-  grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true, borderColor: '#f1f5f9' },
+  backgroundColor: "transparent",
+  textStyle: { color: "#64748b", fontFamily: "Plus Jakarta Sans, sans-serif" },
+  grid: {
+    left: "3%",
+    right: "4%",
+    bottom: "3%",
+    containLabel: true,
+    borderColor: "#f1f5f9",
+  },
   tooltip: {
-    backgroundColor: '#ffffff',
-    borderColor: '#e2e8f0',
+    backgroundColor: "#ffffff",
+    borderColor: "#e2e8f0",
     borderWidth: 1,
-    textStyle: { color: '#0f172a', fontFamily: 'Plus Jakarta Sans, sans-serif' },
+    textStyle: {
+      color: "#0f172a",
+      fontFamily: "Plus Jakarta Sans, sans-serif",
+    },
     borderRadius: 8,
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
-  }
-}
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+  },
+};
 
 function initChart() {
-  const el = document.getElementById('provider-models-chart')
+  const el = document.getElementById("provider-models-chart");
   if (el && !modelsChart) {
-    modelsChart = echarts.init(el)
+    modelsChart = echarts.init(el);
   }
-  renderChart()
+  renderChart();
 }
 
 function renderChart() {
-  if (!modelsChart || !store.rawModelDistribution) return
+  if (!modelsChart || !store.rawModelDistribution) return;
 
   // Filter models
-  const filtered = store.selectedProvider === 'All'
-    ? store.rawModelDistribution
-    : store.rawModelDistribution.filter(m => (m.provider || 'openai') === store.selectedProvider)
+  const filtered =
+    store.selectedProvider === "All"
+      ? store.rawModelDistribution
+      : store.rawModelDistribution.filter(
+          (m) => (m.provider || "openai") === store.selectedProvider,
+        );
 
   // Group duplicate models
   const modelMap = filtered.reduce((acc, curr) => {
-    const key = curr.model || 'unknown'
-    acc[key] = (acc[key] || 0) + (curr.totalTokens || 0)
-    return acc
-  }, {})
+    const key = curr.model || "unknown";
+    acc[key] = (acc[key] || 0) + (curr.totalTokens || 0);
+    return acc;
+  }, {});
 
-  const chartData = Object.entries(modelMap).map(([name, value]) => ({
-    name,
-    value
-  })).sort((a, b) => b.value - a.value)
+  const chartData = Object.entries(modelMap)
+    .map(([name, value]) => ({
+      name,
+      value,
+    }))
+    .sort((a, b) => b.value - a.value);
 
-  modelsChart.setOption({
-    ...lightChartTheme,
-    tooltip: { ...lightChartTheme.tooltip, trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-    color: ['#3b82f6', '#10b981', '#6366f1', '#f59e0b', '#ec4899', '#94a3b8'],
-    series: [{
-      type: 'pie',
-      radius: ['45%', '70%'],
-      avoidLabelOverlap: false,
-      itemStyle: { borderRadius: 6, borderColor: '#ffffff', borderWidth: 2 },
-      label: { show: true, color: '#475569', formatter: '{b}\n{d}%', fontFamily: 'Plus Jakarta Sans, sans-serif' },
-      emphasis: { label: { show: true, fontSize: 13, fontWeight: 'bold' } },
-      data: chartData.length > 0 ? chartData : [{ name: '无数据', value: 0 }]
-    }]
-  }, true)
+  modelsChart.setOption(
+    {
+      ...lightChartTheme,
+      tooltip: {
+        ...lightChartTheme.tooltip,
+        trigger: "item",
+        formatter: "{b}: {c} ({d}%)",
+      },
+      color: ["#3b82f6", "#10b981", "#6366f1", "#f59e0b", "#ec4899", "#94a3b8"],
+      series: [
+        {
+          type: "pie",
+          radius: ["45%", "70%"],
+          avoidLabelOverlap: false,
+          itemStyle: {
+            borderRadius: 6,
+            borderColor: "#ffffff",
+            borderWidth: 2,
+          },
+          label: {
+            show: true,
+            color: "#475569",
+            formatter: "{b}\n{d}%",
+            fontFamily: "Plus Jakarta Sans, sans-serif",
+          },
+          emphasis: { label: { show: true, fontSize: 13, fontWeight: "bold" } },
+          data:
+            chartData.length > 0 ? chartData : [{ name: "无数据", value: 0 }],
+        },
+      ],
+    },
+    true,
+  );
 }
 
 function selectProvider(name) {
-  store.selectedProvider = name
-  nextTick(renderChart)
+  store.selectedProvider = name;
+  nextTick(renderChart);
 }
 
-watch(() => store.historicalData, () => {
-  nextTick(renderChart)
-}, { deep: true })
+watch(
+  () => store.historicalData,
+  () => {
+    nextTick(renderChart);
+  },
+  { deep: true },
+);
 
 function handleResize() {
-  modelsChart?.resize()
+  modelsChart?.resize();
 }
 
 onMounted(() => {
   nextTick(() => {
-    initChart()
-    window.addEventListener('resize', handleResize)
-  })
-})
+    initChart();
+    window.addEventListener("resize", handleResize);
+  });
+});
 
 onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
-  modelsChart?.dispose()
-  modelsChart = null
-})
+  window.removeEventListener("resize", handleResize);
+  modelsChart?.dispose();
+  modelsChart = null;
+});
 </script>
 
 <style scoped>
@@ -310,7 +441,8 @@ onUnmounted(() => {
 }
 
 @media (max-width: 768px) {
-  .left-col-4, .right-col-8 {
+  .left-col-4,
+  .right-col-8 {
     width: 100%;
   }
 }
@@ -375,7 +507,7 @@ onUnmounted(() => {
 }
 
 .provider-item.active::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 25%;
@@ -395,7 +527,7 @@ onUnmounted(() => {
   font-size: 12px;
   color: #2563eb;
   font-weight: 600;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
 }
 
 .card-body-chart {
@@ -433,7 +565,7 @@ onUnmounted(() => {
 }
 
 .token-value-text {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-weight: 600;
   color: #0f172a;
 }
@@ -477,12 +609,13 @@ onUnmounted(() => {
   border: none !important;
 }
 
-:deep(.saas-table td.el-table__cell), :deep(.saas-table th.el-table__cell) {
+:deep(.saas-table td.el-table__cell),
+:deep(.saas-table th.el-table__cell) {
   padding: 12px 20px !important;
 }
 
 .model-name-badge {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-weight: 500;
   color: #1e293b;
   background: #f8fafc;

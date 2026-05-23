@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue';
+import { computed, ref } from "vue";
 
 /**
  * 真·瀑布流布局 Composable
@@ -11,7 +11,7 @@ export function useWaterfall(itemsRef, containerRef, options = {}) {
     gap = 16,
     minColWidth = 320,
     getId = (item) => item.id || item.name || Math.random(),
-    initialHeight = 280
+    initialHeight = 280,
   } = options;
 
   const cols = ref(3);
@@ -75,7 +75,7 @@ export function useWaterfall(itemsRef, containerRef, options = {}) {
         key: `wf-${i}-${getId(items[i])}`,
         data: items[i],
         style: {
-          position: 'absolute',
+          position: "absolute",
           left: `${x}px`,
           top: `${y}px`,
           width: `${cw}px`,
@@ -114,8 +114,8 @@ export function useWaterfall(itemsRef, containerRef, options = {}) {
     // 监听每个卡片的高度变化
     itemRo = new ResizeObserver((entries) => {
       let changed = false;
-      entries.forEach(entry => {
-        const idx = parseInt(entry.target.getAttribute('data-index'));
+      entries.forEach((entry) => {
+        const idx = parseInt(entry.target.getAttribute("data-index"));
         const h = entry.contentRect.height;
         if (!isNaN(idx) && h > 0 && h !== cardHeightMap.get(idx)) {
           cardHeightMap.set(idx, h);
@@ -140,7 +140,7 @@ export function useWaterfall(itemsRef, containerRef, options = {}) {
    */
   function observeItems(elements) {
     if (!itemRo || !elements) return;
-    elements.forEach(el => {
+    elements.forEach((el) => {
       const dom = el?.$el || el;
       if (dom instanceof HTMLElement) {
         itemRo.observe(dom);
@@ -151,9 +151,9 @@ export function useWaterfall(itemsRef, containerRef, options = {}) {
   return {
     waterfallCards,
     waterfallStyle: computed(() => ({
-      position: 'relative',
-      width: '100%',
-      minHeight: containerHeight.value ? `${containerHeight.value}px` : '400px',
+      position: "relative",
+      width: "100%",
+      minHeight: containerHeight.value ? `${containerHeight.value}px` : "400px",
     })),
     startObserve,
     stopObserve,

@@ -7,13 +7,16 @@
       </div>
       <button :class="{ active: show, 'extra-info-button': true }">
         <svg class="chevron" viewBox="0 0 1024 1024" width="10" height="10">
-          <path d="M338.752 104.704a64 64 0 0 0 0 90.496l316.8 316.8-316.8 316.8a64 64 0 0 0 90.496 90.496l362.048-362.048a64 64 0 0 0 0-90.496L429.248 14.208a64 64 0 0 0-90.496 90.496z" fill="currentColor"></path>
+          <path
+            d="M338.752 104.704a64 64 0 0 0 0 90.496l316.8 316.8-316.8 316.8a64 64 0 0 0 90.496 90.496l362.048-362.048a64 64 0 0 0 0-90.496L429.248 14.208a64 64 0 0 0-90.496 90.496z"
+            fill="currentColor"
+          ></path>
         </svg>
       </button>
     </div>
-    <div 
-      ref="reasonContent" 
-      class="reason-content" 
+    <div
+      ref="reasonContent"
+      class="reason-content"
       :class="{ 'is-expanded': show }"
       @scroll="handleScroll"
     >
@@ -62,14 +65,14 @@ export default {
       if (this.duration > 0) {
         return `已深度思考 (${(this.duration / 1000).toFixed(1)}s)`;
       }
-      
+
       // 2. 如果已结束但只有时间戳，计算时长
       if (this.endTime) {
         const timeDiff = this.endTime - this.startTime;
         if (timeDiff <= 0) return `已深度思考`;
         return `已深度思考 (${(timeDiff / 1000).toFixed(1)}s)`;
       }
-      
+
       // 3. 正在思考中，显示实时计时器
       const liveDiff = this.currentTime - this.startTime;
       const seconds = Math.max(0, liveDiff / 1000).toFixed(1);
@@ -147,7 +150,8 @@ export default {
     },
     handleScroll(e) {
       const el = e.target;
-      this.isUserScrolledUp = el.scrollHeight - el.scrollTop - el.clientHeight > 20;
+      this.isUserScrolledUp =
+        el.scrollHeight - el.scrollTop - el.clientHeight > 20;
     },
     scrollToBottomIfNeeded() {
       const el = this.$refs.reasonContent;
@@ -215,8 +219,13 @@ export default {
 }
 
 @keyframes dot-blink {
-  0%, 100% { opacity: 0.35; }
-  50% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .extra-info-button {
@@ -243,7 +252,9 @@ export default {
   max-width: 100%;
   max-height: 0;
   overflow: hidden;
-  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  transition:
+    max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s ease;
   opacity: 0;
   will-change: max-height; /* 性能优化 */
 }
@@ -274,6 +285,3 @@ export default {
   border-radius: 2px;
 }
 </style>
-
-
-

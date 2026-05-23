@@ -12,7 +12,7 @@
     <div class="card-header">
       <div class="header-left">
         <el-tag :type="adapter.enable ? 'success' : 'info'" size="small">
-          {{ adapter.enable ? '已启用' : '已禁用' }}
+          {{ adapter.enable ? "已启用" : "已禁用" }}
         </el-tag>
         <h3 class="adapter-name">{{ displayName }}</h3>
       </div>
@@ -40,7 +40,7 @@
         </div>
         <div class="info-item">
           <span class="label">默认模型</span>
-          <span class="value">{{ adapter.default_model || '-' }}</span>
+          <span class="value">{{ adapter.default_model || "-" }}</span>
         </div>
         <div class="info-item">
           <span class="label">可用模型</span>
@@ -55,11 +55,7 @@
 
     <!-- 操作按钮 -->
     <div class="card-actions">
-      <el-button
-        size="small"
-        :icon="Edit"
-        @click="handleEdit"
-      >
+      <el-button size="small" :icon="Edit" @click="handleEdit">
         编辑
       </el-button>
       <el-button
@@ -83,14 +79,14 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { ElMessageBox, ElMessage } from 'element-plus';
-import { Edit, Refresh, Delete } from '@element-plus/icons-vue';
+import { ref, computed } from "vue";
+import { ElMessageBox, ElMessage } from "element-plus";
+import { Edit, Refresh, Delete } from "@element-plus/icons-vue";
 
 const props = defineProps({
   adapter: {
     type: Object,
-    required: true
+    required: true,
   },
   type: {
     type: String,
@@ -98,23 +94,23 @@ const props = defineProps({
   },
   index: {
     type: Number,
-    required: true
+    required: true,
   },
   models: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   selectable: {
     type: Boolean,
-    default: false
+    default: false,
   },
   isSelected: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 });
 
-const emit = defineEmits(['edit', 'delete', 'refresh', 'toggle', 'select']);
+const emit = defineEmits(["edit", "delete", "refresh", "toggle", "select"]);
 
 const toggling = ref(false);
 const refreshing = ref(false);
@@ -126,18 +122,18 @@ const displayName = computed(() => {
 
 // 脱敏的 API Key
 const maskedApiKey = computed(() => {
-  const key = props.adapter.api_key || '';
-  if (!key) return '-';
-  if (key.length <= 10) return '***';
+  const key = props.adapter.api_key || "";
+  if (!key) return "-";
+  if (key.length <= 10) return "***";
   return `${key.slice(0, 6)}***${key.slice(-4)}`;
 });
 
 // 模型数量
 const modelCount = computed(() => {
   if (!props.models || !Array.isArray(props.models)) return 0;
-  
+
   let count = 0;
-  props.models.forEach(group => {
+  props.models.forEach((group) => {
     if (group.models && Array.isArray(group.models)) {
       count += group.models.length;
     }
@@ -147,14 +143,18 @@ const modelCount = computed(() => {
 
 // 模型数量标签类型
 const modelCountType = computed(() => {
-  if (modelCount.value === 0) return 'danger';
-  if (modelCount.value < 5) return 'warning';
-  return 'success';
+  if (modelCount.value === 0) return "danger";
+  if (modelCount.value < 5) return "warning";
+  return "success";
 });
 
 // 编辑
 const handleEdit = () => {
-  emit('edit', { type: props.type, index: props.index, adapter: props.adapter });
+  emit("edit", {
+    type: props.type,
+    index: props.index,
+    adapter: props.adapter,
+  });
 };
 
 // 删除
@@ -162,15 +162,15 @@ const handleDelete = async () => {
   try {
     await ElMessageBox.confirm(
       `确定要删除适配器 "${displayName.value}" 吗？`,
-      '确认删除',
+      "确认删除",
       {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
+        confirmButtonText: "删除",
+        cancelButtonText: "取消",
+        type: "warning",
+      },
     );
-    
-    emit('delete', { type: props.type, index: props.index });
+
+    emit("delete", { type: props.type, index: props.index });
   } catch (error) {
     // 用户取消
   }
@@ -180,7 +180,7 @@ const handleDelete = async () => {
 const handleRefresh = async () => {
   refreshing.value = true;
   try {
-    await emit('refresh', { type: props.type, index: props.index });
+    await emit("refresh", { type: props.type, index: props.index });
   } finally {
     refreshing.value = false;
   }
@@ -190,10 +190,10 @@ const handleRefresh = async () => {
 const handleToggle = async (value) => {
   toggling.value = true;
   try {
-    await emit('toggle', {
+    await emit("toggle", {
       type: props.type,
       index: props.index,
-      enable: value
+      enable: value,
     });
   } finally {
     toggling.value = false;
@@ -202,7 +202,7 @@ const handleToggle = async (value) => {
 
 // 选择
 const handleSelect = (value) => {
-  emit('select', { type: props.type, index: props.index, selected: value });
+  emit("select", { type: props.type, index: props.index, selected: value });
 };
 </script>
 
@@ -290,7 +290,7 @@ const handleSelect = (value) => {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      
+
       &.model-count {
         font-family: inherit;
       }

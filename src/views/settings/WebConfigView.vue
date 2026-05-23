@@ -4,11 +4,7 @@
       <h1>Web 配置</h1>
       <div class="header-actions">
         <el-button @click="handleReset">重置</el-button>
-        <el-button
-          type="primary"
-          :loading="saving"
-          @click="handleSave"
-        >
+        <el-button type="primary" :loading="saving" @click="handleSave">
           保存配置
         </el-button>
       </div>
@@ -18,11 +14,9 @@
       type="success"
       :closable="false"
       show-icon
-      style="margin-bottom: 24px;"
+      style="margin-bottom: 24px"
     >
-      <template #title>
-        Web 配置支持热更新，修改后需刷新页面生效
-      </template>
+      <template #title> Web 配置支持热更新，修改后需刷新页面生效 </template>
     </el-alert>
 
     <el-card>
@@ -116,10 +110,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import { View, Hide } from '@element-plus/icons-vue';
-import { useConfigStore } from '@/stores/configStore.js';
+import { ref, reactive, onMounted } from "vue";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { View, Hide } from "@element-plus/icons-vue";
+import { useConfigStore } from "@/stores/configStore.js";
 
 const configStore = useConfigStore();
 const formRef = ref(null);
@@ -129,11 +123,11 @@ const showUserCode = ref(false);
 
 // 表单数据
 const formData = reactive({
-  title: 'MioChat',
-  beian: '',
-  admin_code: '',
-  user_code: '',
-  full_screen: true
+  title: "MioChat",
+  beian: "",
+  admin_code: "",
+  user_code: "",
+  full_screen: true,
 });
 
 // 原始数据（用于重置）
@@ -141,32 +135,31 @@ const originalData = reactive({});
 
 // 验证规则
 const rules = {
-  title: [
-    { required: true, message: '请输入网站标题', trigger: 'blur' }
-  ],
+  title: [{ required: true, message: "请输入网站标题", trigger: "blur" }],
   admin_code: [
-    { required: true, message: '请输入管理员验证码', trigger: 'blur' },
-    { min: 6, message: '验证码长度至少为 6 位', trigger: 'blur' }
-  ]
+    { required: true, message: "请输入管理员验证码", trigger: "blur" },
+    { min: 6, message: "验证码长度至少为 6 位", trigger: "blur" },
+  ],
 };
 
 // 加载配置
 const loadConfig = async () => {
   try {
-    const webConfig = configStore.config?.web || await configStore.fetchConfigSection('web');
-    
+    const webConfig =
+      configStore.config?.web || (await configStore.fetchConfigSection("web"));
+
     Object.assign(formData, {
-      title: webConfig.title || 'MioChat',
-      beian: webConfig.beian || '',
-      admin_code: webConfig.admin_code || '',
-      user_code: webConfig.user_code || '',
-      full_screen: webConfig.full_screen ?? true
+      title: webConfig.title || "MioChat",
+      beian: webConfig.beian || "",
+      admin_code: webConfig.admin_code || "",
+      user_code: webConfig.user_code || "",
+      full_screen: webConfig.full_screen ?? true,
     });
-    
+
     // 保存原始数据
     Object.assign(originalData, formData);
   } catch (error) {
-    ElMessage.error('加载配置失败：' + error.message);
+    ElMessage.error("加载配置失败：" + error.message);
   }
 };
 
@@ -174,29 +167,29 @@ const loadConfig = async () => {
 const handleSave = async () => {
   try {
     await formRef.value.validate();
-    
+
     saving.value = true;
 
-    await configStore.updateConfigSection('web', {
+    await configStore.updateConfigSection("web", {
       title: formData.title,
       beian: formData.beian,
       admin_code: formData.admin_code,
       user_code: formData.user_code,
-      full_screen: formData.full_screen
+      full_screen: formData.full_screen,
     });
 
     ElMessage.success({
-      message: 'Web 配置保存成功，请刷新页面以应用更改。',
+      message: "Web 配置保存成功，请刷新页面以应用更改。",
       duration: 5000,
-      showClose: true
+      showClose: true,
     });
-    
+
     // 更新原始数据
     Object.assign(originalData, formData);
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('保存 Web 配置失败:', error);
-      ElMessage.error('Web 配置保存失败，请查看控制台详情');
+    if (error !== "cancel") {
+      console.error("保存 Web 配置失败:", error);
+      ElMessage.error("Web 配置保存失败，请查看控制台详情");
     }
   } finally {
     saving.value = false;
@@ -207,7 +200,7 @@ const handleSave = async () => {
 const handleReset = () => {
   Object.assign(formData, originalData);
   formRef.value?.clearValidate();
-  ElMessage.info('已重置为当前保存的配置');
+  ElMessage.info("已重置为当前保存的配置");
 };
 
 // 初始化

@@ -52,12 +52,21 @@
         <p>{{ preset.opening }}</p>
       </div>
 
-      <div class="preset-history" v-if="preset.history && preset.history.length > 0">
-        <div class="history-item" v-for="(item, index) in preset.history.slice(0, 2)" :key="index">
+      <div
+        class="preset-history"
+        v-if="preset.history && preset.history.length > 0"
+      >
+        <div
+          class="history-item"
+          v-for="(item, index) in preset.history.slice(0, 2)"
+          :key="index"
+        >
           <el-tag size="small" :type="getRoleTagType(item.role)">
             {{ getRoleLabel(item.role) }}
           </el-tag>
-          <span class="history-content">{{ truncateText(item.content, 100) }}</span>
+          <span class="history-content">{{
+            truncateText(item.content, 100)
+          }}</span>
         </div>
         <div v-if="preset.history.length > 2" class="more-history">
           <el-text type="info" size="small">
@@ -84,20 +93,10 @@
 
     <!-- 操作按钮 -->
     <div class="card-actions">
-      <el-button
-        size="small"
-        type="primary"
-        text
-        @click="handleEdit"
-      >
+      <el-button size="small" type="primary" text @click="handleEdit">
         编辑
       </el-button>
-      <el-button
-        size="small"
-        type="success"
-        text
-        @click="handleExport"
-      >
+      <el-button size="small" type="success" text @click="handleExport">
         导出
       </el-button>
       <el-button
@@ -110,49 +109,42 @@
         删除
       </el-button>
       <el-tooltip v-else content="内置预设无法删除" placement="top">
-        <el-button
-          size="small"
-          type="info"
-          text
-          disabled
-        >
-          删除
-        </el-button>
+        <el-button size="small" type="info" text disabled> 删除 </el-button>
       </el-tooltip>
     </div>
   </div>
 </template>
 
 <script setup>
-import { UserFilled } from '@element-plus/icons-vue';
+import { UserFilled } from "@element-plus/icons-vue";
 
 const props = defineProps({
   preset: {
     type: Object,
-    required: true
+    required: true,
   },
   selected: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 });
 
-const emit = defineEmits(['select', 'edit', 'delete', 'export']);
+const emit = defineEmits(["select", "edit", "delete", "export"]);
 
 // 获取来源标签颜色
 const getSourceTagType = (source) => {
   const map = {
-    'built-in': 'warning',
-    'custom': 'success'
+    "built-in": "warning",
+    custom: "success",
   };
-  return map[source] || 'primary';
+  return map[source] || "primary";
 };
 
 // 获取来源标签文本
 const getSourceLabel = (source) => {
   const map = {
-    'built-in': '内置',
-    'custom': '自定义'
+    "built-in": "内置",
+    custom: "自定义",
   };
   return map[source] || source;
 };
@@ -160,19 +152,19 @@ const getSourceLabel = (source) => {
 // 获取分类标签颜色
 const getCategoryTagType = (category) => {
   const map = {
-    'common': 'primary',
-    'recommended': 'danger',
-    'hidden': 'info'
+    common: "primary",
+    recommended: "danger",
+    hidden: "info",
   };
-  return map[category] || 'primary';
+  return map[category] || "primary";
 };
 
 // 获取分类标签文本
 const getCategoryLabel = (category) => {
   const map = {
-    'common': '常用',
-    'recommended': '推荐',
-    'hidden': '隐藏'
+    common: "常用",
+    recommended: "推荐",
+    hidden: "隐藏",
   };
   return map[category] || category;
 };
@@ -180,48 +172,48 @@ const getCategoryLabel = (category) => {
 // 获取角色标签颜色
 const getRoleTagType = (role) => {
   const map = {
-    'system': 'warning',
-    'user': 'primary',
-    'assistant': 'success'
+    system: "warning",
+    user: "primary",
+    assistant: "success",
   };
-  return map[role] || 'info';
+  return map[role] || "info";
 };
 
 // 获取角色标签文本
 const getRoleLabel = (role) => {
   const map = {
-    'system': '系统',
-    'user': '用户',
-    'assistant': '助手'
+    system: "系统",
+    user: "用户",
+    assistant: "助手",
   };
   return map[role] || role;
 };
 
 // 截断文本
 const truncateText = (text, maxLength) => {
-  if (!text) return '';
+  if (!text) return "";
   if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + '...';
+  return text.substring(0, maxLength) + "...";
 };
 
 // 处理选择
 const handleSelect = (selected) => {
-  emit('select', selected);
+  emit("select", selected);
 };
 
 // 处理编辑
 const handleEdit = () => {
-  emit('edit', props.preset);
+  emit("edit", props.preset);
 };
 
 // 处理删除
 const handleDelete = () => {
-  emit('delete', props.preset);
+  emit("delete", props.preset);
 };
 
 // 处理导出
 const handleExport = () => {
-  emit('export', props.preset);
+  emit("export", props.preset);
 };
 </script>
 
@@ -249,9 +241,9 @@ const handleExport = () => {
     border-color: #409eff;
     background: #f0f9ff;
     box-shadow: 0 4px 16px rgba(64, 158, 255, 0.2);
-    
+
     &::before {
-      content: '';
+      content: "";
       position: absolute;
       top: 0;
       left: 0;

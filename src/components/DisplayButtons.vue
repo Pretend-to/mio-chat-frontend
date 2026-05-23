@@ -46,7 +46,7 @@ export default {
       default: false,
     },
   },
-  emits: ["set-screen","close"],
+  emits: ["set-screen", "close"],
   data() {
     return {
       preview: false,

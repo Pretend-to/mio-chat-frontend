@@ -8,25 +8,25 @@
 
     <!-- 基本信息 -->
     <el-divider content-position="left">配置详情</el-divider>
-    
+
     <!-- 动态生成的字段 -->
     <template v-for="(fieldConfig, fieldName) in schema" :key="fieldName">
-      <el-form-item 
-        :label="fieldConfig.label || fieldName" 
+      <el-form-item
+        :label="fieldConfig.label || fieldName"
         :prop="fieldName"
         :required="fieldConfig.required"
       >
         <!-- 布尔类型 - 开关 -->
-        <el-switch 
+        <el-switch
           v-if="fieldConfig.type === 'boolean'"
           :model-value="modelValue[fieldName]"
           @update:model-value="updateField(fieldName, $event)"
           :active-text="fieldConfig.label || '启用'"
           :inactive-text="fieldConfig.inactiveText || '禁用'"
         />
-        
+
         <!-- 密码类型 - 密码输入框 -->
-        <el-input 
+        <el-input
           v-else-if="fieldConfig.type === 'password'"
           :model-value="modelValue[fieldName]"
           @update:model-value="updateField(fieldName, $event)"
@@ -35,25 +35,25 @@
           clearable
         >
           <template #append>
-            <el-button 
-              :icon="showApiKey ? View : Hide" 
+            <el-button
+              :icon="showApiKey ? View : Hide"
               @click="$emit('toggle-api-key')"
-              class="input-append-button" 
+              class="input-append-button"
             />
           </template>
         </el-input>
-        
+
         <!-- URL 类型 - URL 输入框 -->
-        <el-input 
+        <el-input
           v-else-if="fieldConfig.type === 'url'"
           :model-value="modelValue[fieldName]"
           @update:model-value="updateField(fieldName, $event)"
           :placeholder="fieldConfig.placeholder || fieldConfig.description"
           clearable
         />
-        
+
         <!-- 选择框类型 -->
-        <el-select 
+        <el-select
           v-else-if="fieldConfig.type === 'select'"
           :model-value="modelValue[fieldName]"
           @update:model-value="updateField(fieldName, $event)"
@@ -61,16 +61,16 @@
           filterable
           style="width: 100%"
         >
-          <el-option 
-            v-for="option in fieldConfig.options" 
-            :key="option.value" 
-            :label="option.label" 
-            :value="option.value" 
+          <el-option
+            v-for="option in fieldConfig.options"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
           />
         </el-select>
-        
+
         <!-- 文本区域类型 -->
-        <el-input 
+        <el-input
           v-else-if="fieldConfig.type === 'textarea'"
           :model-value="modelValue[fieldName]"
           @update:model-value="updateField(fieldName, $event)"
@@ -78,9 +78,9 @@
           :rows="fieldConfig.rows || 4"
           :placeholder="fieldConfig.placeholder || fieldConfig.description"
         />
-        
+
         <!-- 数组类型 - 多选标签 -->
-        <el-select 
+        <el-select
           v-else-if="fieldConfig.type === 'array'"
           :model-value="modelValue[fieldName]"
           @update:model-value="updateField(fieldName, $event)"
@@ -91,16 +91,16 @@
           :placeholder="fieldConfig.placeholder || `添加${fieldConfig.label}`"
           style="width: 100%"
         >
-          <el-option 
-            v-for="option in (fieldConfig.options || [])" 
-            :key="option.value || option" 
-            :label="option.label || option" 
-            :value="option.value || option" 
+          <el-option
+            v-for="option in fieldConfig.options || []"
+            :key="option.value || option"
+            :label="option.label || option"
+            :value="option.value || option"
           />
         </el-select>
-        
+
         <!-- 默认字符串类型 -->
-        <el-input 
+        <el-input
           v-else
           :model-value="modelValue[fieldName]"
           @update:model-value="updateField(fieldName, $event)"
@@ -108,14 +108,17 @@
           :readonly="fieldConfig.readonly"
           clearable
         />
-        
+
         <!-- 字段描述 -->
-        <div v-if="fieldConfig.description && fieldConfig.type !== 'boolean'" class="field-description">
+        <div
+          v-if="fieldConfig.description && fieldConfig.type !== 'boolean'"
+          class="field-description"
+        >
           {{ fieldConfig.description }}
         </div>
       </el-form-item>
     </template>
-    
+
     <!-- 特殊处理：Vertex AI 的 JSON 文件上传 -->
     <template v-if="type === 'vertex' && schema.service_account_json">
       <el-form-item label="认证方式">
@@ -124,33 +127,29 @@
           <el-radio value="file">上传文件</el-radio>
         </el-radio-group>
       </el-form-item>
-      
+
       <el-form-item v-if="vertexAuthType === 'file'" label="JSON 文件">
-        <el-upload 
-          :before-upload="handleJsonUpload" 
-          :show-file-list="false" 
-          accept=".json" 
+        <el-upload
+          :before-upload="handleJsonUpload"
+          :show-file-list="false"
+          accept=".json"
           drag
         >
           <el-icon class="el-icon--upload">
             <UploadFilled />
           </el-icon>
-          <div class="el-upload__text">
-            拖拽文件到此处或 <em>点击上传</em>
-          </div>
+          <div class="el-upload__text">拖拽文件到此处或 <em>点击上传</em></div>
           <template #tip>
-            <div class="el-upload__tip">
-              仅支持 .json 格式的服务账号文件
-            </div>
+            <div class="el-upload__tip">仅支持 .json 格式的服务账号文件</div>
           </template>
         </el-upload>
-        <el-input 
-          v-if="modelValue.service_account_json" 
-          :model-value="jsonFilePreview" 
-          type="textarea" 
+        <el-input
+          v-if="modelValue.service_account_json"
+          :model-value="jsonFilePreview"
+          type="textarea"
           :rows="3"
-          readonly 
-          style="margin-top: 8px" 
+          readonly
+          style="margin-top: 8px"
         />
       </el-form-item>
     </template>
@@ -158,52 +157,59 @@
 </template>
 
 <script setup>
-import { Hide, InfoFilled, UploadFilled, View } from '@element-plus/icons-vue';
-import { ElMessage } from 'element-plus';
-import { computed, ref } from 'vue';
+import { Hide, InfoFilled, UploadFilled, View } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
+import { computed, ref } from "vue";
 
 const props = defineProps({
   type: {
     type: String,
-    required: true
+    required: true,
   },
   schema: {
     type: Object,
-    default: () => ({})
+    default: () => ({}),
   },
   modelValue: {
     type: Object,
-    required: true
+    required: true,
   },
   showApiKey: {
     type: Boolean,
-    default: false
+    default: false,
   },
   description: {
     type: String,
-    default: ''
-  }
+    default: "",
+  },
 });
 
-const emit = defineEmits(['update:modelValue', 'toggle-api-key', 'json-upload']);
+const emit = defineEmits([
+  "update:modelValue",
+  "toggle-api-key",
+  "json-upload",
+]);
 
-const vertexAuthType = ref('json');
+const vertexAuthType = ref("json");
 
 // 简单的 Markdown 渲染逻辑
 const renderedDescription = computed(() => {
-  if (!props.description) return '';
-  
+  if (!props.description) return "";
+
   let html = props.description;
-  
+
   // 处理加粗 **text**
-  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-  
+  html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
   // 处理链接 [text](url)
-  html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" class="markdown-link">$1</a>');
-  
+  html = html.replace(
+    /\[(.*?)\]\((.*?)\)/g,
+    '<a href="$2" target="_blank" class="markdown-link">$1</a>',
+  );
+
   // 处理有序列表 1. 2. (特别针对多行描述)
-  const lines = html.split('\n');
-  const processedLines = lines.map(line => {
+  const lines = html.split("\n");
+  const processedLines = lines.map((line) => {
     const trimmedLine = line.trim();
     const listMatch = trimmedLine.match(/^(\d+)\.\s+(.*)$/);
     if (listMatch) {
@@ -211,12 +217,12 @@ const renderedDescription = computed(() => {
     }
     return line;
   });
-  
-  html = processedLines.join('\n');
+
+  html = processedLines.join("\n");
 
   // 处理换行
-  html = html.replace(/\n/g, '<br>');
-  
+  html = html.replace(/\n/g, "<br>");
+
   return html;
 });
 
@@ -224,17 +230,17 @@ const renderedDescription = computed(() => {
 const updateField = (fieldName, value) => {
   const newValue = { ...props.modelValue };
   newValue[fieldName] = value;
-  emit('update:modelValue', newValue);
+  emit("update:modelValue", newValue);
 };
 
 // JSON 文件预览
 const jsonFilePreview = computed(() => {
-  if (!props.modelValue.service_account_json) return '';
+  if (!props.modelValue.service_account_json) return "";
   try {
     const json = JSON.parse(props.modelValue.service_account_json);
     return `项目: ${json.project_id}\n客户端邮箱: ${json.client_email}`;
   } catch {
-    return '已上传 JSON 文件';
+    return "已上传 JSON 文件";
   }
 });
 
@@ -245,19 +251,19 @@ const handleJsonUpload = (file) => {
     try {
       const json = e.target.result;
       JSON.parse(json); // 验证 JSON 格式
-      
+
       // 更新模型值
       const newValue = { ...props.modelValue };
       newValue.service_account_json = json;
-      emit('update:modelValue', newValue);
-      
-      ElMessage.success('JSON 文件上传成功');
+      emit("update:modelValue", newValue);
+
+      ElMessage.success("JSON 文件上传成功");
     } catch (error) {
-      ElMessage.error('JSON 文件格式不正确');
+      ElMessage.error("JSON 文件格式不正确");
     }
   };
   reader.readAsText(file);
-  emit('json-upload', file);
+  emit("json-upload", file);
   return false; // 阻止自动上传
 };
 </script>
@@ -274,25 +280,25 @@ const handleJsonUpload = (file) => {
     gap: 14px;
     align-items: flex-start;
     box-shadow: 0 4px 15px rgba(64, 158, 255, 0.05);
-    
+
     .info-icon {
       font-size: 20px;
       color: #409eff;
       margin-top: 2px;
       flex-shrink: 0;
     }
-    
+
     .adapter-description {
       font-size: 14px;
       line-height: 1.7;
       color: #5e6d82;
       flex: 1;
-      
+
       :deep(strong) {
         color: #2c3e50;
         font-weight: 600;
       }
-      
+
       :deep(.markdown-link) {
         color: #409eff;
         text-decoration: none;
@@ -300,7 +306,7 @@ const handleJsonUpload = (file) => {
         border-bottom: 1px solid rgba(64, 158, 255, 0.3);
         transition: all 0.2s ease;
         padding-bottom: 1px;
-        
+
         &:hover {
           color: #66b1ff;
           border-bottom-color: #409eff;
@@ -349,25 +355,25 @@ const handleJsonUpload = (file) => {
     margin-top: 4px;
     line-height: 1.4;
   }
-  
+
   :deep(.el-form-item__content) {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   :deep(.el-divider) {
     margin: 24px 0 16px 0;
   }
-  
+
   :deep(.el-divider__text) {
     font-weight: 600;
     color: #606266;
   }
-  
+
   :deep(.el-upload-dragger) {
     padding: 20px;
   }
-  
+
   // 统一输入框附加按钮宽度
   :deep(.el-input-group__append) {
     .input-append-button {

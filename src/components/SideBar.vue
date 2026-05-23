@@ -1,6 +1,9 @@
 <script>
 import { client } from "@/lib/runtime.js";
-import { processAvatarWithStatusHole, getAdminAvatarUrl } from "@/utils/avatar.js";
+import {
+  processAvatarWithStatusHole,
+  getAdminAvatarUrl,
+} from "@/utils/avatar.js";
 import StatusDot from "@/components/StatusDot.vue";
 import { useConnectionStore } from "@/stores/connectionStore";
 import { mapState } from "pinia";
@@ -53,7 +56,7 @@ export default {
         false,
       );
     }
-    
+
     // Socket 连接状态现在统一通过 Pinia Store 管理
   },
   methods: {
@@ -74,7 +77,10 @@ export default {
       try {
         this.processedImage = await processAvatarWithStatusHole(adminAvatar);
       } catch (error) {
-        console.error("Error processing avatar, falling back to original:", error);
+        console.error(
+          "Error processing avatar, falling back to original:",
+          error,
+        );
         this.processedImage = adminAvatar;
       }
     },

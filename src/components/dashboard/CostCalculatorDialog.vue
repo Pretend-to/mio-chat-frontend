@@ -1,79 +1,94 @@
 <template>
-  <el-dialog 
-    v-model="store.showCostModal" 
-    title="算力成本核算" 
-    width="500px" 
+  <el-dialog
+    v-model="store.showCostModal"
+    title="算力成本核算"
+    width="500px"
     class="saas-dialog"
     destroy-on-close
   >
     <el-form label-width="120px" size="default">
       <el-form-item label="服务实例">
-        <el-select v-model="store.costCalc.provider" placeholder="选择服务实例" style="width: 100%;">
-          <el-option v-for="p in store.providers" :key="p" :label="p" :value="p"></el-option>
+        <el-select
+          v-model="store.costCalc.provider"
+          placeholder="选择服务实例"
+          style="width: 100%"
+        >
+          <el-option
+            v-for="p in store.providers"
+            :key="p"
+            :label="p"
+            :value="p"
+          ></el-option>
         </el-select>
       </el-form-item>
-      
+
       <el-form-item label="输入单价">
         <div class="price-input-row">
-          <el-input-number 
-            v-model="store.costCalc.inputPrice" 
-            :min="0" 
-            :precision="4" 
-            :step="0.001" 
+          <el-input-number
+            v-model="store.costCalc.inputPrice"
+            :min="0"
+            :precision="4"
+            :step="0.001"
             controls-position="right"
-            style="width: 180px;"
+            style="width: 180px"
           ></el-input-number>
           <span class="unit-text">$/1M Tokens</span>
         </div>
       </el-form-item>
-      
+
       <el-form-item label="输出单价">
         <div class="price-input-row">
-          <el-input-number 
-            v-model="store.costCalc.outputPrice" 
-            :min="0" 
-            :precision="4" 
-            :step="0.001" 
+          <el-input-number
+            v-model="store.costCalc.outputPrice"
+            :min="0"
+            :precision="4"
+            :step="0.001"
             controls-position="right"
-            style="width: 180px;"
+            style="width: 180px"
           ></el-input-number>
           <span class="unit-text">$/1M Tokens</span>
         </div>
       </el-form-item>
-      
+
       <el-form-item label="缓存命中单价">
         <div class="price-input-row">
-          <el-input-number 
-            v-model="store.costCalc.cachePrice" 
-            :min="0" 
-            :precision="4" 
-            :step="0.001" 
+          <el-input-number
+            v-model="store.costCalc.cachePrice"
+            :min="0"
+            :precision="4"
+            :step="0.001"
             controls-position="right"
-            style="width: 180px;"
+            style="width: 180px"
           ></el-input-number>
           <span class="unit-text">$/1M Tokens</span>
         </div>
       </el-form-item>
     </el-form>
-    
+
     <div class="cost-estimate-card">
-      <div class="estimate-title">基于本时段用量的预估总成本 ({{ store.costCalc.provider || '-' }})</div>
+      <div class="estimate-title">
+        基于本时段用量的预估总成本 ({{ store.costCalc.provider || "-" }})
+      </div>
       <div class="estimate-value">${{ store.calculatedCost.toFixed(4) }}</div>
-      <div class="estimate-sub">基于已统计到的输入、输出与缓存命中 Token 量测算。</div>
+      <div class="estimate-sub">
+        基于已统计到的输入、输出与缓存命中 Token 量测算。
+      </div>
     </div>
-    
+
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="store.showCostModal = false" size="default">关闭</el-button>
+        <el-button @click="store.showCostModal = false" size="default"
+          >关闭</el-button
+        >
       </div>
     </template>
   </el-dialog>
 </template>
 
 <script setup>
-import { useDashboardStore } from '@/stores/dashboardStore'
+import { useDashboardStore } from "@/stores/dashboardStore";
 
-const store = useDashboardStore()
+const store = useDashboardStore();
 </script>
 
 <style scoped>
@@ -109,7 +124,7 @@ const store = useDashboardStore()
   font-size: 32px;
   font-weight: 800;
   color: #2563eb;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: "Plus Jakarta Sans", sans-serif;
   margin-bottom: 6px;
 }
 

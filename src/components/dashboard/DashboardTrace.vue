@@ -11,27 +11,43 @@
             <div v-if="store.toolCallTurns.length === 0" class="empty-state">
               暂无对话记录
             </div>
-            
-            <div v-for="turn in store.toolCallTurns" :key="turn.requestId" 
-                 @click="store.selectTurn(turn)"
-                 class="turn-item"
-                 :class="{ active: store.activeTurn?.requestId === turn.requestId }">
+
+            <div
+              v-for="turn in store.toolCallTurns"
+              :key="turn.requestId"
+              @click="store.selectTurn(turn)"
+              class="turn-item"
+              :class="{
+                active: store.activeTurn?.requestId === turn.requestId,
+              }"
+            >
               <div class="turn-header">
                 <span class="turn-id" :title="turn.requestId">
                   {{ truncateRequestId(turn.requestId) }}
                 </span>
-                <el-tag size="small" :type="turn.stepsCount > 1 ? 'danger' : 'info'" class="turn-tag" effect="plain">
-                  {{ turn.stepsCount > 1 ? '递归多步' : '单步' }}
+                <el-tag
+                  size="small"
+                  :type="turn.stepsCount > 1 ? 'danger' : 'info'"
+                  class="turn-tag"
+                  effect="plain"
+                >
+                  {{ turn.stepsCount > 1 ? "递归多步" : "单步" }}
                 </el-tag>
               </div>
               <div class="turn-meta">
                 <span><i class="fa-solid fa-user"></i> {{ turn.user }}</span>
-                <span><i class="fa-solid fa-cube"></i> {{ turn.presetName }}</span>
+                <span
+                  ><i class="fa-solid fa-cube"></i> {{ turn.presetName }}</span
+                >
               </div>
               <div class="turn-footer">
-                <span><i class="fa-regular fa-clock"></i> {{ formatTime(turn.createdAt) }}</span>
+                <span
+                  ><i class="fa-regular fa-clock"></i>
+                  {{ formatTime(turn.createdAt) }}</span
+                >
                 <span class="turn-tokens">
-                  <i class="fa-solid fa-coins"></i> {{ formatNumber(turn.totalTokens) }}
+                  <i class="fa-solid fa-coins"></i>
+                  {{ formatNumber(turn.totalTokens) }}
                 </span>
               </div>
             </div>
@@ -45,7 +61,9 @@
           <div class="card-header border-b">
             <span class="card-title">调用级联链路分析 (Trace)</span>
             <span class="total-tokens-badge" v-if="store.activeTurn">
-              累计: <strong>{{ formatNumber(store.activeTurn.totalTokens) }}</strong> Tokens
+              累计:
+              <strong>{{ formatNumber(store.activeTurn.totalTokens) }}</strong>
+              Tokens
             </span>
           </div>
 
@@ -56,22 +74,36 @@
 
           <div v-else class="trace-timeline-scroll">
             <div class="timeline-container">
-              <div v-for="(step, index) in store.activeTurn.steps" :key="index" class="timeline-node">
-                
+              <div
+                v-for="(step, index) in store.activeTurn.steps"
+                :key="index"
+                class="timeline-node"
+              >
                 <!-- Timeline indicator column -->
                 <div class="node-indicator">
                   <div class="node-dot" :class="step.type">
-                    <i :class="step.type === 'tool' ? 'fa-solid fa-wrench' : 'fa-solid fa-brain'"></i>
+                    <i
+                      :class="
+                        step.type === 'tool'
+                          ? 'fa-solid fa-wrench'
+                          : 'fa-solid fa-brain'
+                      "
+                    ></i>
                   </div>
-                  <div class="node-line" v-if="index < store.activeTurn.steps.length - 1"></div>
+                  <div
+                    class="node-line"
+                    v-if="index < store.activeTurn.steps.length - 1"
+                  ></div>
                 </div>
 
                 <!-- Timeline card content -->
                 <div class="node-content-card">
                   <div class="step-card-header">
-                    <span class="step-time">{{ formatTime(step.timestamp) }}</span>
+                    <span class="step-time">{{
+                      formatTime(step.timestamp)
+                    }}</span>
                     <span class="step-badge" :class="step.type">
-                      {{ step.type === 'tool' ? 'Tool Call' : 'LLM Inference' }}
+                      {{ step.type === "tool" ? "Tool Call" : "LLM Inference" }}
                     </span>
                     <span class="step-model-tag" v-if="step.model">
                       {{ step.provider }} / {{ step.model }}
@@ -80,23 +112,45 @@
 
                   <div class="step-details">
                     <h4 class="step-title">
-                      {{ step.type === 'tool' ? `执行工具: ${step.toolName}` : '对话大模型推理' }}
+                      {{
+                        step.type === "tool"
+                          ? `执行工具: ${step.toolName}`
+                          : "对话大模型推理"
+                      }}
                     </h4>
 
                     <!-- LLM fields -->
                     <div v-if="step.type === 'llm'" class="llm-fields">
                       <div class="metric-row">
-                        <span class="metric-item">输入 Token: <strong>{{ step.promptTokens }}</strong></span>
-                        <span class="metric-item">输出 Token: <strong>{{ step.candidatesTokens }}</strong></span>
+                        <span class="metric-item"
+                          >输入 Token:
+                          <strong>{{ step.promptTokens }}</strong></span
+                        >
+                        <span class="metric-item"
+                          >输出 Token:
+                          <strong>{{ step.candidatesTokens }}</strong></span
+                        >
                         <span class="metric-item latency" v-if="step.ttft">
                           首字延迟: <strong>{{ step.ttft }}ms</strong>
                         </span>
                       </div>
-                      
-                      <div v-if="step.toolsCalled && step.toolsCalled.length" class="tools-called-box">
-                        <span class="box-label"><i class="fa-solid fa-code-branch"></i> 触发的后续工具:</span>
+
+                      <div
+                        v-if="step.toolsCalled && step.toolsCalled.length"
+                        class="tools-called-box"
+                      >
+                        <span class="box-label"
+                          ><i class="fa-solid fa-code-branch"></i>
+                          触发的后续工具:</span
+                        >
                         <div class="tags-group">
-                          <el-tag v-for="t in step.toolsCalled" :key="t" size="small" type="warning" effect="dark">
+                          <el-tag
+                            v-for="t in step.toolsCalled"
+                            :key="t"
+                            size="small"
+                            type="warning"
+                            effect="dark"
+                          >
                             {{ t }}
                           </el-tag>
                         </div>
@@ -109,14 +163,14 @@
                         <div class="code-box-header">
                           <span>参数与返回值</span>
                         </div>
-                        <pre class="code-box-content"><code>参数: {{ step.arguments }}
+                        <pre
+                          class="code-box-content"
+                        ><code>参数: {{ step.arguments }}
 返回值: {{ step.output }}</code></pre>
                       </div>
                     </div>
-
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
@@ -127,24 +181,26 @@
 </template>
 
 <script setup>
-import { useDashboardStore } from '@/stores/dashboardStore'
+import { useDashboardStore } from "@/stores/dashboardStore";
 
-const store = useDashboardStore()
+const store = useDashboardStore();
 
 function truncateRequestId(id) {
-  if (!id) return ''
-  return id.length > 20 ? id.substring(0, 8) + '...' + id.substring(id.length - 8) : id
+  if (!id) return "";
+  return id.length > 20
+    ? id.substring(0, 8) + "..." + id.substring(id.length - 8)
+    : id;
 }
 
 function formatNumber(num) {
-  if (!num && num !== 0) return '0'
-  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  if (!num && num !== 0) return "0";
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
 function formatTime(timestamp) {
-  if (!timestamp) return '-'
-  const date = new Date(timestamp)
-  return `${date.getMonth() + 1}-${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`
+  if (!timestamp) return "-";
+  const date = new Date(timestamp);
+  return `${date.getMonth() + 1}-${date.getDate()} ${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}:${date.getSeconds().toString().padStart(2, "0")}`;
 }
 </script>
 
@@ -171,7 +227,8 @@ function formatTime(timestamp) {
 }
 
 @media (max-width: 900px) {
-  .left-col-4, .right-col-8 {
+  .left-col-4,
+  .right-col-8 {
     width: 100%;
   }
 }
@@ -266,7 +323,7 @@ function formatTime(timestamp) {
   font-weight: 600;
   font-size: 13px;
   color: #1e293b;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
 }
 
 .turn-tag {
@@ -294,7 +351,7 @@ function formatTime(timestamp) {
 }
 
 .turn-tokens {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-weight: 600;
   color: #2563eb;
   font-size: 12px;
@@ -353,7 +410,7 @@ function formatTime(timestamp) {
   justify-content: center;
   color: #ffffff;
   font-size: 13px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .node-dot.llm {
@@ -378,7 +435,7 @@ function formatTime(timestamp) {
   border-radius: 10px;
   margin-bottom: 24px;
   padding: 16px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .step-card-header {
@@ -417,7 +474,7 @@ function formatTime(timestamp) {
   color: #475569;
   padding: 2px 6px;
   border-radius: 4px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
 }
 
 .step-title {
@@ -493,7 +550,7 @@ function formatTime(timestamp) {
   margin: 0;
   padding: 12px;
   background: #fafafa;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 12px;
   color: #334155;
   white-space: pre-wrap;

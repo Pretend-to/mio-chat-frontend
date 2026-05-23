@@ -65,7 +65,9 @@ export function useChatSelection({
     }
 
     const rect = chatWindowRef.value.getBoundingClientRect();
-    const messageElms = chatWindowRef.value.querySelectorAll(".message-container[data-id]");
+    const messageElms = chatWindowRef.value.querySelectorAll(
+      ".message-container[data-id]",
+    );
     if (messageElms.length === 0) return;
 
     let firstVis = -1;
@@ -75,7 +77,8 @@ export function useChatSelection({
 
     messageElms.forEach((el, index) => {
       const elRect = el.getBoundingClientRect();
-      const isVisible = elRect.bottom > visibleTop && elRect.top < visibleBottom;
+      const isVisible =
+        elRect.bottom > visibleTop && elRect.top < visibleBottom;
 
       if (isVisible) {
         if (firstVis === -1) {
@@ -113,7 +116,7 @@ export function useChatSelection({
     () => {
       updateVisibilitySelectionState();
     },
-    { deep: true }
+    { deep: true },
   );
 
   // Desktop Drag Select Implementation
@@ -234,13 +237,17 @@ export function useChatSelection({
     const boxRight = dragSelect.left + dragSelect.width;
 
     const selectedIds = [];
-    const messageElms = chatWindowRef.value.querySelectorAll(".message-container[data-id]");
+    const messageElms = chatWindowRef.value.querySelectorAll(
+      ".message-container[data-id]",
+    );
 
     messageElms.forEach((el) => {
       const idAttr = el.getAttribute("data-id");
       if (!idAttr) return;
 
-      const msgObj = activeMessageChain.value.find((m) => String(m.id) === String(idAttr));
+      const msgObj = activeMessageChain.value.find(
+        (m) => String(m.id) === String(idAttr),
+      );
       if (!msgObj || msgObj.role === "mio_system") return;
 
       const elRect = el.getBoundingClientRect();
@@ -266,7 +273,8 @@ export function useChatSelection({
 
   // Mobile Top/Bottom selection links
   const selectToTopHere = () => {
-    if (firstVisibleIndex.value === -1 || maxSelectedIndex.value === -Infinity) return;
+    if (firstVisibleIndex.value === -1 || maxSelectedIndex.value === -Infinity)
+      return;
 
     const idsToSelect = new Set(selectedMessages.value);
     for (let i = firstVisibleIndex.value; i <= maxSelectedIndex.value; i++) {
@@ -280,7 +288,8 @@ export function useChatSelection({
   };
 
   const selectToBottomHere = () => {
-    if (lastVisibleIndex.value === -1 || minSelectedIndex.value === Infinity) return;
+    if (lastVisibleIndex.value === -1 || minSelectedIndex.value === Infinity)
+      return;
 
     const idsToSelect = new Set(selectedMessages.value);
     for (let i = minSelectedIndex.value; i <= lastVisibleIndex.value; i++) {
@@ -310,7 +319,8 @@ export function useChatSelection({
     let text = "";
     activeMessageChain.value.forEach((msg) => {
       if (selectedMessages.value.includes(msg.id)) {
-        const senderName = msg.role === "other" ? activeContactor.name : clientName;
+        const senderName =
+          msg.role === "other" ? activeContactor.name : clientName;
         const time = activeContactor.getShownTime(msg.time);
         let msgText = "";
         msg.content.forEach((element) => {
@@ -341,7 +351,8 @@ export function useChatSelection({
     let mdText = `# 与${activeContactor.name}的对话记录\n\n`;
     activeMessageChain.value.forEach((msg) => {
       if (selectedMessages.value.includes(msg.id)) {
-        const senderName = msg.role === "other" ? activeContactor.name : clientName;
+        const senderName =
+          msg.role === "other" ? activeContactor.name : clientName;
         const time = activeContactor.getShownTime(msg.time);
         let msgText = "";
         msg.content.forEach((element) => {
@@ -371,7 +382,10 @@ export function useChatSelection({
   const handleMultiShareLink = async (activeContactor) => {
     if (selectedMessages.value.length === 0) return;
     ElMessage.info("正在生成分享链接...");
-    const shareResult = await client.shareMessages(activeContactor.id, selectedMessages.value);
+    const shareResult = await client.shareMessages(
+      activeContactor.id,
+      selectedMessages.value,
+    );
     if (shareResult && shareResult.shareUrl) {
       const { success, message } = shareOrCopy(shareResult.shareUrl);
       if (success) {

@@ -70,7 +70,7 @@ export default {
   background-color: transparent;
 }
 
-#main>.profile-body {
+#main > .profile-body {
   margin-top: 4rem;
 }
 

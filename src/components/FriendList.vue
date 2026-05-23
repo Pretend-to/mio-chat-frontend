@@ -1,17 +1,29 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, getCurrentInstance } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import {
+  ref,
+  computed,
+  onMounted,
+  onBeforeUnmount,
+  getCurrentInstance,
+} from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { client, config } from "@/lib/runtime.js";
-import { useContactorsStore, getContactorLastTime } from "@/stores/contactorsStore.js";
+import {
+  useContactorsStore,
+  getContactorLastTime,
+} from "@/stores/contactorsStore.js";
 import AddContactor from "@/components/AddContactor.vue";
 import ContextMenu from "@/components/ContextMenu.vue";
 import { shareOrCopy } from "@/utils/tools.js";
-import { processAvatarWithStatusHole, getAdminAvatarUrl } from "@/utils/avatar.js";
+import {
+  processAvatarWithStatusHole,
+  getAdminAvatarUrl,
+} from "@/utils/avatar.js";
 import StatusDot from "@/components/StatusDot.vue";
 import { useConnectionStore } from "@/stores/connectionStore";
 
 // Emits
-const emit = defineEmits(['open-share-code-window']);
+const emit = defineEmits(["open-share-code-window"]);
 
 // Route & Router
 const route = useRoute();
@@ -41,7 +53,7 @@ const MAX_SWIPE = 140; // 两个按钮的宽度和
 
 // Network Status
 const isOnline = ref(navigator.onLine);
-const connectionType = ref('WiFi'); // 默认值
+const connectionType = ref("WiFi"); // 默认值
 
 const updateNetworkStatus = () => {
   isOnline.value = navigator.onLine;
@@ -49,17 +61,17 @@ const updateNetworkStatus = () => {
     const type = navigator.connection.type;
     if (type) {
       const typeMap = {
-        'wifi': 'WiFi',
-        'cellular': '移动网络',
-        'ethernet': '以太网',
-        'bluetooth': '蓝牙',
-        'none': '无网络'
+        wifi: "WiFi",
+        cellular: "移动网络",
+        ethernet: "以太网",
+        bluetooth: "蓝牙",
+        none: "无网络",
       };
-      connectionType.value = typeMap[type] || '在线';
+      connectionType.value = typeMap[type] || "在线";
     } else {
       // 在桌面端，effectiveType 经常返回 '4G' 即使是在用 WiFi
       // 如果无法确定具体物理类型（wifi/cellular），统一显示 '在线' 避免误导
-      connectionType.value = '在线';
+      connectionType.value = "在线";
     }
   }
 };
@@ -120,8 +132,8 @@ const showChat = (id) => {
 
 const getDraftSummary = (html) => {
   if (!html) return "";
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  const hasImage = doc.querySelector('img') !== null;
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const hasImage = doc.querySelector("img") !== null;
   const text = (doc.body.textContent || "").trim();
   const summary = text.substring(0, 50);
 
@@ -149,9 +161,9 @@ const mergeOptions = (options) => {
     for (const shortName of options.tools) {
       let found = false;
       for (const pluginTools of allPluginTools) {
-        if (!pluginTools || typeof pluginTools !== 'object') continue;
+        if (!pluginTools || typeof pluginTools !== "object") continue;
         const fullName = Object.keys(pluginTools).find(
-          name => name === shortName || name.startsWith(shortName + '_mid_')
+          (name) => name === shortName || name.startsWith(shortName + "_mid_"),
         );
         if (fullName) {
           resolvedTools.push(fullName);
@@ -160,21 +172,30 @@ const mergeOptions = (options) => {
         }
       }
       if (!found) {
-        console.warn(`[mergeOptions] 工具 "${shortName}" 未在已加载的工具列表中找到，已跳过。`);
+        console.warn(
+          `[mergeOptions] 工具 "${shortName}" 未在已加载的工具列表中找到，已跳过。`,
+        );
       }
     }
     defaultOptions.toolCallSettings.tools = resolvedTools;
   }
   if (options.opening) defaultOptions.presetSettings.opening = options.opening;
   if (options.model) {
-    const availableProviders = config.getLLMProviders().map((item) => item.value);
-    const provider = availableProviders.find((p) => config.isModelAvailable(p, options.model));
+    const availableProviders = config
+      .getLLMProviders()
+      .map((item) => item.value);
+    const provider = availableProviders.find((p) =>
+      config.isModelAvailable(p, options.model),
+    );
     if (provider) {
       defaultOptions.provider = provider;
       defaultOptions.base.model = options.model;
     } else {
       defaultOptions.base.model = options.model;
-      proxy.$message({ message: "预设模型不存在, 已使用默认模型", type: "error" });
+      proxy.$message({
+        message: "预设模型不存在, 已使用默认模型",
+        type: "error",
+      });
     }
   }
   return defaultOptions;
@@ -223,7 +244,7 @@ const showFriendContextMenu = (event, friend) => {
 const handleTouchStart = (event, item) => {
   if (!onPhone.value) return;
   // 如果点击的是已经展开的项，或者正在点击按钮，则不重置
-  if (event.target.closest('.swipe-actions')) return;
+  if (event.target.closest(".swipe-actions")) return;
 
   touchStartX.value = event.touches[0].clientX;
   touchStartY.value = event.touches[0].clientY;
@@ -246,13 +267,15 @@ const handleTouchMove = (event, item) => {
   // 如果垂直滑动比例过大，认为是滚动，不触发侧滑
   if (Math.abs(deltaY) > Math.abs(deltaX)) return;
 
-  if (deltaX < 0) { // 向左划
+  if (deltaX < 0) {
+    // 向左划
     isSwiping.value = true;
     swipeOffset.value = Math.min(Math.abs(deltaX), MAX_SWIPE);
     swipedId.value = item.id;
     // 阻止浏览器默认行为（如回退手势）
     if (Math.abs(deltaX) > 10 && event.cancelable) event.preventDefault();
-  } else if (swipedId.value === item.id && deltaX > 0) { // 展开状态下向右划，收起
+  } else if (swipedId.value === item.id && deltaX > 0) {
+    // 展开状态下向右划，收起
     swipeOffset.value = Math.max(MAX_SWIPE - deltaX, 0);
     if (swipeOffset.value === 0) swipedId.value = null;
   }
@@ -282,7 +305,9 @@ const handleFriendOption = async (option, friendOverride) => {
   if (!friend) return;
 
   switch (option) {
-    case "enter": showChat(friend.id); break;
+    case "enter":
+      showChat(friend.id);
+      break;
     case "priority":
       contactorsStore.setPriority(friend.id, friend.priority === 0 ? 1 : 0);
       break;
@@ -313,7 +338,8 @@ const startResize = (event) => {
 const resize = (event) => {
   if (!isResizing) return;
   let newWidth = startWidth + (event.clientX - startX);
-  const remSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  const remSize =
+    parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
   const maxWidth = 20 * remSize;
   const minWidth = 12 * remSize;
   newWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
@@ -329,11 +355,11 @@ const stopResize = () => {
 
 // Lifecycle
 onMounted(() => {
-  window.addEventListener('resize', handleResize);
-  window.addEventListener('online', updateNetworkStatus);
-  window.addEventListener('offline', updateNetworkStatus);
+  window.addEventListener("resize", handleResize);
+  window.addEventListener("online", updateNetworkStatus);
+  window.addEventListener("offline", updateNetworkStatus);
   if (navigator.connection) {
-    navigator.connection.addEventListener('change', updateNetworkStatus);
+    navigator.connection.addEventListener("change", updateNetworkStatus);
   }
   updateNetworkStatus();
 
@@ -342,11 +368,11 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleResize);
-  window.removeEventListener('online', updateNetworkStatus);
-  window.removeEventListener('offline', updateNetworkStatus);
+  window.removeEventListener("resize", handleResize);
+  window.removeEventListener("online", updateNetworkStatus);
+  window.removeEventListener("offline", updateNetworkStatus);
   if (navigator.connection) {
-    navigator.connection.removeEventListener('change', updateNetworkStatus);
+    navigator.connection.removeEventListener("change", updateNetworkStatus);
   }
 });
 </script>
@@ -360,10 +386,12 @@ onBeforeUnmount(() => {
             <img :src="processedImage" alt="avatar" />
           </div>
           <div class="user-detail">
-            <div class="user-name">{{ client.name === 'user' ? '秋山 澪' : client.name }}</div>
+            <div class="user-name">
+              {{ client.name === "user" ? "秋山 澪" : client.name }}
+            </div>
             <div class="user-status">
               <StatusDot size="8px" />
-              {{ isOnline ? connectionType : '离线' }} >
+              {{ isOnline ? connectionType : "离线" }} >
             </div>
           </div>
         </div>
@@ -390,24 +418,46 @@ onBeforeUnmount(() => {
       </div>
     </div>
     <div class="people" @scroll="closeSwipe">
-      <div v-for="(item, index) of sortedList" :id="getId(item)" :key="index" class="lists-wrapper"
-        :class="{ 'swiping': swipedId === item.id }">
-        <div class="lists" @click="swipedId === item.id ? closeSwipe() : showChat(item.id)"
-          @contextmenu.prevent="onPhone ? null : showFriendContextMenu($event, item)"
-          @touchstart="handleTouchStart($event, item)" @touchmove="handleTouchMove($event, item)"
+      <div
+        v-for="(item, index) of sortedList"
+        :id="getId(item)"
+        :key="index"
+        class="lists-wrapper"
+        :class="{ swiping: swipedId === item.id }"
+      >
+        <div
+          class="lists"
+          @click="swipedId === item.id ? closeSwipe() : showChat(item.id)"
+          @contextmenu.prevent="
+            onPhone ? null : showFriendContextMenu($event, item)
+          "
+          @touchstart="handleTouchStart($event, item)"
+          @touchmove="handleTouchMove($event, item)"
           @touchend="handleTouchEnd($event, item)"
-          :style="swipedId === item.id ? { transform: `translateX(-${swipeOffset}px)` } : {}">
-          <div class="avatar" :class="item.avatarPolicy == 1 ? 'custom' : 'model'">
+          :style="
+            swipedId === item.id
+              ? { transform: `translateX(-${swipeOffset}px)` }
+              : {}
+          "
+        >
+          <div
+            class="avatar"
+            :class="item.avatarPolicy == 1 ? 'custom' : 'model'"
+          >
             <img :src="item.avatar" :alt="item.name" />
           </div>
           <div class="info">
             <div class="name">{{ item.name }}</div>
-            <div id="time" class="msginfo">{{ getContactorLastTime(item.messageChain) }}</div>
+            <div id="time" class="msginfo">
+              {{ getContactorLastTime(item.messageChain) }}
+            </div>
             <div id="msgctt" class="msginfo">
               <template v-if="item.draft">
                 <span v-if="!onPhone" class="mio-icon mio-icon-draft"></span>
                 <span v-else class="draft-text">[草稿] </span>
-                <span :class="{ 'draft-text': onPhone }">{{ getDraftSummary(item.draft) }}</span>
+                <span :class="{ 'draft-text': onPhone }">{{
+                  getDraftSummary(item.draft)
+                }}</span>
               </template>
               <template v-else>
                 {{ item.lastMessageSummary }}
@@ -416,23 +466,45 @@ onBeforeUnmount(() => {
             <div v-if="item.hasPendingTask" class="unread-badge">1</div>
           </div>
         </div>
-        <div v-if="onPhone" class="swipe-actions" :style="swipedId === item.id ? { opacity: 1 } : { opacity: 0 }">
-          <div class="action-btn pin" @click.stop="handleFriendOption('priority', item)">
-            {{ item.priority === 0 ? '取消置顶' : '置顶' }}
+        <div
+          v-if="onPhone"
+          class="swipe-actions"
+          :style="swipedId === item.id ? { opacity: 1 } : { opacity: 0 }"
+        >
+          <div
+            class="action-btn pin"
+            @click.stop="handleFriendOption('priority', item)"
+          >
+            {{ item.priority === 0 ? "取消置顶" : "置顶" }}
           </div>
-          <div class="action-btn delete" @click.stop="handleFriendOption('delete', item)">
+          <div
+            class="action-btn delete"
+            @click.stop="handleFriendOption('delete', item)"
+          >
             删除
           </div>
         </div>
       </div>
     </div>
     <div class="resizer" @mousedown="startResize"></div>
-    <AddContactor v-model:show="showAddWindow" @close="showAddWindow = false" @add-bot="addPresetContactor"
-      @add-by-provider="genBotByProvider" @add-by-share-code="genBotByShareCode" />
-    <ContextMenu v-if="showMenu" type="friend" :message="selectedFriend" :style="{
-      top: menuY + 'px',
-      left: menuX + 'px'
-    }" @message-option="handleFriendOption" @close="showMenu = false" />
+    <AddContactor
+      v-model:show="showAddWindow"
+      @close="showAddWindow = false"
+      @add-bot="addPresetContactor"
+      @add-by-provider="genBotByProvider"
+      @add-by-share-code="genBotByShareCode"
+    />
+    <ContextMenu
+      v-if="showMenu"
+      type="friend"
+      :message="selectedFriend"
+      :style="{
+        top: menuY + 'px',
+        left: menuX + 'px',
+      }"
+      @message-option="handleFriendOption"
+      @close="showMenu = false"
+    />
   </div>
 </template>
 
@@ -468,7 +540,7 @@ onBeforeUnmount(() => {
   align-items: flex-end;
   -webkit-app-region: drag;
   align-items: center;
-  padding: 0rem .5rem;
+  padding: 0rem 0.5rem;
 }
 
 #main-search {
@@ -501,7 +573,7 @@ button#searchButton {
   height: 2rem;
   display: flex;
   align-items: center;
-  padding-left: .5rem;
+  padding-left: 0.5rem;
 }
 
 .bu-add {
@@ -562,7 +634,7 @@ button#addcont:hover {
   background-color: rgb(0, 153, 255);
 }
 
-.lists>.avatar {
+.lists > .avatar {
   flex-basis: 2.65rem;
   min-width: 2.65rem;
   height: 2.65rem;
@@ -571,12 +643,12 @@ button#addcont:hover {
   background-color: white;
 }
 
-.avatar>img {
+.avatar > img {
   width: 100%;
   height: 100%;
 }
 
-.avatar.model>img {
+.avatar.model > img {
   scale: 0.9;
 }
 
@@ -660,7 +732,7 @@ button#addcont:hover {
 
   .mobile-qq-header {
     padding: 0.75rem 1rem 0.5rem 1rem;
-    background-color: #F1F4FE;
+    background-color: #f1f4fe;
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
@@ -694,7 +766,6 @@ button#addcont:hover {
     border-radius: 50%;
     object-fit: cover;
   }
-
 
   .user-detail {
     display: flex;
@@ -804,7 +875,7 @@ button#addcont:hover {
   }
 
   .lists-wrapper#important {
-    background-color: #F1F4FE;
+    background-color: #f1f4fe;
   }
 
   .lists:hover,

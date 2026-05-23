@@ -4,51 +4,51 @@
  * 使用 Composition API 风格
  */
 
-import { presetsAPI } from '@/lib/presetsApi.js';
-import { defineStore } from 'pinia';
-import { computed, ref } from 'vue';
+import { presetsAPI } from "@/lib/presetsApi.js";
+import { defineStore } from "pinia";
+import { computed, ref } from "vue";
 
-export const usePresetsStore = defineStore('presets', () => {
+export const usePresetsStore = defineStore("presets", () => {
   // ========== State ==========
-  
+
   // 预设数据
   const presets = ref([]);
-  
+
   // 统计数据（来自 API）
   const summary = ref({
     totalCount: 0,
     categoryCount: {
       common: 0,
       recommended: 0,
-      hidden: 0
+      hidden: 0,
     },
     sourceCount: {
-      'built-in': 0,
-      custom: 0
-    }
+      "built-in": 0,
+      custom: 0,
+    },
   });
-  
+
   // 分页数据
   const pagination = ref({
     total: 0,
     start: 0,
     nums: 50,
-    hasMore: false
+    hasMore: false,
   });
-  
+
   // 加载状态
   const loading = ref(false);
 
   // ========== Getters ==========
-  
+
   /**
    * 获取所有预设的扁平化列表
    */
   const allPresets = computed(() => {
     const presetsArray = presets.value || [];
-    return presetsArray.map(preset => ({
+    return presetsArray.map((preset) => ({
       ...preset,
-      id: preset.name // 根据文档，预设的唯一标识符就是 name 字段
+      id: preset.name, // 根据文档，预设的唯一标识符就是 name 字段
     }));
   });
 
@@ -63,21 +63,25 @@ export const usePresetsStore = defineStore('presets', () => {
    * 按分类获取预设数量（来自 API summary）
    */
   const countByCategory = computed(() => {
-    return summary.value?.categoryCount || {
-      common: 0,
-      recommended: 0,
-      hidden: 0
-    };
+    return (
+      summary.value?.categoryCount || {
+        common: 0,
+        recommended: 0,
+        hidden: 0,
+      }
+    );
   });
 
   /**
    * 按来源获取预设数量（来自 API summary）
    */
   const countBySource = computed(() => {
-    return summary.value?.sourceCount || {
-      'built-in': 0,
-      custom: 0
-    };
+    return (
+      summary.value?.sourceCount || {
+        "built-in": 0,
+        custom: 0,
+      }
+    );
   });
 
   /**
@@ -86,7 +90,7 @@ export const usePresetsStore = defineStore('presets', () => {
   const presetsByCategory = computed(() => {
     const grouped = { common: [], recommended: [], hidden: [] };
     const presetsArray = presets.value || [];
-    presetsArray.forEach(preset => {
+    presetsArray.forEach((preset) => {
       if (preset.category && grouped.hasOwnProperty(preset.category)) {
         grouped[preset.category].push(preset);
       }
@@ -95,7 +99,7 @@ export const usePresetsStore = defineStore('presets', () => {
   });
 
   // ========== Actions ==========
-  
+
   /**
    * 获取预设列表
    */
@@ -104,7 +108,7 @@ export const usePresetsStore = defineStore('presets', () => {
     try {
       const response = await presetsAPI.getPresets(params);
       const data = response.data || {};
-      
+
       // 更新预设数据
       if (append && params.start > 0) {
         // 追加模式：添加到现有数据
@@ -114,7 +118,7 @@ export const usePresetsStore = defineStore('presets', () => {
         // 替换模式：替换所有数据
         presets.value = data.presets || [];
       }
-      
+
       // 更新统计数据
       if (data.summary) {
         summary.value = {
@@ -122,28 +126,28 @@ export const usePresetsStore = defineStore('presets', () => {
           categoryCount: data.summary.categoryCount || {
             common: 0,
             recommended: 0,
-            hidden: 0
+            hidden: 0,
           },
           sourceCount: data.summary.sourceCount || {
-            'built-in': 0,
-            custom: 0
-          }
+            "built-in": 0,
+            custom: 0,
+          },
         };
       }
-      
+
       // 更新分页数据
       if (data.pagination) {
         pagination.value = {
           total: data.pagination.total || 0,
           start: data.pagination.start || 0,
           nums: data.pagination.nums || 50,
-          hasMore: data.pagination.hasMore || false
+          hasMore: data.pagination.hasMore || false,
         };
       }
-      
+
       return data;
     } catch (error) {
-      console.error('获取预设列表失败:', error);
+      console.error("获取预设列表失败:", error);
       throw error;
     } finally {
       loading.value = false;
@@ -169,13 +173,13 @@ export const usePresetsStore = defineStore('presets', () => {
   async function createPreset(data) {
     try {
       const response = await presetsAPI.createPreset(data);
-      
+
       // 重新获取预设列表
       await fetchPresets();
-      
+
       return response.data;
     } catch (error) {
-      console.error('创建预设失败:', error);
+      console.error("创建预设失败:", error);
       throw error;
     }
   }
@@ -186,13 +190,13 @@ export const usePresetsStore = defineStore('presets', () => {
   async function updatePreset(presetId, data) {
     try {
       const response = await presetsAPI.updatePreset(presetId, data);
-      
+
       // 重新获取预设列表
       await fetchPresets();
-      
+
       return response.data;
     } catch (error) {
-      console.error('更新预设失败:', error);
+      console.error("更新预设失败:", error);
       throw error;
     }
   }
@@ -203,16 +207,16 @@ export const usePresetsStore = defineStore('presets', () => {
   async function deletePreset(presetId) {
     try {
       const response = await presetsAPI.deletePreset(presetId);
-      
+
       // 从本地状态中移除
-      const index = presets.value.findIndex(p => p.name === presetId);
+      const index = presets.value.findIndex((p) => p.name === presetId);
       if (index > -1) {
         presets.value.splice(index, 1);
       }
-      
+
       return response.data;
     } catch (error) {
-      console.error('删除预设失败:', error);
+      console.error("删除预设失败:", error);
       throw error;
     }
   }
@@ -222,7 +226,7 @@ export const usePresetsStore = defineStore('presets', () => {
    */
   async function batchDeletePresets(presetIds) {
     const results = [];
-    
+
     for (const presetId of presetIds) {
       try {
         await deletePreset(presetId);
@@ -231,7 +235,7 @@ export const usePresetsStore = defineStore('presets', () => {
         results.push({ success: false, presetId, error: error.message });
       }
     }
-    
+
     return results;
   }
 
@@ -241,13 +245,13 @@ export const usePresetsStore = defineStore('presets', () => {
   async function importPreset(file) {
     try {
       const response = await presetsAPI.importPreset(file);
-      
+
       // 重新获取预设列表
       await fetchPresets();
-      
+
       return response.data;
     } catch (error) {
-      console.error('导入预设失败:', error);
+      console.error("导入预设失败:", error);
       throw error;
     }
   }
@@ -259,7 +263,7 @@ export const usePresetsStore = defineStore('presets', () => {
     try {
       await presetsAPI.exportPreset(presetId);
     } catch (error) {
-      console.error('导出预设失败:', error);
+      console.error("导出预设失败:", error);
       throw error;
     }
   }
@@ -270,13 +274,13 @@ export const usePresetsStore = defineStore('presets', () => {
   async function reloadPresets() {
     try {
       const response = await presetsAPI.reloadPresets();
-      
+
       // 重新获取预设列表以更新统计数据
       await fetchPresets();
-      
+
       return response.data;
     } catch (error) {
-      console.error('重新加载预设失败:', error);
+      console.error("重新加载预设失败:", error);
       throw error;
     }
   }
@@ -289,10 +293,13 @@ export const usePresetsStore = defineStore('presets', () => {
     if (!keyword) return presetsArray;
 
     const lowerKeyword = keyword.toLowerCase();
-    return presetsArray.filter(preset => 
-      preset.name?.toLowerCase().includes(lowerKeyword) ||
-      preset.opening?.toLowerCase().includes(lowerKeyword) ||
-      preset.history?.some(h => h.content?.toLowerCase().includes(lowerKeyword))
+    return presetsArray.filter(
+      (preset) =>
+        preset.name?.toLowerCase().includes(lowerKeyword) ||
+        preset.opening?.toLowerCase().includes(lowerKeyword) ||
+        preset.history?.some((h) =>
+          h.content?.toLowerCase().includes(lowerKeyword),
+        ),
     );
   }
 
@@ -301,7 +308,7 @@ export const usePresetsStore = defineStore('presets', () => {
    */
   function findPresetById(presetId) {
     const presetsArray = allPresets.value || [];
-    return presetsArray.find(preset => preset.id === presetId);
+    return presetsArray.find((preset) => preset.id === presetId);
   }
 
   /**
@@ -309,25 +316,25 @@ export const usePresetsStore = defineStore('presets', () => {
    */
   function findPresetByName(name) {
     const presetsArray = allPresets.value || [];
-    return presetsArray.find(preset => preset.name === name);
+    return presetsArray.find((preset) => preset.name === name);
   }
 
   // ========== 返回公开的 API ==========
-  
+
   return {
     // State
     presets,
     summary,
     pagination,
     loading,
-    
+
     // Getters
     allPresets,
     totalCount,
     countByCategory,
     countBySource,
     presetsByCategory,
-    
+
     // Actions
     fetchPresets,
     getPreset,
@@ -340,6 +347,6 @@ export const usePresetsStore = defineStore('presets', () => {
     reloadPresets,
     searchPresets,
     findPresetById,
-    findPresetByName
+    findPresetByName,
   };
 });

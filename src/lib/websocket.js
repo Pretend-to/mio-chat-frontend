@@ -63,7 +63,9 @@ export default class Socket extends EventEmitter {
     this.hasAttemptedPollingFallback = false; // Reset fallback flag on successful connect
     this.isAttemptingWebSocket = false; // Reset attempt flag
     const transport = this.socket.io?.engine?.transport?.name || "unknown";
-    console.log(`SocketIO transport established via: ${transport}. Session is active.`);
+    console.log(
+      `SocketIO transport established via: ${transport}. Session is active.`,
+    );
     this.emit("connection_changed", true);
   }
 
@@ -77,7 +79,9 @@ export default class Socket extends EventEmitter {
     this.emit("connection_changed", false); // 改名
     // 如果是 'io server disconnect'，Socket.IO 客户端不会自动重连，必须手动调用 connect()
     if (reason === "io server disconnect") {
-      console.warn("Server forcefully disconnected the client. Attempting manual reconnection...");
+      console.warn(
+        "Server forcefully disconnected the client. Attempting manual reconnection...",
+      );
       this.socket.connect();
     }
     // 如果是 'transport close' 或 'transport error'，Socket.IO 的 reconnection 机制会自动处理

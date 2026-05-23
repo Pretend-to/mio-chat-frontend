@@ -1,20 +1,35 @@
 <template>
   <!-- 移动端全屏模式 -->
-  <div v-if="isMobile" class="mobile-fullscreen-overlay" :class="{ show: show }" @click="handleOverlayClick">
+  <div
+    v-if="isMobile"
+    class="mobile-fullscreen-overlay"
+    :class="{ show: show }"
+    @click="handleOverlayClick"
+  >
     <div class="mobile-container" :class="{ show: show }" @click.stop>
       <div class="mobile-header">
         <div class="mobile-title">添加机器人</div>
         <button class="mobile-close-btn" @click="close">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <path
+              d="M18 6L6 18M6 6l12 12"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
           </svg>
         </button>
       </div>
       <div class="add-contactor-body mobile">
         <!-- 标签页导航 -->
         <div class="tabs mobile">
-          <div v-for="(tab, index) in tabs" :key="index" class="tab-item" :class="{ active: activeTab === index }"
-            @click="activeTab = index">
+          <div
+            v-for="(tab, index) in tabs"
+            :key="index"
+            class="tab-item"
+            :class="{ active: activeTab === index }"
+            @click="activeTab = index"
+          >
             {{ tab }}
           </div>
         </div>
@@ -24,45 +39,99 @@
           <!-- 适配器列表 -->
           <div v-show="activeTab === 0" class="adapters-view">
             <div class="search">
-              <el-input v-model="adapterKeyword" placeholder="搜索适配器..." :prefix-icon="Search" clearable />
+              <el-input
+                v-model="adapterKeyword"
+                placeholder="搜索适配器..."
+                :prefix-icon="Search"
+                clearable
+              />
             </div>
             <el-scrollbar class="adapters-list">
-              <div v-for="(provider, index) in filteredProviders" :key="index" class="adapter-item mobile">
-                <div class="adapter-icon" :style="{ backgroundColor: getProviderColor(provider.adapterType) }">
-                  <img :src="getAvatarByAdapterType(provider.adapterType)" class="adapter-icon-img" alt="适配器图标" />
+              <div
+                v-for="(provider, index) in filteredProviders"
+                :key="index"
+                class="adapter-item mobile"
+              >
+                <div
+                  class="adapter-icon"
+                  :style="{
+                    backgroundColor: getProviderColor(provider.adapterType),
+                  }"
+                >
+                  <img
+                    :src="getAvatarByAdapterType(provider.adapterType)"
+                    class="adapter-icon-img"
+                    alt="适配器图标"
+                  />
                 </div>
                 <div class="adapter-info">
                   <div class="adapter-header">
-                    <el-tag size="small" :type="getProviderTagType(provider.adapterType)" effect="plain" round>
+                    <el-tag
+                      size="small"
+                      :type="getProviderTagType(provider.adapterType)"
+                      effect="plain"
+                      round
+                    >
                       {{ provider.adapterType }}
                     </el-tag>
                     <div class="adapter-name">{{ provider.label }}</div>
                   </div>
-                  <div class="adapter-desc">{{ getProviderDesc(provider.adapterType) }}</div>
+                  <div class="adapter-desc">
+                    {{ getProviderDesc(provider.adapterType) }}
+                  </div>
                 </div>
-                <el-button type="primary" size="small" @click="handleAddByProvider(provider)">添加</el-button>
+                <el-button
+                  type="primary"
+                  size="small"
+                  @click="handleAddByProvider(provider)"
+                  >添加</el-button
+                >
               </div>
-              <el-empty v-if="filteredProviders.length === 0" description="未找到相关适配器" />
+              <el-empty
+                v-if="filteredProviders.length === 0"
+                description="未找到相关适配器"
+              />
             </el-scrollbar>
           </div>
 
           <!-- 预设列表 -->
           <div v-show="activeTab === 1" class="presets-view">
             <div class="search">
-              <el-input v-model="keyWord" placeholder="输入搜索关键词" :prefix-icon="Search" clearable
-                @input="loadSerachPresets" />
+              <el-input
+                v-model="keyWord"
+                placeholder="输入搜索关键词"
+                :prefix-icon="Search"
+                clearable
+                @input="loadSerachPresets"
+              />
             </div>
             <div class="info">
               <header class="presets-types mobile">
-                <div :style="{ left: buttonTranslate }" class="slide-button"></div>
-                <nav v-for="(type, index) in avaliablePresetTypes" :key="index"
-                  :class="activeTypeIndex === index ? 'active' : ''" @click="changeShownType(index)">
+                <div
+                  :style="{ left: buttonTranslate }"
+                  class="slide-button"
+                ></div>
+                <nav
+                  v-for="(type, index) in avaliablePresetTypes"
+                  :key="index"
+                  :class="activeTypeIndex === index ? 'active' : ''"
+                  @click="changeShownType(index)"
+                >
                   {{ type }}
                 </nav>
               </header>
-              <el-scrollbar v-if="shownPrestsList.length > 0 || [0, 3].includes(activeTypeIndex)" class="presets-list"
-                @scroll="handleScroll">
-                <div v-for="(preset, index) in shownPrestsList" :key="index" class="presets-item mobile">
+              <el-scrollbar
+                v-if="
+                  shownPrestsList.length > 0 || [0, 3].includes(activeTypeIndex)
+                "
+                class="presets-list"
+                @scroll="handleScroll"
+              >
+                <div
+                  v-for="(preset, index) in shownPrestsList"
+                  :key="index"
+                  class="presets-item mobile"
+                >
                   <div v-if="preset.avatar" class="preset-avatar custom">
                     <img :src="preset.avatar" alt="预设头像" />
                   </div>
@@ -84,7 +153,7 @@
                   <el-icon class="is-loading">
                     <Loading />
                   </el-icon>
-                  <span style="margin-left: 8px;">加载中...</span>
+                  <span style="margin-left: 8px">加载中...</span>
                 </div>
               </el-scrollbar>
               <div v-else class="empty-list">
@@ -97,9 +166,18 @@
           <div v-show="activeTab === 2" class="share-code-view">
             <div class="share-input-container">
               <div class="input-label">输入分享码或分享链接</div>
-              <el-input v-model="shareCode" placeholder="粘贴分享码或链接..." clearable class="share-input" />
-              <el-button type="primary" :disabled="!shareCode.trim()" @click="handleAddByShareCode"
-                style="width: 100%; margin-top: 16px;">
+              <el-input
+                v-model="shareCode"
+                placeholder="粘贴分享码或链接..."
+                clearable
+                class="share-input"
+              />
+              <el-button
+                type="primary"
+                :disabled="!shareCode.trim()"
+                @click="handleAddByShareCode"
+                style="width: 100%; margin-top: 16px"
+              >
                 加载 Bot
               </el-button>
             </div>
@@ -110,13 +188,25 @@
   </div>
 
   <!-- 桌面端对话框模式 -->
-  <el-dialog v-else :model-value="show" title="添加机器人" width="500px" class="add-contactor-dialog"
-    @update:model-value="$emit('update:show', $event)" @close="$emit('close')">
+  <el-dialog
+    v-else
+    :model-value="show"
+    title="添加机器人"
+    width="500px"
+    class="add-contactor-dialog"
+    @update:model-value="$emit('update:show', $event)"
+    @close="$emit('close')"
+  >
     <div class="add-contactor-body">
       <!-- 标签页导航 -->
       <div class="tabs">
-        <div v-for="(tab, index) in tabs" :key="index" class="tab-item" :class="{ active: activeTab === index }"
-          @click="activeTab = index">
+        <div
+          v-for="(tab, index) in tabs"
+          :key="index"
+          class="tab-item"
+          :class="{ active: activeTab === index }"
+          @click="activeTab = index"
+        >
           {{ tab }}
         </div>
       </div>
@@ -126,45 +216,99 @@
         <!-- 适配器列表 -->
         <div v-show="activeTab === 0" class="adapters-view">
           <div class="search">
-            <el-input v-model="adapterKeyword" placeholder="搜索适配器..." :prefix-icon="Search" clearable />
+            <el-input
+              v-model="adapterKeyword"
+              placeholder="搜索适配器..."
+              :prefix-icon="Search"
+              clearable
+            />
           </div>
           <el-scrollbar class="adapters-list">
-            <div v-for="(provider, index) in filteredProviders" :key="index" class="adapter-item">
-              <div class="adapter-icon" :style="{ backgroundColor: getProviderColor(provider.adapterType) }">
-                <img :src="getAvatarByAdapterType(provider.adapterType)" class="adapter-icon-img" alt="适配器图标" />
+            <div
+              v-for="(provider, index) in filteredProviders"
+              :key="index"
+              class="adapter-item"
+            >
+              <div
+                class="adapter-icon"
+                :style="{
+                  backgroundColor: getProviderColor(provider.adapterType),
+                }"
+              >
+                <img
+                  :src="getAvatarByAdapterType(provider.adapterType)"
+                  class="adapter-icon-img"
+                  alt="适配器图标"
+                />
               </div>
               <div class="adapter-info">
                 <div class="adapter-header">
-                  <el-tag size="small" :type="getProviderTagType(provider.adapterType)" effect="plain" round>
+                  <el-tag
+                    size="small"
+                    :type="getProviderTagType(provider.adapterType)"
+                    effect="plain"
+                    round
+                  >
                     {{ provider.adapterType }}
                   </el-tag>
                   <div class="adapter-name">{{ provider.label }}</div>
                 </div>
-                <div class="adapter-desc">{{ getProviderDesc(provider.adapterType) }}</div>
+                <div class="adapter-desc">
+                  {{ getProviderDesc(provider.adapterType) }}
+                </div>
               </div>
-              <el-button type="primary" size="small" @click="handleAddByProvider(provider)">添加</el-button>
+              <el-button
+                type="primary"
+                size="small"
+                @click="handleAddByProvider(provider)"
+                >添加</el-button
+              >
             </div>
-            <el-empty v-if="filteredProviders.length === 0" description="未找到相关适配器" />
+            <el-empty
+              v-if="filteredProviders.length === 0"
+              description="未找到相关适配器"
+            />
           </el-scrollbar>
         </div>
 
         <!-- 预设列表 -->
         <div v-show="activeTab === 1" class="presets-view">
           <div class="search">
-            <el-input v-model="keyWord" placeholder="输入搜索关键词" :prefix-icon="Search" clearable
-              @input="loadSerachPresets" />
+            <el-input
+              v-model="keyWord"
+              placeholder="输入搜索关键词"
+              :prefix-icon="Search"
+              clearable
+              @input="loadSerachPresets"
+            />
           </div>
           <div class="info">
             <header class="presets-types">
-              <div :style="{ left: buttonTranslate }" class="slide-button"></div>
-              <nav v-for="(type, index) in avaliablePresetTypes" :key="index"
-                :class="activeTypeIndex === index ? 'active' : ''" @click="changeShownType(index)">
+              <div
+                :style="{ left: buttonTranslate }"
+                class="slide-button"
+              ></div>
+              <nav
+                v-for="(type, index) in avaliablePresetTypes"
+                :key="index"
+                :class="activeTypeIndex === index ? 'active' : ''"
+                @click="changeShownType(index)"
+              >
                 {{ type }}
               </nav>
             </header>
-            <el-scrollbar v-if="shownPrestsList.length > 0 || [0, 3].includes(activeTypeIndex)" class="presets-list"
-              @scroll="handleScroll">
-              <div v-for="(preset, index) in shownPrestsList" :key="index" class="presets-item">
+            <el-scrollbar
+              v-if="
+                shownPrestsList.length > 0 || [0, 3].includes(activeTypeIndex)
+              "
+              class="presets-list"
+              @scroll="handleScroll"
+            >
+              <div
+                v-for="(preset, index) in shownPrestsList"
+                :key="index"
+                class="presets-item"
+              >
                 <div v-if="preset.avatar" class="preset-avatar custom">
                   <img :src="preset.avatar" alt="预设头像" />
                 </div>
@@ -186,7 +330,7 @@
                 <el-icon class="is-loading">
                   <Loading />
                 </el-icon>
-                <span style="margin-left: 8px;">加载中...</span>
+                <span style="margin-left: 8px">加载中...</span>
               </div>
             </el-scrollbar>
             <div v-else class="empty-list">
@@ -199,9 +343,18 @@
         <div v-show="activeTab === 2" class="share-code-view">
           <div class="share-input-container">
             <div class="input-label">输入分享码或分享链接</div>
-            <el-input v-model="shareCode" placeholder="粘贴分享码或链接..." clearable class="share-input" />
-            <el-button type="primary" :disabled="!shareCode.trim()" @click="handleAddByShareCode"
-              style="width: 100%; margin-top: 16px;">
+            <el-input
+              v-model="shareCode"
+              placeholder="粘贴分享码或链接..."
+              clearable
+              class="share-input"
+            />
+            <el-button
+              type="primary"
+              :disabled="!shareCode.trim()"
+              @click="handleAddByShareCode"
+              style="width: 100%; margin-top: 16px"
+            >
               加载 Bot
             </el-button>
           </div>
@@ -214,10 +367,10 @@
 <script setup>
 import { config, client } from "@/lib/runtime.js";
 import { getAvatarByAdapterType } from "@/utils/avatar.js";
-import { Loading, Search } from '@element-plus/icons-vue';
-import { ElMessage } from 'element-plus';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { Loading, Search } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import { getAvatarByModel } from "@/stores/contactorsStore.js";
 
 // Props
@@ -229,7 +382,13 @@ const props = defineProps({
 });
 
 // Emits
-const emit = defineEmits(["addBot", "close", "add-by-provider", "add-by-share-code", "update:show"]);
+const emit = defineEmits([
+  "addBot",
+  "close",
+  "add-by-provider",
+  "add-by-share-code",
+  "update:show",
+]);
 
 // Router
 const router = useRouter();
@@ -289,10 +448,11 @@ const filteredProviders = computed(() => {
     return availableProviders.value;
   }
   const keyword = adapterKeyword.value.toLowerCase();
-  return availableProviders.value.filter(provider =>
-    provider.value.toLowerCase().includes(keyword) ||
-    provider.label.toLowerCase().includes(keyword) ||
-    provider.adapterType.toLowerCase().includes(keyword)
+  return availableProviders.value.filter(
+    (provider) =>
+      provider.value.toLowerCase().includes(keyword) ||
+      provider.label.toLowerCase().includes(keyword) ||
+      provider.adapterType.toLowerCase().includes(keyword),
   );
 });
 
@@ -306,7 +466,7 @@ const handleOverlayClick = () => {
 };
 
 const close = () => {
-  emit('close');
+  emit("close");
 };
 
 const handleAddByProvider = (provider) => {
@@ -317,43 +477,43 @@ const handleAddByProvider = (provider) => {
 
 const getProviderDesc = (provider) => {
   const descMap = {
-    'openai': 'OpenAI GPT 系列模型',
-    'gemini': 'Google Gemini 模型',
-    'vertex': 'Google Vertex AI 平台',
-    'onebot': 'OneBot 协议 (QQ, etc.)',
-    'deepseek': 'DeepSeek 深度求索模型',
-    'anthropic': 'Anthropic Claude 模型'
+    openai: "OpenAI GPT 系列模型",
+    gemini: "Google Gemini 模型",
+    vertex: "Google Vertex AI 平台",
+    onebot: "OneBot 协议 (QQ, etc.)",
+    deepseek: "DeepSeek 深度求索模型",
+    anthropic: "Anthropic Claude 模型",
   };
-  return descMap[provider?.toLowerCase()] || '大语言模型适配器';
+  return descMap[provider?.toLowerCase()] || "大语言模型适配器";
 };
 
 const getProviderTagType = (provider) => {
   const typeMap = {
-    'openai': 'primary',
-    'gemini': 'success',
-    'vertex': 'warning',
-    'onebot': 'info',
-    'deepseek': 'primary',
-    'anthropic': 'warning'
+    openai: "primary",
+    gemini: "success",
+    vertex: "warning",
+    onebot: "info",
+    deepseek: "primary",
+    anthropic: "warning",
   };
-  return typeMap[provider?.toLowerCase()] || 'info';
+  return typeMap[provider?.toLowerCase()] || "info";
 };
 
 const getProviderColor = (provider) => {
   const colorMap = {
-    'openai': '#f0f9ff',  // 浅蓝色背景
-    'gemini': '#f0f7ff',  // 浅蓝色背景
-    'vertex': '#fffbeb',  // 浅黄色背景
-    'onebot': '#f0f4ff',  // 浅紫蓝色背景
-    'deepseek': '#f0f4ff', // 浅蓝色背景
-    'anthropic': '#fff0f0' // 浅红色背景
+    openai: "#f0f9ff", // 浅蓝色背景
+    gemini: "#f0f7ff", // 浅蓝色背景
+    vertex: "#fffbeb", // 浅黄色背景
+    onebot: "#f0f4ff", // 浅紫蓝色背景
+    deepseek: "#f0f4ff", // 浅蓝色背景
+    anthropic: "#fff0f0", // 浅红色背景
   };
-  return colorMap[provider?.toLowerCase()] || '#f5f5f5'; // 默认浅灰色
+  return colorMap[provider?.toLowerCase()] || "#f5f5f5"; // 默认浅灰色
 };
 
 const handleAddByShareCode = async () => {
   if (!shareCode.value.trim()) {
-    ElMessage.warning('请输入分享码');
+    ElMessage.warning("请输入分享码");
     return;
   }
 
@@ -371,15 +531,15 @@ const handleAddByShareCode = async () => {
         if (match) {
           shareId = match[1];
         } else {
-          ElMessage.error('链接格式不正确，应为 /s/数字');
+          ElMessage.error("链接格式不正确，应为 /s/数字");
           return;
         }
       } else {
-        ElMessage.error('链接域名与当前网站不一致');
+        ElMessage.error("链接域名与当前网站不一致");
         return;
       }
     } catch (e) {
-      ElMessage.error('请输入有效的分享码或分享链接');
+      ElMessage.error("请输入有效的分享码或分享链接");
       return;
     }
   }
@@ -501,7 +661,7 @@ const changeShownType = (index) => {
 
 // 处理滚动事件，实现无限滚动
 const handleScroll = ({ scrollTop }) => {
-  const scrollbar = document.querySelector('.presets-list .el-scrollbar__wrap');
+  const scrollbar = document.querySelector(".presets-list .el-scrollbar__wrap");
   if (!scrollbar || !showPresetsLoader.value) return;
 
   const scrollHeight = scrollbar.scrollHeight;
@@ -517,14 +677,14 @@ const handleScroll = ({ scrollTop }) => {
 // Lifecycle
 onMounted(async () => {
   checkMobile();
-  window.addEventListener('resize', checkMobile);
+  window.addEventListener("resize", checkMobile);
   getAddHistory();
   await loadSpecificType();
 });
 
 // 清理事件监听器
 onUnmounted(() => {
-  window.removeEventListener('resize', checkMobile);
+  window.removeEventListener("resize", checkMobile);
 });
 </script>
 
@@ -636,7 +796,7 @@ onUnmounted(() => {
   }
 
   &.active::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: -1px;
     left: 0;
@@ -911,63 +1071,14 @@ onUnmounted(() => {
 }
 </style>
 
-// 移动端响应式样式
-@media (max-width: 768px) {
-.add-contactor-dialog {
-display: none !important;
-}
-
-.search {
-padding: 12px 0 !important;
-}
-
-.adapter-icon {
-width: 44px !important;
-height: 44px !important;
-margin-right: 16px !important;
-}
-
-.adapter-name {
-font-size: 16px !important;
-}
-
-.adapter-desc {
-font-size: 13px !important;
-}
-
-.el-button {
-padding: 8px 16px !important;
-}
-
-.share-code-view {
-padding-top: 20px !important;
-}
-
-.input-label {
-font-size: 15px !important;
-margin-bottom: 12px !important;
-}
-
-.el-input {
-font-size: 16px !important;
-}
-
-.loading {
-padding: 24px !important;
-font-size: 15px !important;
-}
-}
-
-// 平板适配
-@media (min-width: 769px) and (max-width: 1024px) {
-.mobile-fullscreen-overlay {
-display: none !important;
-}
-}
-
-// 确保桌面端不显示移动端组件
-@media (min-width: 769px) {
-.mobile-fullscreen-overlay {
-display: none !important;
-}
-}
+// 移动端响应式样式 @media (max-width: 768px) { .add-contactor-dialog { display:
+none !important; } .search { padding: 12px 0 !important; } .adapter-icon {
+width: 44px !important; height: 44px !important; margin-right: 16px !important;
+} .adapter-name { font-size: 16px !important; } .adapter-desc { font-size: 13px
+!important; } .el-button { padding: 8px 16px !important; } .share-code-view {
+padding-top: 20px !important; } .input-label { font-size: 15px !important;
+margin-bottom: 12px !important; } .el-input { font-size: 16px !important; }
+.loading { padding: 24px !important; font-size: 15px !important; } } // 平板适配
+@media (min-width: 769px) and (max-width: 1024px) { .mobile-fullscreen-overlay {
+display: none !important; } } // 确保桌面端不显示移动端组件 @media (min-width:
+769px) { .mobile-fullscreen-overlay { display: none !important; } }

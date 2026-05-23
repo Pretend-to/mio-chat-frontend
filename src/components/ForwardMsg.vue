@@ -16,20 +16,34 @@
     </div>
     <div id="forward-msg-foot">
       <span>查看{{ messages.length }}条转发消息</span>
-      <i class="iconfont right-arrow" style="font-size: 0.6rem;"></i>
+      <i class="iconfont right-arrow" style="font-size: 0.6rem"></i>
     </div>
   </div>
 
   <teleport to="body">
     <transition name="forward-fade">
       <div v-if="showBox" class="forward-msg-overlay" @click="showBox = false">
-        <div class="forward-msg-box" :class="{ 'on-phone': onPhone }" @click.stop>
+        <div
+          class="forward-msg-box"
+          :class="{ 'on-phone': onPhone }"
+          @click.stop
+        >
           <div class="forward-msg-header">
-            <button v-if="onPhone" class="forward-back-btn" @click="showBox = false">
+            <button
+              v-if="onPhone"
+              class="forward-back-btn"
+              @click="showBox = false"
+            >
               <i class="iconfont icon-return"></i>
             </button>
             <div class="forward-msg-title">转发的聊天消息</div>
-            <button v-if="!onPhone" class="forward-close-btn" @click="showBox = false">&times;</button>
+            <button
+              v-if="!onPhone"
+              class="forward-close-btn"
+              @click="showBox = false"
+            >
+              &times;
+            </button>
           </div>
           <div class="forward-msg-body">
             <div
@@ -37,25 +51,33 @@
               :key="index"
               class="forward-message-item"
             >
-              <div v-if="message.type === 'node'" class="forward-message-content">
+              <div
+                v-if="message.type === 'node'"
+                class="forward-message-content"
+              >
                 <div class="avatar">
-                  <img :src="getAvatarUrl(message.data.uin)" :alt="message.data.name" />
+                  <img
+                    :src="getAvatarUrl(message.data.uin)"
+                    :alt="message.data.name"
+                  />
                 </div>
                 <div class="msg-details">
                   <div class="wholename">
-                    <span class="title" v-if="contactor && contactor.title">{{ contactor.title }}</span>
+                    <span class="title" v-if="contactor && contactor.title">{{
+                      contactor.title
+                    }}</span>
                     <span class="name">{{ message.data.name }}</span>
                   </div>
                   <div class="bubble-wrapper">
                     <template
-                      v-for="(elm, elmIdx) of message.data.content" 
+                      v-for="(elm, elmIdx) of message.data.content"
                       :key="elmIdx"
                     >
                       <MdRenderer
                         v-if="elm.type === 'text'"
                         :md="elm.data.text"
                         :theme="'github'"
-                        :markdown-it-options="{breaks: true}"
+                        :markdown-it-options="{ breaks: true }"
                       />
                       <MdRenderer
                         v-else-if="elm.type === 'image'"
@@ -110,8 +132,8 @@ export default {
     const mioPlugins = [
       {
         plugin: imageViewerPlugin,
-      }
-    ]
+      },
+    ];
     return {
       showBox: false,
       onPhone: false,
@@ -135,7 +157,10 @@ export default {
   },
   methods: {
     getAvatarUrl(uin) {
-      if (typeof uin === "string" && (uin.startsWith("http") || uin.startsWith("/"))) {
+      if (
+        typeof uin === "string" &&
+        (uin.startsWith("http") || uin.startsWith("/"))
+      ) {
         return uin;
       }
       return `/p/qava/?q=${uin || 1099834705}`;
@@ -398,11 +423,15 @@ export default {
 }
 
 .forward-fade-enter-active .forward-msg-box {
-  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+  transition:
+    transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.25s ease;
 }
 
 .forward-fade-leave-active .forward-msg-box {
-  transition: transform 0.18s ease-in, opacity 0.18s ease-in;
+  transition:
+    transform 0.18s ease-in,
+    opacity 0.18s ease-in;
 }
 
 .forward-fade-enter-from .forward-msg-box,

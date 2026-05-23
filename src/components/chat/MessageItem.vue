@@ -11,54 +11,104 @@
       class="message-flex-wrapper"
       :class="{
         'is-multi-select': isMultiSelect && item.role !== 'mio_system',
-        'is-selected': isMultiSelect && isSelected
+        'is-selected': isMultiSelect && isSelected,
       }"
       @click="$emit('click-message', item)"
     >
       <transition name="checkbox-fade">
-        <div v-if="isMultiSelect && item.role !== 'mio_system'" class="multi-select-box">
+        <div
+          v-if="isMultiSelect && item.role !== 'mio_system'"
+          class="multi-select-box"
+        >
           <div
             class="round-checkbox"
             :class="{ checked: isSelected }"
             @click.stop="$emit('toggle-checkbox', item.id)"
           >
-            <svg v-if="isSelected" viewBox="0 0 12 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <polyline points="1,5 4.5,8.5 11,1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <svg
+              v-if="isSelected"
+              viewBox="0 0 12 10"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <polyline
+                points="1,5 4.5,8.5 11,1"
+                stroke="white"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
           </div>
         </div>
       </transition>
-      
-      <div :id="item.role" class="message-body" :style="{ pointerEvents: isMultiSelect ? 'none' : 'auto' }">
+
+      <div
+        :id="item.role"
+        class="message-body"
+        :style="{ pointerEvents: isMultiSelect ? 'none' : 'auto' }"
+      >
         <div v-if="item.role !== 'mio_system'" class="avatar">
-          <img v-if="item.role === 'other'" :src="activeContactor.avatar" :alt="activeContactor.name" @click="$emit('to-profile')" />
+          <img
+            v-if="item.role === 'other'"
+            :src="activeContactor.avatar"
+            :alt="activeContactor.name"
+            @click="$emit('to-profile')"
+          />
           <img v-else :src="client.avatar" :alt="client.name" />
         </div>
         <div v-if="item.role !== 'mio_system'" class="msg">
           <div class="wholename">
-            <div v-if="item.role === 'other' ? activeContactor.title : client.title" class="title">
-              {{ item.role === 'other' ? activeContactor.title : client.title }}
+            <div
+              v-if="
+                item.role === 'other' ? activeContactor.title : client.title
+              "
+              class="title"
+            >
+              {{ item.role === "other" ? activeContactor.title : client.title }}
             </div>
             <div class="name">
-              {{ item.role === 'other' ? activeContactor.name : client.name }}
-              <i v-if="item.isTask" class="iconfont task-indicator" title="来自计划任务"></i>
+              {{ item.role === "other" ? activeContactor.name : client.name }}
+              <i
+                v-if="item.isTask"
+                class="iconfont task-indicator"
+                title="来自计划任务"
+              ></i>
             </div>
           </div>
-          <div class="message-bubble-wrapper" :class="{ 'is-user': item.role === 'user' }">
+          <div
+            class="message-bubble-wrapper"
+            :class="{ 'is-user': item.role === 'user' }"
+          >
             <div
-              v-if="item.role === 'user' && ['pending', 'failed', 'uploading'].includes(item.status)"
+              v-if="
+                item.role === 'user' &&
+                ['pending', 'failed', 'uploading'].includes(item.status)
+              "
               class="message-status-indicator"
             >
-              <el-icon v-if="item.status === 'pending' || item.status === 'uploading'" class="loading-spinner"><Loading /></el-icon>
-              
-              <el-dropdown v-else-if="item.status === 'failed'" trigger="click" @command="handleCommand">
+              <el-icon
+                v-if="item.status === 'pending' || item.status === 'uploading'"
+                class="loading-spinner"
+                ><Loading
+              /></el-icon>
+
+              <el-dropdown
+                v-else-if="item.status === 'failed'"
+                trigger="click"
+                @command="handleCommand"
+              >
                 <span class="error-icon-trigger">
                   <el-icon class="error-icon"><Warning /></el-icon>
                 </span>
                 <template #dropdown>
                   <el-dropdown-menu>
-                    <el-dropdown-item command="retry">重新发送</el-dropdown-item>
-                    <el-dropdown-item command="delete" style="color: #f56c6c;">删除消息</el-dropdown-item>
+                    <el-dropdown-item command="retry"
+                      >重新发送</el-dropdown-item
+                    >
+                    <el-dropdown-item command="delete" style="color: #f56c6c"
+                      >删除消息</el-dropdown-item
+                    >
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
@@ -71,15 +121,27 @@
               @touchstart="$emit('touchstart-content', $event, index)"
               @dblclick="$emit('contextmenu-content', $event, index)"
             >
-              <div v-if="item.isPinned" class="pinned-badge" title="已钉住此消息">
+              <div
+                v-if="item.isPinned"
+                class="pinned-badge"
+                title="已钉住此消息"
+              >
                 <el-icon><CollectionTag /></el-icon>
               </div>
-              <div v-for="(element, elmIndex) of item.content" :key="elmIndex" class="inner-content">
+              <div
+                v-for="(element, elmIndex) of item.content"
+                :key="elmIndex"
+                class="inner-content"
+              >
                 <MdRenderer
                   v-if="element.type === 'text'"
                   :md="element.data.text"
                   :theme="'github'"
-                  :isStreaming="item.role === 'other' && ['pending', 'retrying'].includes(item.status) && item.content.length - 1 === elmIndex"
+                  :isStreaming="
+                    item.role === 'other' &&
+                    ['pending', 'retrying'].includes(item.status) &&
+                    item.content.length - 1 === elmIndex
+                  "
                   :custom-plugins="mioPlugins"
                   :markdown-it-plugins="katexPluginList"
                   :markdown-it-options="mdOptions"
@@ -105,17 +167,12 @@
                   :contactor="activeContactor"
                   :messages="element.data.messages"
                 />
-                <FileBlock v-else-if="element.type === 'file'" :file-url="element.data.file" />
+                <FileBlock
+                  v-else-if="element.type === 'file'"
+                  :file-url="element.data.file"
+                />
                 <span v-else-if="element.type === 'at'" />
-                <span v-else-if="element.type === 'prompt_hint'" class="command-badge" style="vertical-align: middle;">
-                  <span v-if="element.data.subtype === 'plugin'" class="cmd-plugin-icon" style="margin-right: 4px; vertical-align: middle;">
-                    <i class="mio-icon mio-icon-tool"></i>
-                    <sup class="plugin-plus">+</sup>
-                  </span>
-                  <i v-else-if="element.data.subtype === 'tool'" class="mio-icon mio-icon-tool" style="margin-right: 4px; vertical-align: middle;"></i>
-                  <i v-else-if="element.data.subtype === 'skill'" class="mio-icon mio-icon-skill" style="margin-right: 4px; vertical-align: middle;"></i>
-                  <span>{{ element.data.name }}</span>
-                </span>
+                <span v-else-if="element.type === 'prompt_hint'" />
                 <ReasonBlock
                   v-else-if="element.type === 'reason'"
                   :end-time="element.data.endTime"
@@ -130,7 +187,10 @@
                 >
                   <span class="blank-loader"></span>
                 </div>
-                <ToolCallBar v-else-if="element.type === 'tool_call'" :tool-call="element.data" />
+                <ToolCallBar
+                  v-else-if="element.type === 'tool_call'"
+                  :tool-call="element.data"
+                />
               </div>
             </div>
           </div>
@@ -140,7 +200,10 @@
             {{ item.content[0].data.text }}
           </div>
           <div class="system-message-button">
-            <i class="iconfont close" @click="$emit('delete-system', index)"></i>
+            <i
+              class="iconfont close"
+              @click="$emit('delete-system', index)"
+            ></i>
           </div>
         </div>
       </div>
@@ -228,7 +291,7 @@ const handleCommand = (command) => {
 const getReplyText = (id) => {
   let content = "";
   const message = props.activeContactor.messageChain.find(
-    (item) => item.id === id || String(item.id) === String(id)
+    (item) => item.id === id || String(item.id) === String(id),
   );
   if (message) {
     message.content.forEach((element) => {
@@ -256,7 +319,7 @@ $icon-hover: #09f
 :global(.is-exporting) .message-container
     content-visibility: visible !important
     contain: none !important
-    
+
 .message-flex-wrapper
     display: flex
     align-items: flex-start
@@ -343,7 +406,7 @@ $icon-hover: #09f
   display: flex
   flex-direction: column
   width: 100%
-  
+
   & > *
     margin: 2px 0
 
@@ -424,4 +487,3 @@ $icon-hover: #09f
     color: rgb(0, 153, 255) !important
     line-height: 1 !important
 </style>
-

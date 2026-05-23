@@ -1,7 +1,7 @@
-import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { defineStore } from "pinia";
+import { ref } from "vue";
 
-export const useConnectionStore = defineStore('connection', () => {
+export const useConnectionStore = defineStore("connection", () => {
   const isConnected = ref(false);
   const isConnecting = ref(false);
   const error = ref(null);
@@ -29,7 +29,10 @@ export const useConnectionStore = defineStore('connection', () => {
    */
   function initSync(client) {
     const updateState = () => {
-      console.log("[connectionStore] sync state called, isConnected:", client.isConnected);
+      console.log(
+        "[connectionStore] sync state called, isConnected:",
+        client.isConnected,
+      );
       isConnected.value = client.isConnected;
     };
 
@@ -50,7 +53,7 @@ export const useConnectionStore = defineStore('connection', () => {
       isConnected.value = false;
       setError(err.message || "Connection error");
     });
-    
+
     // 如果 socket 重新就绪（重新登录），确保状态也是最新的
     client.on("socket_ready", () => {
       updateState();
@@ -64,6 +67,6 @@ export const useConnectionStore = defineStore('connection', () => {
     setConnected,
     setConnecting,
     setError,
-    initSync
+    initSync,
   };
 });

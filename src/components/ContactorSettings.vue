@@ -3,14 +3,19 @@
     <!-- Header: Basic Info (QQ Style) -->
     <div class="profile-header">
       <div class="avatar-container">
-        <div class="avatar" :style="{ backgroundImage: `url(${avatar || ''})` }"></div>
+        <div
+          class="avatar"
+          :style="{ backgroundImage: `url(${avatar || ''})` }"
+        ></div>
       </div>
       <div class="profile-info">
-        <h1 class="profile-name">{{ name || 'Mio Assistant' }}</h1>
-        <div class="profile-id">ID {{ localBasicInfo.id || '114514' }}</div>
+        <h1 class="profile-name">{{ name || "Mio Assistant" }}</h1>
+        <div class="profile-id">ID {{ localBasicInfo.id || "114514" }}</div>
         <div class="status-text">
-          <span :class="{ 'online-indicator': true, offline: !isConnected }">●</span>
-          {{ isConnected ? '在线' : '离线' }}
+          <span :class="{ 'online-indicator': true, offline: !isConnected }"
+            >●</span
+          >
+          {{ isConnected ? "在线" : "离线" }}
         </div>
       </div>
     </div>
@@ -18,18 +23,42 @@
     <!-- Top Tabs -->
     <div class="tabs-container" v-if="activeContactorPlatform !== 'onebot'">
       <div class="segmented-tabs">
-        <div :class="{ 'tab-item': true, active: activeTab === 'basic' }" @click="activeTab = 'basic'">基础配置</div>
-        <div :class="{ 'tab-item': true, active: activeTab === 'tools' }" @click="activeTab = 'tools'">工具调用</div>
-        <div :class="{ 'tab-item': true, active: activeTab === 'skills' }" @click="activeTab = 'skills'">技能库</div>
+        <div
+          :class="{ 'tab-item': true, active: activeTab === 'basic' }"
+          @click="activeTab = 'basic'"
+        >
+          基础配置
+        </div>
+        <div
+          :class="{ 'tab-item': true, active: activeTab === 'tools' }"
+          @click="activeTab = 'tools'"
+        >
+          工具调用
+        </div>
+        <div
+          :class="{ 'tab-item': true, active: activeTab === 'skills' }"
+          @click="activeTab = 'skills'"
+        >
+          技能库
+        </div>
 
-        <div :class="{ 'tab-item': true, active: activeTab === 'presets' }" @click="activeTab = 'presets'">历史预设</div>
-        <div :class="{ 'tab-item': true, active: activeTab === 'advanced' }" @click="activeTab = 'advanced'">高级扩展</div>
+        <div
+          :class="{ 'tab-item': true, active: activeTab === 'presets' }"
+          @click="activeTab = 'presets'"
+        >
+          历史预设
+        </div>
+        <div
+          :class="{ 'tab-item': true, active: activeTab === 'advanced' }"
+          @click="activeTab = 'advanced'"
+        >
+          高级扩展
+        </div>
       </div>
     </div>
 
     <!-- Settings Content Area -->
     <div class="settings-content">
-
       <!-- Tab: Basic -->
       <div v-if="activeTab === 'basic'" class="tab-pane">
         <!-- Identity Group -->
@@ -38,29 +67,56 @@
           <div class="setting-field">
             <div class="field-label">昵称</div>
             <div class="field-value">
-              <el-input v-model="localBasicInfo.name" :disabled="localBasicInfo.namePolicy !== 1" />
+              <el-input
+                v-model="localBasicInfo.name"
+                :disabled="localBasicInfo.namePolicy !== 1"
+              />
             </div>
           </div>
           <div class="setting-field">
             <div class="field-label">头像</div>
             <div class="field-value">
-              <el-input v-if="localBasicInfo.avatarPolicy !== 1" :value="activeContactorPlatform === 'onebot' ? '跟随QQ头像' : '跟随模型'" disabled />
+              <el-input
+                v-if="localBasicInfo.avatarPolicy !== 1"
+                :value="
+                  activeContactorPlatform === 'onebot'
+                    ? '跟随QQ头像'
+                    : '跟随模型'
+                "
+                disabled
+              />
               <el-input v-else v-model="localBasicInfo.avatar" />
             </div>
           </div>
           <div class="setting-field">
             <div class="field-label">头像策略</div>
             <div class="field-value">
-              <el-select v-model="localBasicInfo.avatarPolicy" style="width: 100%">
-                <el-option v-for="item in avatarPolicyListForShow" :key="item.value" :label="item.label" :value="item.value" />
+              <el-select
+                v-model="localBasicInfo.avatarPolicy"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="item in avatarPolicyListForShow"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                />
               </el-select>
             </div>
           </div>
           <div class="setting-field">
             <div class="field-label">昵称策略</div>
             <div class="field-value">
-              <el-select v-model="localBasicInfo.namePolicy" style="width: 100%">
-                <el-option v-for="item in namePolicyListForShow" :key="item.value" :label="item.label" :value="item.value" />
+              <el-select
+                v-model="localBasicInfo.namePolicy"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="item in namePolicyListForShow"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                />
               </el-select>
             </div>
           </div>
@@ -72,36 +128,90 @@
           </div>
         </div>
 
-        <div v-if="activeContactorPlatform !== 'onebot'" class="group-title">LLM 基本配置</div>
+        <div v-if="activeContactorPlatform !== 'onebot'" class="group-title">
+          LLM 基本配置
+        </div>
         <div v-if="activeContactorPlatform !== 'onebot'" class="settings-card">
           <div class="setting-field">
             <div class="field-label">来源渠道</div>
             <div class="field-value">
-              <el-select v-model="localLlmProvider" style="width: 100%" @change="handleProviderChange">
-                <el-option v-for="item in llmProvidersList" :key="item.value" :label="item.label" :value="item.value" />
+              <el-select
+                v-model="localLlmProvider"
+                style="width: 100%"
+                @change="handleProviderChange"
+              >
+                <el-option
+                  v-for="item in llmProvidersList"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                />
               </el-select>
             </div>
           </div>
 
           <template v-for="(_, key) in localLlmGeneralKeys" :key="key">
-            <div v-if="['model', 'max_messages_num', 'stream', 'temperature', 'reasoning_effort'].includes(key)"
-              class="setting-field">
+            <div
+              v-if="
+                [
+                  'model',
+                  'max_messages_num',
+                  'stream',
+                  'temperature',
+                  'reasoning_effort',
+                ].includes(key)
+              "
+              class="setting-field"
+            >
               <div class="field-label">{{ getShownKey(key) }}</div>
               <div class="field-value">
-                <el-select v-if="key === 'model'" v-model="localLlmGeneralKeys[key]" filterable allow-create
-                  default-first-option placeholder="选择或输入模型" style="width: 100%" @change="updateGeneralSettings">
-                  <el-option v-for="m in currentModelsList" :key="m" :label="m" :value="m" />
+                <el-select
+                  v-if="key === 'model'"
+                  v-model="localLlmGeneralKeys[key]"
+                  filterable
+                  allow-create
+                  default-first-option
+                  placeholder="选择或输入模型"
+                  style="width: 100%"
+                  @change="updateGeneralSettings"
+                >
+                  <el-option
+                    v-for="m in currentModelsList"
+                    :key="m"
+                    :label="m"
+                    :value="m"
+                  />
                 </el-select>
-                <el-input-number v-else-if="key === 'max_messages_num'" v-model="localLlmGeneralKeys[key]" :min="1"
-                   :step="1" style="width: 100%" @change="updateGeneralSettings" />
-                <el-switch v-else-if="['stream'].includes(key)" v-model="localLlmGeneralKeys[key]"
-                  @change="updateGeneralSettings" />
-                <el-slider v-else-if="['temperature'].includes(key)" v-model="localLlmGeneralKeys[key]"
-                  :step="sliderTypes.a.step" :min="sliderTypes.a.min" :max="sliderTypes.a.max"
-                  @change="updateGeneralSettings" />
-                <el-slider v-else-if="['reasoning_effort'].includes(key)" v-model="localLlmGeneralKeys[key]"
-                  :step="sliderTypes.d.step" :min="sliderTypes.d.min" :max="sliderTypes.d.max"
-                  :format-tooltip="sliderTypes.d.formatter" @change="updateGeneralSettings" />
+                <el-input-number
+                  v-else-if="key === 'max_messages_num'"
+                  v-model="localLlmGeneralKeys[key]"
+                  :min="1"
+                  :step="1"
+                  style="width: 100%"
+                  @change="updateGeneralSettings"
+                />
+                <el-switch
+                  v-else-if="['stream'].includes(key)"
+                  v-model="localLlmGeneralKeys[key]"
+                  @change="updateGeneralSettings"
+                />
+                <el-slider
+                  v-else-if="['temperature'].includes(key)"
+                  v-model="localLlmGeneralKeys[key]"
+                  :step="sliderTypes.a.step"
+                  :min="sliderTypes.a.min"
+                  :max="sliderTypes.a.max"
+                  @change="updateGeneralSettings"
+                />
+                <el-slider
+                  v-else-if="['reasoning_effort'].includes(key)"
+                  v-model="localLlmGeneralKeys[key]"
+                  :step="sliderTypes.d.step"
+                  :min="sliderTypes.d.min"
+                  :max="sliderTypes.d.max"
+                  :format-tooltip="sliderTypes.d.formatter"
+                  @change="updateGeneralSettings"
+                />
               </div>
             </div>
           </template>
@@ -115,32 +225,65 @@
           <div class="setting-field">
             <div class="field-label">调用模式</div>
             <div class="field-value">
-              <el-select v-model="localLlmToolCallMode" placeholder="AUTO" style="width: 100%"
-                @change="handleToolCallModeChange">
-                <el-option v-for="item in toolCallModesList" :key="item.value" :label="item.label"
-                  :value="item.value" />
+              <el-select
+                v-model="localLlmToolCallMode"
+                placeholder="AUTO"
+                style="width: 100%"
+                @change="handleToolCallModeChange"
+              >
+                <el-option
+                  v-for="item in toolCallModesList"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                />
               </el-select>
             </div>
           </div>
         </div>
 
         <div class="group-title">插件工具</div>
-        <div v-for="(plugin, index) in localAllLLMTools" :key="index" class="settings-card plugin-card">
+        <div
+          v-for="(plugin, index) in localAllLLMTools"
+          :key="index"
+          class="settings-card plugin-card"
+        >
           <div class="plugin-header">
-            <el-tooltip :content="plugin.name" placement="top" :show-after="800">
+            <el-tooltip
+              :content="plugin.name"
+              placement="top"
+              :show-after="800"
+            >
               <span class="plugin-name">{{ plugin.name }}</span>
             </el-tooltip>
-            <el-switch v-model="plugin.isAllEnabled" @change="(val) => handleToggleAllTools(plugin, val)" />
+            <el-switch
+              v-model="plugin.isAllEnabled"
+              @change="(val) => handleToggleAllTools(plugin, val)"
+            />
           </div>
           <el-scrollbar max-height="200px">
             <div class="plugin-tools-grid">
-              <div v-for="(tool, toolIndex) in plugin.tools" :key="toolIndex" class="tool-mini-item">
+              <div
+                v-for="(tool, toolIndex) in plugin.tools"
+                :key="toolIndex"
+                class="tool-mini-item"
+              >
                 <div class="tool-name-wrapper">
-                  <el-tooltip :content="tool.name.split('_mid_')[0]" placement="top" :show-after="800">
-                    <span class="tool-name">{{ tool.name.split("_mid_")[0] }}</span>
+                  <el-tooltip
+                    :content="tool.name.split('_mid_')[0]"
+                    placement="top"
+                    :show-after="800"
+                  >
+                    <span class="tool-name">{{
+                      tool.name.split("_mid_")[0]
+                    }}</span>
                   </el-tooltip>
                 </div>
-                <el-switch v-model="tool.enabled" size="small" @change="handleToolEnableChange" />
+                <el-switch
+                  v-model="tool.enabled"
+                  size="small"
+                  @change="handleToolEnableChange"
+                />
               </div>
             </div>
           </el-scrollbar>
@@ -149,20 +292,26 @@
 
       <!-- Tab: Skills -->
       <div v-if="activeTab === 'skills'" class="tab-pane skills-tab-pane">
-        <div class="group-title" v-if="!isMobile">
-          Agent Skills 技能库
-        </div>
+        <div class="group-title" v-if="!isMobile">Agent Skills 技能库</div>
         <div class="skills-scroll-container">
           <div class="skills-grid" :class="{ 'mobile-skills': isMobile }">
             <div v-if="availableSkills.length === 0" class="no-skills">
               <p>暂无可用技能，点击同步刷新</p>
             </div>
-            <div v-for="skill in availableSkills" :key="skill.name" class="skill-item">
+            <div
+              v-for="skill in availableSkills"
+              :key="skill.name"
+              class="skill-item"
+            >
               <div class="skill-icon">
                 <i class="iconfont robot"></i>
               </div>
               <div class="skill-info">
-                <el-tooltip :content="skill.name" placement="top" :show-after="800">
+                <el-tooltip
+                  :content="skill.name"
+                  placement="top"
+                  :show-after="800"
+                >
                   <div class="skill-name">{{ skill.name }}</div>
                 </el-tooltip>
                 <div class="skill-description">{{ skill.description }}</div>
@@ -171,14 +320,15 @@
           </div>
         </div>
       </div>
- 
-
 
       <!-- Tab: Presets -->
       <div v-if="activeTab === 'presets'" class="tab-pane">
         <div class="group-title">历史预设</div>
         <div class="settings-card presets-card">
-          <PresetsList :presets-history="presetsHistoryData" @update-presets="handleUpdatePresets" />
+          <PresetsList
+            :presets-history="presetsHistoryData"
+            @update-presets="handleUpdatePresets"
+          />
         </div>
       </div>
 
@@ -188,28 +338,54 @@
         <div class="group-title">采样与高级参数</div>
         <div class="settings-card">
           <template v-for="(_, key) in localLlmGeneralKeys" :key="key">
-            <div v-if="['top_p', 'frequency_penalty', 'presence_penalty'].includes(key)" class="setting-field">
+            <div
+              v-if="
+                ['top_p', 'frequency_penalty', 'presence_penalty'].includes(key)
+              "
+              class="setting-field"
+            >
               <div class="field-label">{{ getShownKey(key) }}</div>
               <div class="field-value">
-                <el-slider v-if="key === 'top_p'" v-model="localLlmGeneralKeys[key]" :step="sliderTypes.b.step"
-                  :min="sliderTypes.b.min" :max="sliderTypes.b.max" @change="updateGeneralSettings" />
-                <el-slider v-else-if="['frequency_penalty', 'presence_penalty'].includes(key)"
-                  v-model="localLlmGeneralKeys[key]" :step="sliderTypes.c.step" :min="sliderTypes.c.min"
-                  :max="sliderTypes.c.max" @change="updateGeneralSettings" />
+                <el-slider
+                  v-if="key === 'top_p'"
+                  v-model="localLlmGeneralKeys[key]"
+                  :step="sliderTypes.b.step"
+                  :min="sliderTypes.b.min"
+                  :max="sliderTypes.b.max"
+                  @change="updateGeneralSettings"
+                />
+                <el-slider
+                  v-else-if="
+                    ['frequency_penalty', 'presence_penalty'].includes(key)
+                  "
+                  v-model="localLlmGeneralKeys[key]"
+                  :step="sliderTypes.c.step"
+                  :min="sliderTypes.c.min"
+                  :max="sliderTypes.c.max"
+                  @change="updateGeneralSettings"
+                />
               </div>
             </div>
           </template>
         </div>
 
-        <DynamicSettingsForm v-if="currentExtraSettingsSchema && Object.keys(currentExtraSettingsSchema).length > 0"
+        <DynamicSettingsForm
+          v-if="
+            currentExtraSettingsSchema &&
+            Object.keys(currentExtraSettingsSchema).length > 0
+          "
           :schema="currentExtraSettingsSchema"
-          :values="extraSettingsKey ? (localExtraSettings[extraSettingsKey] || {}) : localExtraSettings"
-          @update:values="handleExtraSettingsChange" />
-        <div v-else class="settings-card no-skills" style="padding: 20px 0;">
+          :values="
+            extraSettingsKey
+              ? localExtraSettings[extraSettingsKey] || {}
+              : localExtraSettings
+          "
+          @update:values="handleExtraSettingsChange"
+        />
+        <div v-else class="settings-card no-skills" style="padding: 20px 0">
           <p>当前适配器暂无额外扩展项</p>
         </div>
       </div>
-
     </div>
   </div>
 </template>
@@ -220,13 +396,11 @@ import DynamicSettingsForm from "@/components/DynamicSettingsForm.vue";
 import { client, config } from "@/lib/runtime.js";
 import { skillAPI, configAPI } from "@/lib/configApi.js";
 
-
 export default {
   name: "ContactorSettings",
   components: {
     PresetsList,
     DynamicSettingsForm,
-
   },
   props: {
     modelValue: {
@@ -288,14 +462,23 @@ export default {
       default: () => [],
     },
   },
-  emits: ["update:modelValue", "update:basicInfo", "provider-changed", "update-presets"],
+  emits: [
+    "update:modelValue",
+    "update:basicInfo",
+    "provider-changed",
+    "update-presets",
+  ],
   data() {
     return {
-      localLlmProvider: this.modelValue?.provider || '',
+      localLlmProvider: this.modelValue?.provider || "",
       localLlmGeneralKeys: {},
-      localLlmToolCallMode: this.modelValue?.toolCallSettings?.mode || '',
-      localAllLLMTools: this.allLlmToolsData ? JSON.parse(JSON.stringify(this.allLlmToolsData)) : [], // Deep copy
-      localExtraSettings: JSON.parse(JSON.stringify(this.modelValue?.extraSettings || {})),
+      localLlmToolCallMode: this.modelValue?.toolCallSettings?.mode || "",
+      localAllLLMTools: this.allLlmToolsData
+        ? JSON.parse(JSON.stringify(this.allLlmToolsData))
+        : [], // Deep copy
+      localExtraSettings: JSON.parse(
+        JSON.stringify(this.modelValue?.extraSettings || {}),
+      ),
       localBasicInfo: JSON.parse(JSON.stringify(this.basicInfo || {})),
       adapterMetadata: [], // 存储所有适配器的元数据
 
@@ -305,7 +488,7 @@ export default {
 
       availableSkills: [],
       reloadingSkills: false,
-      activeTab: 'basic',
+      activeTab: "basic",
       // Moved from parent
       sliderTypes: {
         a: { min: 0, max: 2, step: 0.1 },
@@ -331,33 +514,33 @@ export default {
   },
   computed: {
     avatarPolicyListForShow() {
-      if (this.activeContactorPlatform === 'onebot') {
+      if (this.activeContactorPlatform === "onebot") {
         return [
           { value: 0, label: "跟随QQ头像" },
-          { value: 1, label: "自定义" }
+          { value: 1, label: "自定义" },
         ];
       }
       return this.avatarPolicyList;
     },
     namePolicyListForShow() {
-      if (this.activeContactorPlatform === 'onebot') {
+      if (this.activeContactorPlatform === "onebot") {
         return [
           { value: 0, label: "跟随QQ昵称" },
-          { value: 1, label: "自定义" }
+          { value: 1, label: "自定义" },
         ];
       }
       return this.namePolicyList;
     },
     extraSettingsKey() {
       const adapterType = config.getProviderAdapterType(this.localLlmProvider);
-      const meta = this.adapterMetadata.find(m => m.type === adapterType);
+      const meta = this.adapterMetadata.find((m) => m.type === adapterType);
       const schemaWrap = meta?.extraSettingsSchema || {};
       const keys = Object.keys(schemaWrap);
       return keys.length > 0 ? keys[0] : null;
     },
     currentExtraSettingsSchema() {
       const adapterType = config.getProviderAdapterType(this.localLlmProvider);
-      const meta = this.adapterMetadata.find(m => m.type === adapterType);
+      const meta = this.adapterMetadata.find((m) => m.type === adapterType);
       const schemaWrap = meta?.extraSettingsSchema || {};
       const key = this.extraSettingsKey;
       return key ? schemaWrap[key] : {};
@@ -368,19 +551,21 @@ export default {
       const modelGroups = config.getLlmModels(provider);
       if (Array.isArray(modelGroups) && modelGroups.length > 0) {
         // 展平所有分组中的模型名
-        const flatModels = modelGroups.flatMap(group => group.models || []);
+        const flatModels = modelGroups.flatMap((group) => group.models || []);
         if (flatModels.length > 0) return flatModels;
       }
 
       // 2. 如果是新配置或者还没加载出来，从元数据中找该适配器类型的推荐模型
       const adapterType = config.getProviderAdapterType(provider);
-      const meta = (this.adapterMetadata || []).find(m => m.type === adapterType);
+      const meta = (this.adapterMetadata || []).find(
+        (m) => m.type === adapterType,
+      );
 
       console.log("[ModelList Debug]", {
         provider,
         adapterType,
         hasLoadedGroups: !!(modelGroups && modelGroups.length),
-        metaFound: !!meta
+        metaFound: !!meta,
       });
 
       return meta?.models || [];
@@ -388,11 +573,10 @@ export default {
     isMobile() {
       return window.innerWidth <= 768;
     },
-
   },
   watch: {
     activeTab(newTab) {
-      if (newTab === 'skills') {
+      if (newTab === "skills") {
         this.handleReloadSkills();
       }
     },
@@ -433,8 +617,8 @@ export default {
     },
   },
   mounted() {
-    if (this.activeContactorPlatform === 'onebot') {
-      this.activeTab = 'basic';
+    if (this.activeContactorPlatform === "onebot") {
+      this.activeTab = "basic";
     }
     this.initializeSettings();
     this.fetchAdapterMetadata();
@@ -456,7 +640,11 @@ export default {
         // 后端响应为 { code: 0, data: { adapters: [], types: [], count: 0 } }
         if (res.code === 0 && res.data?.adapters) {
           this.adapterMetadata = res.data.adapters;
-          console.log("[Debug] 适配器元数据加载成功，共", this.adapterMetadata.length, "个");
+          console.log(
+            "[Debug] 适配器元数据加载成功，共",
+            this.adapterMetadata.length,
+            "个",
+          );
         }
       } catch (err) {
         console.error("获取适配器元数据失败:", err);
@@ -510,15 +698,17 @@ export default {
       });
 
       // 2. 检查是否有 Skill 工具被启用
-      const isSkillEnabled = this.localAllLLMTools.some(plugin =>
-        plugin.tools.some(tool => tool.name.toLowerCase().startsWith('skill') && tool.enabled)
+      const isSkillEnabled = this.localAllLLMTools.some((plugin) =>
+        plugin.tools.some(
+          (tool) => tool.name.toLowerCase().startsWith("skill") && tool.enabled,
+        ),
       );
 
       if (isSkillEnabled) {
         // 如果启用了 Skill，强制同步激活 terminal 插件的所有工具
-        this.localAllLLMTools.forEach(plugin => {
-          if (plugin.name.toLowerCase().includes('terminal')) {
-            plugin.tools.forEach(tool => {
+        this.localAllLLMTools.forEach((plugin) => {
+          if (plugin.name.toLowerCase().includes("terminal")) {
+            plugin.tools.forEach((tool) => {
               tool.enabled = true;
             });
           }
@@ -526,8 +716,9 @@ export default {
       }
 
       // 3. 重新计算每个 plugin 的 isAllEnabled 状态
-      this.localAllLLMTools.forEach(plugin => {
-        plugin.isAllEnabled = plugin.tools.length > 0 && plugin.tools.every(t => t.enabled);
+      this.localAllLLMTools.forEach((plugin) => {
+        plugin.isAllEnabled =
+          plugin.tools.length > 0 && plugin.tools.every((t) => t.enabled);
       });
     },
     getShownKey(key) {
@@ -554,7 +745,7 @@ export default {
       return shownNameMap[key] || key;
     },
     emitUpdate() {
-      if (this.activeContactorPlatform === 'onebot') return;
+      if (this.activeContactorPlatform === "onebot") return;
       const newOptions = JSON.parse(JSON.stringify(this.modelValue || {})); // Start with a copy of the prop
 
       const {
@@ -616,15 +807,17 @@ export default {
     },
     handleToolEnableChange() {
       // 检查是否有 Skill 工具被启用
-      const isSkillEnabled = this.localAllLLMTools.some(plugin =>
-        plugin.tools.some(tool => tool.name.toLowerCase().startsWith('skill') && tool.enabled)
+      const isSkillEnabled = this.localAllLLMTools.some((plugin) =>
+        plugin.tools.some(
+          (tool) => tool.name.toLowerCase().startsWith("skill") && tool.enabled,
+        ),
       );
 
       if (isSkillEnabled) {
         // 如果启用了 Skill，强制同步激活 terminal 插件的所有工具
-        this.localAllLLMTools.forEach(plugin => {
-          if (plugin.name.toLowerCase().includes('terminal')) {
-            plugin.tools.forEach(tool => {
+        this.localAllLLMTools.forEach((plugin) => {
+          if (plugin.name.toLowerCase().includes("terminal")) {
+            plugin.tools.forEach((tool) => {
               tool.enabled = true;
             });
           }
@@ -632,13 +825,14 @@ export default {
       }
 
       // 重新计算每个 plugin 的 isAllEnabled 状态
-      this.localAllLLMTools.forEach(plugin => {
-        plugin.isAllEnabled = plugin.tools.length > 0 && plugin.tools.every(t => t.enabled);
+      this.localAllLLMTools.forEach((plugin) => {
+        plugin.isAllEnabled =
+          plugin.tools.length > 0 && plugin.tools.every((t) => t.enabled);
       });
       this.emitUpdate();
     },
     handleToggleAllTools(plugin, value) {
-      plugin.tools.forEach(tool => {
+      plugin.tools.forEach((tool) => {
         tool.enabled = value;
       });
       this.handleToolEnableChange();
@@ -681,7 +875,6 @@ export default {
   background-color: #f0f0f0;
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
-
 
 .profile-info {
   flex: 1;
@@ -908,8 +1101,6 @@ export default {
   font-weight: 600;
 }
 
-
-
 /* Skills */
 .skills-grid {
   display: grid;
@@ -1080,5 +1271,4 @@ export default {
 .presets-card {
   padding: 16px 24px;
 }
-
 </style>

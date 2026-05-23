@@ -7,20 +7,36 @@
         <span>MioChat 审计大盘</span>
       </div>
       <div class="menu-list">
-        <div class="menu-item" :class="{ active: store.activeTab === 'overview' }" @click="switchTab('overview')">
+        <div
+          class="menu-item"
+          :class="{ active: store.activeTab === 'overview' }"
+          @click="switchTab('overview')"
+        >
           <i class="fa-solid fa-gauge-high"></i> 实时与性能分析
         </div>
-        <div class="menu-item" :class="{ active: store.activeTab === 'users' }" @click="switchTab('users')">
+        <div
+          class="menu-item"
+          :class="{ active: store.activeTab === 'users' }"
+          @click="switchTab('users')"
+        >
           <i class="fa-solid fa-users-viewfinder"></i> 用户与会话画像
         </div>
-        <div class="menu-item" :class="{ active: store.activeTab === 'toolcalls' }" @click="switchTab('toolcalls')">
+        <div
+          class="menu-item"
+          :class="{ active: store.activeTab === 'toolcalls' }"
+          @click="switchTab('toolcalls')"
+        >
           <i class="fa-solid fa-network-wired"></i> Tool Call 级联链
         </div>
-        <div class="menu-item" :class="{ active: store.activeTab === 'failures' }" @click="switchTab('failures')">
+        <div
+          class="menu-item"
+          :class="{ active: store.activeTab === 'failures' }"
+          @click="switchTab('failures')"
+        >
           <i class="fa-solid fa-shield-halved"></i> 异常与故障归因
         </div>
       </div>
-      
+
       <div class="sidebar-footer">
         <div class="system-time">
           <i class="fa-regular fa-clock"></i> {{ store.currentTime }}
@@ -40,13 +56,22 @@
           <p class="subtitle">实时监控与审计分析平台</p>
         </div>
         <div class="header-actions">
-          <el-radio-group v-model="store.timeRange" size="default" class="saas-radio" @change="store.refreshData">
+          <el-radio-group
+            v-model="store.timeRange"
+            size="default"
+            class="saas-radio"
+            @change="store.refreshData"
+          >
             <el-radio-button label="24h">24小时</el-radio-button>
             <el-radio-button label="7d">近7天</el-radio-button>
             <el-radio-button label="30d">近30天</el-radio-button>
           </el-radio-group>
-          
-          <el-button type="primary" class="cost-btn" @click="store.showCostModal = true">
+
+          <el-button
+            type="primary"
+            class="cost-btn"
+            @click="store.showCostModal = true"
+          >
             <i class="fa-solid fa-calculator btn-icon"></i> 成本核算
           </el-button>
         </div>
@@ -54,19 +79,31 @@
 
       <!-- Tab Contents -->
       <div class="view-body">
-        <div v-show="store.activeTab === 'overview'" class="tab-pane-content fade-in">
+        <div
+          v-show="store.activeTab === 'overview'"
+          class="tab-pane-content fade-in"
+        >
           <DashboardOverview />
         </div>
 
-        <div v-show="store.activeTab === 'users'" class="tab-pane-content fade-in">
+        <div
+          v-show="store.activeTab === 'users'"
+          class="tab-pane-content fade-in"
+        >
           <DashboardUsers />
         </div>
 
-        <div v-show="store.activeTab === 'toolcalls'" class="tab-pane-content fade-in">
+        <div
+          v-show="store.activeTab === 'toolcalls'"
+          class="tab-pane-content fade-in"
+        >
           <DashboardTrace />
         </div>
 
-        <div v-show="store.activeTab === 'failures'" class="tab-pane-content fade-in">
+        <div
+          v-show="store.activeTab === 'failures'"
+          class="tab-pane-content fade-in"
+        >
           <DashboardFailures />
         </div>
       </div>
@@ -79,84 +116,91 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, computed, nextTick } from 'vue'
-import { useDashboardStore } from '@/stores/dashboardStore'
+import { onMounted, onUnmounted, computed, nextTick } from "vue";
+import { useDashboardStore } from "@/stores/dashboardStore";
 
 // Import Subcomponents
-import DashboardOverview from '@/components/dashboard/DashboardOverview.vue'
-import DashboardUsers from '@/components/dashboard/DashboardUsers.vue'
-import DashboardTrace from '@/components/dashboard/DashboardTrace.vue'
-import DashboardFailures from '@/components/dashboard/DashboardFailures.vue'
-import CostCalculatorDialog from '@/components/dashboard/CostCalculatorDialog.vue'
-import TraceModal from '@/components/dashboard/TraceModal.vue'
+import DashboardOverview from "@/components/dashboard/DashboardOverview.vue";
+import DashboardUsers from "@/components/dashboard/DashboardUsers.vue";
+import DashboardTrace from "@/components/dashboard/DashboardTrace.vue";
+import DashboardFailures from "@/components/dashboard/DashboardFailures.vue";
+import CostCalculatorDialog from "@/components/dashboard/CostCalculatorDialog.vue";
+import TraceModal from "@/components/dashboard/TraceModal.vue";
 
-const store = useDashboardStore()
+const store = useDashboardStore();
 
 const tabTitle = computed(() => {
   switch (store.activeTab) {
-    case 'overview': return '实时性能与 SLA 审计'
-    case 'users': return '会话画像与调用分布'
-    case 'toolcalls': return 'Tool Call 调用链审计 (Trace)'
-    case 'failures': return '异常分析与故障归因'
-    default: return '审计大盘'
+    case "overview":
+      return "实时性能与 SLA 审计";
+    case "users":
+      return "会话画像与调用分布";
+    case "toolcalls":
+      return "Tool Call 调用链审计 (Trace)";
+    case "failures":
+      return "异常分析与故障归因";
+    default:
+      return "审计大盘";
   }
-})
+});
 
-let realtimeTimer = null
-let timeClockTimer = null
+let realtimeTimer = null;
+let timeClockTimer = null;
 
 function switchTab(tab) {
-  store.activeTab = tab
+  store.activeTab = tab;
   nextTick(() => {
-    store.refreshData()
+    store.refreshData();
     // Trigger a window resize event to force ECharts to redraw and size properly
     setTimeout(() => {
-      window.dispatchEvent(new Event('resize'))
-    }, 80)
-  })
+      window.dispatchEvent(new Event("resize"));
+    }, 80);
+  });
 }
 
 onMounted(() => {
   // Inject FontAwesome styles to head dynamically
-  if (!document.getElementById('font-awesome-cdn')) {
-    const faLink = document.createElement('link')
-    faLink.rel = 'stylesheet'
-    faLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
-    faLink.id = 'font-awesome-cdn'
-    document.head.appendChild(faLink)
+  if (!document.getElementById("font-awesome-cdn")) {
+    const faLink = document.createElement("link");
+    faLink.rel = "stylesheet";
+    faLink.href =
+      "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css";
+    faLink.id = "font-awesome-cdn";
+    document.head.appendChild(faLink);
   }
 
   // Inject Google Fonts dynamically
-  if (!document.getElementById('premium-fonts-cdn')) {
-    const fontLink = document.createElement('link')
-    fontLink.rel = 'stylesheet'
-    fontLink.href = 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap'
-    fontLink.id = 'premium-fonts-cdn'
-    document.head.appendChild(fontLink)
+  if (!document.getElementById("premium-fonts-cdn")) {
+    const fontLink = document.createElement("link");
+    fontLink.rel = "stylesheet";
+    fontLink.href =
+      "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap";
+    fontLink.id = "premium-fonts-cdn";
+    document.head.appendChild(fontLink);
   }
 
   // Clock
   timeClockTimer = setInterval(() => {
-    const d = new Date()
-    store.currentTime = `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`
-  }, 1000)
+    const d = new Date();
+    store.currentTime = `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
+  }, 1000);
 
   // Real-time connections/users metrics pooling (every 5 seconds)
-  store.fetchRealtimeStats()
-  realtimeTimer = setInterval(store.fetchRealtimeStats, 5000)
+  store.fetchRealtimeStats();
+  realtimeTimer = setInterval(store.fetchRealtimeStats, 5000);
 
   // Initial dashboard load
-  store.refreshData()
-})
+  store.refreshData();
+});
 
 onUnmounted(() => {
-  clearInterval(realtimeTimer)
-  clearInterval(timeClockTimer)
-  
+  clearInterval(realtimeTimer);
+  clearInterval(timeClockTimer);
+
   // Clean up injected stylesheets
-  document.getElementById('font-awesome-cdn')?.remove()
-  document.getElementById('premium-fonts-cdn')?.remove()
-})
+  document.getElementById("font-awesome-cdn")?.remove();
+  document.getElementById("premium-fonts-cdn")?.remove();
+});
 </script>
 
 <style scoped>
@@ -167,7 +211,13 @@ onUnmounted(() => {
   height: 100vh;
   background-color: #f8fafc;
   color: #0f172a;
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    "Plus Jakarta Sans",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
   overflow: hidden;
 }
 
@@ -336,8 +386,14 @@ onUnmounted(() => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Custom element style overrides */
@@ -348,7 +404,9 @@ onUnmounted(() => {
   box-shadow: none !important;
 }
 
-:deep(.saas-radio .el-radio-button__orig-radio:checked + .el-radio-button__inner) {
+:deep(
+  .saas-radio .el-radio-button__orig-radio:checked + .el-radio-button__inner
+) {
   background-color: #2563eb !important;
   border-color: #2563eb !important;
   color: #ffffff !important;

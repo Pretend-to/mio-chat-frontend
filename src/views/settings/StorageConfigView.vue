@@ -4,32 +4,20 @@
       <h1>存储配置</h1>
       <div class="header-actions">
         <el-button @click="handleReset">重置</el-button>
-        <el-button
-          :loading="testing"
-          @click="handleTest"
-        >
-          测试连接
-        </el-button>
-        <el-button
-          type="primary"
-          :loading="saving"
-          @click="handleSave"
-        >
+        <el-button :loading="testing" @click="handleTest"> 测试连接 </el-button>
+        <el-button type="primary" :loading="saving" @click="handleSave">
           保存配置
         </el-button>
       </div>
     </div>
 
-
     <el-alert
       type="success"
       :closable="false"
       show-icon
-      style="margin-bottom: 24px;"
+      style="margin-bottom: 24px"
     >
-      <template #title>
-        存储配置支持热更新，修改后立即生效
-      </template>
+      <template #title> 存储配置支持热更新，修改后立即生效 </template>
     </el-alert>
 
     <el-card>
@@ -47,7 +35,8 @@
           </el-radio-group>
           <template #extra>
             <span class="form-item-tip">
-              选择文件和图片的存储方式。S3 兼容存储支持 AWS S3, Cloudflare R2, MinIO 等。
+              选择文件和图片的存储方式。S3 兼容存储支持 AWS S3, Cloudflare R2,
+              MinIO 等。
             </span>
           </template>
         </el-form-item>
@@ -56,14 +45,9 @@
           <el-divider>云存储配置</el-divider>
 
           <el-form-item label="存储桶名称" prop="bucket">
-            <el-input
-              v-model="formData.bucket"
-              placeholder="my-bucket-name"
-            />
+            <el-input v-model="formData.bucket" placeholder="my-bucket-name" />
             <template #extra>
-              <span class="form-item-tip">
-                S3 或 R2 的 Bucket 名称
-              </span>
+              <span class="form-item-tip"> S3 或 R2 的 Bucket 名称 </span>
             </template>
           </el-form-item>
 
@@ -95,7 +79,8 @@
             />
             <template #extra>
               <span class="form-item-tip">
-                请输入存储服务的 Secret Access Key。该密钥将以明文形式在管理界面显示，请注意环境安全。
+                请输入存储服务的 Secret Access
+                Key。该密钥将以明文形式在管理界面显示，请注意环境安全。
               </span>
             </template>
           </el-form-item>
@@ -113,10 +98,7 @@
           </el-form-item>
 
           <el-form-item label="区域 (Region)" prop="region">
-            <el-input
-              v-model="formData.region"
-              placeholder="auto"
-            />
+            <el-input v-model="formData.region" placeholder="auto" />
             <template #extra>
               <span class="form-item-tip">
                 可选。S3 区域，例如 us-east-1。R2 或 MinIO 通常填 auto。
@@ -134,9 +116,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
-import { ElMessage } from 'element-plus';
-import { useConfigStore } from '@/stores/configStore.js';
+import { ref, reactive, onMounted } from "vue";
+import { ElMessage } from "element-plus";
+import { useConfigStore } from "@/stores/configStore.js";
 
 const configStore = useConfigStore();
 const formRef = ref(null);
@@ -145,13 +127,13 @@ const testing = ref(false);
 
 // 表单数据
 const formData = reactive({
-  type: 'local',
-  bucket: '',
-  endpoint: '',
-  accessKeyId: '',
-  secretAccessKey: '',
-  baseUrl: '',
-  region: 'auto'
+  type: "local",
+  bucket: "",
+  endpoint: "",
+  accessKeyId: "",
+  secretAccessKey: "",
+  baseUrl: "",
+  region: "auto",
 });
 
 // 原始数据（用于重置）
@@ -159,59 +141,53 @@ const originalData = reactive({});
 
 // 验证规则
 const rules = {
-  type: [
-    { required: true, message: '请选择存储类型', trigger: 'change' }
-  ],
-  bucket: [
-    { required: true, message: '请输入存储桶名称', trigger: 'blur' }
-  ],
-  endpoint: [
-    { required: true, message: '请输入终端节点', trigger: 'blur' }
-  ],
+  type: [{ required: true, message: "请选择存储类型", trigger: "change" }],
+  bucket: [{ required: true, message: "请输入存储桶名称", trigger: "blur" }],
+  endpoint: [{ required: true, message: "请输入终端节点", trigger: "blur" }],
   accessKeyId: [
-    { required: true, message: '请输入 Access Key ID', trigger: 'blur' }
+    { required: true, message: "请输入 Access Key ID", trigger: "blur" },
   ],
   secretAccessKey: [
-    { required: true, message: '请输入 Secret Access Key', trigger: 'blur' }
-  ]
+    { required: true, message: "请输入 Secret Access Key", trigger: "blur" },
+  ],
 };
 
 // 加载配置
 const loadConfig = async () => {
   try {
     const storageConfig = await configStore.fetchStorageConfig();
-    
-    let storageType = storageConfig.type || 'local';
+
+    let storageType = storageConfig.type || "local";
     // 兼容旧的 r2 类型，统一映射为 s3
-    if (storageType === 'r2') storageType = 's3';
+    if (storageType === "r2") storageType = "s3";
 
     Object.assign(formData, {
       type: storageType,
-      bucket: storageConfig.bucket || '',
-      endpoint: storageConfig.endpoint || '',
-      accessKeyId: storageConfig.accessKeyId || '',
-      secretAccessKey: storageConfig.secretAccessKey || '',
-      baseUrl: storageConfig.baseUrl || '',
-      region: storageConfig.region || 'auto'
+      bucket: storageConfig.bucket || "",
+      endpoint: storageConfig.endpoint || "",
+      accessKeyId: storageConfig.accessKeyId || "",
+      secretAccessKey: storageConfig.secretAccessKey || "",
+      baseUrl: storageConfig.baseUrl || "",
+      region: storageConfig.region || "auto",
     });
-    
+
     // 保存原始数据
     Object.assign(originalData, formData);
   } catch (error) {
-    ElMessage.error('加载存储配置失败：' + error.message);
+    ElMessage.error("加载存储配置失败：" + error.message);
   }
 };
 
 // 测试配置
 const handleTest = async () => {
   try {
-    if (formData.type !== 'local') {
+    if (formData.type !== "local") {
       await formRef.value.validate();
     } else {
-      ElMessage.success('本地存储无需测试');
+      ElMessage.success("本地存储无需测试");
       return;
     }
-    
+
     testing.value = true;
 
     const payload = {
@@ -221,21 +197,21 @@ const handleTest = async () => {
       accessKeyId: formData.accessKeyId,
       secretAccessKey: formData.secretAccessKey,
       baseUrl: formData.baseUrl,
-      region: formData.region
+      region: formData.region,
     };
 
     const result = await configStore.testStorageConfig(payload);
-    
+
     if (result.success) {
-      ElMessage.success('存储配置测试成功');
+      ElMessage.success("存储配置测试成功");
     } else {
-      console.error('存储测试失败详情:', result.message);
-      ElMessage.error('存储配置测试失败，请检查配置或查看控制台详情');
+      console.error("存储测试失败详情:", result.message);
+      ElMessage.error("存储配置测试失败，请检查配置或查看控制台详情");
     }
   } catch (error) {
     if (error !== false) {
-      console.error('测试执行出错:', error);
-      ElMessage.error('测试执行出错，请查看控制台详情');
+      console.error("测试执行出错:", error);
+      ElMessage.error("测试执行出错，请查看控制台详情");
     }
   } finally {
     testing.value = false;
@@ -245,41 +221,42 @@ const handleTest = async () => {
 // 保存配置
 const handleSave = async () => {
   try {
-    if (formData.type !== 'local') {
+    if (formData.type !== "local") {
       await formRef.value.validate();
     }
-    
+
     saving.value = true;
 
     const payload = {
-      type: formData.type
+      type: formData.type,
     };
 
-    if (formData.type !== 'local') {
+    if (formData.type !== "local") {
       Object.assign(payload, {
         bucket: formData.bucket,
         endpoint: formData.endpoint,
         accessKeyId: formData.accessKeyId,
         secretAccessKey: formData.secretAccessKey,
         baseUrl: formData.baseUrl,
-        region: formData.region
+        region: formData.region,
       });
     }
 
     await configStore.updateStorageConfig(payload);
 
     ElMessage.success({
-      message: '存储配置更新成功。部分更改可能需要刷新页面才能完全生效。',
+      message: "存储配置更新成功。部分更改可能需要刷新页面才能完全生效。",
       duration: 5000,
-      showClose: true
+      showClose: true,
     });
-    
+
     // 更新原始数据
     Object.assign(originalData, formData);
   } catch (error) {
-    if (error !== false) { // validate() 返回 false 表示验证失败
-      console.error('保存存储配置失败:', error);
-      ElMessage.error('存储配置保存失败，请查看控制台详情');
+    if (error !== false) {
+      // validate() 返回 false 表示验证失败
+      console.error("保存存储配置失败:", error);
+      ElMessage.error("存储配置保存失败，请查看控制台详情");
     }
   } finally {
     saving.value = false;
@@ -290,7 +267,7 @@ const handleSave = async () => {
 const handleReset = () => {
   Object.assign(formData, originalData);
   formRef.value?.clearValidate();
-  ElMessage.info('已重置为当前保存的配置');
+  ElMessage.info("已重置为当前保存的配置");
 };
 
 // 初始化

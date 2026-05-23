@@ -2,19 +2,24 @@
   <div class="input-bar">
     <!-- Command Popup List -->
     <transition name="popup-fade">
-      <div 
-        v-if="showCommandPopup && filteredCommands.length > 0" 
-        :class="[isMobileDevice ? 'mobile-command-popup' : 'desktop-command-popup']"
+      <div
+        v-if="showCommandPopup && filteredCommands.length > 0"
+        :class="[
+          isMobileDevice ? 'mobile-command-popup' : 'desktop-command-popup',
+        ]"
       >
         <div class="popup-header" v-if="isMobileDevice">
           <span class="popup-title">选择快捷指令</span>
         </div>
         <div class="command-list-wrapper">
-          <div 
-            v-for="(cmd, idx) in filteredCommands" 
-            :key="idx" 
-            class="command-item" 
-            :class="{ active: idx === commandIndex, 'command-item-plugin': cmd.type === 'plugin' }"
+          <div
+            v-for="(cmd, idx) in filteredCommands"
+            :key="idx"
+            class="command-item"
+            :class="{
+              active: idx === commandIndex,
+              'command-item-plugin': cmd.type === 'plugin',
+            }"
             @click="confirmCommand(cmd)"
             @mouseenter="commandIndex = idx"
           >
@@ -23,13 +28,28 @@
                 <i class="mio-icon mio-icon-tool"></i>
                 <sup class="plugin-plus">+</sup>
               </span>
-              <i v-else-if="cmd.type === 'tool'" class="mio-icon mio-icon-tool"></i>
-              <i v-else-if="cmd.type === 'skill'" class="mio-icon mio-icon-skill"></i>
-              {{ activeContactor.platform === 'onebot' ? '/' : '' }}{{ cmd.label }}
+              <i
+                v-else-if="cmd.type === 'tool'"
+                class="mio-icon mio-icon-tool"
+              ></i>
+              <i
+                v-else-if="cmd.type === 'skill'"
+                class="mio-icon mio-icon-skill"
+              ></i>
+              {{ activeContactor.platform === "onebot" ? "/" : ""
+              }}{{ cmd.label }}
             </span>
-            <span v-if="cmd.type === 'plugin'" class="command-preset-plugin">启用全组</span>
-            <span v-else-if="cmd.hash" class="command-preset">{{ cmd.hash }}</span>
-            <span v-else-if="activeContactor.platform === 'onebot'" class="command-preset">{{ cmd.preset }}</span>
+            <span v-if="cmd.type === 'plugin'" class="command-preset-plugin"
+              >启用全组</span
+            >
+            <span v-else-if="cmd.hash" class="command-preset">{{
+              cmd.hash
+            }}</span>
+            <span
+              v-else-if="activeContactor.platform === 'onebot'"
+              class="command-preset"
+              >{{ cmd.preset }}</span
+            >
           </div>
         </div>
       </div>
@@ -37,14 +57,26 @@
 
     <div class="options">
       <div class="bu-emoji">
-        <emoji-picker v-show="showemoji" ref="emojiPicker" @emoji-click="getemoji"></emoji-picker>
+        <emoji-picker
+          v-show="showemoji"
+          ref="emojiPicker"
+          @emoji-click="getemoji"
+        ></emoji-picker>
         <p class="ho-emoji">表情</p>
         <i class="iconfont smile" @click.prevent="ctrlEmojiPanel"></i>
       </div>
       <div class="bu-emoji">
-        <p class="ho-emoji">{{ activeContactor.platform == "openai" ? "模型选择" : "工具选择" }}</p>
-        <el-tree-select id="wraper-selector" v-model="selectedOption" :data="extraOptions" accordion
-          placement="top-start" @node-click="currentChange" />
+        <p class="ho-emoji">
+          {{ activeContactor.platform == "openai" ? "模型选择" : "工具选择" }}
+        </p>
+        <el-tree-select
+          id="wraper-selector"
+          v-model="selectedOption"
+          :data="extraOptions"
+          accordion
+          placement="top-start"
+          @node-click="currentChange"
+        />
         <i class="iconfont robot"></i>
       </div>
       <div class="bu-emoji">
@@ -57,8 +89,14 @@
       </div>
       <div class="bu-emoji">
         <p class="ho-emoji">清除记录</p>
-        <el-popconfirm class="box-item" title="此操作不可撤销" confirm-button-text="确定" cancel-button-text="取消" placement="top"
-          @confirm="$emit('cleanScreen')">
+        <el-popconfirm
+          class="box-item"
+          title="此操作不可撤销"
+          confirm-button-text="确定"
+          cancel-button-text="取消"
+          placement="top"
+          @confirm="$emit('cleanScreen')"
+        >
           <template #reference>
             <i class="iconfont shanchu"></i>
           </template>
@@ -72,8 +110,13 @@
 
     <div class="input-box">
       <div class="input-content">
-        <div ref="textarea" class="input-area" contenteditable="true"
-          @keydown="handleKeyDown" @click="updateCursorPosition"></div>
+        <div
+          ref="textarea"
+          class="input-area"
+          contenteditable="true"
+          @keydown="handleKeyDown"
+          @click="updateCursorPosition"
+        ></div>
       </div>
       <button id="sendButton" @click.prevent="send">
         发送{{ getWraperName() ? ` | ${getWraperName()}` : "" }}
@@ -124,17 +167,17 @@ export default {
     },
     availableCommands() {
       const list = [];
-      if (this.activeContactor?.platform === 'onebot') {
+      if (this.activeContactor?.platform === "onebot") {
         const options = this.onebotPresets || [];
-        options.forEach(cat => {
+        options.forEach((cat) => {
           if (cat.children && Array.isArray(cat.children)) {
-            cat.children.forEach(child => {
+            cat.children.forEach((child) => {
               if (child.preset) {
                 list.push({
-                  type: 'command',
+                  type: "command",
                   label: child.label || child.value,
                   value: child.value,
-                  preset: child.preset
+                  preset: child.preset,
                 });
               }
             });
@@ -142,28 +185,28 @@ export default {
         });
         if (list.length === 0) {
           list.push(
-            { type: 'command', label: '画画', value: 'draw', preset: '#画图' },
-            { type: 'command', label: '帮助', value: 'help', preset: '#帮助' }
+            { type: "command", label: "画画", value: "draw", preset: "#画图" },
+            { type: "command", label: "帮助", value: "help", preset: "#帮助" },
           );
         }
-      } else if (this.activeContactor?.platform === 'openai') {
-        if (typeof config.llmTools === 'object' && config.llmTools !== null) {
-          Object.keys(config.llmTools).forEach(pluginName => {
+      } else if (this.activeContactor?.platform === "openai") {
+        if (typeof config.llmTools === "object" && config.llmTools !== null) {
+          Object.keys(config.llmTools).forEach((pluginName) => {
             const pluginTools = config.llmTools[pluginName];
-            if (pluginTools && typeof pluginTools === 'object') {
+            if (pluginTools && typeof pluginTools === "object") {
               const toolNames = Object.keys(pluginTools);
               if (toolNames.length > 0) {
                 list.push({
-                  type: 'plugin',
+                  type: "plugin",
                   label: pluginName,
                   value: pluginName,
                   preset: pluginName,
-                  toolNames: toolNames
+                  toolNames: toolNames,
                 });
               }
-              Object.keys(pluginTools).forEach(toolName => {
+              Object.keys(pluginTools).forEach((toolName) => {
                 const tool = pluginTools[toolName];
-                
+
                 let displayName = tool.name;
                 let hash = "";
                 if (tool.name.includes("_mid_")) {
@@ -171,21 +214,21 @@ export default {
                   displayName = parts[0];
                   hash = parts[1];
                 }
-                
+
                 list.push({
-                  type: 'tool',
+                  type: "tool",
                   label: displayName,
                   hash: hash,
                   value: tool.name,
                   preset: tool.name,
-                  description: tool.description
+                  description: tool.description,
                 });
               });
             }
           });
         }
         const skills = this.availableSkills || [];
-        skills.forEach(skill => {
+        skills.forEach((skill) => {
           let displayName = skill.name;
           let hash = "";
           if (skill.name.includes("_mid_")) {
@@ -194,12 +237,12 @@ export default {
             hash = parts[1];
           }
           list.push({
-            type: 'skill',
+            type: "skill",
             label: displayName,
             hash: hash,
             value: skill.name,
             preset: skill.name,
-            description: skill.description
+            description: skill.description,
           });
         });
       }
@@ -208,10 +251,11 @@ export default {
     filteredCommands() {
       if (!this.commandSearchQuery) return this.availableCommands;
       const query = this.commandSearchQuery.toLowerCase();
-      return this.availableCommands.filter(c => 
-        c.label.toLowerCase().includes(query) || 
-        c.value.toLowerCase().includes(query) ||
-        c.preset.toLowerCase().includes(query)
+      return this.availableCommands.filter(
+        (c) =>
+          c.label.toLowerCase().includes(query) ||
+          c.value.toLowerCase().includes(query) ||
+          c.preset.toLowerCase().includes(query),
       );
     },
   },
@@ -223,7 +267,7 @@ export default {
       this.textareaRef.innerHTML = ""; // 强制清空物理输入框
       this.loadSelected();
       this.loadDraft();
-      if (newVal?.platform === 'openai' && this.availableSkills.length === 0) {
+      if (newVal?.platform === "openai" && this.availableSkills.length === 0) {
         this.fetchSkills();
       }
     },
@@ -336,10 +380,10 @@ export default {
     saveDraftTo(contactor) {
       if (!contactor || !this.textareaRef) return;
       const content = this.textareaRef.innerHTML;
-      
+
       // 校验：是否有实际内容（图片或非空文字）
-      const doc = new DOMParser().parseFromString(content, 'text/html');
-      const hasImage = doc.querySelector('img') !== null;
+      const doc = new DOMParser().parseFromString(content, "text/html");
+      const hasImage = doc.querySelector("img") !== null;
       const text = (doc.body.textContent || "").trim();
 
       if (!hasImage && !text) {
@@ -347,14 +391,15 @@ export default {
       } else {
         contactor.draft = content;
       }
-      
+
       // emit is handled by the Proxy — this triggers contactorsStore.updateContactorSummary
       if (contactor.emit) contactor.emit("updateMessageSummary");
       client.setLocalStorage();
     },
     clearDraft() {
       this.activeContactor.draft = "";
-      if (this.activeContactor.emit) this.activeContactor.emit("updateMessageSummary");
+      if (this.activeContactor.emit)
+        this.activeContactor.emit("updateMessageSummary");
       client.setLocalStorage();
     },
     unsupportedTip() {
@@ -441,7 +486,7 @@ export default {
       }
 
       if (imageFiles.length) {
-        imageFiles.forEach(file => {
+        imageFiles.forEach((file) => {
           this.handleLocalImageInsert(file);
         });
         this.adjustTextareaHeight();
@@ -487,14 +532,15 @@ export default {
           URL.revokeObjectURL(blobUrl);
 
           // GIF is uploaded directly
-          if (fileType === 'image/gif') {
+          if (fileType === "image/gif") {
             if (file.size > maxSizeByte) {
               reject(new Error(`GIF 图片不能超过 ${maxSizeMB}MB`));
               return;
             }
             const formData = new FormData();
-            formData.append('image', file, file.name);
-            client.uploadImage(formData)
+            formData.append("image", file, file.name);
+            client
+              .uploadImage(formData)
               .then((upload) => {
                 resolve(upload.data.url);
               })
@@ -503,27 +549,27 @@ export default {
           }
 
           // Other image formats compressed via canvas
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
           canvas.width = img.width;
           canvas.height = img.height;
           ctx.drawImage(img, 0, 0);
 
           let mimeType, quality;
-          if (fileType === 'image/png') {
-            mimeType = 'image/png';
-          } else if (fileType === 'image/webp') {
-            mimeType = 'image/webp';
+          if (fileType === "image/png") {
+            mimeType = "image/png";
+          } else if (fileType === "image/webp") {
+            mimeType = "image/webp";
             quality = 0.7;
           } else {
-            mimeType = 'image/jpeg';
+            mimeType = "image/jpeg";
             quality = 0.7;
           }
 
           canvas.toBlob(
             (blob) => {
               if (!blob) {
-                reject(new Error('图片压缩失败'));
+                reject(new Error("图片压缩失败"));
                 return;
               }
               if (blob.size > maxSizeByte) {
@@ -531,21 +577,22 @@ export default {
                 return;
               }
               const formData = new FormData();
-              formData.append('image', blob, file.name);
-              client.uploadImage(formData)
+              formData.append("image", blob, file.name);
+              client
+                .uploadImage(formData)
                 .then((upload) => {
                   resolve(upload.data.url);
                 })
                 .catch(reject);
             },
             mimeType,
-            quality
+            quality,
           );
         };
 
         img.onerror = () => {
           URL.revokeObjectURL(blobUrl);
-          reject(new Error('图片加载失败'));
+          reject(new Error("图片加载失败"));
         };
       });
     },
@@ -590,38 +637,42 @@ export default {
     async uploadDocumentFile(file) {
       const localBlobUrl = URL.createObjectURL(file);
       const fileUrl = `${localBlobUrl}?size=${file.size}&name=${file.name}`;
-      
+
       const container = this.activeContactor.getBaseUserContainer();
       container.status = "uploading";
       container.content.push({
         type: "file",
         data: { file: fileUrl },
       });
-      
+
       this.activeContactor.messageChain.push(container);
       this.$emit("stroge");
       this.$emit("toButtom");
-      
+
       try {
         const upload = await client.uploadFile(file);
         URL.revokeObjectURL(localBlobUrl);
         const remoteFileUrl = `${upload.data.url}?size=${file.size}&name=${file.name}`;
-        
+
         // 从 messageChain 中查找响应式代理对象，更新它以正确触发 Vue 3 响应式系统
-        const msgInChain = this.activeContactor.messageChain.find(m => m.id === container.id);
+        const msgInChain = this.activeContactor.messageChain.find(
+          (m) => m.id === container.id,
+        );
         if (msgInChain) {
           msgInChain.content[0].data.file = remoteFileUrl;
           msgInChain.status = "completed";
         }
-        
+
         container.content[0].data.file = remoteFileUrl;
         container.status = "completed";
         this.$message.success("文件上传成功");
       } catch (error) {
         console.error("文件上传失败:", error);
         this.$message.error("文件上传失败，请稍后再试");
-        
-        const msgInChain = this.activeContactor.messageChain.find(m => m.id === container.id);
+
+        const msgInChain = this.activeContactor.messageChain.find(
+          (m) => m.id === container.id,
+        );
         if (msgInChain) {
           msgInChain.status = "failed";
         }
@@ -643,7 +694,7 @@ export default {
       selection.removeAllRanges();
       selection.addRange(range);
       const fragment = range.createContextualFragment(
-        `<span>${imageElement.outerHTML}</span>`
+        `<span>${imageElement.outerHTML}</span>`,
       );
       range.insertNode(fragment);
       setTimeout(() => {
@@ -657,21 +708,23 @@ export default {
     },
     initLLMExtraOptions() {
       const allModels = client.config.getLlmModels();
-      this.openaiModels = Object.entries(allModels).map(([provider, models]) => {
-        return {
-          value: provider,
-          label: provider,
-          children: models.map((modelGroup) => {
-            return {
-              value: modelGroup.owner,
-              label: modelGroup.owner,
-              children: modelGroup.models.map((model) => {
-                return { value: model, label: model };
-              }),
-            };
-          }),
-        };
-      });
+      this.openaiModels = Object.entries(allModels).map(
+        ([provider, models]) => {
+          return {
+            value: provider,
+            label: provider,
+            children: models.map((modelGroup) => {
+              return {
+                value: modelGroup.owner,
+                label: modelGroup.owner,
+                children: modelGroup.models.map((model) => {
+                  return { value: model, label: model };
+                }),
+              };
+            }),
+          };
+        },
+      );
     },
     getOpenaiModelArray(model) {
       const owner = client.config.getModelOwner(model);
@@ -729,17 +782,17 @@ export default {
       this.textareaRef.focus();
       const images = this.textareaRef.querySelectorAll("img");
       const ImageSrcs = Array.from(images).map((img) => img.src);
-      
+
       let msg = "";
       let isCommand = false;
       let openaiCmdElements = [];
-      
+
       const badges = this.textareaRef.querySelectorAll(".command-badge");
       if (badges.length > 0) {
         const clone = this.textareaRef.cloneNode(true);
-        clone.querySelectorAll(".command-badge").forEach(b => b.remove());
+        clone.querySelectorAll(".command-badge").forEach((b) => b.remove());
         const remainingText = clone.innerText.trim();
-        
+
         if (this.activeContactor.platform === "onebot") {
           const badge = badges[0];
           const preset = badge.getAttribute("data-preset");
@@ -751,17 +804,30 @@ export default {
           isCommand = true;
         } else if (this.activeContactor.platform === "openai") {
           let hasConfigChanged = false;
-          badges.forEach(badge => {
+          badges.forEach((badge) => {
             const preset = badge.getAttribute("data-preset");
             const type = badge.getAttribute("data-type");
             const label = badge.getAttribute("data-label") || preset;
-            
+
             if (type === "tool") {
-              if (!this.activeContactor.options) this.activeContactor.options = {};
-              if (!this.activeContactor.options.toolCallSettings) this.activeContactor.options.toolCallSettings = {};
-              if (!Array.isArray(this.activeContactor.options.toolCallSettings.tools)) this.activeContactor.options.toolCallSettings.tools = [];
-              if (!this.activeContactor.options.toolCallSettings.tools.includes(preset)) {
-                this.activeContactor.options.toolCallSettings.tools.push(preset);
+              if (!this.activeContactor.options)
+                this.activeContactor.options = {};
+              if (!this.activeContactor.options.toolCallSettings)
+                this.activeContactor.options.toolCallSettings = {};
+              if (
+                !Array.isArray(
+                  this.activeContactor.options.toolCallSettings.tools,
+                )
+              )
+                this.activeContactor.options.toolCallSettings.tools = [];
+              if (
+                !this.activeContactor.options.toolCallSettings.tools.includes(
+                  preset,
+                )
+              ) {
+                this.activeContactor.options.toolCallSettings.tools.push(
+                  preset,
+                );
                 hasConfigChanged = true;
               }
               openaiCmdElements.push({
@@ -769,19 +835,25 @@ export default {
                 data: {
                   subtype: "tool",
                   name: label,
-                  prompt: `please call tool ${preset}`
-                }
+                  prompt: `please call tool ${preset}`,
+                },
               });
             } else if (type === "skill") {
               let skillToolFullNames = [];
               let terminalToolFullNames = [];
-              if (typeof config.llmTools === 'object' && config.llmTools !== null) {
-                Object.keys(config.llmTools).forEach(pName => {
+              if (
+                typeof config.llmTools === "object" &&
+                config.llmTools !== null
+              ) {
+                Object.keys(config.llmTools).forEach((pName) => {
                   const pTools = config.llmTools[pName];
-                  if (pTools && typeof pTools === 'object') {
-                    const isTerminal = pName.toLowerCase().includes('terminal');
-                    Object.keys(pTools).forEach(tName => {
-                      if (tName.toLowerCase() === 'skill' || tName.toLowerCase().startsWith('skill_mid_')) {
+                  if (pTools && typeof pTools === "object") {
+                    const isTerminal = pName.toLowerCase().includes("terminal");
+                    Object.keys(pTools).forEach((tName) => {
+                      if (
+                        tName.toLowerCase() === "skill" ||
+                        tName.toLowerCase().startsWith("skill_mid_")
+                      ) {
                         skillToolFullNames.push(tName);
                       }
                       if (isTerminal) {
@@ -791,22 +863,41 @@ export default {
                   }
                 });
               }
-              
-              if (!this.activeContactor.options) this.activeContactor.options = {};
-              if (!this.activeContactor.options.toolCallSettings) this.activeContactor.options.toolCallSettings = {};
-              if (!Array.isArray(this.activeContactor.options.toolCallSettings.tools)) this.activeContactor.options.toolCallSettings.tools = [];
-              
-              skillToolFullNames.forEach(stName => {
-                if (!this.activeContactor.options.toolCallSettings.tools.includes(stName)) {
-                  this.activeContactor.options.toolCallSettings.tools.push(stName);
+
+              if (!this.activeContactor.options)
+                this.activeContactor.options = {};
+              if (!this.activeContactor.options.toolCallSettings)
+                this.activeContactor.options.toolCallSettings = {};
+              if (
+                !Array.isArray(
+                  this.activeContactor.options.toolCallSettings.tools,
+                )
+              )
+                this.activeContactor.options.toolCallSettings.tools = [];
+
+              skillToolFullNames.forEach((stName) => {
+                if (
+                  !this.activeContactor.options.toolCallSettings.tools.includes(
+                    stName,
+                  )
+                ) {
+                  this.activeContactor.options.toolCallSettings.tools.push(
+                    stName,
+                  );
                   hasConfigChanged = true;
                 }
               });
-              
+
               if (skillToolFullNames.length > 0) {
-                terminalToolFullNames.forEach(ttName => {
-                  if (!this.activeContactor.options.toolCallSettings.tools.includes(ttName)) {
-                    this.activeContactor.options.toolCallSettings.tools.push(ttName);
+                terminalToolFullNames.forEach((ttName) => {
+                  if (
+                    !this.activeContactor.options.toolCallSettings.tools.includes(
+                      ttName,
+                    )
+                  ) {
+                    this.activeContactor.options.toolCallSettings.tools.push(
+                      ttName,
+                    );
                     hasConfigChanged = true;
                   }
                 });
@@ -817,18 +908,31 @@ export default {
                 data: {
                   subtype: "skill",
                   name: label,
-                  prompt: `please call skill tool 2 load ${preset} skill`
-                }
+                  prompt: `please call skill tool 2 load ${preset} skill`,
+                },
               });
             } else if (type === "plugin") {
               const toolNamesAttr = badge.getAttribute("data-tool-names");
               const toolNames = JSON.parse(toolNamesAttr || "[]");
-              if (!this.activeContactor.options) this.activeContactor.options = {};
-              if (!this.activeContactor.options.toolCallSettings) this.activeContactor.options.toolCallSettings = {};
-              if (!Array.isArray(this.activeContactor.options.toolCallSettings.tools)) this.activeContactor.options.toolCallSettings.tools = [];
-              toolNames.forEach(tName => {
-                if (!this.activeContactor.options.toolCallSettings.tools.includes(tName)) {
-                  this.activeContactor.options.toolCallSettings.tools.push(tName);
+              if (!this.activeContactor.options)
+                this.activeContactor.options = {};
+              if (!this.activeContactor.options.toolCallSettings)
+                this.activeContactor.options.toolCallSettings = {};
+              if (
+                !Array.isArray(
+                  this.activeContactor.options.toolCallSettings.tools,
+                )
+              )
+                this.activeContactor.options.toolCallSettings.tools = [];
+              toolNames.forEach((tName) => {
+                if (
+                  !this.activeContactor.options.toolCallSettings.tools.includes(
+                    tName,
+                  )
+                ) {
+                  this.activeContactor.options.toolCallSettings.tools.push(
+                    tName,
+                  );
                   hasConfigChanged = true;
                 }
               });
@@ -837,12 +941,12 @@ export default {
                 data: {
                   subtype: "plugin",
                   name: label,
-                  prompt: ""
-                }
+                  prompt: "",
+                },
               });
             }
           });
-          
+
           if (hasConfigChanged) {
             client.setLocalStorage();
           }
@@ -852,7 +956,7 @@ export default {
       } else {
         msg = this.getSafeText(this.textareaRef.innerText);
         if (this.activeContactor.platform === "onebot") {
-          this.availableCommands.forEach(cmd => {
+          this.availableCommands.forEach((cmd) => {
             const slashLabel = `/${cmd.label}`;
             const slashValue = `/${cmd.value}`;
             if (msg.startsWith(slashLabel)) {
@@ -867,17 +971,19 @@ export default {
       }
 
       const wrappedMessage =
-        (this.activeContactor.platform === "onebot" && !isCommand) ? this.wrapText(msg) : msg;
+        this.activeContactor.platform === "onebot" && !isCommand
+          ? this.wrapText(msg)
+          : msg;
       this.textareaRef.innerHTML = "";
       this.adjustTextareaHeight();
       const container = this.activeContactor.getBaseUserContainer();
-      
+
       if (openaiCmdElements.length > 0) {
-        openaiCmdElements.forEach(elm => {
+        openaiCmdElements.forEach((elm) => {
           container.content.push(elm);
         });
       }
-      
+
       if (wrappedMessage.trim()) {
         container.content.push({
           type: "text",
@@ -901,21 +1007,21 @@ export default {
     async send() {
       if (!this.hasInput()) return;
       this.$emit("toButtom");
-      
+
       const container = this.presend();
-      
+
       const localImageElements = container.content.filter(
-        elm => elm.type === "image" && elm.data.file.startsWith("blob:")
+        (elm) => elm.type === "image" && elm.data.file.startsWith("blob:"),
       );
-      
+
       const hasLocalImages = localImageElements.length > 0;
-      
+
       container.status = hasLocalImages ? "uploading" : "pending";
       this.activeContactor.messageChain.push(container);
       this.clearDraft();
       this.$emit("stroge");
       this.$emit("toButtom");
-      
+
       if (hasLocalImages) {
         try {
           const uploadPromises = localImageElements.map(async (elm) => {
@@ -924,9 +1030,9 @@ export default {
             if (!fileObj) {
               throw new Error("找不到本地图片缓存文件");
             }
-            
+
             const remoteUrl = await this.compressAndUploadImage(fileObj);
-            
+
             // Preload the remote image to ensure browser cache is built before we swap the URL, preventing layout jumps
             await new Promise((resolve) => {
               const img = new Image();
@@ -938,21 +1044,25 @@ export default {
             this.pendingImageFiles.delete(localUrl);
             elm.data.file = remoteUrl;
           });
-          
+
           await Promise.all(uploadPromises);
-          
-          const msgInChain = this.activeContactor.messageChain.find(m => m.id === container.id);
+
+          const msgInChain = this.activeContactor.messageChain.find(
+            (m) => m.id === container.id,
+          );
           if (msgInChain) {
             msgInChain.status = "pending";
           }
           container.status = "pending";
           this.$emit("stroge");
-          
+
           await this.activeContactor.webSend(container);
         } catch (error) {
           console.error("图片上传失败:", error);
           this.$message.error(error.message || "图片上传失败");
-          const msgInChain = this.activeContactor.messageChain.find(m => m.id === container.id);
+          const msgInChain = this.activeContactor.messageChain.find(
+            (m) => m.id === container.id,
+          );
           if (msgInChain) {
             msgInChain.status = "failed";
           }
@@ -998,7 +1108,10 @@ export default {
         this.$emit("setModel", selectedValues);
       } else if (event.level === 2) {
         if (this.activeContactor.platform === "onebot") {
-          if (this.getOnebotPreset() && !this.getOnebotPreset().includes("xxx")) {
+          if (
+            this.getOnebotPreset() &&
+            !this.getOnebotPreset().includes("xxx")
+          ) {
             this.send();
           }
         }
@@ -1017,7 +1130,8 @@ export default {
           return;
         } else if (event.key === "ArrowUp") {
           event.preventDefault();
-          this.commandIndex = (this.commandIndex - 1 + list.length) % list.length;
+          this.commandIndex =
+            (this.commandIndex - 1 + list.length) % list.length;
           this.scrollActiveCommandIntoView();
           return;
         } else if (event.key === "Enter" || event.key === "Tab") {
@@ -1051,88 +1165,98 @@ export default {
       }, 0);
     },
     checkSlashCommand(event) {
-      if (this.activeContactor?.platform !== 'onebot' && this.activeContactor?.platform !== 'openai') {
+      if (
+        this.activeContactor?.platform !== "onebot" &&
+        this.activeContactor?.platform !== "openai"
+      ) {
         this.showCommandPopup = false;
         return;
       }
-      
-      const isOneBot = this.activeContactor.platform === 'onebot';
+
+      const isOneBot = this.activeContactor.platform === "onebot";
       const badge = this.textareaRef.querySelector(".command-badge");
-      
+
       const clone = this.textareaRef.cloneNode(true);
-      clone.querySelectorAll(".command-badge").forEach(b => b.remove());
+      clone.querySelectorAll(".command-badge").forEach((b) => b.remove());
       const textWithoutBadge = clone.innerText || clone.textContent || "";
-      
+
       const occurrences = [];
       let match;
       const regex = /(?:^|\s)[\/#](?!\/)/g;
       while ((match = regex.exec(textWithoutBadge)) !== null) {
-        const isTriggerAtStart = match[0] === '/' || match[0] === '#';
+        const isTriggerAtStart = match[0] === "/" || match[0] === "#";
         const slashIdx = match.index + (isTriggerAtStart ? 0 : 1);
         occurrences.push(slashIdx);
       }
-      
+
       if (isOneBot) {
         if (badge && occurrences.length > 0) {
           this.$message({
             message: "指令不可重复，已自动清除先前的指令",
-            type: "warning"
+            type: "warning",
           });
-          
+
           badge.remove();
-          
-          const text = this.textareaRef.innerText || this.textareaRef.textContent || "";
+
+          const text =
+            this.textareaRef.innerText || this.textareaRef.textContent || "";
           const newOccurrences = [];
           let newMatch;
           const newRegex = /(?:^|\s)[\/#](?!\/)/g;
           while ((newMatch = newRegex.exec(text)) !== null) {
-            const isTriggerAtStart = newMatch[0] === '/' || newMatch[0] === '#';
+            const isTriggerAtStart = newMatch[0] === "/" || newMatch[0] === "#";
             const slashIdx = newMatch.index + (isTriggerAtStart ? 0 : 1);
             newOccurrences.push(slashIdx);
           }
-          
+
           if (newOccurrences.length === 1) {
             this.showCommandPopup = true;
-            this.commandSearchQuery = text.substring(newOccurrences[0] + 1).trim();
+            this.commandSearchQuery = text
+              .substring(newOccurrences[0] + 1)
+              .trim();
             this.commandIndex = 0;
             this.popupDismissed = false;
           } else {
             this.showCommandPopup = false;
             this.commandSearchQuery = "";
           }
-          
+
           this.adjustTextareaHeight();
           return;
         }
-        
+
         if (occurrences.length > 1) {
           this.$message({
             message: "指令不可重复，已自动清除先前的指令",
-            type: "warning"
+            type: "warning",
           });
-          
-          let endOfCmd = textWithoutBadge.indexOf(' ', occurrences[0]);
+
+          let endOfCmd = textWithoutBadge.indexOf(" ", occurrences[0]);
           if (endOfCmd === -1 || endOfCmd > occurrences[1]) {
             endOfCmd = occurrences[0] + 1;
           } else {
             endOfCmd = endOfCmd + 1;
           }
-          
-          const newText = textWithoutBadge.substring(0, occurrences[0]) + textWithoutBadge.substring(endOfCmd);
+
+          const newText =
+            textWithoutBadge.substring(0, occurrences[0]) +
+            textWithoutBadge.substring(endOfCmd);
           this.updateEditorText(newText);
-          
+
           const newOccurrences = [];
           let newMatch;
           const newRegex = /(?:^|\s)[\/#](?!\/)/g;
           while ((newMatch = newRegex.exec(newText)) !== null) {
-            const isTriggerAtStart = newMatch[0] === '/' || newMatch[0] === '#';
+            const isTriggerAtStart = newMatch[0] === "/" || newMatch[0] === "#";
             const slashIdx = newMatch.index + (isTriggerAtStart ? 0 : 1);
             newOccurrences.push(slashIdx);
           }
-          
+
           if (newOccurrences.length === 1) {
             this.showCommandPopup = true;
-            this.commandSearchQuery = newText.substring(newOccurrences[0] + 1).trim();
+            this.commandSearchQuery = newText
+              .substring(newOccurrences[0] + 1)
+              .trim();
             this.commandIndex = 0;
             this.popupDismissed = false;
           } else {
@@ -1142,7 +1266,7 @@ export default {
           return;
         }
       }
-      
+
       if (occurrences.length > 0) {
         const lastSlashIdx = occurrences[occurrences.length - 1];
         const queryStart = lastSlashIdx + 1;
@@ -1156,34 +1280,57 @@ export default {
         this.popupDismissed = false;
       }
     },
+    getPureTextOfTextNodes(container) {
+      let text = "";
+      const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+      let textNode;
+      while ((textNode = walk.nextNode())) {
+        let isInsideBadge = false;
+        let p = textNode.parentNode;
+        while (p && p !== container) {
+          if (p.classList && p.classList.contains("command-badge")) {
+            isInsideBadge = true;
+            break;
+          }
+          p = p.parentNode;
+        }
+        if (!isInsideBadge) {
+          text += textNode.nodeValue;
+        }
+      }
+      return text;
+    },
     confirmCommand(cmd) {
-      const text = this.textareaRef.innerText || this.textareaRef.textContent || "";
+      const text = this.getPureTextOfTextNodes(this.textareaRef);
       const regex = /(?:^|\s)[\/#](?!\/)/g;
       let match;
       let lastSlashIdx = -1;
       let triggerChar = "/";
       while ((match = regex.exec(text)) !== null) {
-        const isTriggerAtStart = match[0] === '/' || match[0] === '#';
+        const isTriggerAtStart = match[0] === "/" || match[0] === "#";
         lastSlashIdx = match.index + (isTriggerAtStart ? 0 : 1);
         triggerChar = text.charAt(lastSlashIdx);
       }
-      
+
       if (lastSlashIdx !== -1) {
         const badgeEl = document.createElement("span");
         badgeEl.className = "command-badge";
         badgeEl.setAttribute("contenteditable", "false");
         badgeEl.setAttribute("data-preset", cmd.preset);
         badgeEl.setAttribute("data-type", cmd.type || "command");
-        
+
         badgeEl.setAttribute("data-label", cmd.label);
-        
+
         const labelText = triggerChar + cmd.label;
         if (cmd.type === "tool") {
           badgeEl.innerHTML = `<i class="mio-icon mio-icon-tool" style="margin-right: 4px; vertical-align: middle;"></i><span>${labelText}</span>`;
         } else if (cmd.type === "skill") {
           badgeEl.innerHTML = `<i class="mio-icon mio-icon-skill" style="margin-right: 4px; vertical-align: middle;"></i><span>${labelText}</span>`;
         } else if (cmd.type === "plugin") {
-          badgeEl.setAttribute("data-tool-names", JSON.stringify(cmd.toolNames));
+          badgeEl.setAttribute(
+            "data-tool-names",
+            JSON.stringify(cmd.toolNames),
+          );
           badgeEl.innerHTML = `<span class="cmd-plugin-icon" style="margin-right: 4px; vertical-align: middle;"><i class="mio-icon mio-icon-tool"></i><sup class="plugin-plus">+</sup></span><span>${labelText}</span>`;
         } else {
           badgeEl.innerText = labelText;
@@ -1191,8 +1338,8 @@ export default {
 
         // Try to dynamically retrieve Vue's scope attribute from the container
         const scopeAttr = Array.from(this.textareaRef.attributes)
-          .map(attr => attr.name)
-          .find(name => name.startsWith("data-v-"));
+          .map((attr) => attr.name)
+          .find((name) => name.startsWith("data-v-"));
         if (scopeAttr) {
           badgeEl.setAttribute(scopeAttr, "");
         } else if (this.$options._scopeId) {
@@ -1200,13 +1347,13 @@ export default {
         }
 
         const spaceNode = document.createTextNode("\u00A0");
-        
+
         this.replaceTextRangeWithElements(
           this.textareaRef,
           lastSlashIdx,
           lastSlashIdx + 1 + this.commandSearchQuery.length,
           badgeEl,
-          spaceNode
+          spaceNode,
         );
 
         // Set cursor position after the space node
@@ -1217,32 +1364,56 @@ export default {
         sel.removeAllRanges();
         sel.addRange(range);
       }
-      
+
       this.showCommandPopup = false;
       this.commandSearchQuery = "";
       this.commandIndex = 0;
       this.popupDismissed = false;
-      
+
       this.$nextTick(() => {
         this.adjustTextareaHeight();
       });
     },
-    replaceTextRangeWithElements(container, startIdx, endIdx, badgeEl, spaceNode) {
+    replaceTextRangeWithElements(
+      container,
+      startIdx,
+      endIdx,
+      badgeEl,
+      spaceNode,
+    ) {
       let currentIdx = 0;
-      const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+      const walk = document.createTreeWalker(
+        container,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false,
+      );
       let textNode;
       while ((textNode = walk.nextNode())) {
+        let isInsideBadge = false;
+        let p = textNode.parentNode;
+        while (p && p !== container) {
+          if (p.classList && p.classList.contains("command-badge")) {
+            isInsideBadge = true;
+            break;
+          }
+          p = p.parentNode;
+        }
+        if (isInsideBadge) {
+          continue;
+        }
+
         const nodeLen = textNode.nodeValue.length;
         if (currentIdx + nodeLen > startIdx) {
           const offsetInNode = startIdx - currentIdx;
           const lengthToRemove = endIdx - startIdx;
-          
+
           const parent = textNode.parentNode;
           const textVal = textNode.nodeValue;
-          
+
           const beforeText = textVal.substring(0, offsetInNode);
           const afterText = textVal.substring(offsetInNode + lengthToRemove);
-          
+
           if (beforeText) {
             parent.insertBefore(document.createTextNode(beforeText), textNode);
           }
@@ -1251,7 +1422,7 @@ export default {
           if (afterText) {
             parent.insertBefore(document.createTextNode(afterText), textNode);
           }
-          
+
           parent.removeChild(textNode);
           return true;
         }
@@ -1262,16 +1433,16 @@ export default {
     updateEditorText(newText) {
       const imgElements = Array.from(this.textareaRef.querySelectorAll("img"));
       this.textareaRef.innerText = newText;
-      imgElements.forEach(img => {
+      imgElements.forEach((img) => {
         this.textareaRef.appendChild(img);
       });
       this.setCursorToEnd(this.textareaRef);
     },
     scrollActiveCommandIntoView() {
       this.$nextTick(() => {
-        const activeItem = this.$el.querySelector('.command-item.active');
+        const activeItem = this.$el.querySelector(".command-item.active");
         if (activeItem) {
-          activeItem.scrollIntoView({ block: 'nearest' });
+          activeItem.scrollIntoView({ block: "nearest" });
         }
       });
     },

@@ -4,17 +4,11 @@
       <h1>OneBot 配置</h1>
       <div class="header-actions">
         <el-button @click="handleReset">重置</el-button>
-        <el-button
-          type="primary"
-          :loading="saving"
-          @click="handleSave"
-        >
+        <el-button type="primary" :loading="saving" @click="handleSave">
           保存配置
         </el-button>
       </div>
     </div>
-
-
 
     <el-card>
       <el-form
@@ -88,9 +82,7 @@
             :disabled="!formData.enable"
           />
           <template #extra>
-            <span class="form-item-tip">
-              接入的 QQ 机器人账号
-            </span>
+            <span class="form-item-tip"> 接入的 QQ 机器人账号 </span>
           </template>
         </el-form-item>
 
@@ -112,7 +104,7 @@
     </el-card>
 
     <!-- 连接状态 -->
-    <el-card class="status-card" style="margin-top: 16px;">
+    <el-card class="status-card" style="margin-top: 16px">
       <template #header>
         <div class="card-header status-header">
           <div class="header-left">
@@ -139,35 +131,45 @@
           <div class="status-item">
             <span class="status-item-label">协议启用状态</span>
             <span class="status-item-value">
-              <el-tag :type="connectionStatus.enable ? 'success' : 'info'" size="small" effect="dark">
-                {{ connectionStatus.enable ? '已启用' : '已禁用' }}
+              <el-tag
+                :type="connectionStatus.enable ? 'success' : 'info'"
+                size="small"
+                effect="dark"
+              >
+                {{ connectionStatus.enable ? "已启用" : "已禁用" }}
               </el-tag>
             </span>
           </div>
           <div class="status-item">
             <span class="status-item-label">连接状态</span>
             <span class="status-item-value">
-              <el-tag :type="connectionStatus.connected ? 'success' : 'danger'" size="small" effect="dark">
-                {{ connectionStatus.connected ? '正常连接中' : '未连接/已离线' }}
+              <el-tag
+                :type="connectionStatus.connected ? 'success' : 'danger'"
+                size="small"
+                effect="dark"
+              >
+                {{
+                  connectionStatus.connected ? "正常连接中" : "未连接/已离线"
+                }}
               </el-tag>
             </span>
           </div>
           <div class="status-item full-width">
             <span class="status-item-label">反向 WS 地址</span>
             <span class="status-item-value ws-url-value">
-              <code>{{ connectionStatus.reverse_ws_url || '未配置' }}</code>
+              <code>{{ connectionStatus.reverse_ws_url || "未配置" }}</code>
             </span>
           </div>
           <div class="status-item">
             <span class="status-item-label">QQ 机器人账号</span>
             <span class="status-item-value bot-qq-value">
-              {{ connectionStatus.bot_qq || '—' }}
+              {{ connectionStatus.bot_qq || "—" }}
             </span>
           </div>
           <div class="status-item">
             <span class="status-item-label">上次轮询时间</span>
             <span class="status-item-value check-time-value">
-              {{ connectionStatus.lastChecked || '—' }}
+              {{ connectionStatus.lastChecked || "—" }}
             </span>
           </div>
         </div>
@@ -175,7 +177,7 @@
     </el-card>
 
     <!-- 预设前缀配置 (Text Wraper) -->
-    <el-card style="margin-top: 16px;">
+    <el-card style="margin-top: 16px">
       <template #header>
         <div class="card-header preset-header">
           <div class="title-with-tip">
@@ -183,19 +185,54 @@
             <el-tooltip placement="top" effect="dark">
               <template #content>
                 <div class="preset-tooltip-content">
-                  <p style="margin: 0 0 6px 0; font-weight: bold; font-size: 14px;">前缀与包裹模板配置说明：</p>
-                  <ul style="margin: 0; padding-left: 16px; font-size: 13px; line-height: 1.6;">
-                    <li>分两级结构：<strong>第一级为前缀分类</strong>（悬浮窗中作为分类，其 value 唯一，label 为分类名称）。</li>
-                    <li><strong>第二级为具体的指令前缀模板</strong>（在分类项的子树中展示）。</li>
-                    <li>指令前缀必须配置 <strong>前缀模板 (Preset)</strong>，例如 <code>#绘个图{xxx}</code>。模板中的 <code>{xxx}</code> 会被输入框中的实际文字替换。</li>
-                    <li>如果模板不包含 <code>{xxx}</code>，例如 <code>#帮助</code>，则在对话界面点击时会被当作直接执行的一键快捷命令立即发送。</li>
+                  <p
+                    style="
+                      margin: 0 0 6px 0;
+                      font-weight: bold;
+                      font-size: 14px;
+                    "
+                  >
+                    前缀与包裹模板配置说明：
+                  </p>
+                  <ul
+                    style="
+                      margin: 0;
+                      padding-left: 16px;
+                      font-size: 13px;
+                      line-height: 1.6;
+                    "
+                  >
+                    <li>
+                      分两级结构：<strong>第一级为前缀分类</strong>（悬浮窗中作为分类，其
+                      value 唯一，label 为分类名称）。
+                    </li>
+                    <li>
+                      <strong>第二级为具体的指令前缀模板</strong
+                      >（在分类项的子树中展示）。
+                    </li>
+                    <li>
+                      指令前缀必须配置 <strong>前缀模板 (Preset)</strong>，例如
+                      <code>#绘个图{xxx}</code>。模板中的
+                      <code>{xxx}</code> 会被输入框中的实际文字替换。
+                    </li>
+                    <li>
+                      如果模板不包含 <code>{xxx}</code>，例如
+                      <code>#帮助</code
+                      >，则在对话界面点击时会被当作直接执行的一键快捷命令立即发送。
+                    </li>
                   </ul>
                 </div>
               </template>
               <el-icon class="question-icon"><QuestionFilled /></el-icon>
             </el-tooltip>
           </div>
-          <el-button type="primary" size="small" :icon="Plus" @click="handleAddCategory">添加新分类</el-button>
+          <el-button
+            type="primary"
+            size="small"
+            :icon="Plus"
+            @click="handleAddCategory"
+            >添加新分类</el-button
+          >
         </div>
       </template>
 
@@ -204,40 +241,89 @@
       </div>
 
       <div v-else class="categories-list">
-        <div v-for="(category, catIdx) in presetCategories" :key="catIdx" class="category-card">
+        <div
+          v-for="(category, catIdx) in presetCategories"
+          :key="catIdx"
+          class="category-card"
+        >
           <div class="category-card-header">
             <div class="header-inputs">
               <span class="cat-label-tag">分类：</span>
-              <el-input v-model="category.label" placeholder="分类名称 (如：画图)" size="small" style="width: 150px;" />
+              <el-input
+                v-model="category.label"
+                placeholder="分类名称 (如：画图)"
+                size="small"
+                style="width: 150px"
+              />
               <span class="cat-label-tag val-tag">标识：</span>
-              <el-input v-model="category.value" placeholder="分类标识 (如：AP)" size="small" style="width: 120px;" />
+              <el-input
+                v-model="category.value"
+                placeholder="分类标识 (如：AP)"
+                size="small"
+                style="width: 120px"
+              />
             </div>
             <div class="header-actions">
-              <el-button type="success" size="small" plain @click="handleAddPresetItem(category)">添加预设项</el-button>
-              <el-button type="danger" size="small" plain @click="handleDeleteCategory(catIdx)">删除分类</el-button>
+              <el-button
+                type="success"
+                size="small"
+                plain
+                @click="handleAddPresetItem(category)"
+                >添加预设项</el-button
+              >
+              <el-button
+                type="danger"
+                size="small"
+                plain
+                @click="handleDeleteCategory(catIdx)"
+                >删除分类</el-button
+              >
             </div>
           </div>
 
           <div class="category-card-body">
-            <el-table :data="category.children || []" border size="small" empty-text="当前分类下无预设项，请点击上方“添加预设项”" style="width: 100%">
+            <el-table
+              :data="category.children || []"
+              border
+              size="small"
+              empty-text="当前分类下无预设项，请点击上方“添加预设项”"
+              style="width: 100%"
+            >
               <el-table-column label="项名称 (label)" width="180">
                 <template #default="scope">
-                  <el-input v-model="scope.row.label" placeholder="如：绘个图" size="small" />
+                  <el-input
+                    v-model="scope.row.label"
+                    placeholder="如：绘个图"
+                    size="small"
+                  />
                 </template>
               </el-table-column>
               <el-table-column label="项标识 (value)" width="180">
                 <template #default="scope">
-                  <el-input v-model="scope.row.value" placeholder="如：eDraw" size="small" />
+                  <el-input
+                    v-model="scope.row.value"
+                    placeholder="如：eDraw"
+                    size="small"
+                  />
                 </template>
               </el-table-column>
               <el-table-column label="前缀模板 (preset)">
                 <template #default="scope">
-                  <el-input v-model="scope.row.preset" placeholder="如：#绘个图{xxx} 或 #帮助" size="small" />
+                  <el-input
+                    v-model="scope.row.preset"
+                    placeholder="如：#绘个图{xxx} 或 #帮助"
+                    size="small"
+                  />
                 </template>
               </el-table-column>
               <el-table-column label="操作" width="80" align="center">
                 <template #default="scope">
-                  <el-button type="danger" size="small" link @click="handleDeletePresetItem(category, scope.$index)">
+                  <el-button
+                    type="danger"
+                    size="small"
+                    link
+                    @click="handleDeletePresetItem(category, scope.$index)"
+                  >
                     删除
                   </el-button>
                 </template>
@@ -251,10 +337,17 @@
 </template>
 
 <script setup>
-import { useConfigStore } from '@/stores/configStore.js';
-import { Hide, View, Plus, Delete, Refresh, QuestionFilled } from '@element-plus/icons-vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
+import { useConfigStore } from "@/stores/configStore.js";
+import {
+  Hide,
+  View,
+  Plus,
+  Delete,
+  Refresh,
+  QuestionFilled,
+} from "@element-plus/icons-vue";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
 
 const configStore = useConfigStore();
 const formRef = ref(null);
@@ -264,21 +357,21 @@ const showToken = ref(false);
 // 表单数据
 const formData = reactive({
   enable: false,
-  reverse_ws_url: '',
-  token: '',
-  bot_qq: '',
-  admin_qq: ''
+  reverse_ws_url: "",
+  token: "",
+  bot_qq: "",
+  admin_qq: "",
 });
 
 // 连接状态数据
 const connectionStatus = reactive({
   enable: false,
   connected: false,
-  bot_qq: '',
-  admin_qq: '',
-  reverse_ws_url: '',
+  bot_qq: "",
+  admin_qq: "",
+  reverse_ws_url: "",
   loading: false,
-  lastChecked: null
+  lastChecked: null,
 });
 
 // 预设前缀分类数据
@@ -290,13 +383,13 @@ let originalOnebotConfig = null;
 
 // 状态计算属性
 const statusClass = computed(() => {
-  if (!connectionStatus.enable) return 'disabled';
-  return connectionStatus.connected ? 'online' : 'offline';
+  if (!connectionStatus.enable) return "disabled";
+  return connectionStatus.connected ? "online" : "offline";
 });
 
 const statusLabel = computed(() => {
-  if (!connectionStatus.enable) return '协议已禁用';
-  return connectionStatus.connected ? '正常在线中' : '未连接/已离线';
+  if (!connectionStatus.enable) return "协议已禁用";
+  return connectionStatus.connected ? "正常在线中" : "未连接/已离线";
 });
 
 // 获取连接状态
@@ -307,13 +400,13 @@ const fetchConnectionStatus = async (showLoading = false) => {
     Object.assign(connectionStatus, {
       enable: status.enable ?? false,
       connected: status.connected ?? false,
-      bot_qq: status.bot_qq || '',
-      admin_qq: status.admin_qq || '',
-      reverse_ws_url: status.reverse_ws_url || '',
-      lastChecked: new Date().toLocaleTimeString()
+      bot_qq: status.bot_qq || "",
+      admin_qq: status.admin_qq || "",
+      reverse_ws_url: status.reverse_ws_url || "",
+      lastChecked: new Date().toLocaleTimeString(),
     });
   } catch (error) {
-    console.error('获取 OneBot 状态失败:', error);
+    console.error("获取 OneBot 状态失败:", error);
   } finally {
     if (showLoading) connectionStatus.loading = false;
   }
@@ -342,68 +435,74 @@ const rules = {
     {
       validator: (rule, value, callback) => {
         if (formData.enable && !value) {
-          callback(new Error('启用 OneBot 时必须输入反向 WebSocket URL'));
-        } else if (value && !value.startsWith('ws://') && !value.startsWith('wss://')) {
-          callback(new Error('URL 必须以 ws:// 或 wss:// 开头'));
+          callback(new Error("启用 OneBot 时必须输入反向 WebSocket URL"));
+        } else if (
+          value &&
+          !value.startsWith("ws://") &&
+          !value.startsWith("wss://")
+        ) {
+          callback(new Error("URL 必须以 ws:// 或 wss:// 开头"));
         } else {
           callback();
         }
       },
-      trigger: 'blur'
-    }
+      trigger: "blur",
+    },
   ],
   bot_qq: [
     {
       validator: (rule, value, callback) => {
         if (formData.enable && !value) {
-          callback(new Error('启用 OneBot 时必须输入机器人 QQ 号'));
+          callback(new Error("启用 OneBot 时必须输入机器人 QQ 号"));
         } else if (value && !/^\d+$/.test(value)) {
-          callback(new Error('QQ 号必须为纯数字'));
+          callback(new Error("QQ 号必须为纯数字"));
         } else {
           callback();
         }
       },
-      trigger: 'blur'
-    }
+      trigger: "blur",
+    },
   ],
   admin_qq: [
     {
       validator: (rule, value, callback) => {
         if (value && !/^\d+$/.test(value)) {
-          callback(new Error('QQ 号必须为纯数字'));
+          callback(new Error("QQ 号必须为纯数字"));
         } else {
           callback();
         }
       },
-      trigger: 'blur'
-    }
-  ]
+      trigger: "blur",
+    },
+  ],
 };
 
 // 加载配置
 const loadConfig = async () => {
   try {
     // 使用新的 OneBot API 接口获取配置
-    const onebotConfig = configStore.config?.onebot || await configStore.fetchConfigSection('onebot');
+    const onebotConfig =
+      configStore.config?.onebot ||
+      (await configStore.fetchConfigSection("onebot"));
     originalOnebotConfig = JSON.parse(JSON.stringify(onebotConfig));
-    
+
     Object.assign(formData, {
       enable: onebotConfig.enable ?? false,
-      reverse_ws_url: onebotConfig.reverse_ws_url || '',
-      token: onebotConfig.token || '',
-      bot_qq: onebotConfig.bot_qq || '',
-      admin_qq: onebotConfig.admin_qq || ''
+      reverse_ws_url: onebotConfig.reverse_ws_url || "",
+      token: onebotConfig.token || "",
+      bot_qq: onebotConfig.bot_qq || "",
+      admin_qq: onebotConfig.admin_qq || "",
     });
 
     const options = onebotConfig.plugins?.options?.textwraper?.options || [
-      { value: "", label: "默认" }
+      { value: "", label: "默认" },
     ];
     presetCategories.value = JSON.parse(JSON.stringify(options));
-    
+
     // 保存原始数据
     Object.assign(originalData, formData);
   } catch (error) {
-    ElMessage.error('加载 OneBot 配置失败：' + error.message);
+    ElMessage.error("加载 OneBot 配置失败：" + error.message);
   }
 };
 
@@ -411,25 +510,25 @@ const loadConfig = async () => {
 const handleSave = async () => {
   try {
     await formRef.value.validate();
-    
+
     saving.value = true;
 
     // 清理和转换最终保存的预设配置，去除空的 children 键，以保持默认格式的一致性
-    const cleanedOptions = presetCategories.value.map(cat => {
+    const cleanedOptions = presetCategories.value.map((cat) => {
       const newCat = { ...cat };
       if (!newCat.children || newCat.children.length === 0) {
         delete newCat.children;
       } else {
-        newCat.children = newCat.children.map(child => ({
-          label: child.label || '',
-          value: child.value || '',
-          preset: child.preset || ''
+        newCat.children = newCat.children.map((child) => ({
+          label: child.label || "",
+          value: child.value || "",
+          preset: child.preset || "",
         }));
       }
       return newCat;
     });
 
-    await configStore.updateConfigSection('onebot', {
+    await configStore.updateConfigSection("onebot", {
       enable: formData.enable,
       reverse_ws_url: formData.reverse_ws_url,
       token: formData.token,
@@ -438,21 +537,21 @@ const handleSave = async () => {
       plugins: {
         options: {
           textwraper: {
-            options: cleanedOptions
-          }
-        }
-      }
+            options: cleanedOptions,
+          },
+        },
+      },
     });
 
-    ElMessage.success('OneBot 配置保存成功');
-    
+    ElMessage.success("OneBot 配置保存成功");
+
     // 重新加载配置，同步最新状态
     await loadConfig();
     // 立即刷新状态
     await fetchConnectionStatus(true);
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('保存失败：' + error.message);
+    if (error !== "cancel") {
+      ElMessage.error("保存失败：" + error.message);
     }
   } finally {
     saving.value = false;
@@ -463,38 +562,35 @@ const handleSave = async () => {
 const handleReset = () => {
   Object.assign(formData, originalData);
   if (originalOnebotConfig) {
-    const options = originalOnebotConfig.plugins?.options?.textwraper?.options || [
-      { value: "", label: "默认" }
-    ];
+    const options = originalOnebotConfig.plugins?.options?.textwraper
+      ?.options || [{ value: "", label: "默认" }];
     presetCategories.value = JSON.parse(JSON.stringify(options));
   }
   formRef.value?.clearValidate();
-  ElMessage.info('已重置为当前保存的配置');
+  ElMessage.info("已重置为当前保存的配置");
 };
 
 // 添加预设分类
 const handleAddCategory = () => {
   presetCategories.value.push({
-    label: '新分类',
-    value: 'new_cat_' + Math.random().toString(36).substr(2, 5),
-    children: []
+    label: "新分类",
+    value: "new_cat_" + Math.random().toString(36).substr(2, 5),
+    children: [],
   });
 };
 
 // 删除预设分类
 const handleDeleteCategory = (index) => {
-  ElMessageBox.confirm(
-    '确定要删除该分类及其下的所有预设项吗？',
-    '删除确认',
-    {
-      confirmButtonText: '删除',
-      cancelButtonText: '取消',
-      type: 'warning'
-    }
-  ).then(() => {
-    presetCategories.value.splice(index, 1);
-    ElMessage.success('分类已删除');
-  }).catch(() => {});
+  ElMessageBox.confirm("确定要删除该分类及其下的所有预设项吗？", "删除确认", {
+    confirmButtonText: "删除",
+    cancelButtonText: "取消",
+    type: "warning",
+  })
+    .then(() => {
+      presetCategories.value.splice(index, 1);
+      ElMessage.success("分类已删除");
+    })
+    .catch(() => {});
 };
 
 // 添加子预设项
@@ -503,9 +599,9 @@ const handleAddPresetItem = (category) => {
     category.children = [];
   }
   category.children.push({
-    label: '新指令',
-    value: 'new_item_' + Math.random().toString(36).substr(2, 5),
-    preset: '#指令{xxx}'
+    label: "新指令",
+    value: "new_item_" + Math.random().toString(36).substr(2, 5),
+    preset: "#指令{xxx}",
   });
 };
 
@@ -707,7 +803,7 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     gap: 12px;
-    
+
     span {
       font-weight: 600;
       color: #303133;
@@ -798,7 +894,11 @@ onUnmounted(() => {
 }
 
 .status-content {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.9) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.6) 0%,
+    rgba(255, 255, 255, 0.9) 100%
+  );
   backdrop-filter: blur(10px);
 }
 
@@ -847,7 +947,7 @@ onUnmounted(() => {
         word-break: break-all;
         color: #409eff;
       }
-      
+
       &.bot-qq-value {
         color: #303133;
         font-family: monospace;

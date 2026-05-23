@@ -44,17 +44,18 @@
 defineProps({
   type: {
     type: String,
-    default: 'default',
-    validator: (value) => ['adapter-card', 'stat-card', 'list', 'default'].includes(value)
+    default: "default",
+    validator: (value) =>
+      ["adapter-card", "stat-card", "list", "default"].includes(value),
   },
   count: {
     type: Number,
-    default: 3
+    default: 3,
   },
   isCard: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 });
 </script>
 

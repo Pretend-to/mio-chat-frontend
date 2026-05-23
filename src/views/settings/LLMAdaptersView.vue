@@ -18,13 +18,16 @@
     <transition name="fade" mode="out-in">
       <div v-if="!loading" class="content-container">
         <!-- 页面头部 -->
-        <div class="page-header" :class="{ 'mobile': isMobile }">
+        <div class="page-header" :class="{ mobile: isMobile }">
           <h1 v-if="!isMobile">LLM 适配器管理</h1>
-          
+
           <!-- 桌面端操作按钮 -->
           <div v-if="!isMobile" class="header-actions">
             <el-button
-              v-if="configStore.selectedAdapters && configStore.selectedAdapters.length > 0"
+              v-if="
+                configStore.selectedAdapters &&
+                configStore.selectedAdapters.length > 0
+              "
               type="success"
               :icon="Check"
               @click="handleBatchEnable"
@@ -32,7 +35,10 @@
               批量启用 ({{ configStore.selectedAdapters.length }})
             </el-button>
             <el-button
-              v-if="configStore.selectedAdapters && configStore.selectedAdapters.length > 0"
+              v-if="
+                configStore.selectedAdapters &&
+                configStore.selectedAdapters.length > 0
+              "
               type="warning"
               :icon="Close"
               @click="handleBatchDisable"
@@ -40,7 +46,10 @@
               批量禁用
             </el-button>
             <el-button
-              v-if="configStore.selectedAdapters && configStore.selectedAdapters.length > 0"
+              v-if="
+                configStore.selectedAdapters &&
+                configStore.selectedAdapters.length > 0
+              "
               type="danger"
               :icon="Delete"
               @click="handleBatchDelete"
@@ -57,7 +66,8 @@
             </el-button>
             <el-dropdown @command="handleAddAdapter" trigger="click">
               <el-button type="primary" :icon="Plus">
-                添加适配器 <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                添加适配器
+                <el-icon class="el-icon--right"><ArrowDown /></el-icon>
               </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
@@ -106,14 +116,27 @@
         </div>
 
         <!-- 移动端批量操作栏 -->
-        <div v-if="isMobile && configStore.selectedAdapters && configStore.selectedAdapters.length > 0" class="mobile-batch-actions">
+        <div
+          v-if="
+            isMobile &&
+            configStore.selectedAdapters &&
+            configStore.selectedAdapters.length > 0
+          "
+          class="mobile-batch-actions"
+        >
           <div class="batch-info">
             已选择 {{ configStore.selectedAdapters.length }} 项
           </div>
           <div class="batch-buttons">
-            <el-button type="success" size="small" @click="handleBatchEnable">启用</el-button>
-            <el-button type="warning" size="small" @click="handleBatchDisable">禁用</el-button>
-            <el-button type="danger" size="small" @click="handleBatchDelete">删除</el-button>
+            <el-button type="success" size="small" @click="handleBatchEnable"
+              >启用</el-button
+            >
+            <el-button type="warning" size="small" @click="handleBatchDisable"
+              >禁用</el-button
+            >
+            <el-button type="danger" size="small" @click="handleBatchDelete"
+              >删除</el-button
+            >
           </div>
         </div>
 
@@ -129,7 +152,9 @@
           </div>
           <div class="stat-item">
             <span class="stat-label">总模型数：</span>
-            <span class="stat-value">{{ configStore.totalModelsCount }} 个</span>
+            <span class="stat-value"
+              >{{ configStore.totalModelsCount }} 个</span
+            >
           </div>
         </div>
 
@@ -138,9 +163,7 @@
           <div v-if="allAdapters.length === 0" class="empty-state">
             <el-empty description="暂无适配器实例">
               <el-dropdown @command="handleAddAdapter" trigger="click">
-                <el-button type="primary" :icon="Plus">
-                  添加适配器
-                </el-button>
+                <el-button type="primary" :icon="Plus"> 添加适配器 </el-button>
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item
@@ -164,7 +187,7 @@
             @selection-change="handleSelectionChange"
           >
             <el-table-column type="selection" width="55" />
-            
+
             <el-table-column label="类型" width="120">
               <template #default="{ row }">
                 <el-tag :type="getTypeTagType(row.type)" effect="light">
@@ -176,8 +199,15 @@
             <el-table-column label="名称" min-width="150">
               <template #default="{ row }">
                 <div class="adapter-name">
-                  <span class="name">{{ row.adapter.name || `${row.type}-${row.index + 1}` }}</span>
-                  <el-tag v-if="!row.adapter.enable" type="info" size="small" effect="plain">
+                  <span class="name">{{
+                    row.adapter.name || `${row.type}-${row.index + 1}`
+                  }}</span>
+                  <el-tag
+                    v-if="!row.adapter.enable"
+                    type="info"
+                    size="small"
+                    effect="plain"
+                  >
                     已禁用
                   </el-tag>
                 </div>
@@ -186,13 +216,20 @@
 
             <el-table-column label="默认模型" min-width="200">
               <template #default="{ row }">
-                <span class="model-name">{{ row.adapter.default_model || '-' }}</span>
+                <span class="model-name">{{
+                  row.adapter.default_model || "-"
+                }}</span>
               </template>
             </el-table-column>
 
             <el-table-column label="可用模型" width="120" align="center">
               <template #default="{ row }">
-                <el-tag size="small" :type="getModelCountType(row.modelCount)" effect="plain" round>
+                <el-tag
+                  size="small"
+                  :type="getModelCountType(row.modelCount)"
+                  effect="plain"
+                  round
+                >
                   {{ row.modelCount }} 个
                 </el-tag>
               </template>
@@ -256,8 +293,8 @@
 </template>
 
 <script setup>
-import AdapterEditor from '@/components/settings/AdapterEditor.vue';
-import { useConfigStore } from '@/stores/configStore.js';
+import AdapterEditor from "@/components/settings/AdapterEditor.vue";
+import { useConfigStore } from "@/stores/configStore.js";
 import {
   ArrowDown,
   Check,
@@ -265,18 +302,18 @@ import {
   Connection,
   Delete,
   Plus,
-  Refresh
-} from '@element-plus/icons-vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+  Refresh,
+} from "@element-plus/icons-vue";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
 const configStore = useConfigStore();
 
 const loading = ref(true);
 const refreshing = ref(false);
 const editorVisible = ref(false);
-const editorMode = ref('add');
-const editorType = ref('openai');
+const editorMode = ref("add");
+const editorType = ref("openai");
 const editorAdapter = ref(null);
 
 // 移动端检测
@@ -302,14 +339,14 @@ const allAdapters = computed(() => {
       const modelCount = models.reduce((count, group) => {
         return count + (group.models ? group.models.length : 0);
       }, 0);
-      
+
       adapters.push({
         type,
         index,
         adapter,
         providerName,
         models,
-        modelCount
+        modelCount,
       });
     });
   });
@@ -318,7 +355,7 @@ const allAdapters = computed(() => {
 
 // 获取已启用的适配器数量
 const enabledCount = computed(() => {
-  return allAdapters.value.filter(item => item.adapter.enable).length;
+  return allAdapters.value.filter((item) => item.adapter.enable).length;
 });
 
 // 获取适配器的模型列表
@@ -332,19 +369,21 @@ const formatTypeLabel = (type) => {
   // 确保 configStore 和 adapterTypes 都存在
   if (configStore?.adapterTypes?.adapters) {
     // 优先从适配器类型信息中获取显示名称
-    const adapterInfo = configStore.adapterTypes.adapters.find(a => a.type === type);
+    const adapterInfo = configStore.adapterTypes.adapters.find(
+      (a) => a.type === type,
+    );
     if (adapterInfo?.name) {
       return adapterInfo.name;
     }
   }
-  
+
   // 后备方案：使用硬编码映射
   const map = {
-    openai: 'OpenAI',
-    gemini: 'Gemini',
-    vertex: 'Vertex AI',
-    deepseek: 'DeepSeek',
-    anthropic: 'Anthropic'
+    openai: "OpenAI",
+    gemini: "Gemini",
+    vertex: "Vertex AI",
+    deepseek: "DeepSeek",
+    anthropic: "Anthropic",
   };
   if (map[type]) return map[type];
   return type.charAt(0).toUpperCase() + type.slice(1);
@@ -353,23 +392,23 @@ const formatTypeLabel = (type) => {
 // 获取类型标签的颜色
 const getTypeTagType = (type) => {
   const map = {
-    openai: 'success',
-    gemini: 'warning',
-    vertex: 'info'
+    openai: "success",
+    gemini: "warning",
+    vertex: "info",
   };
-  return map[type] || 'primary';
+  return map[type] || "primary";
 };
 
 // 获取模型数量标签的颜色
 const getModelCountType = (count) => {
-  if (count === 0) return 'danger';
-  if (count < 5) return 'warning';
-  return 'success';
+  if (count === 0) return "danger";
+  if (count < 5) return "warning";
+  return "success";
 };
 
 // 添加适配器
 const handleAddAdapter = (type) => {
-  editorMode.value = 'add';
+  editorMode.value = "add";
   editorType.value = type;
   editorAdapter.value = null;
   editorIndex.value = -1;
@@ -379,7 +418,7 @@ const handleAddAdapter = (type) => {
 // 编辑适配器
 const handleEdit = (row) => {
   const { type, index, adapter } = row;
-  editorMode.value = 'edit';
+  editorMode.value = "edit";
   editorType.value = type;
   editorAdapter.value = adapter;
   editorIndex.value = index;
@@ -390,23 +429,23 @@ const handleEdit = (row) => {
 const handleDelete = async (row) => {
   const { type, index, adapter } = row;
   const adapterName = adapter.name || `${type}-${index + 1}`;
-  
+
   try {
     await ElMessageBox.confirm(
       `确定要删除适配器 "${adapterName}" 吗？`,
-      '删除确认',
+      "删除确认",
       {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
+        confirmButtonText: "删除",
+        cancelButtonText: "取消",
+        type: "warning",
+      },
     );
 
     await configStore.deleteAdapter(type, index);
-    ElMessage.success('删除成功');
+    ElMessage.success("删除成功");
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败：' + error.message);
+    if (error !== "cancel") {
+      ElMessage.error("删除失败：" + error.message);
     }
   }
 };
@@ -416,9 +455,9 @@ const handleRefresh = async (row) => {
   const { type, index } = row;
   try {
     await configStore.refreshAdapterModels(type, index);
-    ElMessage.success('模型列表刷新成功');
+    ElMessage.success("模型列表刷新成功");
   } catch (error) {
-    ElMessage.error('刷新失败：' + error.message);
+    ElMessage.error("刷新失败：" + error.message);
   }
 };
 
@@ -426,16 +465,16 @@ const handleRefresh = async (row) => {
 const handleToggle = async (row) => {
   const { type, index, adapter } = row;
   const enable = adapter.enable;
-  
+
   try {
     // 只更新 enable 字段
     const updatedData = { ...adapter, enable };
     await configStore.updateAdapter(type, index, updatedData);
-    ElMessage.success(enable ? '已启用' : '已禁用');
+    ElMessage.success(enable ? "已启用" : "已禁用");
   } catch (error) {
     // 如果失败，恢复原状态
     adapter.enable = !enable;
-    ElMessage.error('操作失败：' + error.message);
+    ElMessage.error("操作失败：" + error.message);
   }
 };
 
@@ -443,9 +482,9 @@ const handleToggle = async (row) => {
 const handleSelectionChange = (selection) => {
   // 清空当前选择
   configStore.clearAdapterSelection();
-  
+
   // 添加新选择
-  selection.forEach(item => {
+  selection.forEach((item) => {
     configStore.toggleAdapterSelection(item.type, item.index);
   });
 };
@@ -455,9 +494,9 @@ const handleRefreshAll = async () => {
   refreshing.value = true;
   try {
     await configStore.refreshAllModels();
-    ElMessage.success('所有模型列表刷新成功');
+    ElMessage.success("所有模型列表刷新成功");
   } catch (error) {
-    ElMessage.error('刷新失败：' + error.message);
+    ElMessage.error("刷新失败：" + error.message);
   } finally {
     refreshing.value = false;
   }
@@ -465,74 +504,83 @@ const handleRefreshAll = async () => {
 
 // 批量启用
 const handleBatchEnable = async () => {
-  if (!configStore.selectedAdapters || configStore.selectedAdapters.length === 0) {
-    ElMessage.warning('请先选择要操作的适配器');
+  if (
+    !configStore.selectedAdapters ||
+    configStore.selectedAdapters.length === 0
+  ) {
+    ElMessage.warning("请先选择要操作的适配器");
     return;
   }
-  
+
   try {
     const results = await configStore.batchToggleAdapters(
       configStore.selectedAdapters,
-      true
+      true,
     );
-    
-    const successCount = results.filter(r => r.success).length;
+
+    const successCount = results.filter((r) => r.success).length;
     ElMessage.success(`成功启用 ${successCount} 个适配器`);
     configStore.clearAdapterSelection();
   } catch (error) {
-    ElMessage.error('批量启用失败：' + error.message);
+    ElMessage.error("批量启用失败：" + error.message);
   }
 };
 
 // 批量禁用
 const handleBatchDisable = async () => {
-  if (!configStore.selectedAdapters || configStore.selectedAdapters.length === 0) {
-    ElMessage.warning('请先选择要操作的适配器');
+  if (
+    !configStore.selectedAdapters ||
+    configStore.selectedAdapters.length === 0
+  ) {
+    ElMessage.warning("请先选择要操作的适配器");
     return;
   }
-  
+
   try {
     const results = await configStore.batchToggleAdapters(
       configStore.selectedAdapters,
-      false
+      false,
     );
-    
-    const successCount = results.filter(r => r.success).length;
+
+    const successCount = results.filter((r) => r.success).length;
     ElMessage.success(`成功禁用 ${successCount} 个适配器`);
     configStore.clearAdapterSelection();
   } catch (error) {
-    ElMessage.error('批量禁用失败：' + error.message);
+    ElMessage.error("批量禁用失败：" + error.message);
   }
 };
 
 // 批量删除
 const handleBatchDelete = async () => {
-  if (!configStore.selectedAdapters || configStore.selectedAdapters.length === 0) {
-    ElMessage.warning('请先选择要删除的适配器');
+  if (
+    !configStore.selectedAdapters ||
+    configStore.selectedAdapters.length === 0
+  ) {
+    ElMessage.warning("请先选择要删除的适配器");
     return;
   }
-  
+
   try {
     await ElMessageBox.confirm(
       `确定要删除选中的 ${configStore.selectedAdapters.length} 个适配器吗？`,
-      '批量删除',
+      "批量删除",
       {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
+        confirmButtonText: "删除",
+        cancelButtonText: "取消",
+        type: "warning",
+      },
     );
 
     const results = await configStore.batchDeleteAdapters(
-      configStore.selectedAdapters
+      configStore.selectedAdapters,
     );
-    
-    const successCount = results.filter(r => r.success).length;
+
+    const successCount = results.filter((r) => r.success).length;
     ElMessage.success(`成功删除 ${successCount} 个适配器`);
     configStore.clearAdapterSelection();
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('批量删除失败：' + error.message);
+    if (error !== "cancel") {
+      ElMessage.error("批量删除失败：" + error.message);
     }
   }
 };
@@ -545,15 +593,17 @@ const handleEditorClose = () => {
 // 编辑器提交
 const handleEditorSubmit = async ({ type, index, data, mode }) => {
   try {
-    if (mode === 'add') {
+    if (mode === "add") {
       await configStore.addAdapter(type, data);
-      ElMessage.success('添加成功');
+      ElMessage.success("添加成功");
     } else {
       await configStore.updateAdapter(type, index, data);
-      ElMessage.success('更新成功');
+      ElMessage.success("更新成功");
     }
   } catch (error) {
-    ElMessage.error(mode === 'add' ? '添加失败：' : '更新失败：' + error.message);
+    ElMessage.error(
+      mode === "add" ? "添加失败：" : "更新失败：" + error.message,
+    );
     throw error; // 重新抛出错误，让编辑器保持打开
   }
 };
@@ -562,32 +612,32 @@ const handleEditorSubmit = async ({ type, index, data, mode }) => {
 onMounted(async () => {
   // 检测移动端
   checkMobile();
-  window.addEventListener('resize', checkMobile);
-  
+  window.addEventListener("resize", checkMobile);
+
   loading.value = true;
   try {
     // 并行加载适配器类型信息和配置
     const promises = [];
-    
+
     if (!configStore.adapterTypes.types.length) {
       promises.push(configStore.fetchAdapterTypes());
     }
-    
+
     if (!configStore.config) {
       promises.push(configStore.fetchConfig());
     }
-    
+
     await Promise.all(promises);
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise((resolve) => setTimeout(resolve, 300));
   } catch (error) {
-    ElMessage.error('加载配置失败：' + error.message);
+    ElMessage.error("加载配置失败：" + error.message);
   } finally {
     loading.value = false;
   }
 });
 
 onUnmounted(() => {
-  window.removeEventListener('resize', checkMobile);
+  window.removeEventListener("resize", checkMobile);
 });
 </script>
 
@@ -638,7 +688,12 @@ onUnmounted(() => {
         width: 120px;
         height: 32px;
         border-radius: 4px;
-        background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 50%, #f2f2f2 75%);
+        background: linear-gradient(
+          90deg,
+          #f2f2f2 25%,
+          #e6e6e6 50%,
+          #f2f2f2 75%
+        );
         background-size: 200% 100%;
         animation: skeleton-loading 1.5s ease-in-out infinite;
       }
@@ -663,7 +718,12 @@ onUnmounted(() => {
         flex: 1;
         margin: 12px;
         border-radius: 4px;
-        background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 50%, #f2f2f2 75%);
+        background: linear-gradient(
+          90deg,
+          #f2f2f2 25%,
+          #e6e6e6 50%,
+          #f2f2f2 75%
+        );
         background-size: 200% 100%;
         animation: skeleton-loading 1.5s ease-in-out infinite;
 
@@ -815,7 +875,7 @@ onUnmounted(() => {
   }
 
   .model-name {
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
     font-size: 13px;
     color: #606266;
   }
@@ -869,35 +929,35 @@ onUnmounted(() => {
   .adapters-list {
     .adapter-card {
       margin-bottom: 12px;
-      
+
       .card-header {
         padding: 12px 16px;
-        
+
         .adapter-title {
           font-size: 16px;
         }
-        
+
         .adapter-actions {
           gap: 8px;
-          
+
           .el-button {
             padding: 6px 12px;
             font-size: 13px;
           }
         }
       }
-      
+
       .card-content {
         padding: 12px 16px;
-        
+
         .adapter-info {
           .info-item {
             margin-bottom: 8px;
-            
+
             .info-label {
               font-size: 13px;
             }
-            
+
             .info-value {
               font-size: 14px;
             }
@@ -909,7 +969,7 @@ onUnmounted(() => {
 
   .empty-state {
     padding: 40px 20px;
-    
+
     .el-empty {
       :deep(.el-empty__description) {
         font-size: 14px;
@@ -923,11 +983,11 @@ onUnmounted(() => {
   .llm-adapters-view {
     padding: 20px;
   }
-  
+
   .page-header {
     .header-actions {
       gap: 8px;
-      
+
       .el-button {
         padding: 8px 12px;
         font-size: 13px;

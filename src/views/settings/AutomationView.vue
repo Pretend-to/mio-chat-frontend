@@ -4,11 +4,7 @@
       <h1>系统任务与自动化</h1>
       <div class="header-actions">
         <el-button @click="handleReset">重置配置</el-button>
-        <el-button
-          type="primary"
-          :loading="saving"
-          @click="handleSave"
-        >
+        <el-button type="primary" :loading="saving" @click="handleSave">
           保存通用配置
         </el-button>
       </div>
@@ -40,7 +36,9 @@
               :value="adapter.id"
             >
               <span style="float: left">{{ adapter.name }}</span>
-              <span style="float: right; color: #8492a6; font-size: 13px">{{ adapter.type }}</span>
+              <span style="float: right; color: #8492a6; font-size: 13px">{{
+                adapter.type
+              }}</span>
             </el-option>
           </el-select>
           <template #extra>
@@ -60,7 +58,8 @@
           />
           <template #extra>
             <span class="form-item-tip">
-              用于指导 AI 生成会话标题的系统提示词。注意：系统会自动过滤推理内容。
+              用于指导 AI
+              生成会话标题的系统提示词。注意：系统会自动过滤推理内容。
             </span>
           </template>
         </el-form-item>
@@ -87,7 +86,12 @@
       <div class="section-title">
         <el-icon><AlarmClock /></el-icon>
         定时任务 (Cron Tasks)
-        <el-button type="primary" size="small" @click="handleAddTask" class="add-btn">
+        <el-button
+          type="primary"
+          size="small"
+          @click="handleAddTask"
+          class="add-btn"
+        >
           新建任务
         </el-button>
       </div>
@@ -110,15 +114,24 @@
         </el-table-column>
         <el-table-column prop="lastRunAt" label="最后运行" width="180">
           <template #default="{ row }">
-            <span v-if="row.lastRunAt">{{ new Date(row.lastRunAt).toLocaleString() }}</span>
+            <span v-if="row.lastRunAt">{{
+              new Date(row.lastRunAt).toLocaleString()
+            }}</span>
             <span v-else class="text-secondary">-</span>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <el-button-group>
-              <el-button size="small" @click="handleEditTask(row)">编辑</el-button>
-              <el-button size="small" type="danger" @click="handleDeleteTask(row)">删除</el-button>
+              <el-button size="small" @click="handleEditTask(row)"
+                >编辑</el-button
+              >
+              <el-button
+                size="small"
+                type="danger"
+                @click="handleDeleteTask(row)"
+                >删除</el-button
+              >
             </el-button-group>
           </template>
         </el-table-column>
@@ -136,13 +149,22 @@
           <el-input v-model="editingTask.name" placeholder="起个名字方便识别" />
         </el-form-item>
         <el-form-item label="Cron 周期">
-          <el-input v-model="editingTask.cron" placeholder="例如: 0 9 * * * (每天上午9点)" />
+          <el-input
+            v-model="editingTask.cron"
+            placeholder="例如: 0 9 * * * (每天上午9点)"
+          />
           <template #extra>
-            <span class="form-item-tip">标准 Cron 格式，或者输入 "+10m" 表示 10 分钟后执行一次。</span>
+            <span class="form-item-tip"
+              >标准 Cron 格式，或者输入 "+10m" 表示 10 分钟后执行一次。</span
+            >
           </template>
         </el-form-item>
         <el-form-item label="执行预设">
-          <el-select v-model="editingTask.preset" placeholder="请选择 Agent 预设" style="width: 100%">
+          <el-select
+            v-model="editingTask.preset"
+            placeholder="请选择 Agent 预设"
+            style="width: 100%"
+          >
             <el-option
               v-for="p in presets"
               :key="p.name"
@@ -162,19 +184,21 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="savingTask" @click="saveTask">确定</el-button>
+        <el-button type="primary" :loading="savingTask" @click="saveTask"
+          >确定</el-button
+        >
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import { ChatLineRound, AlarmClock } from '@element-plus/icons-vue';
-import { useConfigStore } from '@/stores/configStore.js';
-import { taskAPI, configAPI } from '@/lib/configApi.js';
-import { config } from '@/lib/runtime.js';
+import { ref, reactive, onMounted, computed } from "vue";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { ChatLineRound, AlarmClock } from "@element-plus/icons-vue";
+import { useConfigStore } from "@/stores/configStore.js";
+import { taskAPI, configAPI } from "@/lib/configApi.js";
+import { config } from "@/lib/runtime.js";
 
 const configStore = useConfigStore();
 const formRef = ref(null);
@@ -182,9 +206,9 @@ const saving = ref(false);
 
 // 通用配置数据
 const formData = reactive({
-  system_llm_channel: '',
-  system_llm_title_prompt: '',
-  system_llm_compact_prompt: ''
+  system_llm_channel: "",
+  system_llm_title_prompt: "",
+  system_llm_compact_prompt: "",
 });
 const originalData = reactive({});
 
@@ -195,37 +219,39 @@ const dialogVisible = ref(false);
 const savingTask = ref(false);
 const presets = ref([]);
 const editingTask = reactive({
-  id: '',
-  name: '',
-  cron: '',
-  preset: '',
-  prompt: '',
-  status: 'active'
+  id: "",
+  name: "",
+  cron: "",
+  preset: "",
+  prompt: "",
+  status: "active",
 });
 
 // 获取所有适配器列表 (渠道)
 const allAdapters = computed(() => {
   // 与 AddContactor.vue 逻辑保持一致，使用 config 提供的标准列表
-  return config.getLLMProviders().map(p => ({
-    id: p.value,     // 唯一标识 (displayName/instanceId)
-    name: p.label,   // 显示名称
-    type: p.adapterType
+  return config.getLLMProviders().map((p) => ({
+    id: p.value, // 唯一标识 (displayName/instanceId)
+    name: p.label, // 显示名称
+    type: p.adapterType,
   }));
 });
 
 // 加载配置与任务
 const loadData = async () => {
   try {
-    const systemConfig = await configStore.fetchConfigSection('system');
-    formData.system_llm_channel = systemConfig.system_llm_channel || '';
-    formData.system_llm_title_prompt = systemConfig.system_llm_title_prompt || '';
-    formData.system_llm_compact_prompt = systemConfig.system_llm_compact_prompt || '';
+    const systemConfig = await configStore.fetchConfigSection("system");
+    formData.system_llm_channel = systemConfig.system_llm_channel || "";
+    formData.system_llm_title_prompt =
+      systemConfig.system_llm_title_prompt || "";
+    formData.system_llm_compact_prompt =
+      systemConfig.system_llm_compact_prompt || "";
     Object.assign(originalData, formData);
 
     await fetchTasks();
     await fetchPresets();
   } catch (error) {
-    ElMessage.error('加载数据失败：' + error.message);
+    ElMessage.error("加载数据失败：" + error.message);
   }
 };
 
@@ -233,9 +259,9 @@ const fetchTasks = async () => {
   loadingTasks.value = true;
   try {
     const res = await taskAPI.getTasks();
-    tasks.value = res.data.map(t => ({
+    tasks.value = res.data.map((t) => ({
       ...t,
-      isActive: t.status === 'active'
+      isActive: t.status === "active",
     }));
   } finally {
     loadingTasks.value = false;
@@ -244,7 +270,7 @@ const fetchTasks = async () => {
 
 const fetchPresets = async () => {
   // 获取第一页预设（默认 50 个，对大多数系统够用了）
-  const res = await configAPI.getConfigSection('presets');
+  const res = await configAPI.getConfigSection("presets");
   presets.value = res.data.presets || [];
 };
 
@@ -252,11 +278,11 @@ const fetchPresets = async () => {
 const handleSave = async () => {
   try {
     saving.value = true;
-    await configStore.updateConfigSection('system', { ...formData });
-    ElMessage.success('系统配置保存成功');
+    await configStore.updateConfigSection("system", { ...formData });
+    ElMessage.success("系统配置保存成功");
     Object.assign(originalData, formData);
   } catch (error) {
-    ElMessage.error('保存失败');
+    ElMessage.error("保存失败");
   } finally {
     saving.value = false;
   }
@@ -264,18 +290,18 @@ const handleSave = async () => {
 
 const handleReset = () => {
   Object.assign(formData, originalData);
-  ElMessage.info('已重置');
+  ElMessage.info("已重置");
 };
 
 // 任务操作
 const handleAddTask = () => {
   Object.assign(editingTask, {
-    id: '',
-    name: '',
-    cron: '',
-    preset: '',
-    prompt: '',
-    status: 'active'
+    id: "",
+    name: "",
+    cron: "",
+    preset: "",
+    prompt: "",
+    status: "active",
   });
   dialogVisible.value = true;
 };
@@ -286,17 +312,22 @@ const handleEditTask = (row) => {
 };
 
 const saveTask = async () => {
-  if (!editingTask.name || !editingTask.cron || !editingTask.preset || !editingTask.prompt) {
-    return ElMessage.warning('请填写完整任务信息');
+  if (
+    !editingTask.name ||
+    !editingTask.cron ||
+    !editingTask.preset ||
+    !editingTask.prompt
+  ) {
+    return ElMessage.warning("请填写完整任务信息");
   }
   try {
     savingTask.value = true;
     await taskAPI.upsertTask({ ...editingTask });
-    ElMessage.success('任务保存成功');
+    ElMessage.success("任务保存成功");
     dialogVisible.value = false;
     await fetchTasks();
   } catch (error) {
-    ElMessage.error('保存任务失败: ' + error.message);
+    ElMessage.error("保存任务失败: " + error.message);
   } finally {
     savingTask.value = false;
   }
@@ -304,22 +335,24 @@ const saveTask = async () => {
 
 const handleDeleteTask = async (row) => {
   try {
-    await ElMessageBox.confirm(`确定删除任务 "${row.name}" 吗？`, '警告', { type: 'warning' });
+    await ElMessageBox.confirm(`确定删除任务 "${row.name}" 吗？`, "警告", {
+      type: "warning",
+    });
     await taskAPI.deleteTask(row.id);
-    ElMessage.success('已删除');
+    ElMessage.success("已删除");
     await fetchTasks();
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error('删除失败');
+    if (e !== "cancel") ElMessage.error("删除失败");
   }
 };
 
 const handleToggleTask = async (row, val) => {
   try {
     await taskAPI.toggleTask(row.id, val);
-    ElMessage.success(val ? '任务已启用' : '任务已禁用');
+    ElMessage.success(val ? "任务已启用" : "任务已禁用");
   } catch (error) {
     row.isActive = !val; // 恢复 UI 状态
-    ElMessage.error('操作失败');
+    ElMessage.error("操作失败");
   }
 };
 
@@ -353,7 +386,7 @@ onMounted(async () => {
 .config-card {
   margin-bottom: 24px;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 
   .section-title {
     font-size: 18px;

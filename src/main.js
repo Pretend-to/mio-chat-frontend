@@ -36,9 +36,13 @@ app.use(router);
 if (client.inited) {
   client.replayToStore();
 } else {
-  client.on("loaded", () => {
-    client.replayToStore();
-  }, false);
+  client.on(
+    "loaded",
+    () => {
+      client.replayToStore();
+    },
+    false,
+  );
 }
 
 // 在 pinia 激活后才调用 useConnectionStore

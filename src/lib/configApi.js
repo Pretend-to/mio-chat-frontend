@@ -5,7 +5,7 @@
 
 class ConfigAPI {
   constructor() {
-    this.adminCode = '';
+    this.adminCode = "";
     this._initialized = false;
   }
 
@@ -15,10 +15,10 @@ class ConfigAPI {
    */
   init() {
     if (this._initialized) return;
-    
+
     // 从本地存储获取管理员访问码
-    this.adminCode = localStorage.getItem('admin_code') || '';
-    
+    this.adminCode = localStorage.getItem("admin_code") || "";
+
     this._initialized = true;
   }
 
@@ -28,7 +28,7 @@ class ConfigAPI {
    */
   setAdminCode(code) {
     this.adminCode = code;
-    localStorage.setItem('admin_code', code);
+    localStorage.setItem("admin_code", code);
   }
 
   /**
@@ -44,15 +44,15 @@ class ConfigAPI {
     }
 
     const headers = {
-      'x-admin-code': this.adminCode,
-      'Content-Type': 'application/json',
-      ...options.headers
+      "x-admin-code": this.adminCode,
+      "Content-Type": "application/json",
+      ...options.headers,
     };
 
     try {
       const response = await fetch(endpoint, {
         ...options,
-        headers
+        headers,
       });
 
       const data = await response.json();
@@ -62,19 +62,23 @@ class ConfigAPI {
         // 只有在认证失败时才清除本地存储的验证码
         if (response.status === 401 || response.status === 403) {
           // 进一步检查是否真的是认证问题
-          if (data.error === 'UNAUTHORIZED' || data.error === 'FORBIDDEN' || 
-              data.message?.includes('认证') || data.message?.includes('权限') ||
-              data.message?.includes('访问码')) {
-            this.adminCode = '';
-            localStorage.removeItem('admin_code');
+          if (
+            data.error === "UNAUTHORIZED" ||
+            data.error === "FORBIDDEN" ||
+            data.message?.includes("认证") ||
+            data.message?.includes("权限") ||
+            data.message?.includes("访问码")
+          ) {
+            this.adminCode = "";
+            localStorage.removeItem("admin_code");
           }
         }
-        throw new Error(data.message || data.error || '请求失败');
+        throw new Error(data.message || data.error || "请求失败");
       }
 
       // 检查业务错误码
       if (data.code !== 0 && data.code !== undefined) {
-        throw new Error(data.message || '请求失败');
+        throw new Error(data.message || "请求失败");
       }
 
       return data;
@@ -91,7 +95,7 @@ class ConfigAPI {
    * @returns {Promise<object>} 配置数据
    */
   async getConfig() {
-    return this.request('/api/config');
+    return this.request("/api/config");
   }
 
   /**
@@ -110,7 +114,7 @@ class ConfigAPI {
    * @returns {Promise<object>} 存储配置数据
    */
   async getStorageConfig() {
-    return this.request('/api/config/storage');
+    return this.request("/api/config/storage");
   }
 
   /**
@@ -119,9 +123,9 @@ class ConfigAPI {
    * @returns {Promise<object>} 响应数据
    */
   async updateStorageConfig(data) {
-    return this.request('/api/config/storage', {
-      method: 'PUT',
-      body: JSON.stringify(data)
+    return this.request("/api/config/storage", {
+      method: "PUT",
+      body: JSON.stringify(data),
     });
   }
 
@@ -131,9 +135,9 @@ class ConfigAPI {
    * @returns {Promise<object>} 测试结果
    */
   async testStorageConfig(data) {
-    return this.request('/api/config/storage/test', {
-      method: 'POST',
-      body: JSON.stringify(data)
+    return this.request("/api/config/storage/test", {
+      method: "POST",
+      body: JSON.stringify(data),
     });
   }
 
@@ -145,9 +149,9 @@ class ConfigAPI {
    * @returns {Promise<object>} 响应数据
    */
   async updateConfig(data) {
-    return this.request('/api/config', {
-      method: 'PUT',
-      body: JSON.stringify(data)
+    return this.request("/api/config", {
+      method: "PUT",
+      body: JSON.stringify(data),
     });
   }
 
@@ -159,8 +163,8 @@ class ConfigAPI {
    */
   async updateConfigSection(section, data) {
     return this.request(`/api/config/${section}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
+      method: "PUT",
+      body: JSON.stringify(data),
     });
   }
 
@@ -171,7 +175,7 @@ class ConfigAPI {
    * @returns {Promise<object>} 适配器类型数据
    */
   async getAdapterTypes() {
-    return this.request('/api/config/adapter-types');
+    return this.request("/api/config/adapter-types");
   }
 
   /**
@@ -182,8 +186,8 @@ class ConfigAPI {
    */
   async addAdapter(type, data) {
     return this.request(`/api/config/llm/${type}`, {
-      method: 'POST',
-      body: JSON.stringify(data)
+      method: "POST",
+      body: JSON.stringify(data),
     });
   }
 
@@ -196,8 +200,8 @@ class ConfigAPI {
    */
   async updateAdapter(type, index, data) {
     return this.request(`/api/config/llm/${type}/${index}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
+      method: "PUT",
+      body: JSON.stringify(data),
     });
   }
 
@@ -209,7 +213,7 @@ class ConfigAPI {
    */
   async deleteAdapter(type, index) {
     return this.request(`/api/config/llm/${type}/${index}`, {
-      method: 'DELETE'
+      method: "DELETE",
     });
   }
 
@@ -242,8 +246,8 @@ class ConfigAPI {
    * @returns {Promise<object>} 响应数据
    */
   async refreshAllModels() {
-    return this.request('/api/config/refresh-models', {
-      method: 'POST'
+    return this.request("/api/config/refresh-models", {
+      method: "POST",
     });
   }
 
@@ -255,7 +259,7 @@ class ConfigAPI {
    */
   async refreshAdapterModels(type, index) {
     return this.request(`/api/config/llm/${type}/${index}/refresh-models`, {
-      method: 'POST'
+      method: "POST",
     });
   }
 
@@ -267,9 +271,9 @@ class ConfigAPI {
    * @returns {Promise<object>} 验证结果
    */
   async validateConfig(data) {
-    return this.request('/api/config/validate', {
-      method: 'POST',
-      body: JSON.stringify(data)
+    return this.request("/api/config/validate", {
+      method: "POST",
+      body: JSON.stringify(data),
     });
   }
 
@@ -278,8 +282,8 @@ class ConfigAPI {
    * @returns {Promise<object>} 响应数据
    */
   async resetConfig() {
-    return this.request('/api/config/reset', {
-      method: 'POST'
+    return this.request("/api/config/reset", {
+      method: "POST",
     });
   }
 
@@ -290,7 +294,7 @@ class ConfigAPI {
    * @returns {Promise<object>} OneBot 插件选项数据
    */
   async getOneBotPlugins() {
-    return this.request('/api/onebot/plugins');
+    return this.request("/api/onebot/plugins");
   }
 
   /**
@@ -298,7 +302,7 @@ class ConfigAPI {
    * @returns {Promise<object>} OneBot 连接与运行状态数据
    */
   async getOneBotStatus() {
-    return this.request('/api/onebot/status');
+    return this.request("/api/onebot/status");
   }
 
   // ========== 配置导出/导入 ==========
@@ -307,16 +311,16 @@ class ConfigAPI {
    * 导出配置为 JSON 文件
    * @param {string} filename - 文件名
    */
-  async exportConfig(filename = 'mio-chat-config.json') {
+  async exportConfig(filename = "mio-chat-config.json") {
     const response = await this.getConfig();
     const configData = response.data;
-    
+
     const blob = new Blob([JSON.stringify(configData, null, 2)], {
-      type: 'application/json'
+      type: "application/json",
     });
-    
+
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = filename;
     link.click();
@@ -331,20 +335,20 @@ class ConfigAPI {
   async importConfig(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      
+
       reader.onload = (e) => {
         try {
           const config = JSON.parse(e.target.result);
           resolve(config);
         } catch {
-          reject(new Error('无效的 JSON 文件'));
+          reject(new Error("无效的 JSON 文件"));
         }
       };
-      
+
       reader.onerror = () => {
-        reject(new Error('文件读取失败'));
+        reject(new Error("文件读取失败"));
       };
-      
+
       reader.readAsText(file);
     });
   }
@@ -363,7 +367,7 @@ class PluginAPI {
    * @returns {Promise<object>} 插件列表数据
    */
   async listPlugins() {
-    return this.configAPI.request('/api/plugins');
+    return this.configAPI.request("/api/plugins");
   }
 
   /**
@@ -392,8 +396,8 @@ class PluginAPI {
    */
   async updatePluginConfig(pluginName, config) {
     return this.configAPI.request(`/api/plugins/${pluginName}/config`, {
-      method: 'PUT',
-      body: JSON.stringify(config)
+      method: "PUT",
+      body: JSON.stringify(config),
     });
   }
 
@@ -415,10 +419,13 @@ class PluginAPI {
    * @returns {Promise<object>} 执行结果
    */
   async debugTool(pluginName, toolName, parameters, user = null) {
-    return this.configAPI.request(`/api/plugins/${pluginName}/tools/${toolName}/debug`, {
-      method: 'POST',
-      body: JSON.stringify({ parameters, user })
-    });
+    return this.configAPI.request(
+      `/api/plugins/${pluginName}/tools/${toolName}/debug`,
+      {
+        method: "POST",
+        body: JSON.stringify({ parameters, user }),
+      },
+    );
   }
 
   /**
@@ -428,7 +435,7 @@ class PluginAPI {
    */
   async reloadPlugin(pluginName) {
     return this.configAPI.request(`/api/plugins/${pluginName}/reload`, {
-      method: 'POST'
+      method: "POST",
     });
   }
 
@@ -437,8 +444,8 @@ class PluginAPI {
    * @returns {Promise<object>} 响应数据
    */
   async reloadAllPlugins() {
-    return this.configAPI.request('/api/plugins/reload-all', {
-      method: 'POST'
+    return this.configAPI.request("/api/plugins/reload-all", {
+      method: "POST",
     });
   }
 
@@ -450,8 +457,8 @@ class PluginAPI {
    */
   async togglePlugin(pluginName, enabled) {
     return this.configAPI.request(`/api/plugins/${pluginName}/toggle`, {
-      method: 'POST',
-      body: JSON.stringify({ enabled })
+      method: "POST",
+      body: JSON.stringify({ enabled }),
     });
   }
 }
@@ -469,7 +476,7 @@ class SkillAPI {
    * @returns {Promise<object>} 技能目录数据
    */
   async getSkills() {
-    return this.configAPI.request('/api/skills');
+    return this.configAPI.request("/api/skills");
   }
 
   /**
@@ -477,8 +484,8 @@ class SkillAPI {
    * @returns {Promise<object>} 更新后的技能目录
    */
   async reloadSkills() {
-    return this.configAPI.request('/api/skills/reload', {
-      method: 'POST'
+    return this.configAPI.request("/api/skills/reload", {
+      method: "POST",
     });
   }
 }
@@ -496,7 +503,7 @@ class TaskAPI {
    * @returns {Promise<object>} 任务列表数据
    */
   async getTasks() {
-    return this.configAPI.request('/api/tasks');
+    return this.configAPI.request("/api/tasks");
   }
 
   /**
@@ -505,9 +512,9 @@ class TaskAPI {
    * @returns {Promise<object>} 响应数据
    */
   async upsertTask(taskData) {
-    return this.configAPI.request('/api/tasks', {
-      method: 'POST',
-      body: JSON.stringify(taskData)
+    return this.configAPI.request("/api/tasks", {
+      method: "POST",
+      body: JSON.stringify(taskData),
     });
   }
 
@@ -518,7 +525,7 @@ class TaskAPI {
    */
   async deleteTask(id) {
     return this.configAPI.request(`/api/tasks/${id}`, {
-      method: 'DELETE'
+      method: "DELETE",
     });
   }
 
@@ -530,8 +537,8 @@ class TaskAPI {
    */
   async toggleTask(id, enable) {
     return this.configAPI.request(`/api/tasks/${id}/toggle`, {
-      method: 'POST',
-      body: JSON.stringify({ enable })
+      method: "POST",
+      body: JSON.stringify({ enable }),
     });
   }
 }

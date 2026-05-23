@@ -37,18 +37,10 @@
             >
               刷新
             </el-button>
-            <el-button
-              type="primary"
-              :icon="Plus"
-              @click="handleCreate"
-            >
+            <el-button type="primary" :icon="Plus" @click="handleCreate">
               创建预设
             </el-button>
-            <el-button
-              type="success"
-              :icon="Upload"
-              @click="handleImport"
-            >
+            <el-button type="success" :icon="Upload" @click="handleImport">
               导入预设
             </el-button>
           </div>
@@ -62,23 +54,33 @@
           </div>
           <div class="stat-item">
             <span class="stat-label">常用：</span>
-            <span class="stat-value">{{ presetsStore.countByCategory?.common ?? 0 }} 个</span>
+            <span class="stat-value"
+              >{{ presetsStore.countByCategory?.common ?? 0 }} 个</span
+            >
           </div>
           <div class="stat-item">
             <span class="stat-label">推荐：</span>
-            <span class="stat-value">{{ presetsStore.countByCategory?.recommended ?? 0 }} 个</span>
+            <span class="stat-value"
+              >{{ presetsStore.countByCategory?.recommended ?? 0 }} 个</span
+            >
           </div>
           <div class="stat-item">
             <span class="stat-label">隐藏：</span>
-            <span class="stat-value">{{ presetsStore.countByCategory?.hidden ?? 0 }} 个</span>
+            <span class="stat-value"
+              >{{ presetsStore.countByCategory?.hidden ?? 0 }} 个</span
+            >
           </div>
           <div class="stat-item">
             <span class="stat-label">内置：</span>
-            <span class="stat-value">{{ presetsStore.countBySource?.['built-in'] ?? 0 }} 个</span>
+            <span class="stat-value"
+              >{{ presetsStore.countBySource?.["built-in"] ?? 0 }} 个</span
+            >
           </div>
           <div class="stat-item">
             <span class="stat-label">自定义：</span>
-            <span class="stat-value">{{ presetsStore.countBySource?.custom ?? 0 }} 个</span>
+            <span class="stat-value"
+              >{{ presetsStore.countBySource?.custom ?? 0 }} 个</span
+            >
           </div>
         </div>
 
@@ -121,7 +123,12 @@
 
         <!-- 预设列表 -->
         <div class="presets-list">
-          <div v-if="(!displayedPresets || displayedPresets.length === 0) && !loading" class="empty-state">
+          <div
+            v-if="
+              (!displayedPresets || displayedPresets.length === 0) && !loading
+            "
+            class="empty-state"
+          >
             <el-empty description="暂无预设">
               <el-button type="primary" :icon="Plus" @click="handleCreate">
                 创建预设
@@ -130,12 +137,28 @@
           </div>
 
           <!-- 真正的瀑布流 -->
-          <div v-else ref="waterfallRef" class="presets-waterfall" :style="waterfallStyle">
-            <div v-for="(card, idx) in waterfallCards" :key="card.key" ref="cardRefs" class="waterfall-item"
-              :style="card.style" :data-index="idx">
-              <preset-card :preset="card.data" :selected="isPresetSelected(card.data)"
-                @select="(s) => handlePresetSelect(getPresetId(card.data), s)" @edit="handleEdit" @delete="handleDelete"
-                @export="handleExport" />
+          <div
+            v-else
+            ref="waterfallRef"
+            class="presets-waterfall"
+            :style="waterfallStyle"
+          >
+            <div
+              v-for="(card, idx) in waterfallCards"
+              :key="card.key"
+              ref="cardRefs"
+              class="waterfall-item"
+              :style="card.style"
+              :data-index="idx"
+            >
+              <preset-card
+                :preset="card.data"
+                :selected="isPresetSelected(card.data)"
+                @select="(s) => handlePresetSelect(getPresetId(card.data), s)"
+                @edit="handleEdit"
+                @delete="handleDelete"
+                @export="handleExport"
+              />
             </div>
           </div>
 
@@ -145,7 +168,11 @@
               <el-skeleton :rows="2" animated />
             </div>
             <div v-else-if="loadError" class="load-error">
-              <el-result icon="warning" title="加载失败" sub-title="网络错误，请重试">
+              <el-result
+                icon="warning"
+                title="加载失败"
+                sub-title="网络错误，请重试"
+              >
                 <template #extra>
                   <el-button type="primary" @click="retryLoad">重试</el-button>
                 </template>
@@ -192,30 +219,24 @@
 </template>
 
 <script setup>
-import PresetCard from '@/components/settings/PresetCard.vue';
-import PresetEditor from '@/components/settings/PresetEditor.vue';
-import { usePresetsStore } from '@/stores/presetsStore.js';
-import {
-  Delete,
-  Plus,
-  Refresh,
-  Search,
-  Upload
-} from '@element-plus/icons-vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useWaterfall } from '@/composables/useWaterfall.js';
+import PresetCard from "@/components/settings/PresetCard.vue";
+import PresetEditor from "@/components/settings/PresetEditor.vue";
+import { usePresetsStore } from "@/stores/presetsStore.js";
+import { Delete, Plus, Refresh, Search, Upload } from "@element-plus/icons-vue";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { useWaterfall } from "@/composables/useWaterfall.js";
 
 const presetsStore = usePresetsStore();
 
 const loading = ref(true);
 const refreshing = ref(false);
-const searchKeyword = ref('');
-const categoryFilter = ref('');
-const sourceFilter = ref('');
+const searchKeyword = ref("");
+const categoryFilter = ref("");
+const sourceFilter = ref("");
 const selectedPresets = ref([]);
 const editorVisible = ref(false);
-const editorMode = ref('create');
+const editorMode = ref("create");
 const editorPreset = ref(null);
 const fileInput = ref(null);
 const waterfallRef = ref(null);
@@ -226,7 +247,7 @@ const loadTrigger = ref(null);
 
 // 获取预设ID的辅助函数
 const getPresetId = (preset) => {
-  return preset?.name || ''; // 根据文档，预设的唯一标识符就是 name 字段
+  return preset?.name || ""; // 根据文档，预设的唯一标识符就是 name 字段
 };
 
 // 获取预设数据
@@ -247,22 +268,30 @@ const {
   observeItems,
   layoutCards,
 } = useWaterfall(displayedPresets, waterfallRef, {
-  getId: getPresetId
+  getId: getPresetId,
 });
 
 // 监听数据变化重新布局
-watch(displayedPresets, () => {
-  nextTick(() => {
-    layoutCards();
-  });
-}, { deep: true });
+watch(
+  displayedPresets,
+  () => {
+    nextTick(() => {
+      layoutCards();
+    });
+  },
+  { deep: true },
+);
 
 // 监听卡片 ref 变化，开始观察每个卡片的高度
-watch(cardRefs, (newRefs) => {
-  if (newRefs.length > 0) {
-    observeItems(newRefs);
-  }
-}, { deep: true });
+watch(
+  cardRefs,
+  (newRefs) => {
+    if (newRefs.length > 0) {
+      observeItems(newRefs);
+    }
+  },
+  { deep: true },
+);
 
 // 分页相关
 const currentPage = ref(1);
@@ -303,7 +332,7 @@ watch([categoryFilter, sourceFilter], () => {
 
 // 监听 hasMore 变化，当没有更多数据时清理观察器
 watch(hasMore, (newHasMore, oldHasMore) => {
-  console.log('hasMore changed:', { newHasMore, oldHasMore });
+  console.log("hasMore changed:", { newHasMore, oldHasMore });
   if (!newHasMore) {
     cleanupObserver();
   } else if (newHasMore && !oldHasMore) {
@@ -330,73 +359,73 @@ const handleFilterChange = async () => {
 const fetchPresetsWithFilters = async () => {
   const params = {
     start: 0,
-    nums: pageSize.value
+    nums: pageSize.value,
   };
-  
+
   if (searchKeyword.value) {
     params.keyword = searchKeyword.value;
   }
-  
+
   if (categoryFilter.value) {
     params.category = categoryFilter.value;
   }
-  
+
   if (sourceFilter.value) {
     params.source = sourceFilter.value;
   }
-  
+
   try {
     await presetsStore.fetchPresets(params);
   } catch (error) {
-    ElMessage.error('获取预设失败：' + error.message);
+    ElMessage.error("获取预设失败：" + error.message);
   }
 };
 
 // 加载更多
 const loadMore = async () => {
-  console.log('loadMore called', {
+  console.log("loadMore called", {
     hasMore: hasMore.value,
     loadingMore: loadingMore.value,
-    pagination: presetsStore.pagination
+    pagination: presetsStore.pagination,
   });
-  
+
   if (hasMore.value && !loadingMore.value) {
     loadingMore.value = true;
     loadError.value = false;
-    
+
     const params = {
       start: presetsStore.pagination.start + presetsStore.pagination.nums,
-      nums: pageSize.value
+      nums: pageSize.value,
     };
-    
+
     if (searchKeyword.value) {
       params.keyword = searchKeyword.value;
     }
-    
+
     if (categoryFilter.value) {
       params.category = categoryFilter.value;
     }
-    
+
     if (sourceFilter.value) {
       params.source = sourceFilter.value;
     }
-    
-    console.log('Loading more with params:', params);
-    
+
+    console.log("Loading more with params:", params);
+
     try {
       await presetsStore.fetchPresets(params, true); // 使用 append 模式
-      console.log('Load more successful');
+      console.log("Load more successful");
     } catch (error) {
-      console.error('Load more failed:', error);
+      console.error("Load more failed:", error);
       loadError.value = true;
-      ElMessage.error('加载更多失败：' + error.message);
+      ElMessage.error("加载更多失败：" + error.message);
     } finally {
       loadingMore.value = false;
     }
   } else {
-    console.log('loadMore conditions not met', {
+    console.log("loadMore conditions not met", {
       hasMore: hasMore.value,
-      loadingMore: loadingMore.value
+      loadingMore: loadingMore.value,
     });
   }
 };
@@ -431,9 +460,9 @@ const handleRefresh = async () => {
   refreshing.value = true;
   try {
     await presetsStore.fetchPresets();
-    ElMessage.success('预设列表刷新成功');
+    ElMessage.success("预设列表刷新成功");
   } catch (error) {
-    ElMessage.error('刷新失败：' + error.message);
+    ElMessage.error("刷新失败：" + error.message);
   } finally {
     refreshing.value = false;
   }
@@ -441,14 +470,14 @@ const handleRefresh = async () => {
 
 // 创建预设
 const handleCreate = () => {
-  editorMode.value = 'create';
+  editorMode.value = "create";
   editorPreset.value = null;
   editorVisible.value = true;
 };
 
 // 编辑预设
 const handleEdit = (preset) => {
-  editorMode.value = 'edit';
+  editorMode.value = "edit";
   editorPreset.value = preset;
   editorVisible.value = true;
 };
@@ -458,23 +487,23 @@ const handleDelete = async (preset) => {
   try {
     await ElMessageBox.confirm(
       `确定要删除预设 "${preset.name}" 吗？`,
-      '删除确认',
+      "删除确认",
       {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
+        confirmButtonText: "删除",
+        cancelButtonText: "取消",
+        type: "warning",
+      },
     );
 
     const presetId = preset.name;
     if (!presetId) {
-      throw new Error('预设名称不能为空');
+      throw new Error("预设名称不能为空");
     }
     await presetsStore.deletePreset(presetId);
-    ElMessage.success('删除成功');
+    ElMessage.success("删除成功");
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败：' + error.message);
+    if (error !== "cancel") {
+      ElMessage.error("删除失败：" + error.message);
     }
   }
 };
@@ -484,21 +513,23 @@ const handleBatchDelete = async () => {
   try {
     await ElMessageBox.confirm(
       `确定要删除选中的 ${selectedPresets.value.length} 个预设吗？`,
-      '批量删除',
+      "批量删除",
       {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
+        confirmButtonText: "删除",
+        cancelButtonText: "取消",
+        type: "warning",
+      },
     );
 
-    const results = await presetsStore.batchDeletePresets(selectedPresets.value);
-    const successCount = results.filter(r => r.success).length;
+    const results = await presetsStore.batchDeletePresets(
+      selectedPresets.value,
+    );
+    const successCount = results.filter((r) => r.success).length;
     ElMessage.success(`成功删除 ${successCount} 个预设`);
     selectedPresets.value = [];
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('批量删除失败：' + error.message);
+    if (error !== "cancel") {
+      ElMessage.error("批量删除失败：" + error.message);
     }
   }
 };
@@ -508,12 +539,12 @@ const handleExport = async (preset) => {
   try {
     const presetId = preset.name;
     if (!presetId) {
-      throw new Error('预设名称不能为空');
+      throw new Error("预设名称不能为空");
     }
     await presetsStore.exportPreset(presetId);
-    ElMessage.success('导出成功');
+    ElMessage.success("导出成功");
   } catch (error) {
-    ElMessage.error('导出失败：' + error.message);
+    ElMessage.error("导出失败：" + error.message);
   }
 };
 
@@ -529,11 +560,11 @@ const handleFileSelect = async (event) => {
 
   try {
     await presetsStore.importPreset(file);
-    ElMessage.success('导入成功');
+    ElMessage.success("导入成功");
     // 清空文件选择
-    event.target.value = '';
+    event.target.value = "";
   } catch (error) {
-    ElMessage.error('导入失败：' + error.message);
+    ElMessage.error("导入失败：" + error.message);
   }
 };
 
@@ -545,25 +576,27 @@ const handleEditorClose = () => {
 // 编辑器提交
 const handleEditorSubmit = async ({ data, mode }) => {
   try {
-    if (mode === 'create') {
+    if (mode === "create") {
       await presetsStore.createPreset(data);
-      ElMessage.success('创建成功');
+      ElMessage.success("创建成功");
       // 创建成功后关闭编辑器
       editorVisible.value = false;
     } else {
       // 使用预设的名称作为标识符
       const presetId = editorPreset.value.name;
       if (!presetId) {
-        ElMessage.error('预设名称不能为空');
+        ElMessage.error("预设名称不能为空");
         return; // 不关闭编辑器
       }
       await presetsStore.updatePreset(presetId, data);
-      ElMessage.success('更新成功');
+      ElMessage.success("更新成功");
       // 更新成功后关闭编辑器
       editorVisible.value = false;
     }
   } catch (error) {
-    ElMessage.error(mode === 'create' ? '创建失败：' : '更新失败：' + error.message);
+    ElMessage.error(
+      mode === "create" ? "创建失败：" : "更新失败：" + error.message,
+    );
     // 不重新抛出错误，只显示toast，编辑器保持打开
   }
 };
@@ -573,14 +606,14 @@ let observer = null;
 
 // 设置无限滚动观察器
 const setupInfiniteScroll = () => {
-  console.log('setupInfiniteScroll called', {
+  console.log("setupInfiniteScroll called", {
     loadTrigger: loadTrigger.value,
     hasMore: hasMore.value,
-    loadingMore: loadingMore.value
+    loadingMore: loadingMore.value,
   });
-  
+
   if (!loadTrigger.value) {
-    console.log('loadTrigger element not found');
+    console.log("loadTrigger element not found");
     return;
   }
 
@@ -588,27 +621,27 @@ const setupInfiniteScroll = () => {
   observer = new IntersectionObserver(
     (entries) => {
       const entry = entries[0];
-      console.log('Observer triggered', {
+      console.log("Observer triggered", {
         isIntersecting: entry.isIntersecting,
         hasMore: hasMore.value,
-        loadingMore: loadingMore.value
+        loadingMore: loadingMore.value,
       });
-      
+
       // 当触发器元素进入视口时，加载更多数据
       if (entry.isIntersecting && hasMore.value && !loadingMore.value) {
-        console.log('Loading more data...');
+        console.log("Loading more data...");
         loadMore();
       }
     },
     {
       // 提前 100px 触发加载
-      rootMargin: '100px',
-      threshold: 0.1
-    }
+      rootMargin: "100px",
+      threshold: 0.1,
+    },
   );
 
   observer.observe(loadTrigger.value);
-  console.log('Observer set up successfully');
+  console.log("Observer set up successfully");
 };
 
 // 清理观察器
@@ -626,7 +659,7 @@ onMounted(async () => {
     // 初始加载
     await fetchPresetsWithFilters();
   } catch (error) {
-    ElMessage.error('加载预设失败：' + error.message);
+    ElMessage.error("加载预设失败：" + error.message);
   } finally {
     loading.value = false;
     // 必须等待 nextTick，让 v-if="!loading" 渲染出 waterfallRef 对应的 DOM
@@ -656,8 +689,6 @@ onUnmounted(() => {
 .fade-leave-to {
   opacity: 0;
 }
-
-
 
 .presets-view {
   padding: 24px;
@@ -689,7 +720,12 @@ onUnmounted(() => {
         width: 120px;
         height: 32px;
         border-radius: 4px;
-        background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 50%, #f2f2f2 75%);
+        background: linear-gradient(
+          90deg,
+          #f2f2f2 25%,
+          #e6e6e6 50%,
+          #f2f2f2 75%
+        );
         background-size: 200% 100%;
         animation: skeleton-loading 1.5s ease-in-out infinite;
       }
@@ -714,7 +750,12 @@ onUnmounted(() => {
         flex: 1;
         margin: 12px;
         border-radius: 4px;
-        background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 50%, #f2f2f2 75%);
+        background: linear-gradient(
+          90deg,
+          #f2f2f2 25%,
+          #e6e6e6 50%,
+          #f2f2f2 75%
+        );
         background-size: 200% 100%;
         animation: skeleton-loading 1.5s ease-in-out infinite;
       }
@@ -793,7 +834,7 @@ onUnmounted(() => {
 
   @media (max-width: 768px) {
     gap: 12px;
-    
+
     .stat-item {
       flex: 1;
       min-width: calc(50% - 6px);
@@ -877,16 +918,16 @@ onUnmounted(() => {
     justify-content: center;
     font-size: 12px;
     color: #409eff;
-    
+
     &::after {
-      content: '滚动触发器';
+      content: "滚动触发器";
     }
   }
 }
 
 .loading-more {
   margin: 24px 0;
-  
+
   :deep(.el-skeleton) {
     .el-skeleton__item {
       background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 50%, #f2f2f2 75%);
@@ -898,19 +939,19 @@ onUnmounted(() => {
 
 .load-error {
   margin: 24px 0;
-  
+
   :deep(.el-result) {
     padding: 20px;
-    
+
     .el-result__icon {
       margin-bottom: 12px;
     }
-    
+
     .el-result__title {
       margin-bottom: 8px;
       font-size: 16px;
     }
-    
+
     .el-result__subtitle {
       margin-bottom: 16px;
       font-size: 14px;
@@ -920,14 +961,14 @@ onUnmounted(() => {
 
 .no-more {
   margin: 32px 0;
-  
+
   .no-more-text {
     color: #909399;
     font-size: 14px;
     padding: 0 16px;
     background: #f5f7fa;
   }
-  
+
   :deep(.el-divider__text) {
     background: #f5f7fa;
   }

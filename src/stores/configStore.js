@@ -4,43 +4,43 @@
  * 使用 Composition API 风格
  */
 
-import { configAPI } from '@/lib/configApi.js';
-import { defineStore } from 'pinia';
-import { computed, ref } from 'vue';
+import { configAPI } from "@/lib/configApi.js";
+import { defineStore } from "pinia";
+import { computed, ref } from "vue";
 
-export const useConfigStore = defineStore('config', () => {
+export const useConfigStore = defineStore("config", () => {
   // ========== State ==========
-  
+
   // 完整配置
   const config = ref(null);
-  
+
   // 适配器类型信息
   const adapterTypes = ref({
     types: [],
     adapters: [],
-    count: 0
+    count: 0,
   });
-  
+
   // LLM 适配器
   const adapters = ref({});
-  
+
   // 模型列表 { provider: [{ owner, models }] }
-  const models = ref({}); 
-  
+  const models = ref({});
+
   // 加载状态
   const loading = ref(false);
-  
+
   // 是否需要重启服务
   const needRestart = ref(false);
-  
+
   // 管理员验证码
-  const adminCode = ref(localStorage.getItem('admin_code') || '');
-  
+  const adminCode = ref(localStorage.getItem("admin_code") || "");
+
   // 选中的适配器（用于批量操作）
   const selectedAdapters = ref([]);
 
   // ========== Getters ==========
-  
+
   /**
    * 获取所有启用的适配器
    */
@@ -60,8 +60,10 @@ export const useConfigStore = defineStore('config', () => {
    * 获取适配器总数
    */
   const totalAdapters = computed(() => {
-    return Object.values(adapters.value)
-      .reduce((sum, arr) => sum + arr.length, 0);
+    return Object.values(adapters.value).reduce(
+      (sum, arr) => sum + arr.length,
+      0,
+    );
   });
 
   /**
@@ -69,8 +71,8 @@ export const useConfigStore = defineStore('config', () => {
    */
   const enabledAdaptersCount = computed(() => {
     let count = 0;
-    Object.values(adapters.value).forEach(instances => {
-      instances.forEach(adapter => {
+    Object.values(adapters.value).forEach((instances) => {
+      instances.forEach((adapter) => {
         if (adapter.enable) count++;
       });
     });
@@ -82,9 +84,9 @@ export const useConfigStore = defineStore('config', () => {
    */
   const totalModelsCount = computed(() => {
     let count = 0;
-    Object.values(models.value).forEach(providerModels => {
+    Object.values(models.value).forEach((providerModels) => {
       if (Array.isArray(providerModels)) {
-        providerModels.forEach(group => {
+        providerModels.forEach((group) => {
           if (group.models && Array.isArray(group.models)) {
             count += group.models.length;
           }
@@ -96,7 +98,7 @@ export const useConfigStore = defineStore('config', () => {
 
   // 插件数据
   const plugins = ref([]);
-  
+
   /**
    * 获取可用插件总数
    */
@@ -108,7 +110,10 @@ export const useConfigStore = defineStore('config', () => {
    * 获取可用工具总数
    */
   const totalToolsCount = computed(() => {
-    return plugins.value.reduce((sum, plugin) => sum + (plugin.toolCount || 0), 0);
+    return plugins.value.reduce(
+      (sum, plugin) => sum + (plugin.toolCount || 0),
+      0,
+    );
   });
 
   /**
@@ -117,7 +122,7 @@ export const useConfigStore = defineStore('config', () => {
   const isAuthenticated = computed(() => !!adminCode.value);
 
   // ========== Actions ==========
-  
+
   /**
    * 设置管理员验证码
    */
@@ -135,7 +140,7 @@ export const useConfigStore = defineStore('config', () => {
       adapterTypes.value = response.data;
       return response.data;
     } catch (error) {
-      console.error('获取适配器类型失败:', error);
+      console.error("获取适配器类型失败:", error);
       throw error;
     }
   }
@@ -144,9 +149,9 @@ export const useConfigStore = defineStore('config', () => {
    * 清除管理员验证码
    */
   function clearAdminCode() {
-    adminCode.value = '';
-    localStorage.removeItem('admin_code');
-    configAPI.adminCode = '';
+    adminCode.value = "";
+    localStorage.removeItem("admin_code");
+    configAPI.adminCode = "";
   }
 
   /**
@@ -162,9 +167,12 @@ export const useConfigStore = defineStore('config', () => {
       models.value = response.data.models || {};
       return response.data;
     } catch (error) {
-      console.error('获取配置失败:', error);
+      console.error("获取配置失败:", error);
       // 如果是认证失败，清除验证码
-      if (error.message.includes('验证码') || error.message.includes('访问被拒绝')) {
+      if (
+        error.message.includes("验证码") ||
+        error.message.includes("访问被拒绝")
+      ) {
         clearAdminCode();
       }
       throw error;
@@ -194,17 +202,17 @@ export const useConfigStore = defineStore('config', () => {
    */
   async function fetchPlugins() {
     try {
-      const result = await configAPI.request('/api/plugins');
+      const result = await configAPI.request("/api/plugins");
       if (result.code === 0) {
         plugins.value = result.data.plugins || [];
         return result.data.plugins;
       } else {
-        console.error('获取插件列表失败:', result.message);
+        console.error("获取插件列表失败:", result.message);
         plugins.value = [];
         return [];
       }
     } catch (error) {
-      console.error('获取插件列表失败:', error);
+      console.error("获取插件列表失败:", error);
       plugins.value = [];
       throw error;
     }
@@ -216,16 +224,16 @@ export const useConfigStore = defineStore('config', () => {
   async function updateConfig(data) {
     try {
       const response = await configAPI.updateConfig(data);
-      
+
       // 标记需要重启（非 LLM 适配器配置）
       needRestart.value = true;
-      
+
       // 重新获取配置
       await fetchConfig();
-      
+
       return response.data;
     } catch (error) {
-      console.error('更新配置失败:', error);
+      console.error("更新配置失败:", error);
       throw error;
     }
   }
@@ -236,25 +244,25 @@ export const useConfigStore = defineStore('config', () => {
   async function updateConfigSection(section, data) {
     try {
       const response = await configAPI.updateConfigSection(section, data);
-      
+
       // 更新本地状态
       if (config.value) {
         config.value[section] = data;
       }
-      
+
       // 非 LLM 适配器、OneBot、Storage、Web、System、Debug 和 Server 配置不需要手动重启（前两者支持热更新和自动重启）
       if (
-        section !== 'llm_adapters' && 
-        section !== 'onebot' && 
-        section !== 'storage' && 
-        section !== 'web' && 
-        section !== 'system' &&
-        section !== 'debug' &&
-        section !== 'server'
+        section !== "llm_adapters" &&
+        section !== "onebot" &&
+        section !== "storage" &&
+        section !== "web" &&
+        section !== "system" &&
+        section !== "debug" &&
+        section !== "server"
       ) {
         needRestart.value = true;
       }
-      
+
       return response.data;
     } catch (error) {
       console.error(`更新配置节点 ${section} 失败:`, error);
@@ -273,7 +281,7 @@ export const useConfigStore = defineStore('config', () => {
       }
       return response.data;
     } catch (error) {
-      console.error('获取存储配置失败:', error);
+      console.error("获取存储配置失败:", error);
       throw error;
     }
   }
@@ -290,7 +298,7 @@ export const useConfigStore = defineStore('config', () => {
       // 存储配置支持热更新，不需要设置 needRestart
       return response.data;
     } catch (error) {
-      console.error('更新存储配置失败:', error);
+      console.error("更新存储配置失败:", error);
       throw error;
     }
   }
@@ -303,7 +311,7 @@ export const useConfigStore = defineStore('config', () => {
       const response = await configAPI.testStorageConfig(data);
       return response.data;
     } catch (error) {
-      console.error('测试存储配置失败:', error);
+      console.error("测试存储配置失败:", error);
       throw error;
     }
   }
@@ -314,14 +322,14 @@ export const useConfigStore = defineStore('config', () => {
   async function addAdapter(type, data) {
     try {
       const response = await configAPI.addAdapter(type, data);
-      
+
       // 更新本地状态（热更新，无需重启）
       await fetchConfig();
       models.value = response.data.models || {};
-      
+
       return response.data;
     } catch (error) {
-      console.error('添加适配器失败:', error);
+      console.error("添加适配器失败:", error);
       throw error;
     }
   }
@@ -342,7 +350,7 @@ export const useConfigStore = defineStore('config', () => {
       // 可选：同步 providers 等其他字段
       return response.data;
     } catch (error) {
-      console.error('更新适配器失败:', error);
+      console.error("更新适配器失败:", error);
       throw error;
     }
   }
@@ -353,16 +361,16 @@ export const useConfigStore = defineStore('config', () => {
   async function deleteAdapter(type, index) {
     try {
       const response = await configAPI.deleteAdapter(type, index);
-      
+
       // 更新本地状态
       if (adapters.value[type]) {
         adapters.value[type].splice(index, 1);
       }
       models.value = response.data.models || {};
-      
+
       return response.data;
     } catch (error) {
-      console.error('删除适配器失败:', error);
+      console.error("删除适配器失败:", error);
       throw error;
     }
   }
@@ -373,13 +381,13 @@ export const useConfigStore = defineStore('config', () => {
   async function batchDeleteAdapters(adaptersList) {
     try {
       const results = await configAPI.batchDeleteAdapters(adaptersList);
-      
+
       // 重新获取配置
       await fetchConfig();
-      
+
       return results;
     } catch (error) {
-      console.error('批量删除适配器失败:', error);
+      console.error("批量删除适配器失败:", error);
       throw error;
     }
   }
@@ -389,19 +397,19 @@ export const useConfigStore = defineStore('config', () => {
    */
   async function batchToggleAdapters(adaptersList, enable) {
     const results = [];
-    
+
     for (const adapter of adaptersList) {
       try {
         const adapterData = adapters.value[adapter.type][adapter.index];
         const updatedData = { ...adapterData, enable };
-        
+
         await updateAdapter(adapter.type, adapter.index, updatedData);
         results.push({ success: true, adapter });
       } catch (error) {
         results.push({ success: false, adapter, error: error.message });
       }
     }
-    
+
     return results;
   }
 
@@ -414,7 +422,7 @@ export const useConfigStore = defineStore('config', () => {
       models.value = response.data.models || {};
       return response.data;
     } catch (error) {
-      console.error('刷新模型列表失败:', error);
+      console.error("刷新模型列表失败:", error);
       throw error;
     }
   }
@@ -428,7 +436,7 @@ export const useConfigStore = defineStore('config', () => {
       models.value = response.data.models || {};
       return response.data;
     } catch (error) {
-      console.error('刷新适配器模型列表失败:', error);
+      console.error("刷新适配器模型列表失败:", error);
       throw error;
     }
   }
@@ -441,7 +449,7 @@ export const useConfigStore = defineStore('config', () => {
       const response = await configAPI.validateConfig(data);
       return response.data;
     } catch (error) {
-      console.error('验证配置失败:', error);
+      console.error("验证配置失败:", error);
       throw error;
     }
   }
@@ -456,7 +464,7 @@ export const useConfigStore = defineStore('config', () => {
       await fetchConfig();
       return response.data;
     } catch (error) {
-      console.error('重置配置失败:', error);
+      console.error("重置配置失败:", error);
       throw error;
     }
   }
@@ -468,7 +476,7 @@ export const useConfigStore = defineStore('config', () => {
     try {
       await configAPI.exportConfig(filename);
     } catch (error) {
-      console.error('导出配置失败:', error);
+      console.error("导出配置失败:", error);
       throw error;
     }
   }
@@ -481,7 +489,7 @@ export const useConfigStore = defineStore('config', () => {
       const configData = await configAPI.importConfig(file);
       return configData;
     } catch (error) {
-      console.error('导入配置失败:', error);
+      console.error("导入配置失败:", error);
       throw error;
     }
   }
@@ -494,7 +502,7 @@ export const useConfigStore = defineStore('config', () => {
       const response = await configAPI.getOneBotPlugins();
       return response.data;
     } catch (error) {
-      console.error('获取 OneBot 插件选项失败:', error);
+      console.error("获取 OneBot 插件选项失败:", error);
       throw error;
     }
   }
@@ -507,7 +515,7 @@ export const useConfigStore = defineStore('config', () => {
       const response = await configAPI.getOneBotStatus();
       return response.data;
     } catch (error) {
-      console.error('获取 OneBot 连接状态失败:', error);
+      console.error("获取 OneBot 连接状态失败:", error);
       throw error;
     }
   }
@@ -517,8 +525,10 @@ export const useConfigStore = defineStore('config', () => {
    */
   function toggleAdapterSelection(type, index) {
     const key = `${type}-${index}`;
-    const idx = selectedAdapters.value.findIndex(a => `${a.type}-${a.index}` === key);
-    
+    const idx = selectedAdapters.value.findIndex(
+      (a) => `${a.type}-${a.index}` === key,
+    );
+
     if (idx > -1) {
       selectedAdapters.value.splice(idx, 1);
     } else {
@@ -538,11 +548,11 @@ export const useConfigStore = defineStore('config', () => {
    */
   function isAdapterSelected(type, index) {
     const key = `${type}-${index}`;
-    return selectedAdapters.value.some(a => `${a.type}-${a.index}` === key);
+    return selectedAdapters.value.some((a) => `${a.type}-${a.index}` === key);
   }
 
   // ========== 返回公开的 API ==========
-  
+
   return {
     // State
     config,
@@ -554,7 +564,7 @@ export const useConfigStore = defineStore('config', () => {
     needRestart,
     adminCode,
     selectedAdapters,
-    
+
     // Getters
     enabledAdapters,
     totalAdapters,
@@ -563,7 +573,7 @@ export const useConfigStore = defineStore('config', () => {
     totalPluginsCount,
     totalToolsCount,
     isAuthenticated,
-    
+
     // Actions
     setAdminCode,
     clearAdminCode,
@@ -591,6 +601,6 @@ export const useConfigStore = defineStore('config', () => {
     fetchOneBotStatus,
     toggleAdapterSelection,
     clearAdapterSelection,
-    isAdapterSelected
+    isAdapterSelected,
   };
 });

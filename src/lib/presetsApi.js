@@ -3,7 +3,7 @@
  * 用于对接后端预设管理接口
  */
 
-import { configAPI } from './configApi.js';
+import { configAPI } from "./configApi.js";
 
 class PresetsAPI {
   constructor() {
@@ -20,7 +20,7 @@ class PresetsAPI {
    */
   async getPresets(params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    const endpoint = `/api/config/presets${queryString ? '?' + queryString : ''}`;
+    const endpoint = `/api/config/presets${queryString ? "?" + queryString : ""}`;
     return this.configAPI.request(endpoint);
   }
 
@@ -30,7 +30,9 @@ class PresetsAPI {
    * @returns {Promise<object>} 预设详情数据
    */
   async getPreset(presetId) {
-    return this.configAPI.request(`/api/config/presets/${encodeURIComponent(presetId)}`);
+    return this.configAPI.request(
+      `/api/config/presets/${encodeURIComponent(presetId)}`,
+    );
   }
 
   /**
@@ -43,9 +45,9 @@ class PresetsAPI {
    * @returns {Promise<object>} 响应数据
    */
   async createPreset(data) {
-    return this.configAPI.request('/api/config/presets', {
-      method: 'POST',
-      body: JSON.stringify(data)
+    return this.configAPI.request("/api/config/presets", {
+      method: "POST",
+      body: JSON.stringify(data),
     });
   }
 
@@ -56,10 +58,13 @@ class PresetsAPI {
    * @returns {Promise<object>} 响应数据
    */
   async updatePreset(presetId, data) {
-    return this.configAPI.request(`/api/config/presets/${encodeURIComponent(presetId)}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
+    return this.configAPI.request(
+      `/api/config/presets/${encodeURIComponent(presetId)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+      },
+    );
   }
 
   /**
@@ -68,9 +73,12 @@ class PresetsAPI {
    * @returns {Promise<object>} 响应数据
    */
   async deletePreset(presetId) {
-    return this.configAPI.request(`/api/config/presets/${encodeURIComponent(presetId)}`, {
-      method: 'DELETE'
-    });
+    return this.configAPI.request(
+      `/api/config/presets/${encodeURIComponent(presetId)}`,
+      {
+        method: "DELETE",
+      },
+    );
   }
 
   /**
@@ -78,8 +86,8 @@ class PresetsAPI {
    * @returns {Promise<object>} 响应数据
    */
   async reloadPresets() {
-    return this.configAPI.request('/api/config/presets/reload', {
-      method: 'POST'
+    return this.configAPI.request("/api/config/presets/reload", {
+      method: "POST",
     });
   }
 
@@ -90,18 +98,18 @@ class PresetsAPI {
    */
   async importPreset(file) {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
     // 使用特殊的请求方法，不设置 Content-Type 让浏览器自动设置
     const headers = {
-      'X-Admin-Code': this.configAPI.adminCode
+      "X-Admin-Code": this.configAPI.adminCode,
     };
 
     try {
-      const response = await fetch('/api/config/presets/import', {
-        method: 'POST',
+      const response = await fetch("/api/config/presets/import", {
+        method: "POST",
         headers,
-        body: formData
+        body: formData,
       });
 
       const data = await response.json();
@@ -109,23 +117,27 @@ class PresetsAPI {
       if (!response.ok) {
         // 只有在真正的认证失败时才清除访问码
         if (response.status === 401 || response.status === 403) {
-          if (data.error === 'UNAUTHORIZED' || data.error === 'FORBIDDEN' || 
-              data.message?.includes('认证') || data.message?.includes('权限') ||
-              data.message?.includes('访问码')) {
-            this.configAPI.adminCode = '';
-            localStorage.removeItem('admin_code');
+          if (
+            data.error === "UNAUTHORIZED" ||
+            data.error === "FORBIDDEN" ||
+            data.message?.includes("认证") ||
+            data.message?.includes("权限") ||
+            data.message?.includes("访问码")
+          ) {
+            this.configAPI.adminCode = "";
+            localStorage.removeItem("admin_code");
           }
         }
-        throw new Error(data.message || data.error || '导入失败');
+        throw new Error(data.message || data.error || "导入失败");
       }
 
       if (data.code !== 0 && data.code !== undefined) {
-        throw new Error(data.message || '导入失败');
+        throw new Error(data.message || "导入失败");
       }
 
       return data;
     } catch (error) {
-      console.error('导入预设失败:', error);
+      console.error("导入预设失败:", error);
       throw error;
     }
   }
@@ -137,24 +149,29 @@ class PresetsAPI {
   async exportPreset(presetId) {
     try {
       const headers = {
-        'X-Admin-Code': this.configAPI.adminCode
+        "X-Admin-Code": this.configAPI.adminCode,
       };
 
-      const response = await fetch(`/api/config/presets/${encodeURIComponent(presetId)}/export`, {
-        method: 'GET',
-        headers
-      });
+      const response = await fetch(
+        `/api/config/presets/${encodeURIComponent(presetId)}/export`,
+        {
+          method: "GET",
+          headers,
+        },
+      );
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.message || data.error || '导出失败');
+        throw new Error(data.message || data.error || "导出失败");
       }
 
       // 获取文件名
-      const contentDisposition = response.headers.get('Content-Disposition');
+      const contentDisposition = response.headers.get("Content-Disposition");
       let filename = `${presetId}.json`;
       if (contentDisposition) {
-        const matches = contentDisposition.match(/filename[*]?=['"]?([^'";\n]+)['"]?/);
+        const matches = contentDisposition.match(
+          /filename[*]?=['"]?([^'";\n]+)['"]?/,
+        );
         if (matches) {
           filename = matches[1];
         }
@@ -163,7 +180,7 @@ class PresetsAPI {
       // 下载文件
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = filename;
       document.body.appendChild(a); // 添加到 DOM 中确保兼容性
@@ -171,10 +188,10 @@ class PresetsAPI {
       document.body.removeChild(a); // 清理 DOM
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('导出预设失败:', error);
+      console.error("导出预设失败:", error);
       // 如果导出失败，提供一个备用方案：获取预设详情并手动创建下载
       try {
-        console.warn('尝试备用导出方案...');
+        console.warn("尝试备用导出方案...");
         const presetData = await this.getPreset(presetId);
         const exportData = {
           name: presetData.data.name,
@@ -182,12 +199,14 @@ class PresetsAPI {
           avatar: presetData.data.avatar,
           history: presetData.data.history,
           opening: presetData.data.opening,
-          tools: presetData.data.tools
+          tools: presetData.data.tools,
         };
-        
-        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+          type: "application/json",
+        });
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = document.createElement("a");
         a.href = url;
         a.download = `${presetId}.json`;
         document.body.appendChild(a);
@@ -195,7 +214,7 @@ class PresetsAPI {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
       } catch (fallbackError) {
-        console.error('备用导出方案也失败:', fallbackError);
+        console.error("备用导出方案也失败:", fallbackError);
         throw error; // 抛出原始错误
       }
     }
@@ -227,9 +246,9 @@ class PresetsAPI {
    * @returns {Promise<object>} 验证结果
    */
   async validatePreset(data) {
-    return this.configAPI.request('/api/config/presets/validate', {
-      method: 'POST',
-      body: JSON.stringify(data)
+    return this.configAPI.request("/api/config/presets/validate", {
+      method: "POST",
+      body: JSON.stringify(data),
     });
   }
 }

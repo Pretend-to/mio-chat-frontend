@@ -1,27 +1,64 @@
 <template>
   <div class="tool-call-block">
-    <div class="tool-call-bar" :class="[toolCall.action, { 'is-success': toolCallSuccess, 'is-fail': toolCallFail }]"
-      @click="toggleExtraInfo">
-      <template v-if="toolCall.name.startsWith('Skill_mid_') || toolCall.name === 'Skill'">
+    <div
+      class="tool-call-bar"
+      :class="[
+        toolCall.action,
+        { 'is-success': toolCallSuccess, 'is-fail': toolCallFail },
+      ]"
+      @click="toggleExtraInfo"
+    >
+      <template
+        v-if="
+          toolCall.name.startsWith('Skill_mid_') || toolCall.name === 'Skill'
+        "
+      >
         <i class="mio-icon mio-icon-skill"></i>
         <span class="tool-name">
           {{ getSkillName(toolCall.parameters) }}
         </span>
-        <span class="tool-status-text" :class="{ 'is-loading': toolCall.action === 'running' || toolCall.action === 'pending' || toolCall.action === 'started' }">{{ skill_status_text }}</span>
+        <span
+          class="tool-status-text"
+          :class="{
+            'is-loading':
+              toolCall.action === 'running' ||
+              toolCall.action === 'pending' ||
+              toolCall.action === 'started',
+          }"
+          >{{ skill_status_text }}</span
+        >
       </template>
-      <template v-else-if="(toolCall.name || '').split('_mid_')[0] === 'memory'">
+      <template
+        v-else-if="(toolCall.name || '').split('_mid_')[0] === 'memory'"
+      >
         <i class="mio-icon mio-icon-memory"></i>
-        <span class="tool-name">
-          记录记忆
-        </span>
-        <span class="tool-status-text" :class="{ 'is-loading': toolCall.action === 'running' || toolCall.action === 'pending' || toolCall.action === 'started' }">{{ call_status }}</span>
+        <span class="tool-name"> 记录记忆 </span>
+        <span
+          class="tool-status-text"
+          :class="{
+            'is-loading':
+              toolCall.action === 'running' ||
+              toolCall.action === 'pending' ||
+              toolCall.action === 'started',
+          }"
+          >{{ call_status }}</span
+        >
       </template>
       <template v-else>
         <i class="mio-icon mio-icon-tool"></i>
         <span class="tool-name">
           {{ toolCall.name.split("_mid_")[0] }}
         </span>
-        <span class="tool-status-text" :class="{ 'is-loading': toolCall.action === 'running' || toolCall.action === 'pending' || toolCall.action === 'started' }">{{ call_status }}</span>
+        <span
+          class="tool-status-text"
+          :class="{
+            'is-loading':
+              toolCall.action === 'running' ||
+              toolCall.action === 'pending' ||
+              toolCall.action === 'started',
+          }"
+          >{{ call_status }}</span
+        >
       </template>
 
       <!-- 状态指示器 (仅在失败时显示) -->
@@ -35,7 +72,8 @@
           <svg class="chevron" viewBox="0 0 1024 1024" width="10" height="10">
             <path
               d="M338.752 104.704a64 64 0 0 0 0 90.496l316.8 316.8-316.8 316.8a64 64 0 0 0 90.496 90.496l362.048-362.048a64 64 0 0 0 0-90.496L429.248 14.208a64 64 0 0 0-90.496 90.496z"
-              fill="currentColor"></path>
+              fill="currentColor"
+            ></path>
           </svg>
         </button>
       </div>
@@ -47,7 +85,9 @@
         <div class="detail-section">
           <div class="section-header">
             <div class="section-label">参数</div>
-            <button class="copy-text-btn" @click.stop="copyParameters">复制</button>
+            <button class="copy-text-btn" @click.stop="copyParameters">
+              复制
+            </button>
           </div>
           <pre class="json-box">{{ formattedParameters }}</pre>
         </div>
@@ -56,7 +96,9 @@
             <div class="section-label">结果</div>
             <button class="copy-text-btn" @click.stop="copyResult">复制</button>
           </div>
-          <pre class="json-box" :class="{ 'error-text': toolCallFail }">{{ formattedResult }}</pre>
+          <pre class="json-box" :class="{ 'error-text': toolCallFail }">{{
+            formattedResult
+          }}</pre>
         </div>
       </div>
     </div>
@@ -74,16 +116,24 @@ export default {
   data() {
     return {
       // 正在运行、就绪或准备中时默认展开细节，结束后默认收起
-      showExtraInfo: this.toolCall.action === "running" || this.toolCall.action === "pending" || this.toolCall.action === "started",
+      showExtraInfo:
+        this.toolCall.action === "running" ||
+        this.toolCall.action === "pending" ||
+        this.toolCall.action === "started",
       wasManuallyToggled: false,
     };
   },
   computed: {
     toolCallSuccess() {
-      return this.toolCall.action === "finished" && !this.toolCall?.result?.error;
+      return (
+        this.toolCall.action === "finished" && !this.toolCall?.result?.error
+      );
     },
     toolCallFail() {
-      return (this.toolCall.action === "finished" && this.toolCall?.result?.error) || (this.toolCall.action === "failed");
+      return (
+        (this.toolCall.action === "finished" && this.toolCall?.result?.error) ||
+        this.toolCall.action === "failed"
+      );
     },
     call_status() {
       if (this.toolCall.action == "started") return "就绪";
@@ -99,17 +149,21 @@ export default {
       try {
         const obj = typeof p === "string" ? JSON.parse(p) : p;
         return JSON.stringify(obj, null, 2);
-      } catch (e) { return String(p); }
+      } catch (e) {
+        return String(p);
+      }
     },
     formattedResult() {
       const r = this.toolCall.result;
       if (r === undefined || r === null) return "等待中...";
       try {
-        if (typeof r === 'object') {
+        if (typeof r === "object") {
           return JSON.stringify(r, null, 2);
         }
         return String(r);
-      } catch (e) { return String(r); }
+      } catch (e) {
+        return String(r);
+      }
     },
     skill_status_text() {
       if (this.toolCall.action === "finished") return "已激活";
@@ -123,7 +177,11 @@ export default {
       // 当工具执行结束或失败时，自动收起
       if (newVal === "finished" || newVal === "failed") {
         this.handleAutoCollapse();
-      } else if (newVal === "running" || newVal === "pending" || newVal === "started") {
+      } else if (
+        newVal === "running" ||
+        newVal === "pending" ||
+        newVal === "started"
+      ) {
         if (!this.wasManuallyToggled) {
           this.showExtraInfo = true;
         }
@@ -132,7 +190,11 @@ export default {
   },
   mounted() {
     // 如果挂载时就在运行，且是实时消息，强制展开一次
-    if (this.toolCall.action === "running" || this.toolCall.action === "pending" || this.toolCall.action === "started") {
+    if (
+      this.toolCall.action === "running" ||
+      this.toolCall.action === "pending" ||
+      this.toolCall.action === "started"
+    ) {
       this.showExtraInfo = true;
     }
   },
@@ -152,7 +214,9 @@ export default {
       try {
         const p = typeof params === "string" ? JSON.parse(params) : params;
         return p.SkillName || p.skill_name || "未知技能";
-      } catch (e) { return "未知技能"; }
+      } catch (e) {
+        return "未知技能";
+      }
     },
     copyParameters() {
       navigator.clipboard.writeText(this.formattedParameters);
@@ -161,7 +225,7 @@ export default {
     copyResult() {
       navigator.clipboard.writeText(this.formattedResult);
       if (this.$message) this.$message.success("结果已复制");
-    }
+    },
   },
 };
 </script>
@@ -243,11 +307,14 @@ export default {
 }
 
 @keyframes dot-blink {
-  0%, 100% { opacity: 0.35; }
-  50% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
 }
-
-
 
 .tool-actions {
   display: flex;
@@ -279,7 +346,9 @@ export default {
   max-width: 100%;
   max-height: 0;
   overflow: hidden;
-  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  transition:
+    max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s ease;
   opacity: 0;
   will-change: max-height;
   /* 性能优化 */
@@ -343,7 +412,7 @@ export default {
 }
 
 .json-box {
-  font-family: 'Fira Code', monospace;
+  font-family: "Fira Code", monospace;
   font-size: 11px;
   background: transparent;
   color: #666;
@@ -365,5 +434,4 @@ export default {
   background-color: #eee;
   border-radius: 2px;
 }
-
 </style>

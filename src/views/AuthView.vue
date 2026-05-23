@@ -24,7 +24,7 @@ import { nextTick, onUnmounted, onMounted, ref } from "vue";
 import router from "@/router";
 import { client } from "@/lib/runtime.js";
 import { ElMessage } from "element-plus";
-import { useConfigStore } from '@/stores/configStore.js';
+import { useConfigStore } from "@/stores/configStore.js";
 
 const configStore = useConfigStore();
 
@@ -89,7 +89,10 @@ onMounted(() => {
   // 看看query里有没有key
   if (router.currentRoute.value.query.key) {
     login(router.currentRoute.value.query.key);
-  } else if (router.currentRoute.value.query.redirect && router.currentRoute.value.query.redirect.startsWith('/s/')) {
+  } else if (
+    router.currentRoute.value.query.redirect &&
+    router.currentRoute.value.query.redirect.startsWith("/s/")
+  ) {
     ElMessage.info("检测到分享链接，正在尝试以游客身份自动登录...");
     login();
   }

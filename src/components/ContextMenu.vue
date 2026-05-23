@@ -40,7 +40,10 @@
           <i class="iconfont reset"></i>
           <span>重试</span>
         </div>
-        <div v-if="['pending', 'retrying'].includes(message.status)" @click.stop="stopGeneration">
+        <div
+          v-if="['pending', 'retrying'].includes(message.status)"
+          @click.stop="stopGeneration"
+        >
           <i class="iconfont stop"></i>
           <span>停止</span>
         </div>
@@ -216,7 +219,8 @@ export default {
         if (!isSameOrigin) {
           img.crossOrigin = "anonymous";
           const timestamp = Date.now();
-          img.src = imgSrc + (imgSrc.includes("?") ? "&" : "?") + "t_cors=" + timestamp;
+          img.src =
+            imgSrc + (imgSrc.includes("?") ? "&" : "?") + "t_cors=" + timestamp;
         } else {
           img.src = imgSrc;
         }
@@ -307,7 +311,7 @@ export default {
     -webkit-user-select: none
     user-select: none
     transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease
-    
+
     // 移动端样式 - 横向网格布局
     @media (max-width: 768px)
         display: grid
@@ -319,7 +323,7 @@ export default {
         left: 50%
         transform: translateX(-50%) scale(1)
         transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease
-        
+
     @keyframes pop-up
         0%
             transform: scale(1)
@@ -327,7 +331,7 @@ export default {
             transform: scale(1.2)
         100%
             transform: scale(1)
-            
+
     & div
         margin: 0.4rem 0
         padding: .2rem .4rem
@@ -336,7 +340,7 @@ export default {
         justify-content: space-between
         align-items: center
         cursor: pointer
-        
+
         // 移动端单个菜单项样式
         @media (max-width: 768px)
             margin: 0
@@ -349,36 +353,36 @@ export default {
             min-height: 3rem
             background-color: transparent
             transition: background-color 0.2s ease
-            
+
     & div:hover
         background-color: hsla(0, 0%, 90%, .88)
-        
+
         // 移动端悬停效果
         @media (max-width: 768px)
             background-color: rgba(255, 255, 255, 0.1)
-            
+
     & div:hover > i
         animation: pop-up 0.5s ease-in-out 1 forwards
-        
+
     & i, & .iconfont-el
         position: absolute
         display: flex
         justify-content: center
         align-items: center
         transform-origin: center
-        
+
         // 移动端图标样式
         @media (max-width: 768px)
             position: static
             font-size: 1rem
             margin-bottom: 0.3rem
             color: rgba(255, 255, 255, 0.9)
-            
+
     & span
         font-size: 0.8rem
         color: rgb(120, 124, 127)
         margin-left: 1.8rem
-        
+
         // 移动端文字样式
         @media (max-width: 768px)
             margin-left: 0
@@ -402,7 +406,7 @@ export default {
           border-right: 6px solid transparent
           // 与移动端菜单主体保持一致的背景色
           border-bottom: 6px solid rgba(40, 44, 52, 0.85)
-  
+
     &.expand-up
       @media (max-width: 768px)
         // 当向上展开，三角在底部居中，指向触发点（仅移动端）

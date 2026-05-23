@@ -14,20 +14,27 @@ function getImagePrompt(imageElms) {
 /**
  * 格式化并合并要发送给 OpenAI 的上下文消息列表
  */
-export function getValidOpenaiMessage(messageChain, firstMessageIndex = 0, maxMessagesNum = 20) {
+export function getValidOpenaiMessage(
+  messageChain,
+  firstMessageIndex = 0,
+  maxMessagesNum = 20,
+) {
   const fromIndexMessages = messageChain.slice(firstMessageIndex);
-  
+
   // The default sliding window messages (last N messages)
   const slidingWindowMessages = fromIndexMessages.slice(-maxMessagesNum);
-  
+
   // We want to keep a message if it's in the sliding window OR if it is pinned.
   // Pinned messages are identified by `isPinned === true`.
-  const mergedList = fromIndexMessages.filter(msg => {
-    return msg.isPinned === true || slidingWindowMessages.some(m => m.id === msg.id);
+  const mergedList = fromIndexMessages.filter((msg) => {
+    return (
+      msg.isPinned === true ||
+      slidingWindowMessages.some((m) => m.id === msg.id)
+    );
   });
 
   const validMessageList = mergedList.filter(
-    (msg) => msg.role !== "mio_system"
+    (msg) => msg.role !== "mio_system",
   );
 
   const mergedMessages = validMessageList.map((message) => {
@@ -35,13 +42,13 @@ export function getValidOpenaiMessage(messageChain, firstMessageIndex = 0, maxMe
     const imageList = [];
     const subArray = [];
     const cmds = [];
-    
+
     message.content.forEach((elm) => {
       if (elm.type === "prompt_hint" && elm.data.prompt) {
         cmds.push(elm.data.prompt);
       }
     });
-    
+
     const cmdPrefix = cmds.length > 0 ? cmds.join("\n") + "\n" : "";
     let firstTextElmRef = null;
 
@@ -49,14 +56,14 @@ export function getValidOpenaiMessage(messageChain, firstMessageIndex = 0, maxMe
       if (elm.type === "prompt_hint") {
         return;
       }
-      
+
       const role =
         elm.type === "tool_call"
           ? "tool"
           : message.role === "user"
             ? "user"
             : "assistant";
-      
+
       const formatedMsg = {
         role: role,
         content: "none",
@@ -192,13 +199,13 @@ export const gateway = {
       if (!client.socket) {
         throw new Error("WebSocket 链接未就绪");
       }
-      
+
       const lastMsg = messagesChain[messagesChain.length - 1];
       const response = await client.socket.fetch(
         `/api/onebot/message/${contactorId}`,
-        lastMsg.content
+        lastMsg.content,
       );
-      
+
       return response.message_id;
     } else {
       // OpenAI 平台
@@ -215,7 +222,7 @@ export const gateway = {
       const finalMessages = getValidOpenaiMessage(
         messagesChain,
         contactor?.firstMessageIndex || 0,
-        contactor?.options?.base?.max_messages_num || 20
+        contactor?.options?.base?.max_messages_num || 20,
       );
 
       const metaData = {
@@ -257,7 +264,7 @@ export const gateway = {
     if (!contactorId && messageId) {
       // Fallback: search all contactors in the store for this message ID
       const found = Object.values(contactorStore.contactors).find((c) =>
-        c.messageChain.some((m) => m.id === messageId)
+        c.messageChain.some((m) => m.id === messageId),
       );
       if (found) {
         contactorId = found.id;
@@ -272,23 +279,38 @@ export const gateway = {
           chunks: data.chunks,
           status: data.status,
           messageId,
-          metaData
+          metaData,
         });
       } else {
         if (data.type === "reason") {
-          contactorStore.appendOrUpdateMessage(contactorId, messageId, {
-            reasoning_content: data.data?.text ?? "",
-            startTime: data.data?.startTime,
-            duration: data.data?.duration ?? 0
-          }, "reason");
+          contactorStore.appendOrUpdateMessage(
+            contactorId,
+            messageId,
+            {
+              reasoning_content: data.data?.text ?? "",
+              startTime: data.data?.startTime,
+              duration: data.data?.duration ?? 0,
+            },
+            "reason",
+          );
         } else if (data.type === "content") {
-          contactorStore.appendOrUpdateMessage(contactorId, messageId, {
-            chunk: data.content
-          }, "content");
+          contactorStore.appendOrUpdateMessage(
+            contactorId,
+            messageId,
+            {
+              chunk: data.content,
+            },
+            "content",
+          );
         } else if (data.type === "toolCall") {
-          contactorStore.appendOrUpdateMessage(contactorId, messageId, {
-            tool_call: data.content
-          }, "tool_call");
+          contactorStore.appendOrUpdateMessage(
+            contactorId,
+            messageId,
+            {
+              tool_call: data.content,
+            },
+            "tool_call",
+          );
         }
       }
     } else if (["complete", "failed"].includes(e.message)) {
@@ -316,7 +338,7 @@ export const gateway = {
       if (!contactor) {
         // 兜底机制：若因 ID 不匹配（例如前端生成了随机 Fake ID），则匹配列表中首个 platform === "onebot" 的联系人
         contactor = Object.values(contactorStore.contactors).find(
-          (c) => c.platform === "onebot"
+          (c) => c.platform === "onebot",
         );
       }
       if (contactor) {
@@ -328,11 +350,11 @@ export const gateway = {
       }
     } else if (type === "del_msg") {
       const onebotContactors = Object.values(contactorStore.contactors).filter(
-        (item) => item.platform === "onebot"
+        (item) => item.platform === "onebot",
       );
       for (const onebotContactor of onebotContactors) {
         const index = onebotContactor.messageChain.findIndex(
-          (msg) => msg.id === content.message_id
+          (msg) => msg.id === content.message_id,
         );
         if (index !== -1) {
           const originalMsg = onebotContactor.messageChain[index];
@@ -352,10 +374,10 @@ export const gateway = {
                 {
                   type: "text",
                   data: {
-                    text: `${displayName}撤回了一条消息`
-                  }
-                }
-              ]
+                    text: `${displayName}撤回了一条消息`,
+                  },
+                },
+              ],
             };
             onebotContactor.messageChain.splice(index, 1, systemMsg);
           }
@@ -366,7 +388,7 @@ export const gateway = {
         }
       }
     }
-  }
+  },
 };
 
 /**

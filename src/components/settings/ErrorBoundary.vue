@@ -1,21 +1,19 @@
 <template>
   <div class="error-boundary">
     <div v-if="hasError" class="error-container">
-      <el-result
-        icon="error"
-        :title="errorTitle"
-        :sub-title="errorMessage"
-      >
+      <el-result icon="error" :title="errorTitle" :sub-title="errorMessage">
         <template #extra>
           <el-space>
             <el-button type="primary" @click="handleReload">
               重新加载
             </el-button>
-            <el-button @click="handleGoBack">
-              返回
-            </el-button>
-            <el-button v-if="showDetails" text @click="detailsVisible = !detailsVisible">
-              {{ detailsVisible ? '隐藏' : '查看' }}详细信息
+            <el-button @click="handleGoBack"> 返回 </el-button>
+            <el-button
+              v-if="showDetails"
+              text
+              @click="detailsVisible = !detailsVisible"
+            >
+              {{ detailsVisible ? "隐藏" : "查看" }}详细信息
             </el-button>
           </el-space>
         </template>
@@ -38,43 +36,43 @@
 </template>
 
 <script setup>
-import { onErrorCaptured, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { onErrorCaptured, ref } from "vue";
+import { useRouter } from "vue-router";
 
 const props = defineProps({
   fallbackTitle: {
     type: String,
-    default: '出现错误'
+    default: "出现错误",
   },
   fallbackMessage: {
     type: String,
-    default: '加载此页面时发生错误，请稍后重试'
+    default: "加载此页面时发生错误，请稍后重试",
   },
   showDetails: {
     type: Boolean,
-    default: true
+    default: true,
   },
   onError: {
     type: Function,
-    default: null
-  }
+    default: null,
+  },
 });
 
 const router = useRouter();
 
 const hasError = ref(false);
-const errorTitle = ref('');
-const errorMessage = ref('');
-const errorStack = ref('');
+const errorTitle = ref("");
+const errorMessage = ref("");
+const errorStack = ref("");
 const detailsVisible = ref(false);
 
 onErrorCaptured((error, instance, info) => {
   hasError.value = true;
-  
+
   // 设置错误信息
   errorTitle.value = props.fallbackTitle;
   errorMessage.value = error.message || props.fallbackMessage;
-  errorStack.value = error.stack || '';
+  errorStack.value = error.stack || "";
 
   // 调用自定义错误处理
   if (props.onError) {
@@ -82,8 +80,8 @@ onErrorCaptured((error, instance, info) => {
   }
 
   // 记录到控制台
-  console.error('ErrorBoundary caught error:', error);
-  console.error('Error info:', info);
+  console.error("ErrorBoundary caught error:", error);
+  console.error("Error info:", info);
 
   // 阻止错误继续向上传播
   return false;
@@ -91,11 +89,11 @@ onErrorCaptured((error, instance, info) => {
 
 const handleReload = () => {
   hasError.value = false;
-  errorTitle.value = '';
-  errorMessage.value = '';
-  errorStack.value = '';
+  errorTitle.value = "";
+  errorMessage.value = "";
+  errorStack.value = "";
   detailsVisible.value = false;
-  
+
   // 重新加载当前路由
   router.go(0);
 };
@@ -104,7 +102,7 @@ const handleGoBack = () => {
   if (window.history.length > 1) {
     router.back();
   } else {
-    router.push('/settings');
+    router.push("/settings");
   }
 };
 </script>

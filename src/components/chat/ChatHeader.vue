@@ -108,4 +108,3 @@ $icon-hover: #09f
     .name-area
         padding-bottom: 0.25rem
 </style>
-
