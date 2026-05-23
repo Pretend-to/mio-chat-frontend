@@ -8,7 +8,6 @@
       >
         <div class="popup-header" v-if="isMobileDevice">
           <span class="popup-title">选择快捷指令</span>
-          <i class="iconfont close" @click="showCommandPopup = false"></i>
         </div>
         <div class="command-list-wrapper">
           <div 
@@ -209,6 +208,16 @@ export default {
         console.error("Failed to load config in InputEditor:", err);
       });
     }
+
+    this.clickOutsideHandler = (e) => {
+      if (this.showCommandPopup) {
+        const isClickInside = this.$el.contains(e.target);
+        if (!isClickInside) {
+          this.showCommandPopup = false;
+        }
+      }
+    };
+    document.addEventListener("click", this.clickOutsideHandler);
   },
   unmounted() {
     this.textareaRef.removeEventListener("input", this.adjustTextareaHeight);
@@ -219,6 +228,9 @@ export default {
     this.textareaRef.removeEventListener("paste", this.handlePaste);
     if (this.resizeHandler) {
       window.removeEventListener("resize", this.resizeHandler);
+    }
+    if (this.clickOutsideHandler) {
+      document.removeEventListener("click", this.clickOutsideHandler);
     }
     this.saveDraft(); // 离开组件前保存
     this.textareaRef = null;
@@ -1091,6 +1103,9 @@ i:hover
     @media (max-width: $mobile)
       border: none
       justify-content: space-around
+      position: relative
+      z-index: 10
+      background-color: #ffffff
 
 .bu-emoji
   position: relative
@@ -1134,6 +1149,9 @@ i
       flex-direction: row
       align-items: flex-end
       flex-wrap: nowrap
+      position: relative
+      z-index: 10
+      background-color: #ffffff
 
     .input-content
       flex-wrap: wrap
@@ -1223,7 +1241,7 @@ i
   height: 12rem
   background-color: #ffffff
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08)
-  z-index: 2000
+  z-index: 5
   display: flex
   flex-direction: column
   border-top-left-radius: 12px
@@ -1234,7 +1252,7 @@ i
 .popup-header
   display: flex
   align-items: center
-  justify-content: space-between
+  justify-content: center
   padding: 0.5rem 1rem
   border-bottom: 1px solid #ebeef5
   background-color: #fafafa
@@ -1244,13 +1262,6 @@ i
     font-size: 0.85rem
     font-weight: bold
     color: #333333
-
-  .close
-    font-size: 1rem
-    color: #909399
-    cursor: pointer
-    &:hover
-      color: #f56c6c
 
 .command-list-wrapper
   flex: 1
