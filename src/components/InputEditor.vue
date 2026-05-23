@@ -19,13 +19,8 @@
             @click="confirmCommand(cmd)"
             @mouseenter="commandIndex = idx"
           >
-            <div class="command-info">
-              <span class="command-label">/{{ cmd.label }}</span>
-              <span class="command-preset">{{ cmd.preset }}</span>
-            </div>
-            <div class="command-desc" v-if="cmd.value">
-              {{ cmd.value }}
-            </div>
+            <span class="command-label">/{{ cmd.label }}</span>
+            <span class="command-preset">{{ cmd.preset }}</span>
           </div>
         </div>
       </div>
@@ -81,6 +76,7 @@
 <script>
 import { client, config } from "@/lib/runtime.js";
 import { debounce } from "../utils/tools.js";
+import { useConfigStore } from "@/stores/configStore.js";
 
 export default {
   props: {
@@ -206,6 +202,13 @@ export default {
 
     this.host = window.location.origin;
     this.onebotPresets = config.onebotConfig?.textwraper?.options || [];
+
+    const configStore = useConfigStore();
+    if (!configStore.config) {
+      configStore.fetchConfig().catch((err) => {
+        console.error("Failed to load config in InputEditor:", err);
+      });
+    }
   },
   unmounted() {
     this.textareaRef.removeEventListener("input", this.adjustTextareaHeight);
@@ -628,21 +631,36 @@ export default {
       this.textareaRef.focus();
       const images = this.textareaRef.querySelectorAll("img");
       const ImageSrcs = Array.from(images).map((img) => img.src);
-      let msg = this.getSafeText(this.textareaRef.innerText);
       
+      let msg = "";
       let isCommand = false;
-      if (this.activeContactor.platform === "onebot") {
-        this.availableCommands.forEach(cmd => {
-          const slashLabel = `/${cmd.label}`;
-          const slashValue = `/${cmd.value}`;
-          if (msg.startsWith(slashLabel)) {
-            msg = msg.replace(slashLabel, cmd.preset);
-            isCommand = true;
-          } else if (msg.startsWith(slashValue)) {
-            msg = msg.replace(slashValue, cmd.preset);
-            isCommand = true;
-          }
-        });
+      
+      const badge = this.textareaRef.querySelector(".command-badge");
+      if (badge && this.activeContactor.platform === "onebot") {
+        const preset = badge.getAttribute("data-preset");
+        const clone = this.textareaRef.cloneNode(true);
+        const cloneBadge = clone.querySelector(".command-badge");
+        if (cloneBadge) {
+          cloneBadge.remove();
+        }
+        const remainingText = clone.innerText.trim();
+        msg = preset + " " + remainingText;
+        isCommand = true;
+      } else {
+        msg = this.getSafeText(this.textareaRef.innerText);
+        if (this.activeContactor.platform === "onebot") {
+          this.availableCommands.forEach(cmd => {
+            const slashLabel = `/${cmd.label}`;
+            const slashValue = `/${cmd.value}`;
+            if (msg.startsWith(slashLabel)) {
+              msg = msg.replace(slashLabel, cmd.preset);
+              isCommand = true;
+            } else if (msg.startsWith(slashValue)) {
+              msg = msg.replace(slashValue, cmd.preset);
+              isCommand = true;
+            }
+          });
+        }
       }
 
       const wrappedMessage =
@@ -825,15 +843,57 @@ export default {
         return;
       }
       
-      const text = this.textareaRef.innerText;
+      // Check if there is already a badge in the input
+      const badge = this.textareaRef.querySelector(".command-badge");
       
-      // Find all slash occurrences that are command triggers
+      // We check for slash occurrences in the text excluding the badge
+      const clone = this.textareaRef.cloneNode(true);
+      const cloneBadge = clone.querySelector(".command-badge");
+      if (cloneBadge) {
+        cloneBadge.remove();
+      }
+      const textWithoutBadge = clone.innerText || clone.textContent || "";
+      
       const occurrences = [];
       let match;
       const regex = /(?:^|\s)\/(?!\/)/g;
-      while ((match = regex.exec(text)) !== null) {
+      while ((match = regex.exec(textWithoutBadge)) !== null) {
         const slashIdx = match.index + (match[0].startsWith('/') ? 0 : 1);
         occurrences.push(slashIdx);
+      }
+      
+      // If there is already a badge and a new slash command is typed, it's a duplicate.
+      if (badge && occurrences.length > 0) {
+        this.$message({
+          message: "指令不可重复，已自动清除先前的指令",
+          type: "warning"
+        });
+        
+        // Remove the badge from the actual DOM
+        badge.remove();
+        
+        // Re-read the text now that the badge has been removed
+        const text = this.textareaRef.innerText || this.textareaRef.textContent || "";
+        const newOccurrences = [];
+        let newMatch;
+        const newRegex = /(?:^|\s)\/(?!\/)/g;
+        while ((newMatch = newRegex.exec(text)) !== null) {
+          const slashIdx = newMatch.index + (newMatch[0].startsWith('/') ? 0 : 1);
+          newOccurrences.push(slashIdx);
+        }
+        
+        if (newOccurrences.length === 1) {
+          this.showCommandPopup = true;
+          this.commandSearchQuery = text.substring(newOccurrences[0] + 1).trim();
+          this.commandIndex = 0;
+          this.popupDismissed = false;
+        } else {
+          this.showCommandPopup = false;
+          this.commandSearchQuery = "";
+        }
+        
+        this.adjustTextareaHeight();
+        return;
       }
       
       if (occurrences.length > 1) {
@@ -842,14 +902,14 @@ export default {
           type: "warning"
         });
         
-        let endOfCmd = text.indexOf(' ', occurrences[0]);
+        let endOfCmd = textWithoutBadge.indexOf(' ', occurrences[0]);
         if (endOfCmd === -1 || endOfCmd > occurrences[1]) {
           endOfCmd = occurrences[0] + 1;
         } else {
           endOfCmd = endOfCmd + 1;
         }
         
-        const newText = text.substring(0, occurrences[0]) + text.substring(endOfCmd);
+        const newText = textWithoutBadge.substring(0, occurrences[0]) + textWithoutBadge.substring(endOfCmd);
         this.updateEditorText(newText);
         
         const newOccurrences = [];
@@ -874,7 +934,7 @@ export default {
       
       if (occurrences.length === 1) {
         const queryStart = occurrences[0] + 1;
-        this.commandSearchQuery = text.substring(queryStart).trim();
+        this.commandSearchQuery = textWithoutBadge.substring(queryStart).trim();
         if (!this.popupDismissed) {
           this.showCommandPopup = true;
         }
@@ -885,7 +945,7 @@ export default {
       }
     },
     confirmCommand(cmd) {
-      const text = this.textareaRef.innerText;
+      const text = this.textareaRef.innerText || this.textareaRef.textContent || "";
       const regex = /(?:^|\s)\/(?!\/)/g;
       let match;
       let lastSlashIdx = -1;
@@ -894,15 +954,75 @@ export default {
       }
       
       if (lastSlashIdx !== -1) {
-        const presetToInsert = cmd.preset + " ";
-        const newText = text.substring(0, lastSlashIdx) + presetToInsert;
-        this.updateEditorText(newText);
+        const badgeEl = document.createElement("span");
+        badgeEl.className = "command-badge";
+        badgeEl.setAttribute("contenteditable", "false");
+        badgeEl.setAttribute("data-preset", cmd.preset);
+        badgeEl.innerText = "/" + cmd.label;
+
+        if (this.$options._scopeId) {
+          badgeEl.setAttribute(this.$options._scopeId, "");
+        }
+
+        const spaceNode = document.createTextNode("\u00A0");
+        
+        this.replaceTextRangeWithElements(
+          this.textareaRef,
+          lastSlashIdx,
+          lastSlashIdx + 1 + this.commandSearchQuery.length,
+          badgeEl,
+          spaceNode
+        );
+
+        // Set cursor position after the space node
+        const range = document.createRange();
+        const sel = window.getSelection();
+        range.setStartAfter(spaceNode);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
       }
       
       this.showCommandPopup = false;
       this.commandSearchQuery = "";
       this.commandIndex = 0;
       this.popupDismissed = false;
+      
+      this.$nextTick(() => {
+        this.adjustTextareaHeight();
+      });
+    },
+    replaceTextRangeWithElements(container, startIdx, endIdx, badgeEl, spaceNode) {
+      let currentIdx = 0;
+      const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+      let textNode;
+      while ((textNode = walk.nextNode())) {
+        const nodeLen = textNode.nodeValue.length;
+        if (currentIdx + nodeLen > startIdx) {
+          const offsetInNode = startIdx - currentIdx;
+          const lengthToRemove = endIdx - startIdx;
+          
+          const parent = textNode.parentNode;
+          const textVal = textNode.nodeValue;
+          
+          const beforeText = textVal.substring(0, offsetInNode);
+          const afterText = textVal.substring(offsetInNode + lengthToRemove);
+          
+          if (beforeText) {
+            parent.insertBefore(document.createTextNode(beforeText), textNode);
+          }
+          parent.insertBefore(badgeEl, textNode);
+          parent.insertBefore(spaceNode, textNode);
+          if (afterText) {
+            parent.insertBefore(document.createTextNode(afterText), textNode);
+          }
+          
+          parent.removeChild(textNode);
+          return true;
+        }
+        currentIdx += nodeLen;
+      }
+      return false;
     },
     updateEditorText(newText) {
       const imgElements = Array.from(this.textareaRef.querySelectorAll("img"));
@@ -932,6 +1052,7 @@ i:hover
   color: $icon-hover
 
 .input-bar
+  position: relative
   flex-shrink: 0
   display: flex
   flex-direction: column
@@ -1083,7 +1204,7 @@ i
   bottom: 100%
   left: 0
   width: 100vw
-  height: 20rem
+  height: 12rem
   background-color: #ffffff
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08)
   z-index: 2000
@@ -1098,18 +1219,18 @@ i
   display: flex
   align-items: center
   justify-content: space-between
-  padding: 0.75rem 1rem
+  padding: 0.5rem 1rem
   border-bottom: 1px solid #ebeef5
   background-color: #fafafa
   flex-shrink: 0
 
   .popup-title
-    font-size: 0.9rem
+    font-size: 0.85rem
     font-weight: bold
     color: #333333
 
   .close
-    font-size: 1.1rem
+    font-size: 1rem
     color: #909399
     cursor: pointer
     &:hover
@@ -1119,13 +1240,13 @@ i
   flex: 1
   overflow-y: auto
   -webkit-overflow-scrolling: touch
-  padding: 0.25rem 0
+  padding: 0.15rem 0
 
 .command-item
   display: flex
   align-items: center
   justify-content: space-between
-  padding: 0.6rem 1rem
+  padding: 0.4rem 0.75rem
   border-bottom: 1px solid #f9f9f9
   cursor: pointer
   transition: all 0.15s ease
@@ -1136,23 +1257,26 @@ i
   &.active
     background-color: rgba(0, 153, 255, 0.08)
 
-  .command-info
-    display: flex
-    flex-direction: column
-    gap: 0.15rem
-    flex: 1
+  .command-label
+    font-size: 0.8rem
+    font-weight: 600
+    color: #303133
 
-    .command-label
-      font-size: 0.85rem
-      font-weight: 600
-      color: #303133
-
-    .command-preset
-      font-size: 0.7rem
-      color: #909399
-
-  .command-desc
+  .command-preset
     font-size: 0.75rem
-    color: #a8abb2
-    margin-left: 0.5rem
+    color: #909399
+
+.command-badge
+  display: inline-flex
+  align-items: center
+  background-color: rgba(0, 153, 255, 0.12)
+  color: rgb(0, 153, 255)
+  border: 1px solid rgba(0, 153, 255, 0.24)
+  border-radius: 4px
+  padding: 2px 6px
+  margin: 0 2px
+  font-size: 0.9em
+  font-weight: 500
+  user-select: none
+  vertical-align: middle
 </style>
