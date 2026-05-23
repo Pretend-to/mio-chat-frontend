@@ -1283,10 +1283,12 @@ i
   color: rgb(0, 153, 255)
   border: 1px solid rgba(0, 153, 255, 0.24)
   border-radius: 4px
-  padding: 2px 6px
+  padding: 0 6px
   margin: 0 2px
-  font-size: 0.9em
+  font-size: 0.8em
   font-weight: 500
+  height: 1.25rem
+  line-height: 1.25rem
   user-select: none
   vertical-align: middle
 </style>
@@ -1299,10 +1301,12 @@ i
   color: rgb(0, 153, 255) !important
   border: 1px solid rgba(0, 153, 255, 0.24) !important
   border-radius: 4px !important
-  padding: 2px 6px !important
+  padding: 0 6px !important
   margin: 0 2px !important
-  font-size: 0.9em !important
+  font-size: 0.8em !important
   font-weight: 500 !important
+  height: 1.25rem !important
+  line-height: 1.25rem !important
   user-select: none !important
   vertical-align: middle !important
 </style>
