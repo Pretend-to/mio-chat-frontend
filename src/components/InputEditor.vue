@@ -1339,7 +1339,7 @@ i
   overflow: hidden
 
   .command-item
-    padding: 2px 8px
+    padding: 0.25rem 0.75rem
 
 .mobile-command-popup
   position: absolute
