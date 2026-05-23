@@ -597,6 +597,15 @@ export default {
             }
             
             const remoteUrl = await this.compressAndUploadImage(fileObj);
+            
+            // Preload the remote image to ensure browser cache is built before we swap the URL, preventing layout jumps
+            await new Promise((resolve) => {
+              const img = new Image();
+              img.onload = () => resolve();
+              img.onerror = () => resolve();
+              img.src = remoteUrl;
+            });
+
             this.pendingImageFiles.delete(localUrl);
             elm.data.file = remoteUrl;
           });

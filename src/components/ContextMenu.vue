@@ -48,6 +48,10 @@
           <i class="iconfont yinyong"></i>
           <span>引用</span>
         </div>
+        <div @click.stop="togglePin">
+          <el-icon class="iconfont-el"><CollectionTag /></el-icon>
+          <span>{{ message.isPinned ? "取消钉住" : "钉住消息" }}</span>
+        </div>
         <div @click.stop="multiSelect">
           <i class="iconfont xuanze"></i>
           <span>多选</span>
@@ -61,8 +65,13 @@
   </transition>
 </template>
 <script>
+import { CollectionTag } from "@element-plus/icons-vue";
+
 export default {
   name: "MessageMenu", // 建议添加组件 name，方便调试
+  components: {
+    CollectionTag,
+  },
   props: {
     type: {
       type: String,
@@ -139,6 +148,10 @@ export default {
     replyMessage() {
       this.$emit("message-option", "reply");
     },
+    togglePin() {
+      this.$emit("message-option", "toggle-pin");
+      this.$emit("close");
+    },
     deleteMessage() {
       this.$emit("message-option", "delete");
     },
@@ -189,11 +202,24 @@ export default {
       });
       try {
         const img = new Image();
-        img.crossOrigin = "anonymous";
-        
-        // 加上时间戳刷新缓存，防止浏览器读取到之前缓存好的、没有跨域头的普通图片
-        const timestamp = Date.now();
-        img.src = imgSrc + (imgSrc.includes("?") ? "&" : "?") + "t_cors=" + timestamp;
+        const isSameOrigin = (() => {
+          if (!imgSrc) return false;
+          if (imgSrc.startsWith("/") && !imgSrc.startsWith("//")) return true;
+          try {
+            const url = new URL(imgSrc, window.location.origin);
+            return url.origin === window.location.origin;
+          } catch (e) {
+            return false;
+          }
+        })();
+
+        if (!isSameOrigin) {
+          img.crossOrigin = "anonymous";
+          const timestamp = Date.now();
+          img.src = imgSrc + (imgSrc.includes("?") ? "&" : "?") + "t_cors=" + timestamp;
+        } else {
+          img.src = imgSrc;
+        }
 
         img.onload = async () => {
           try {
@@ -334,7 +360,7 @@ export default {
     & div:hover > i
         animation: pop-up 0.5s ease-in-out 1 forwards
         
-    & i
+    & i, & .iconfont-el
         position: absolute
         display: flex
         justify-content: center

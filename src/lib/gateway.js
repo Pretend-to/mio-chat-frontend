@@ -15,11 +15,18 @@ function getImagePrompt(imageElms) {
  * 格式化并合并要发送给 OpenAI 的上下文消息列表
  */
 export function getValidOpenaiMessage(messageChain, firstMessageIndex = 0, maxMessagesNum = 20) {
-  const cuttedMessageList = messageChain
-    .slice(firstMessageIndex)
-    .slice(-maxMessagesNum);
+  const fromIndexMessages = messageChain.slice(firstMessageIndex);
+  
+  // The default sliding window messages (last N messages)
+  const slidingWindowMessages = fromIndexMessages.slice(-maxMessagesNum);
+  
+  // We want to keep a message if it's in the sliding window OR if it is pinned.
+  // Pinned messages are identified by `isPinned === true`.
+  const mergedList = fromIndexMessages.filter(msg => {
+    return msg.isPinned === true || slidingWindowMessages.some(m => m.id === msg.id);
+  });
 
-  const validMessageList = cuttedMessageList.filter(
+  const validMessageList = mergedList.filter(
     (msg) => msg.role !== "mio_system"
   );
 

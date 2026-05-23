@@ -65,12 +65,15 @@
             </div>
 
             <div
-              :class="['content', item.status]"
+              :class="['content', item.status, { 'is-pinned': item.isPinned }]"
               @mouseup="$emit('mouseup-content', $event)"
               @contextmenu="$emit('contextmenu-content', $event, index)"
               @touchstart="$emit('touchstart-content', $event, index)"
               @dblclick="$emit('contextmenu-content', $event, index)"
             >
+              <div v-if="item.isPinned" class="pinned-badge" title="已钉住此消息">
+                <el-icon><CollectionTag /></el-icon>
+              </div>
               <div v-for="(element, elmIndex) of item.content" :key="elmIndex" class="inner-content">
                 <MdRenderer
                   v-if="element.type === 'text'"
@@ -144,7 +147,7 @@ import ToolCallBar from "@/components/ToolCallBar.vue";
 import ReasonBlock from "@/components/ReasonBlock.vue";
 import MdRenderer from "mio-previewer";
 
-import { Loading, Warning } from "@element-plus/icons-vue";
+import { Loading, Warning, CollectionTag } from "@element-plus/icons-vue";
 
 const props = defineProps({
   item: {

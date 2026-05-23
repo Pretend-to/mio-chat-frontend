@@ -144,6 +144,38 @@ body
     border-radius: 0.5rem
     margin: 0.5rem
     -webkit-touch-callout: none
+    position: relative
+
+    .pinned-badge
+        position: absolute
+        top: 0.25rem
+        font-size: 1rem
+        display: flex
+        align-items: center
+        justify-content: center
+        z-index: 5
+        line-height: 1
+
+#other
+    .content.is-pinned
+        padding-right: 2rem !important
+        padding-left: 0.75rem !important
+
+    .content .pinned-badge
+        right: 0.35rem
+        left: auto
+        color: rgb(0, 153, 255)
+
+#user
+    .content.is-pinned
+        padding-left: 2rem !important
+        padding-right: 0.75rem !important
+
+    .content .pinned-badge
+        left: 0.35rem
+        right: auto
+        color: rgba(255, 255, 255, 0.9)
+
 
 .content:has(.blank-message)
     overflow: hidden

@@ -27,6 +27,7 @@ import { numberString } from "@/utils/generate.js";
 // Markdown plugins
 import { mermaidPlugin, codeBlockPlugin, cursorPlugin, imageViewerPlugin } from 'mio-previewer/plugins/custom';
 import { katexPlugin } from 'mio-previewer/plugins/markdown-it';
+import { CollectionTag, Close } from "@element-plus/icons-vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -357,6 +358,7 @@ const selectedMessages = ref([]);
 const isMultiSelect = ref(false);
 const isMobileDevice = ref(window.innerWidth < 768);
 
+
 // Composable invocation
 const {
   dragSelect,
@@ -404,6 +406,15 @@ const {
 });
 
 // Watchers
+watch(
+  () => activeContactor.value,
+  (newVal) => {
+    if (!newVal) {
+      router.push("/");
+    }
+  }
+);
+
 watch(
   () => route.params.id,
   (newVal, oldVal) => {
@@ -917,6 +928,13 @@ const handleMessageOption = async (option) => {
     case "stop":
       activeContactor.value.interruptMessage(message.id);
       break;
+    case "toggle-pin":
+      if (message) {
+        message.isPinned = !message.isPinned;
+        client.setLocalStorage();
+        ElMessage.success(message.isPinned ? "消息已钉住" : "已取消钉住");
+      }
+      break;
   }
   showMenu.value = false;
 };
@@ -924,6 +942,17 @@ const handleMessageOption = async (option) => {
 const handleMessageClick = (item) => {
   if (isMultiSelect.value && item.role !== 'mio_system') {
     toggleSelect(item.id);
+  }
+};
+
+const handleImageLoad = (e) => {
+  if (e.target.tagName === "IMG") {
+    const elm = chatWindow.value;
+    if (!elm) return;
+    const isNearBottom = elm.scrollHeight - elm.scrollTop - elm.clientHeight < 150;
+    if (isNearBottom) {
+      toButtom();
+    }
   }
 };
 
@@ -941,6 +970,7 @@ onMounted(() => {
   if (chatWindow.value) {
     chatWindow.value.addEventListener("scroll", scrollHandler);
     chatWindow.value.addEventListener("mousedown", handleMouseDown);
+    chatWindow.value.addEventListener("load", handleImageLoad, true);
   }
   
   autoScroll.value = false;
@@ -1007,6 +1037,7 @@ onBeforeUnmount(() => {
   if (chatWindow.value) {
     chatWindow.value.removeEventListener("scroll", scrollHandler);
     chatWindow.value.removeEventListener("mousedown", handleMouseDown);
+    chatWindow.value.removeEventListener("load", handleImageLoad, true);
   }
 
   window.removeEventListener("resize", resizeHandler.value);
@@ -1015,7 +1046,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div id="chat-window">
+  <div id="chat-window" v-if="activeContactor">
     <ChatHeader
       :active-contactor="activeContactor"
       @back="tolist"
@@ -1149,6 +1180,8 @@ onBeforeUnmount(() => {
       @share-link="shareMobilePreviewLink"
       @width-mode-change="onExportWidthModeChange"
     />
+
+
   </div>
 </template>
 
@@ -1536,4 +1569,6 @@ $icon-hover: #09f
     display: none !important
     width: 0 !important
     height: 0 !important
+
+
 </style>
