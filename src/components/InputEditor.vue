@@ -860,9 +860,10 @@ export default {
       
       const occurrences = [];
       let match;
-      const regex = /(?:^|\s)\/(?!\/)/g;
+      const regex = /(?:^|\s)[\/#](?!\/)/g;
       while ((match = regex.exec(textWithoutBadge)) !== null) {
-        const slashIdx = match.index + (match[0].startsWith('/') ? 0 : 1);
+        const isTriggerAtStart = match[0] === '/' || match[0] === '#';
+        const slashIdx = match.index + (isTriggerAtStart ? 0 : 1);
         occurrences.push(slashIdx);
       }
       
@@ -880,9 +881,10 @@ export default {
         const text = this.textareaRef.innerText || this.textareaRef.textContent || "";
         const newOccurrences = [];
         let newMatch;
-        const newRegex = /(?:^|\s)\/(?!\/)/g;
+        const newRegex = /(?:^|\s)[\/#](?!\/)/g;
         while ((newMatch = newRegex.exec(text)) !== null) {
-          const slashIdx = newMatch.index + (newMatch[0].startsWith('/') ? 0 : 1);
+          const isTriggerAtStart = newMatch[0] === '/' || newMatch[0] === '#';
+          const slashIdx = newMatch.index + (isTriggerAtStart ? 0 : 1);
           newOccurrences.push(slashIdx);
         }
         
@@ -918,9 +920,10 @@ export default {
         
         const newOccurrences = [];
         let newMatch;
-        const newRegex = /(?:^|\s)\/(?!\/)/g;
+        const newRegex = /(?:^|\s)[\/#](?!\/)/g;
         while ((newMatch = newRegex.exec(newText)) !== null) {
-          const slashIdx = newMatch.index + (newMatch[0].startsWith('/') ? 0 : 1);
+          const isTriggerAtStart = newMatch[0] === '/' || newMatch[0] === '#';
+          const slashIdx = newMatch.index + (isTriggerAtStart ? 0 : 1);
           newOccurrences.push(slashIdx);
         }
         
@@ -950,11 +953,14 @@ export default {
     },
     confirmCommand(cmd) {
       const text = this.textareaRef.innerText || this.textareaRef.textContent || "";
-      const regex = /(?:^|\s)\/(?!\/)/g;
+      const regex = /(?:^|\s)[\/#](?!\/)/g;
       let match;
       let lastSlashIdx = -1;
+      let triggerChar = "/";
       while ((match = regex.exec(text)) !== null) {
-        lastSlashIdx = match.index + (match[0].startsWith('/') ? 0 : 1);
+        const isTriggerAtStart = match[0] === '/' || match[0] === '#';
+        lastSlashIdx = match.index + (isTriggerAtStart ? 0 : 1);
+        triggerChar = text.charAt(lastSlashIdx);
       }
       
       if (lastSlashIdx !== -1) {
@@ -962,7 +968,7 @@ export default {
         badgeEl.className = "command-badge";
         badgeEl.setAttribute("contenteditable", "false");
         badgeEl.setAttribute("data-preset", cmd.preset);
-        badgeEl.innerText = "/" + cmd.label;
+        badgeEl.innerText = triggerChar + cmd.label;
 
         // Try to dynamically retrieve Vue's scope attribute from the container
         const scopeAttr = Array.from(this.textareaRef.attributes)
