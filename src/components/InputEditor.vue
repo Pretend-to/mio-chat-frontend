@@ -644,7 +644,11 @@ export default {
           cloneBadge.remove();
         }
         const remainingText = clone.innerText.trim();
-        msg = preset + " " + remainingText;
+        if (preset.includes("{xxx}")) {
+          msg = preset.replace("{xxx}", remainingText);
+        } else {
+          msg = remainingText ? `${preset} ${remainingText}` : preset;
+        }
         isCommand = true;
       } else {
         msg = this.getSafeText(this.textareaRef.innerText);
@@ -960,7 +964,13 @@ export default {
         badgeEl.setAttribute("data-preset", cmd.preset);
         badgeEl.innerText = "/" + cmd.label;
 
-        if (this.$options._scopeId) {
+        // Try to dynamically retrieve Vue's scope attribute from the container
+        const scopeAttr = Array.from(this.textareaRef.attributes)
+          .map(attr => attr.name)
+          .find(name => name.startsWith("data-v-"));
+        if (scopeAttr) {
+          badgeEl.setAttribute(scopeAttr, "");
+        } else if (this.$options._scopeId) {
           badgeEl.setAttribute(this.$options._scopeId, "");
         }
 
@@ -1279,4 +1289,20 @@ i
   font-weight: 500
   user-select: none
   vertical-align: middle
+</style>
+
+<style lang="sass">
+.command-badge
+  display: inline-flex !important
+  align-items: center !important
+  background-color: rgba(0, 153, 255, 0.12) !important
+  color: rgb(0, 153, 255) !important
+  border: 1px solid rgba(0, 153, 255, 0.24) !important
+  border-radius: 4px !important
+  padding: 2px 6px !important
+  margin: 0 2px !important
+  font-size: 0.9em !important
+  font-weight: 500 !important
+  user-select: none !important
+  vertical-align: middle !important
 </style>
