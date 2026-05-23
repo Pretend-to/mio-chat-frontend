@@ -1339,7 +1339,7 @@ i
   overflow: hidden
 
   .command-item
-    padding: 0.25rem 0.75rem
+    padding: 2px 8px
 
 .mobile-command-popup
   position: absolute
@@ -1406,8 +1406,8 @@ i
     flex-shrink: 0
 
     .mio-icon
-      font-size: 0.8rem !important
-      line-height: 1 !important
+      width: 12px !important
+      height: 12px !important
       margin-right: 6px
       color: #909399
       flex-shrink: 0
@@ -1438,6 +1438,13 @@ i
   line-height: 1.25rem
   user-select: none
   vertical-align: middle
+
+  .mio-icon
+    width: 11px !important
+    height: 11px !important
+    margin-right: 4px
+    background-color: currentColor
+    vertical-align: middle
 </style>
 
 <style lang="sass">
@@ -1456,4 +1463,11 @@ i
   line-height: 1.25rem !important
   user-select: none !important
   vertical-align: middle !important
+
+  .mio-icon
+    width: 11px !important
+    height: 11px !important
+    margin-right: 4px !important
+    background-color: currentColor !important
+    vertical-align: middle !important
 </style>
