@@ -18,12 +18,13 @@
             @click="confirmCommand(cmd)"
             @mouseenter="commandIndex = idx"
           >
-            <span class="command-label" style="display: inline-flex; align-items: center;">
-              <i v-if="cmd.type === 'tool'" class="mio-icon mio-icon-tool" style="margin-right: 6px; color: #909399;"></i>
-              <i v-else-if="cmd.type === 'skill'" class="mio-icon mio-icon-skill" style="margin-right: 6px; color: #909399;"></i>
+            <span class="command-label">
+              <i v-if="cmd.type === 'tool'" class="mio-icon mio-icon-tool"></i>
+              <i v-else-if="cmd.type === 'skill'" class="mio-icon mio-icon-skill"></i>
               {{ activeContactor.platform === 'onebot' ? '/' : '' }}{{ cmd.label }}
             </span>
-            <span class="command-preset">{{ cmd.preset }}</span>
+            <span v-if="cmd.hash" class="command-preset">{{ cmd.hash }}</span>
+            <span v-else-if="activeContactor.platform === 'onebot'" class="command-preset">{{ cmd.preset }}</span>
           </div>
         </div>
       </div>
@@ -147,9 +148,19 @@ export default {
             if (pluginTools && typeof pluginTools === 'object') {
               Object.keys(pluginTools).forEach(toolName => {
                 const tool = pluginTools[toolName];
+                
+                let displayName = tool.name;
+                let hash = "";
+                if (tool.name.includes("_mid_")) {
+                  const parts = tool.name.split("_mid_");
+                  displayName = parts[0];
+                  hash = parts[1];
+                }
+                
                 list.push({
                   type: 'tool',
-                  label: tool.name,
+                  label: displayName,
+                  hash: hash,
                   value: tool.name,
                   preset: tool.name,
                   description: tool.description
@@ -160,9 +171,17 @@ export default {
         }
         const skills = this.availableSkills || [];
         skills.forEach(skill => {
+          let displayName = skill.name;
+          let hash = "";
+          if (skill.name.includes("_mid_")) {
+            const parts = skill.name.split("_mid_");
+            displayName = parts[0];
+            hash = parts[1];
+          }
           list.push({
             type: 'skill',
-            label: skill.name,
+            label: displayName,
+            hash: hash,
             value: skill.name,
             preset: skill.name,
             description: skill.description
@@ -1363,6 +1382,7 @@ i
   border-bottom: 1px solid #f9f9f9
   cursor: pointer
   transition: all 0.15s ease
+  gap: 0.5rem
 
   &:last-child
     border-bottom: none
@@ -1374,10 +1394,31 @@ i
     font-size: 0.8rem
     font-weight: 600
     color: #303133
+    display: inline-flex
+    align-items: center
+    max-width: 60%
+    white-space: nowrap
+    overflow: hidden
+    text-overflow: ellipsis
+    flex-shrink: 0
+
+    .mio-icon
+      font-size: 0.8rem !important
+      line-height: 1 !important
+      margin-right: 6px
+      color: #909399
+      flex-shrink: 0
+      vertical-align: middle
 
   .command-preset
     font-size: 0.75rem
     color: #909399
+    max-width: 35%
+    white-space: nowrap
+    overflow: hidden
+    text-overflow: ellipsis
+    text-align: right
+    flex-shrink: 0
 
 .command-badge
   display: inline-flex
