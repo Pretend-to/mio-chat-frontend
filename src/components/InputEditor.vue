@@ -1,5 +1,36 @@
 <template>
   <div class="input-bar">
+    <!-- Command Popup List -->
+    <transition name="popup-fade">
+      <div 
+        v-if="showCommandPopup && filteredCommands.length > 0" 
+        :class="[isMobileDevice ? 'mobile-command-popup' : 'desktop-command-popup']"
+      >
+        <div class="popup-header" v-if="isMobileDevice">
+          <span class="popup-title">选择快捷指令</span>
+          <i class="iconfont close" @click="showCommandPopup = false"></i>
+        </div>
+        <div class="command-list-wrapper">
+          <div 
+            v-for="(cmd, idx) in filteredCommands" 
+            :key="idx" 
+            class="command-item" 
+            :class="{ active: idx === commandIndex }"
+            @click="confirmCommand(cmd)"
+            @mouseenter="commandIndex = idx"
+          >
+            <div class="command-info">
+              <span class="command-label">/{{ cmd.label }}</span>
+              <span class="command-preset">{{ cmd.preset }}</span>
+            </div>
+            <div class="command-desc" v-if="cmd.value">
+              {{ cmd.value }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <div class="options">
       <div class="bu-emoji">
         <emoji-picker v-show="showemoji" ref="emojiPicker" @emoji-click="getemoji"></emoji-picker>
@@ -69,6 +100,11 @@ export default {
       host: "",
       uploaded: { files: [], images: [] },
       isPasting: false,
+      isMobileDevice: window.innerWidth < 768,
+      showCommandPopup: false,
+      commandSearchQuery: "",
+      commandIndex: 0,
+      popupDismissed: false,
     };
   },
   computed: {
@@ -78,6 +114,41 @@ export default {
       } else {
         return this.onebotPresets;
       }
+    },
+    availableCommands() {
+      const list = [];
+      if (this.activeContactor?.platform === 'onebot') {
+        const options = this.onebotPresets || [];
+        options.forEach(cat => {
+          if (cat.children && Array.isArray(cat.children)) {
+            cat.children.forEach(child => {
+              if (child.preset) {
+                list.push({
+                  label: child.label || child.value,
+                  value: child.value,
+                  preset: child.preset
+                });
+              }
+            });
+          }
+        });
+      }
+      if (this.activeContactor?.platform === 'onebot' && list.length === 0) {
+        list.push(
+          { label: '画画', value: 'draw', preset: '#画图' },
+          { label: '帮助', value: 'help', preset: '#帮助' }
+        );
+      }
+      return list;
+    },
+    filteredCommands() {
+      if (!this.commandSearchQuery) return this.availableCommands;
+      const query = this.commandSearchQuery.toLowerCase();
+      return this.availableCommands.filter(c => 
+        c.label.toLowerCase().includes(query) || 
+        c.value.toLowerCase().includes(query) ||
+        c.preset.toLowerCase().includes(query)
+      );
     },
   },
   watch: {
@@ -99,6 +170,16 @@ export default {
     this.textareaRef = this.$refs.textarea;
     this.loadDraft();
     this.textareaRef.addEventListener("input", this.debouncedAdjustHeight);
+
+    this.handleInputEvent = (e) => {
+      this.checkSlashCommand(e);
+    };
+    this.textareaRef.addEventListener("input", this.handleInputEvent);
+
+    this.resizeHandler = () => {
+      this.isMobileDevice = window.innerWidth < 768;
+    };
+    window.addEventListener("resize", this.resizeHandler);
 
     // 拖拽文件
     this.handleDragOver = (e) => {
@@ -128,10 +209,14 @@ export default {
   },
   unmounted() {
     this.textareaRef.removeEventListener("input", this.adjustTextareaHeight);
+    this.textareaRef.removeEventListener("input", this.handleInputEvent);
     this.textareaRef.removeEventListener("dragover", this.handleDragOver);
     this.textareaRef.removeEventListener("dragleave", this.handleDragLeave);
     this.textareaRef.removeEventListener("drop", this.handleDrop);
     this.textareaRef.removeEventListener("paste", this.handlePaste);
+    if (this.resizeHandler) {
+      window.removeEventListener("resize", this.resizeHandler);
+    }
     this.saveDraft(); // 离开组件前保存
     this.textareaRef = null;
   },
@@ -544,8 +629,24 @@ export default {
       const images = this.textareaRef.querySelectorAll("img");
       const ImageSrcs = Array.from(images).map((img) => img.src);
       let msg = this.getSafeText(this.textareaRef.innerText);
+      
+      let isCommand = false;
+      if (this.activeContactor.platform === "onebot") {
+        this.availableCommands.forEach(cmd => {
+          const slashLabel = `/${cmd.label}`;
+          const slashValue = `/${cmd.value}`;
+          if (msg.startsWith(slashLabel)) {
+            msg = msg.replace(slashLabel, cmd.preset);
+            isCommand = true;
+          } else if (msg.startsWith(slashValue)) {
+            msg = msg.replace(slashValue, cmd.preset);
+            isCommand = true;
+          }
+        });
+      }
+
       const wrappedMessage =
-        this.activeContactor.platform === "onebot" ? this.wrapText(msg) : msg;
+        (this.activeContactor.platform === "onebot" && !isCommand) ? this.wrapText(msg) : msg;
       this.textareaRef.innerHTML = "";
       this.adjustTextareaHeight();
       const container = this.activeContactor.getBaseUserContainer();
@@ -676,6 +777,33 @@ export default {
       }
     },
     handleKeyDown(event) {
+      if (this.showCommandPopup && this.filteredCommands.length > 0) {
+        const list = this.filteredCommands;
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          this.commandIndex = (this.commandIndex + 1) % list.length;
+          this.scrollActiveCommandIntoView();
+          return;
+        } else if (event.key === "ArrowUp") {
+          event.preventDefault();
+          this.commandIndex = (this.commandIndex - 1 + list.length) % list.length;
+          this.scrollActiveCommandIntoView();
+          return;
+        } else if (event.key === "Enter" || event.key === "Tab") {
+          event.preventDefault();
+          const cmd = list[this.commandIndex];
+          if (cmd) {
+            this.confirmCommand(cmd);
+          }
+          return;
+        } else if (event.key === "Escape") {
+          event.preventDefault();
+          this.showCommandPopup = false;
+          this.popupDismissed = true;
+          return;
+        }
+      }
+
       if (event.key === "Enter") {
         if (event.ctrlKey) {
           if (this.hasInput()) {
@@ -690,6 +818,107 @@ export default {
       setTimeout(() => {
         this.updateCursorPosition();
       }, 0);
+    },
+    checkSlashCommand(event) {
+      if (this.activeContactor?.platform !== 'onebot') {
+        this.showCommandPopup = false;
+        return;
+      }
+      
+      const text = this.textareaRef.innerText;
+      
+      // Find all slash occurrences that are command triggers
+      const occurrences = [];
+      let match;
+      const regex = /(?:^|\s)\/(?!\/)/g;
+      while ((match = regex.exec(text)) !== null) {
+        const slashIdx = match.index + (match[0].startsWith('/') ? 0 : 1);
+        occurrences.push(slashIdx);
+      }
+      
+      if (occurrences.length > 1) {
+        this.$message({
+          message: "指令不可重复，已自动清除先前的指令",
+          type: "warning"
+        });
+        
+        let endOfCmd = text.indexOf(' ', occurrences[0]);
+        if (endOfCmd === -1 || endOfCmd > occurrences[1]) {
+          endOfCmd = occurrences[0] + 1;
+        } else {
+          endOfCmd = endOfCmd + 1;
+        }
+        
+        const newText = text.substring(0, occurrences[0]) + text.substring(endOfCmd);
+        this.updateEditorText(newText);
+        
+        const newOccurrences = [];
+        let newMatch;
+        const newRegex = /(?:^|\s)\/(?!\/)/g;
+        while ((newMatch = newRegex.exec(newText)) !== null) {
+          const slashIdx = newMatch.index + (newMatch[0].startsWith('/') ? 0 : 1);
+          newOccurrences.push(slashIdx);
+        }
+        
+        if (newOccurrences.length === 1) {
+          this.showCommandPopup = true;
+          this.commandSearchQuery = newText.substring(newOccurrences[0] + 1).trim();
+          this.commandIndex = 0;
+          this.popupDismissed = false;
+        } else {
+          this.showCommandPopup = false;
+          this.commandSearchQuery = "";
+        }
+        return;
+      }
+      
+      if (occurrences.length === 1) {
+        const queryStart = occurrences[0] + 1;
+        this.commandSearchQuery = text.substring(queryStart).trim();
+        if (!this.popupDismissed) {
+          this.showCommandPopup = true;
+        }
+      } else {
+        this.showCommandPopup = false;
+        this.commandSearchQuery = "";
+        this.popupDismissed = false;
+      }
+    },
+    confirmCommand(cmd) {
+      const text = this.textareaRef.innerText;
+      const regex = /(?:^|\s)\/(?!\/)/g;
+      let match;
+      let lastSlashIdx = -1;
+      while ((match = regex.exec(text)) !== null) {
+        lastSlashIdx = match.index + (match[0].startsWith('/') ? 0 : 1);
+      }
+      
+      if (lastSlashIdx !== -1) {
+        const presetToInsert = cmd.preset + " ";
+        const newText = text.substring(0, lastSlashIdx) + presetToInsert;
+        this.updateEditorText(newText);
+      }
+      
+      this.showCommandPopup = false;
+      this.commandSearchQuery = "";
+      this.commandIndex = 0;
+      this.popupDismissed = false;
+    },
+    updateEditorText(newText) {
+      const imgElements = Array.from(this.textareaRef.querySelectorAll("img"));
+      this.textareaRef.innerText = newText;
+      imgElements.forEach(img => {
+        this.textareaRef.appendChild(img);
+      });
+      this.setCursorToEnd(this.textareaRef);
+    },
+    scrollActiveCommandIntoView() {
+      this.$nextTick(() => {
+        const activeItem = this.$el.querySelector('.command-item.active');
+        if (activeItem) {
+          activeItem.scrollIntoView({ block: 'nearest' });
+        }
+      });
     },
   },
 };
@@ -824,4 +1053,106 @@ i
         @media screen and (max-width: $mobile)
           height: 2rem
           margin-right: 0rem
+
+.popup-fade-enter-active, .popup-fade-leave-active
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)
+
+.popup-fade-enter-from, .popup-fade-leave-to
+  opacity: 0
+  @media (max-width: 768px)
+    transform: translateY(100%)
+    opacity: 1
+
+.desktop-command-popup
+  position: absolute
+  bottom: calc(100% + 4px)
+  left: 1rem
+  width: 320px
+  max-height: 250px
+  background-color: #ffffff
+  border: 1px solid #ebeef5
+  border-radius: 8px
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12)
+  z-index: 2000
+  display: flex
+  flex-direction: column
+  overflow: hidden
+
+.mobile-command-popup
+  position: absolute
+  bottom: 100%
+  left: 0
+  width: 100vw
+  height: 20rem
+  background-color: #ffffff
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08)
+  z-index: 2000
+  display: flex
+  flex-direction: column
+  border-top-left-radius: 12px
+  border-top-right-radius: 12px
+  overflow: hidden
+  margin-left: 0rem
+
+.popup-header
+  display: flex
+  align-items: center
+  justify-content: space-between
+  padding: 0.75rem 1rem
+  border-bottom: 1px solid #ebeef5
+  background-color: #fafafa
+  flex-shrink: 0
+
+  .popup-title
+    font-size: 0.9rem
+    font-weight: bold
+    color: #333333
+
+  .close
+    font-size: 1.1rem
+    color: #909399
+    cursor: pointer
+    &:hover
+      color: #f56c6c
+
+.command-list-wrapper
+  flex: 1
+  overflow-y: auto
+  -webkit-overflow-scrolling: touch
+  padding: 0.25rem 0
+
+.command-item
+  display: flex
+  align-items: center
+  justify-content: space-between
+  padding: 0.6rem 1rem
+  border-bottom: 1px solid #f9f9f9
+  cursor: pointer
+  transition: all 0.15s ease
+
+  &:last-child
+    border-bottom: none
+
+  &.active
+    background-color: rgba(0, 153, 255, 0.08)
+
+  .command-info
+    display: flex
+    flex-direction: column
+    gap: 0.15rem
+    flex: 1
+
+    .command-label
+      font-size: 0.85rem
+      font-weight: 600
+      color: #303133
+
+    .command-preset
+      font-size: 0.7rem
+      color: #909399
+
+  .command-desc
+    font-size: 0.75rem
+    color: #a8abb2
+    margin-left: 0.5rem
 </style>
