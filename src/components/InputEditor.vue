@@ -1338,6 +1338,9 @@ i
   flex-direction: column
   overflow: hidden
 
+  .command-item
+    padding: 0.25rem 0.75rem
+
 .mobile-command-popup
   position: absolute
   bottom: 100%
