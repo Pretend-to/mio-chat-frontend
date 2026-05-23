@@ -698,6 +698,7 @@ export default {
       
       let msg = "";
       let isCommand = false;
+      let openaiCmdElement = null;
       
       const badge = this.textareaRef.querySelector(".command-badge");
       if (badge) {
@@ -716,6 +717,7 @@ export default {
           } else {
             msg = remainingText ? `${preset} ${remainingText}` : preset;
           }
+          isCommand = true;
         } else if (this.activeContactor.platform === "openai") {
           if (type === "tool") {
             if (!this.activeContactor.options) this.activeContactor.options = {};
@@ -725,12 +727,19 @@ export default {
               this.activeContactor.options.toolCallSettings.tools.push(preset);
               client.setLocalStorage();
             }
-            msg = `please call tool ${preset}` + (remainingText ? `\n${remainingText}` : "");
+            openaiCmdElement = {
+              type: "tool_cmd",
+              data: { name: preset }
+            };
           } else if (type === "skill") {
-            msg = `please call skill tool 2 load ${preset} skill` + (remainingText ? `\n${remainingText}` : "");
+            openaiCmdElement = {
+              type: "skill_cmd",
+              data: { name: preset }
+            };
           }
+          msg = remainingText;
+          isCommand = true;
         }
-        isCommand = true;
       } else {
         msg = this.getSafeText(this.textareaRef.innerText);
         if (this.activeContactor.platform === "onebot") {
@@ -753,6 +762,11 @@ export default {
       this.textareaRef.innerHTML = "";
       this.adjustTextareaHeight();
       const container = this.activeContactor.getBaseUserContainer();
+      
+      if (openaiCmdElement) {
+        container.content.push(openaiCmdElement);
+      }
+      
       if (wrappedMessage.trim()) {
         container.content.push({
           type: "text",

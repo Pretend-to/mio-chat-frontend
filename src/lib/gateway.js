@@ -34,7 +34,24 @@ export function getValidOpenaiMessage(messageChain, firstMessageIndex = 0, maxMe
     const fileList = [];
     const imageList = [];
     const subArray = [];
+    const cmds = [];
+    
     message.content.forEach((elm) => {
+      if (elm.type === "tool_cmd") {
+        cmds.push(`please call tool ${elm.data.name}`);
+      } else if (elm.type === "skill_cmd") {
+        cmds.push(`please call skill tool 2 load ${elm.data.name} skill`);
+      }
+    });
+    
+    const cmdPrefix = cmds.length > 0 ? cmds.join("\n") + "\n" : "";
+    let firstTextElmRef = null;
+
+    message.content.forEach((elm) => {
+      if (elm.type === "tool_cmd" || elm.type === "skill_cmd") {
+        return;
+      }
+      
       const role =
         elm.type === "tool_call"
           ? "tool"
@@ -81,11 +98,26 @@ export function getValidOpenaiMessage(messageChain, firstMessageIndex = 0, maxMe
           formatedMsg.content = elm.data.text;
           formatedMsg._content_type = "text";
           subArray.push(formatedMsg);
+          if (!firstTextElmRef) {
+            firstTextElmRef = formatedMsg;
+          }
         } else if (elm.type === "file") {
           fileList.push(elm.data.file);
         }
       }
     });
+
+    if (cmdPrefix) {
+      if (firstTextElmRef) {
+        firstTextElmRef.content = cmdPrefix + firstTextElmRef.content;
+      } else {
+        subArray.push({
+          role: message.role === "user" ? "user" : "assistant",
+          content: cmdPrefix.trim(),
+          _content_type: "text",
+        });
+      }
+    }
 
     if (fileList.length > 0) {
       const textElm = subArray.filter((elm) => elm._content_type === "text");

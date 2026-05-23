@@ -107,6 +107,14 @@
                 />
                 <FileBlock v-else-if="element.type === 'file'" :file-url="element.data.file" />
                 <span v-else-if="element.type === 'at'" />
+                <span v-else-if="element.type === 'tool_cmd'" class="command-badge" style="vertical-align: middle;">
+                  <i class="mio-icon mio-icon-tool" style="margin-right: 4px; vertical-align: middle;"></i>
+                  <span>{{ element.data.name }}</span>
+                </span>
+                <span v-else-if="element.type === 'skill_cmd'" class="command-badge" style="vertical-align: middle;">
+                  <i class="mio-icon mio-icon-skill" style="margin-right: 4px; vertical-align: middle;"></i>
+                  <span>{{ element.data.name }}</span>
+                </span>
                 <ReasonBlock
                   v-else-if="element.type === 'reason'"
                   :end-time="element.data.endTime"
