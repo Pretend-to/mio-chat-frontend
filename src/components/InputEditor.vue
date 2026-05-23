@@ -18,7 +18,11 @@
             @click="confirmCommand(cmd)"
             @mouseenter="commandIndex = idx"
           >
-            <span class="command-label">/{{ cmd.label }}</span>
+            <span class="command-label" style="display: inline-flex; align-items: center;">
+              <i v-if="cmd.type === 'tool'" class="mio-icon mio-icon-tool" style="margin-right: 6px; color: #909399;"></i>
+              <i v-else-if="cmd.type === 'skill'" class="mio-icon mio-icon-skill" style="margin-right: 6px; color: #909399;"></i>
+              {{ activeContactor.platform === 'onebot' ? '/' : '' }}{{ cmd.label }}
+            </span>
             <span class="command-preset">{{ cmd.preset }}</span>
           </div>
         </div>
@@ -76,6 +80,7 @@
 import { client, config } from "@/lib/runtime.js";
 import { debounce } from "../utils/tools.js";
 import { useConfigStore } from "@/stores/configStore.js";
+import { skillAPI } from "@/lib/configApi.js";
 
 export default {
   props: {
@@ -100,6 +105,7 @@ export default {
       commandSearchQuery: "",
       commandIndex: 0,
       popupDismissed: false,
+      availableSkills: [],
     };
   },
   computed: {
@@ -119,6 +125,7 @@ export default {
             cat.children.forEach(child => {
               if (child.preset) {
                 list.push({
+                  type: 'command',
                   label: child.label || child.value,
                   value: child.value,
                   preset: child.preset
@@ -127,12 +134,40 @@ export default {
             });
           }
         });
-      }
-      if (this.activeContactor?.platform === 'onebot' && list.length === 0) {
-        list.push(
-          { label: '画画', value: 'draw', preset: '#画图' },
-          { label: '帮助', value: 'help', preset: '#帮助' }
-        );
+        if (list.length === 0) {
+          list.push(
+            { type: 'command', label: '画画', value: 'draw', preset: '#画图' },
+            { type: 'command', label: '帮助', value: 'help', preset: '#帮助' }
+          );
+        }
+      } else if (this.activeContactor?.platform === 'openai') {
+        if (typeof config.llmTools === 'object' && config.llmTools !== null) {
+          Object.keys(config.llmTools).forEach(pluginName => {
+            const pluginTools = config.llmTools[pluginName];
+            if (pluginTools && typeof pluginTools === 'object') {
+              Object.keys(pluginTools).forEach(toolName => {
+                const tool = pluginTools[toolName];
+                list.push({
+                  type: 'tool',
+                  label: tool.name,
+                  value: tool.name,
+                  preset: tool.name,
+                  description: tool.description
+                });
+              });
+            }
+          });
+        }
+        const skills = this.availableSkills || [];
+        skills.forEach(skill => {
+          list.push({
+            type: 'skill',
+            label: skill.name,
+            value: skill.name,
+            preset: skill.name,
+            description: skill.description
+          });
+        });
       }
       return list;
     },
@@ -154,6 +189,9 @@ export default {
       this.textareaRef.innerHTML = ""; // 强制清空物理输入框
       this.loadSelected();
       this.loadDraft();
+      if (newVal?.platform === 'openai' && this.availableSkills.length === 0) {
+        this.fetchSkills();
+      }
     },
   },
   created() {
@@ -218,6 +256,10 @@ export default {
       }
     };
     document.addEventListener("click", this.clickOutsideHandler);
+
+    if (this.activeContactor?.platform === "openai") {
+      this.fetchSkills();
+    }
   },
   unmounted() {
     this.textareaRef.removeEventListener("input", this.adjustTextareaHeight);
@@ -236,6 +278,16 @@ export default {
     this.textareaRef = null;
   },
   methods: {
+    async fetchSkills() {
+      try {
+        const res = await skillAPI.getSkills();
+        if (res.success) {
+          this.availableSkills = res.data || [];
+        }
+      } catch (err) {
+        console.error("加载技能列表失败:", err);
+      }
+    },
     loadDraft() {
       if (this.activeContactor.draft) {
         this.textareaRef.innerHTML = this.activeContactor.draft;
@@ -648,18 +700,35 @@ export default {
       let isCommand = false;
       
       const badge = this.textareaRef.querySelector(".command-badge");
-      if (badge && this.activeContactor.platform === "onebot") {
+      if (badge) {
         const preset = badge.getAttribute("data-preset");
+        const type = badge.getAttribute("data-type");
         const clone = this.textareaRef.cloneNode(true);
         const cloneBadge = clone.querySelector(".command-badge");
         if (cloneBadge) {
           cloneBadge.remove();
         }
         const remainingText = clone.innerText.trim();
-        if (preset.includes("{xxx}")) {
-          msg = preset.replace("{xxx}", remainingText);
-        } else {
-          msg = remainingText ? `${preset} ${remainingText}` : preset;
+        
+        if (this.activeContactor.platform === "onebot") {
+          if (preset.includes("{xxx}")) {
+            msg = preset.replace("{xxx}", remainingText);
+          } else {
+            msg = remainingText ? `${preset} ${remainingText}` : preset;
+          }
+        } else if (this.activeContactor.platform === "openai") {
+          if (type === "tool") {
+            if (!this.activeContactor.options) this.activeContactor.options = {};
+            if (!this.activeContactor.options.toolCallSettings) this.activeContactor.options.toolCallSettings = {};
+            if (!Array.isArray(this.activeContactor.options.toolCallSettings.tools)) this.activeContactor.options.toolCallSettings.tools = [];
+            if (!this.activeContactor.options.toolCallSettings.tools.includes(preset)) {
+              this.activeContactor.options.toolCallSettings.tools.push(preset);
+              client.setLocalStorage();
+            }
+            msg = `please call tool ${preset}` + (remainingText ? `\n${remainingText}` : "");
+          } else if (type === "skill") {
+            msg = `please call skill tool 2 load ${preset} skill` + (remainingText ? `\n${remainingText}` : "");
+          }
         }
         isCommand = true;
       } else {
@@ -854,15 +923,12 @@ export default {
       }, 0);
     },
     checkSlashCommand(event) {
-      if (this.activeContactor?.platform !== 'onebot') {
+      if (this.activeContactor?.platform !== 'onebot' && this.activeContactor?.platform !== 'openai') {
         this.showCommandPopup = false;
         return;
       }
       
-      // Check if there is already a badge in the input
       const badge = this.textareaRef.querySelector(".command-badge");
-      
-      // We check for slash occurrences in the text excluding the badge
       const clone = this.textareaRef.cloneNode(true);
       const cloneBadge = clone.querySelector(".command-badge");
       if (cloneBadge) {
@@ -879,17 +945,14 @@ export default {
         occurrences.push(slashIdx);
       }
       
-      // If there is already a badge and a new slash command is typed, it's a duplicate.
       if (badge && occurrences.length > 0) {
         this.$message({
           message: "指令不可重复，已自动清除先前的指令",
           type: "warning"
         });
         
-        // Remove the badge from the actual DOM
         badge.remove();
         
-        // Re-read the text now that the badge has been removed
         const text = this.textareaRef.innerText || this.textareaRef.textContent || "";
         const newOccurrences = [];
         let newMatch;
@@ -980,7 +1043,16 @@ export default {
         badgeEl.className = "command-badge";
         badgeEl.setAttribute("contenteditable", "false");
         badgeEl.setAttribute("data-preset", cmd.preset);
-        badgeEl.innerText = triggerChar + cmd.label;
+        badgeEl.setAttribute("data-type", cmd.type || "command");
+        
+        const labelText = triggerChar + cmd.label;
+        if (cmd.type === "tool") {
+          badgeEl.innerHTML = `<i class="mio-icon mio-icon-tool" style="margin-right: 4px; vertical-align: middle;"></i><span>${labelText}</span>`;
+        } else if (cmd.type === "skill") {
+          badgeEl.innerHTML = `<i class="mio-icon mio-icon-skill" style="margin-right: 4px; vertical-align: middle;"></i><span>${labelText}</span>`;
+        } else {
+          badgeEl.innerText = labelText;
+        }
 
         // Try to dynamically retrieve Vue's scope attribute from the container
         const scopeAttr = Array.from(this.textareaRef.attributes)
