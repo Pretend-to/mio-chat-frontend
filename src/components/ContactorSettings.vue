@@ -49,6 +49,12 @@
           历史预设
         </div>
         <div
+          :class="{ 'tab-item': true, active: activeTab === 'memory' }"
+          @click="activeTab = 'memory'"
+        >
+          记忆结晶
+        </div>
+        <div
           :class="{ 'tab-item': true, active: activeTab === 'advanced' }"
           @click="activeTab = 'advanced'"
         >
@@ -332,6 +338,17 @@
         </div>
       </div>
 
+      <!-- Tab: Memory Crystallization -->
+      <div v-if="activeTab === 'memory'" class="tab-pane">
+        <MemoryManager
+          v-if="contactorId"
+          :contactor-id="contactorId"
+        />
+        <div v-else class="no-skills" style="padding: 20px; text-align: center">
+          <p>无法获取联系人信息</p>
+        </div>
+      </div>
+
       <!-- Tab: Advanced (Dynamic Settings) -->
       <div v-if="activeTab === 'advanced'" class="tab-pane">
         <!-- Sampling Settings moved from Basic -->
@@ -393,6 +410,7 @@
 <script>
 import PresetsList from "@/components/PresetsList.vue";
 import DynamicSettingsForm from "@/components/DynamicSettingsForm.vue";
+import MemoryManager from "@/components/MemoryManager.vue";
 import { client, config } from "@/lib/runtime.js";
 import { skillAPI, configAPI } from "@/lib/configApi.js";
 
@@ -401,6 +419,7 @@ export default {
   components: {
     PresetsList,
     DynamicSettingsForm,
+    MemoryManager,
   },
   props: {
     modelValue: {
@@ -436,6 +455,10 @@ export default {
     presetsHistoryData: {
       type: Array,
       default: () => [],
+    },
+    contactorId: {
+      type: String,
+      default: null,
     },
     name: {
       type: String,

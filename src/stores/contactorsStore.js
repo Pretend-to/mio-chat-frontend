@@ -371,6 +371,7 @@ export const useContactorsStore = defineStore("contactors", () => {
           recordMemory(
             contactorId,
             merged.data.parameters || merged.data.arguments,
+            merged.data.result,
           );
         }
       }
@@ -422,9 +423,20 @@ export const useContactorsStore = defineStore("contactors", () => {
     return merged;
   }
 
-  function recordMemory(contactorId, parameters) {
+  function recordMemory(contactorId, parameters, result = null) {
     const contactor = contactors.value[contactorId];
     if (!contactor || !parameters) return;
+
+    // 1. 如果有后端返回的全新 summary，直接覆盖！(最优、最干净的 CRUD 同步路径)
+    if (result && result.summary !== undefined) {
+      if (!contactor.options.crystallization) {
+        contactor.options.crystallization = { enabled: true, latestSummary: "", tokenWatermark: 20000 };
+      }
+      contactor.options.crystallization.latestSummary = result.summary;
+      contactor.options.crystallization.lastUpdatedAt = Date.now();
+      client.setLocalStorage();
+      return;
+    }
 
     let params = parameters;
     if (typeof params === "string") {
@@ -438,6 +450,21 @@ export const useContactorsStore = defineStore("contactors", () => {
     const { question, answer } = params;
     if (!question || !answer) return;
 
+    // 开启结晶时，将记忆追加到 latestSummary 的 <long_term_profile>
+    if (contactor.options?.crystallization?.enabled && contactor.options.crystallization.latestSummary !== undefined) {
+      const fact = `Q: ${question}\nA: ${answer}`;
+      const summary = contactor.options.crystallization.latestSummary || "";
+      contactor.options.crystallization.latestSummary = appendToXmlZone(
+        summary,
+        "long_term_profile",
+        fact,
+      );
+      contactor.options.crystallization.lastUpdatedAt = Date.now();
+      client.setLocalStorage();
+      return;
+    }
+
+    // 未开启结晶时，使用原始的 history 追加方式
     if (!contactor.options.presetSettings) {
       contactor.options.presetSettings = { opening: "", history: [] };
     }
@@ -466,6 +493,81 @@ export const useContactorsStore = defineStore("contactors", () => {
       content: answer,
     });
 
+    client.setLocalStorage();
+  }
+
+  /**
+   * 向 XML 分区字符串中的指定标签末尾追加内容
+   */
+  function appendToXmlZone(xmlStr, tagName, content) {
+    const openTag = `<${tagName}>`;
+    const closeTag = `</${tagName}>`;
+    if (xmlStr.includes(openTag)) {
+      return xmlStr.replace(closeTag, `\n${content}\n${closeTag}`);
+    }
+    return xmlStr + `\n${openTag}\n${content}\n${closeTag}`;
+  }
+
+  /**
+   * 处理后端推送的结晶流式事件
+   * - 'running': 在当前消息 content 中插入结晶事件条
+   * - 'finished': 更新 latestSummary，持久化
+   */
+  function handleCrystallizeEvent(contactorId, messageId, data) {
+    const contactor = contactors.value[contactorId];
+    if (!contactor) return;
+
+    const { status, summary } = data;
+
+    if (status === "running") {
+      const message = getOrCreateMessage(contactorId, messageId);
+      if (message && !message._crystallizeEventInserted) {
+        message._crystallizeEventInserted = true;
+        // 移除等待中的 blank 占位块
+        const blankIndex = message.content.findIndex((elm) => elm.type === "blank");
+        if (blankIndex !== -1) {
+          message.content.splice(blankIndex, 1);
+        }
+        message.content.push({
+          type: "crystallize_event",
+          data: { status: "running" },
+        });
+      }
+    } else if (status === "finished" && summary) {
+      if (!contactor.options.crystallization) {
+        contactor.options.crystallization = { enabled: true, latestSummary: "", tokenWatermark: 20000 };
+      }
+      contactor.options.crystallization.latestSummary = summary;
+      contactor.options.crystallization.lastUpdatedAt = Date.now();
+
+      const message = getOrCreateMessage(contactorId, messageId);
+      if (message) {
+        const eventElm = message.content.find((c) => c.type === "crystallize_event");
+        if (eventElm) {
+          eventElm.data.status = "finished";
+        } else {
+          // 兜底：如果错过了 running 事件直接渲染完成
+          message.content.push({
+            type: "crystallize_event",
+            data: { status: "finished" },
+          });
+        }
+      }
+
+      client.setLocalStorage();
+    }
+  }
+
+  /**
+   * 更新联系人的结晶配置
+   */
+  function updateCrystallization(contactorId, patch) {
+    const contactor = contactors.value[contactorId];
+    if (!contactor) return;
+    if (!contactor.options.crystallization) {
+      contactor.options.crystallization = { enabled: false, latestSummary: "", tokenWatermark: 20000 };
+    }
+    Object.assign(contactor.options.crystallization, patch);
     client.setLocalStorage();
   }
 
@@ -522,12 +624,18 @@ export const useContactorsStore = defineStore("contactors", () => {
             recordMemory(
               contactorId,
               toolCallData.parameters || toolCallData.arguments,
+              toolCallData.result,
             );
           }
 
           newContent.push({
             type: "tool_call",
             data: toolCallData,
+          });
+        } else if (chunk.type === "crystallize") {
+          newContent.push({
+            type: "crystallize_event",
+            data: { status: chunk.content?.status || "finished" },
           });
         }
       });
@@ -695,5 +803,9 @@ export const useContactorsStore = defineStore("contactors", () => {
     clearHistory,
     insertSystemMessage,
     toJSON,
+    // Crystallization
+    handleCrystallizeEvent,
+    updateCrystallization,
+    appendToXmlZone,
   };
 });

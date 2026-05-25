@@ -1,5 +1,6 @@
 import { useContactorsStore } from "@/stores/contactorsStore.js";
 import { client } from "@/lib/runtime.js";
+import { assembleSystemPrompt } from "@/utils/SystemPromptAssembler.js";
 
 function getFilePrompt(fileElms) {
   const start = "\n以下是用户上传的文件：\n";
@@ -184,6 +185,79 @@ export function getValidOpenaiMessage(
   return finalMessages;
 }
 
+/**
+ * 结晶模式下，获取应发送给后端的消息链。
+ *
+ * 逻辑：latestSummary 已代替了结晶点之前的所有历史，
+ * 所以我们只发送「结晶点之后」的原始消息。
+ *
+ * 定位方式：
+ * 1. 在 messageChain 中找到最后一条含 `crystallize_event` 的消息（结晶发生处）
+ * 2. 从该消息开始向前再保留 keepTurns 个完整前端轮次（与后端 scanFrontendTurns 对称）
+ * 3. 把这个范围内的消息格式化为 OpenAI 格式返回
+ *
+ * 如果从未发生过结晶（首次对话），退回到 maxMessagesNum 的普通滑动窗口。
+ *
+ * @param {Array} messageChain - 联系人的完整消息链
+ * @param {number} firstMessageIndex
+ * @param {number} keepTurns - 结晶点附近保留的前端轮次数（默认 2）
+ * @returns {Array} OpenAI 格式消息列表（不含 system，由调用方注入）
+ */
+export function getCrystallizationMessages(
+  messageChain,
+  firstMessageIndex = 0,
+  keepTurns = 2,
+) {
+  const fromIndex = messageChain.slice(firstMessageIndex);
+
+  // 1. 找到最后一个含 crystallize_event 内容元素的消息的下标
+  let crystalMsgIndex = -1;
+  for (let i = fromIndex.length - 1; i >= 0; i--) {
+    const msg = fromIndex[i];
+    if (
+      msg.role !== "mio_system" &&
+      Array.isArray(msg.content) &&
+      msg.content.some((elm) => elm.type === "crystallize_event")
+    ) {
+      crystalMsgIndex = i;
+      break;
+    }
+  }
+
+  let sliceFrom;
+
+  if (crystalMsgIndex === -1) {
+    // 从未发生过结晶：直接取全部（由 system prompt 中的 latestSummary 兜底）
+    sliceFrom = 0;
+  } else {
+    // 2. 从 crystalMsgIndex 往前扫描，找到 keepTurns 个完整用户轮次的起点
+    //    这与后端 scanFrontendTurns 保留的范围对称
+    let turnsFound = 0;
+    sliceFrom = crystalMsgIndex; // 默认至少包含结晶处的消息
+
+    for (let i = crystalMsgIndex; i >= 0; i--) {
+      if (fromIndex[i].role === "user") {
+        turnsFound++;
+        if (turnsFound >= keepTurns) {
+          sliceFrom = i;
+          break;
+        }
+        sliceFrom = i;
+      }
+    }
+  }
+
+  // 3. 过滤掉 mio_system 消息后格式化
+  const windowMessages = fromIndex
+    .slice(sliceFrom)
+    .filter((msg) => msg.role !== "mio_system");
+
+  // 4. 复用 getValidOpenaiMessage 的格式化逻辑（传 Infinity 让它不再截断）
+  return getValidOpenaiMessage(windowMessages, 0, Infinity);
+}
+
+
+
 class StreamBuffer {
   constructor(contactorId, messageId, store) {
     this.contactorId = contactorId;
@@ -313,11 +387,39 @@ export const gateway = {
       // 获取格式化后的上下文
       const contactorStore = useContactorsStore();
       const contactor = contactorStore.contactors[contactorId];
-      const finalMessages = getValidOpenaiMessage(
-        messagesChain,
-        contactor?.firstMessageIndex || 0,
-        contactor?.options?.base?.max_messages_num || 20,
-      );
+      const crystallization = contactor?.options?.crystallization;
+      const crystallizationEnabled = crystallization?.enabled === true;
+
+      let finalMessages;
+
+      if (crystallizationEnabled) {
+        // 结晶模式：只发送「结晶点之后」的原始消息（与后端 scanFrontendTurns 保留范围对称）
+        // latestSummary 已经代替了结晶点之前的所有历史，无需重复发送
+        const keepTurns = 2;
+        finalMessages = getCrystallizationMessages(
+          messagesChain,
+          contactor?.firstMessageIndex || 0,
+          keepTurns,
+        );
+
+        // 在消息链头部注入组装好的 system 消息（全局人格 + memory_crystal XML）
+        const baseSystemPrompt = options?.presetSettings?.opening || "";
+        const latestSummary = crystallization.latestSummary || "";
+        const assembledSystem = assembleSystemPrompt(baseSystemPrompt, latestSummary);
+
+        if (assembledSystem) {
+          // 移除消息链中已有的 system 消息（避免重复）
+          const withoutSystem = finalMessages.filter((m) => m.role !== "system");
+          finalMessages = [{ role: "system", content: assembledSystem }, ...withoutSystem];
+        }
+      } else {
+        // 普通模式：使用滑动窗口截取
+        finalMessages = getValidOpenaiMessage(
+          messagesChain,
+          contactor?.firstMessageIndex || 0,
+          contactor?.options?.base?.max_messages_num || 20,
+        );
+      }
 
       const metaData = {
         contactorId,
@@ -325,8 +427,20 @@ export const gateway = {
         namePolicy: contactor?.namePolicy || 0,
       };
 
+      // 在 settings 中注入结晶相关参数
+      const enrichedOptions = { ...options };
+      if (crystallizationEnabled) {
+        enrichedOptions.crystallization_token_watermark = crystallization.tokenWatermark || 20000;
+        enrichedOptions.previous_summary = crystallization.latestSummary || "";
+        enrichedOptions.crystallization_keep_turns = 2;
+        // 移除 system prompt 中的 opening（已合并到消息链头部）
+        if (enrichedOptions.presetSettings) {
+          enrichedOptions.presetSettings = { ...enrichedOptions.presetSettings, opening: "" };
+        }
+      }
+
       const data = {
-        settings: options,
+        settings: enrichedOptions,
         messages: finalMessages,
       };
 
@@ -405,6 +519,13 @@ export const gateway = {
             },
             "tool_call",
           );
+        } else if (data.type === "crystallize") {
+          // 结晶事件：通知 store 更新 latestSummary 和 UI 事件条
+          const buffer = streamBuffers.get(messageId);
+          if (buffer) {
+            buffer.flush();
+          }
+          contactorStore.handleCrystallizeEvent(contactorId, messageId, data.content);
         }
       }
     } else if (["complete", "failed"].includes(e.message)) {

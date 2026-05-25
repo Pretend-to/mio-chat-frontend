@@ -27,6 +27,7 @@
             v-if="options && basicInfo"
             v-model:model-value="options"
             v-model:basic-info="basicInfo"
+            :contactor-id="activeContactor.id"
             :active-contactor-platform="activeContactor.platform"
             :llm-providers-list="llmProviders"
             :tool-call-modes-list="toolCallModes"
