@@ -10,5 +10,4 @@ onlyBuiltDependencies:
   - vue-demi
   - sharp
 
-overrides:
-  mio-previewer: link:../mio-previewer
+overrides: {}
