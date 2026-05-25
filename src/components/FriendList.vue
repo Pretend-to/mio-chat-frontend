@@ -87,6 +87,20 @@ let startWidth = 0;
 // Computed — directly wired to Pinia reactive state, no local copy needed
 const sortedList = computed(() => contactorsStore.sortedContactors);
 
+const getMenuStyle = computed(() => {
+  const estimatedHeight = 160;
+  const isUp = menuY.value + estimatedHeight > window.innerHeight;
+  const style = {
+    left: menuX.value + "px",
+  };
+  if (isUp) {
+    style.bottom = (window.innerHeight - menuY.value) + "px";
+  } else {
+    style.top = menuY.value + "px";
+  }
+  return style;
+});
+
 // Methods
 const handleResize = () => {
   onPhone.value = window.innerWidth < 768;
@@ -498,10 +512,8 @@ onBeforeUnmount(() => {
       v-if="showMenu"
       type="friend"
       :message="selectedFriend"
-      :style="{
-        top: menuY + 'px',
-        left: menuX + 'px',
-      }"
+      :style="getMenuStyle"
+      :client-x="menuX"
       @message-option="handleFriendOption"
       @close="showMenu = false"
     />

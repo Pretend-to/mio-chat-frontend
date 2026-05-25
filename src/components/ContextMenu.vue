@@ -92,6 +92,10 @@ export default {
       type: String,
       default: "",
     },
+    clientX: {
+      type: Number,
+      default: 0,
+    },
   },
   data() {
     return {
@@ -106,6 +110,16 @@ export default {
       if (!el) return;
       const hasBottom = el.style && el.style.bottom && el.style.bottom !== "";
       this.isUp = !!hasBottom;
+
+      if (window.innerWidth < 768 && this.clientX) {
+        const rect = el.getBoundingClientRect();
+        let relativeX = this.clientX - rect.left;
+        const arrowMargin = 16;
+        relativeX = Math.max(arrowMargin, Math.min(rect.width - arrowMargin, relativeX));
+        el.style.setProperty('--arrow-left', `${relativeX}px`);
+      } else {
+        el.style.setProperty('--arrow-left', '50%');
+      }
     },
     onWindowResize() {
       // 重新计算三角位置（样式由 CSS 控制，这里主要保持 isUp 更新）
@@ -393,12 +407,12 @@ export default {
 
     &.expand-down
       @media (max-width: 768px)
-        // 当向下展开，三角在顶部居中，指向触发点（仅移动端）
+        // 当向下展开，三角在顶部，指向触发点（仅移动端）
         &::before
           content: ''
           position: absolute
           top: -6px
-          left: 50%
+          left: var(--arrow-left, 50%)
           transform: translateX(-50%)
           width: 0
           height: 0
@@ -409,12 +423,12 @@ export default {
 
     &.expand-up
       @media (max-width: 768px)
-        // 当向上展开，三角在底部居中，指向触发点（仅移动端）
+        // 当向上展开，三角在底部，指向触发点（仅移动端）
         &::after
           content: ''
           position: absolute
           bottom: -6px
-          left: 50%
+          left: var(--arrow-left, 50%)
           transform: translateX(-50%)
           width: 0
           height: 0
@@ -438,5 +452,8 @@ export default {
             &.expand-up
               transform-origin: center bottom
         @media (min-width: 769px)
-            transform-origin: top left
+            &.expand-down
+              transform-origin: top left
+            &.expand-up
+              transform-origin: bottom left
 </style>

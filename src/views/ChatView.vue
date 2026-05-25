@@ -372,17 +372,23 @@ const getMenuStyle = computed(() => {
       bottom: window.innerHeight - menuTop.value + 16 + "px",
     };
   } else {
-    if (menuLeft.value + 110 > window.innerWidth) {
-      return {
-        top: menuTop.value + "px",
-        left: menuLeft.value - 110 + "px",
-      };
+    const estimatedHeight = 340;
+    const isUp = menuTop.value + estimatedHeight > window.innerHeight;
+    const horizontalOffset = 150;
+    
+    const style = {};
+    if (isUp) {
+      style.bottom = (window.innerHeight - menuTop.value) + "px";
     } else {
-      return {
-        top: menuTop.value + "px",
-        left: menuLeft.value + "px",
-      };
+      style.top = menuTop.value + "px";
     }
+    
+    if (menuLeft.value + horizontalOffset > window.innerWidth) {
+      style.left = (menuLeft.value - horizontalOffset) + "px";
+    } else {
+      style.left = menuLeft.value + "px";
+    }
+    return style;
   }
 });
 
@@ -1139,12 +1145,13 @@ onBeforeUnmount(() => {
         <i class="iconfont down1"></i>
       </div>
       <ContextMenu
-        v-show="showMenu"
+        v-if="showMenu"
         type="message"
         :message="getseletedMessage()"
         :seleted-text
         :seleted-image
         :style="getMenuStyle"
+        :client-x="menuLeft"
         @message-option="handleMessageOption"
         @close="showMenu = false"
       />

@@ -7,6 +7,7 @@
         :class="[
           isMobileDevice ? 'mobile-command-popup' : 'desktop-command-popup',
         ]"
+        :style="isMobileDevice ? {} : commandPopupStyle"
       >
         <div class="popup-header" v-if="isMobileDevice">
           <span class="popup-title">选择快捷指令</span>
@@ -155,6 +156,10 @@ export default {
       commandIndex: 0,
       popupDismissed: false,
       availableSkills: [],
+      commandPopupStyle: {
+        left: "1rem",
+        bottom: "calc(100% + 4px)",
+      },
     };
   },
   computed: {
@@ -271,6 +276,17 @@ export default {
         this.fetchSkills();
       }
     },
+    commandSearchQuery() {
+      this.commandIndex = 0;
+      if (this.showCommandPopup) {
+        this.updateCommandPopupPosition();
+      }
+    },
+    showCommandPopup(newVal) {
+      if (newVal) {
+        this.updateCommandPopupPosition();
+      }
+    },
   },
   created() {
     this.pendingImageFiles = new Map();
@@ -356,6 +372,59 @@ export default {
     this.textareaRef = null;
   },
   methods: {
+    getCaretCoordinates() {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return null;
+
+      const range = selection.getRangeAt(0);
+      let rect = range.getBoundingClientRect();
+
+      if (!rect || (rect.width === 0 && rect.height === 0)) {
+        const rects = range.getClientRects();
+        if (rects && rects.length > 0) {
+          rect = rects[0];
+        }
+      }
+
+      if (!rect || (rect.width === 0 && rect.height === 0)) {
+        const node = selection.anchorNode;
+        if (node) {
+          const element =
+            node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+          if (element) {
+            rect = element.getBoundingClientRect();
+          }
+        }
+      }
+
+      return rect;
+    },
+    updateCommandPopupPosition() {
+      if (this.isMobileDevice) return;
+      this.$nextTick(() => {
+        const caretRect = this.getCaretCoordinates();
+        const inputBar = this.$el;
+        if (!caretRect || !inputBar) return;
+        const inputBarRect = inputBar.getBoundingClientRect();
+
+        let left = caretRect.left - inputBarRect.left;
+        const popupWidth = 320;
+        const margin = 10;
+        const maxLeft = Math.max(
+          margin,
+          inputBarRect.width - popupWidth - margin,
+        );
+        left = Math.min(Math.max(margin, left), maxLeft);
+
+        const bottom = inputBarRect.bottom - caretRect.top + 4;
+
+        this.commandPopupStyle = {
+          position: "absolute",
+          left: `${left}px`,
+          bottom: `${bottom}px`,
+        };
+      });
+    },
     async fetchSkills() {
       try {
         const res = await skillAPI.getSkills();
