@@ -184,6 +184,100 @@ export function getValidOpenaiMessage(
   return finalMessages;
 }
 
+class StreamBuffer {
+  constructor(contactorId, messageId, store) {
+    this.contactorId = contactorId;
+    this.messageId = messageId;
+    this.store = store;
+    this.pendingContent = "";
+    this.pendingReason = "";
+    this.reasonMetadata = null;
+    this.lastFlushTime = 0;
+    this.timer = null;
+    this.flushInterval = 80; // ms
+  }
+
+  addContent(chunk) {
+    this.pendingContent += chunk;
+    this.scheduleFlush();
+  }
+
+  addReason(text, metadata) {
+    this.pendingReason += text;
+    if (metadata) {
+      this.reasonMetadata = {
+        startTime: metadata.startTime,
+        duration: metadata.duration || 0,
+      };
+    }
+    this.scheduleFlush();
+  }
+
+  scheduleFlush() {
+    if (this.timer) return;
+    const now = Date.now();
+    const elapsed = now - this.lastFlushTime;
+    const delay = Math.max(0, this.flushInterval - elapsed);
+
+    this.timer = setTimeout(() => {
+      this.flush();
+    }, delay);
+  }
+
+  flush() {
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+
+    let updated = false;
+
+    if (this.pendingReason) {
+      this.store.appendOrUpdateMessage(
+        this.contactorId,
+        this.messageId,
+        {
+          reasoning_content: this.pendingReason,
+          startTime: this.reasonMetadata?.startTime,
+          duration: this.reasonMetadata?.duration || 0,
+        },
+        "reason",
+      );
+      this.pendingReason = "";
+      this.reasonMetadata = null;
+      updated = true;
+    }
+
+    if (this.pendingContent) {
+      this.store.appendOrUpdateMessage(
+        this.contactorId,
+        this.messageId,
+        {
+          chunk: this.pendingContent,
+        },
+        "content",
+      );
+      this.pendingContent = "";
+      updated = true;
+    }
+
+    if (updated) {
+      this.lastFlushTime = Date.now();
+    }
+  }
+}
+
+const streamBuffers = new Map();
+
+function getOrCreateBuffer(contactorId, messageId, store) {
+  let buffer = streamBuffers.get(messageId);
+  if (!buffer) {
+    buffer = new StreamBuffer(contactorId, messageId, store);
+    streamBuffers.set(messageId, buffer);
+  }
+  return buffer;
+}
+
 /**
  * 统一网关：发送消息、中断生成、处理 Socket 回调事件的单例
  */
@@ -244,6 +338,11 @@ export const gateway = {
    * 发送中断信号
    */
   async interrupt(platform, contactorId, messageId) {
+    const buffer = streamBuffers.get(messageId);
+    if (buffer) {
+      buffer.flush();
+      streamBuffers.delete(messageId);
+    }
     if (platform === "openai") {
       if (!client.socket) return;
       client.socket.interruptGeneration(messageId, contactorId);
@@ -275,6 +374,11 @@ export const gateway = {
 
     if (["update", "sync"].includes(e.message)) {
       if (e.message === "sync") {
+        const buffer = streamBuffers.get(messageId);
+        if (buffer) {
+          buffer.flush();
+          streamBuffers.delete(messageId);
+        }
         contactorStore.syncMessage(contactorId, {
           chunks: data.chunks,
           status: data.status,
@@ -283,26 +387,16 @@ export const gateway = {
         });
       } else {
         if (data.type === "reason") {
-          contactorStore.appendOrUpdateMessage(
-            contactorId,
-            messageId,
-            {
-              reasoning_content: data.data?.text ?? "",
-              startTime: data.data?.startTime,
-              duration: data.data?.duration ?? 0,
-            },
-            "reason",
-          );
+          const buffer = getOrCreateBuffer(contactorId, messageId, contactorStore);
+          buffer.addReason(data.data?.text ?? "", data.data);
         } else if (data.type === "content") {
-          contactorStore.appendOrUpdateMessage(
-            contactorId,
-            messageId,
-            {
-              chunk: data.content,
-            },
-            "content",
-          );
+          const buffer = getOrCreateBuffer(contactorId, messageId, contactorStore);
+          buffer.addContent(data.content);
         } else if (data.type === "toolCall") {
+          const buffer = streamBuffers.get(messageId);
+          if (buffer) {
+            buffer.flush();
+          }
           contactorStore.appendOrUpdateMessage(
             contactorId,
             messageId,
@@ -314,6 +408,11 @@ export const gateway = {
         }
       }
     } else if (["complete", "failed"].includes(e.message)) {
+      const buffer = streamBuffers.get(messageId);
+      if (buffer) {
+        buffer.flush();
+        streamBuffers.delete(messageId);
+      }
       if (e.message === "complete") {
         contactorStore.completeMessage(contactorId, messageId);
       } else if (e.message === "failed") {
