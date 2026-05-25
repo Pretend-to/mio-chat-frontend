@@ -210,7 +210,7 @@
                     </span>
 
                     <!-- 右侧展开按钮 -->
-                    <div class="tool-actions" v-if="element.data.status === 'finished'">
+                    <div class="tool-actions" v-if="element.data.summary">
                       <button :class="{ active: isCrystallizeExpanded(elmIndex), 'action-btn': true }">
                         <svg class="chevron" viewBox="0 0 1024 1024" width="10" height="10">
                           <path
@@ -224,14 +224,14 @@
 
                   <!-- 内联展开详情区 -->
                   <div
-                    v-if="element.data.status === 'finished'"
+                    v-if="element.data.summary"
                     class="crystallize-details"
                     :class="{ 'is-expanded': isCrystallizeExpanded(elmIndex) }"
                   >
                     <div class="details-inner">
                       <div class="detail-section">
                         <div class="section-label">整理后记忆结晶 (XML)</div>
-                        <pre class="xml-box">{{ element.data.summary || '无更新事实' }}</pre>
+                        <pre class="xml-box">{{ element.data.summary }}</pre>
                       </div>
                     </div>
                   </div>
@@ -357,6 +357,14 @@ const expandedCrystallizeEvents = ref({});
 
 const isCrystallizeExpanded = (elmIndex) => {
   const key = `${props.index}-${elmIndex}`;
+  if (expandedCrystallizeEvents.value[key] === undefined) {
+    // 正在整理中且有数据时，默认自动展开，让用户能够直接看到酷炫的流式打字机效果
+    const element = props.item.content[elmIndex];
+    if (element && element.data?.status === 'running' && element.data.summary) {
+      return true;
+    }
+    return false;
+  }
   return expandedCrystallizeEvents.value[key] === true;
 };
 

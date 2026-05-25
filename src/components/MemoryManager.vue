@@ -103,7 +103,7 @@ const contactor = computed(() => contactorStore.contactors[props.contactorId]);
 const crystallization = computed(() => contactor.value?.options?.crystallization);
 
 const crystallizationEnabled = computed(() => crystallization.value?.enabled === true);
-const localWatermark = ref(crystallization.value?.tokenWatermark ?? 20000);
+const localWatermark = ref(crystallization.value?.tokenWatermark ?? 64000);
 
 // Zone contents parsed from latestSummary
 const zoneContents = ref(parseXmlZones(crystallization.value?.latestSummary || ""));

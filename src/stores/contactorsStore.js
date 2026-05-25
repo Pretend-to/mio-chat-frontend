@@ -430,7 +430,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     // 1. 如果有后端返回的全新 summary，直接覆盖！(最优、最干净的 CRUD 同步路径)
     if (result && result.summary !== undefined) {
       if (!contactor.options.crystallization) {
-        contactor.options.crystallization = { enabled: true, latestSummary: "", tokenWatermark: 20000 };
+        contactor.options.crystallization = { enabled: true, latestSummary: "", tokenWatermark: 64000 };
       }
       contactor.options.crystallization.latestSummary = result.summary;
       contactor.options.crystallization.lastUpdatedAt = Date.now();
@@ -521,21 +521,29 @@ export const useContactorsStore = defineStore("contactors", () => {
 
     if (status === "running") {
       const message = getOrCreateMessage(contactorId, messageId);
-      if (message && !message._crystallizeEventInserted) {
-        message._crystallizeEventInserted = true;
-        // 移除等待中的 blank 占位块
-        const blankIndex = message.content.findIndex((elm) => elm.type === "blank");
-        if (blankIndex !== -1) {
-          message.content.splice(blankIndex, 1);
+      if (message) {
+        let eventElm = message.content.find((c) => c.type === "crystallize_event");
+        if (!eventElm) {
+          // 移除等待中的 blank 占位块
+          const blankIndex = message.content.findIndex((elm) => elm.type === "blank");
+          if (blankIndex !== -1) {
+            message.content.splice(blankIndex, 1);
+          }
+          eventElm = {
+            type: "crystallize_event",
+            data: { status: "running", summary: summary || "" },
+          };
+          message.content.push(eventElm);
+        } else {
+          eventElm.data.status = "running";
+          if (summary !== undefined) {
+            eventElm.data.summary = summary;
+          }
         }
-        message.content.push({
-          type: "crystallize_event",
-          data: { status: "running" },
-        });
       }
     } else if (status === "finished" && summary) {
       if (!contactor.options.crystallization) {
-        contactor.options.crystallization = { enabled: true, latestSummary: "", tokenWatermark: 20000 };
+        contactor.options.crystallization = { enabled: true, latestSummary: "", tokenWatermark: 64000 };
       }
       contactor.options.crystallization.latestSummary = summary;
       contactor.options.crystallization.lastUpdatedAt = Date.now();
@@ -545,11 +553,12 @@ export const useContactorsStore = defineStore("contactors", () => {
         const eventElm = message.content.find((c) => c.type === "crystallize_event");
         if (eventElm) {
           eventElm.data.status = "finished";
+          eventElm.data.summary = summary;
         } else {
           // 兜底：如果错过了 running 事件直接渲染完成
           message.content.push({
             type: "crystallize_event",
-            data: { status: "finished" },
+            data: { status: "finished", summary },
           });
         }
       }
@@ -565,7 +574,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     const contactor = contactors.value[contactorId];
     if (!contactor) return;
     if (!contactor.options.crystallization) {
-      contactor.options.crystallization = { enabled: false, latestSummary: "", tokenWatermark: 20000 };
+      contactor.options.crystallization = { enabled: false, latestSummary: "", tokenWatermark: 64000 };
     }
     Object.assign(contactor.options.crystallization, patch);
     client.setLocalStorage();
@@ -635,7 +644,10 @@ export const useContactorsStore = defineStore("contactors", () => {
         } else if (chunk.type === "crystallize") {
           newContent.push({
             type: "crystallize_event",
-            data: { status: chunk.content?.status || "finished" },
+            data: {
+              status: chunk.content?.status || "finished",
+              summary: chunk.content?.summary || "",
+            },
           });
         }
       });

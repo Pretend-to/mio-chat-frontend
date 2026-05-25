@@ -430,7 +430,7 @@ export const gateway = {
       // 在 settings 中注入结晶相关参数
       const enrichedOptions = { ...options };
       if (crystallizationEnabled) {
-        enrichedOptions.crystallization_token_watermark = crystallization.tokenWatermark || 20000;
+        enrichedOptions.crystallization_token_watermark = crystallization.tokenWatermark || 64000;
         enrichedOptions.previous_summary = crystallization.latestSummary || "";
         enrichedOptions.crystallization_keep_turns = 2;
         // 移除 system prompt 中的 opening（已合并到消息链头部）
