@@ -23,7 +23,7 @@
             >
               <div class="turn-header">
                 <span class="turn-id" :title="turn.requestId">
-                  {{ truncateRequestId(turn.requestId) }}
+                  {{ getTurnTitle(turn) }}
                 </span>
                 <el-tag
                   size="small"
@@ -108,6 +108,15 @@
                     <span class="step-model-tag" v-if="step.model">
                       {{ step.provider }} / {{ step.model }}
                     </span>
+                    <el-tag
+                      v-if="step.cacheHitTokens > 0"
+                      size="small"
+                      type="success"
+                      effect="light"
+                      class="cache-badge"
+                    >
+                      <i class="fa-solid fa-bolt"></i> 缓存命中: {{ formatNumber(step.cacheHitTokens) }} Tokens ({{ Math.round((step.cacheHitTokens / (step.cacheHitTokens + step.cacheMissTokens)) * 100) }}%)
+                    </el-tag>
                   </div>
 
                   <div class="step-details">
@@ -132,6 +141,18 @@
                         >
                         <span class="metric-item latency" v-if="step.ttft">
                           首字延迟: <strong>{{ step.ttft }}ms</strong>
+                        </span>
+                        <span class="metric-item cache" v-if="step.cacheHitTokens !== undefined">
+                          缓存命中:
+                          <strong :style="{ color: step.cacheHitTokens > 0 ? '#10b981' : '#64748b' }">
+                            {{ formatNumber(step.cacheHitTokens) }}
+                          </strong>
+                        </span>
+                        <span class="metric-item cache-rate" v-if="step.cacheHitTokens !== undefined">
+                          缓存命中率:
+                          <strong :style="{ color: step.cacheHitTokens > 0 ? '#10b981' : '#64748b' }">
+                            {{ step.cacheHitTokens + step.cacheMissTokens > 0 ? Math.round((step.cacheHitTokens / (step.cacheHitTokens + step.cacheMissTokens)) * 100) : 0 }}%
+                          </strong>
                         </span>
                       </div>
 
@@ -182,8 +203,37 @@
 
 <script setup>
 import { useDashboardStore } from "@/stores/dashboardStore";
+import { useContactorsStore } from "@/stores/contactorsStore";
 
 const store = useDashboardStore();
+const contactorsStore = useContactorsStore();
+
+function getTurnTitle(turn) {
+  // 1. 优先使用后端入库的全局会话标题
+  if (turn.sessionTitle) {
+    return turn.sessionTitle;
+  }
+
+  // 2. 如果是系统生成标题的任务
+  if (turn.presetName && (turn.presetName.toLowerCase().startsWith("system_title") || turn.presetName.toLowerCase().includes("title"))) {
+    return "🏷️ 自动生成会话标题";
+  }
+  if (turn.requestId && turn.requestId.startsWith("system_title")) {
+    return "🏷️ 自动生成会话标题";
+  }
+
+  // 3. 如果是当前用户的会话，尝试联动 LocalStorage 兜底
+  if (turn.contactorId && contactorsStore.contactors[turn.contactorId]) {
+    return contactorsStore.contactors[turn.contactorId].name || turn.presetName || "常规对话";
+  }
+
+  // 4. 兜底显示
+  if (turn.presetName && turn.presetName !== "Direct Dialogue" && turn.presetName !== "undefined") {
+    return turn.presetName;
+  }
+  
+  return truncateRequestId(turn.requestId);
+}
 
 function truncateRequestId(id) {
   if (!id) return "";
@@ -324,6 +374,10 @@ function formatTime(timestamp) {
   font-size: 13px;
   color: #1e293b;
   font-family: "JetBrains Mono", monospace;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  max-width: 170px;
 }
 
 .turn-tag {

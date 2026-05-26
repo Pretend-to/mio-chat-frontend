@@ -195,6 +195,8 @@ export const useDashboardStore = defineStore("dashboard", () => {
           requestId: t.requestId,
           user: t.userId,
           presetName: t.presetName,
+          contactorId: t.contactorId,
+          sessionTitle: t.sessionTitle,
           createdAt: t.createdAt,
           totalTokens: t.totalTokens,
           stepsCount: t.stepsCount,

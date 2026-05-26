@@ -44,95 +44,153 @@ export function getValidOpenaiMessage(
     const subArray = [];
     const cmds = [];
 
-    message.content.forEach((elm) => {
-      if (elm.type === "prompt_hint" && elm.data.prompt) {
-        cmds.push(elm.data.prompt);
-      }
-    });
+    if (message.role === "assistant" || message.role === "other") {
+      let pendingReasoning = "";
 
-    const cmdPrefix = cmds.length > 0 ? cmds.join("\n") + "\n" : "";
-    let firstTextElmRef = null;
+      message.content.forEach((elm) => {
+        if (elm.type === "prompt_hint") {
+          return;
+        }
 
-    message.content.forEach((elm) => {
-      if (elm.type === "prompt_hint") {
-        return;
-      }
-
-      const role =
-        elm.type === "tool_call"
-          ? "tool"
-          : message.role === "user"
-            ? "user"
-            : "assistant";
-
-      const formatedMsg = {
-        role: role,
-        content: "none",
-        _content_type: undefined,
-      };
-
-      if (role === "tool") {
-        formatedMsg.role = "assistant";
-        formatedMsg.content = null;
-        formatedMsg.tool_calls = [
-          {
-            id: elm.data.id,
-            function: {
-              name: elm.data.name,
-              arguments: elm.data.parameters,
-            },
-            type: "function",
-          },
-        ];
-        subArray.push({ ...formatedMsg });
-
-        delete formatedMsg.tool_calls;
-        formatedMsg.role = "tool";
-        formatedMsg.content = JSON.stringify(elm.data.result);
-        formatedMsg.tool_call_id = elm.data.id;
-        formatedMsg.name = elm.data.name;
-        subArray.push({ ...formatedMsg });
-
-        formatedMsg.role = role;
-      } else if (role === "user" || role === "assistant") {
-        if (elm.type === "image") {
-          formatedMsg.content = elm.data.file;
-          formatedMsg._content_type = "image";
-          subArray.push(formatedMsg);
-          imageList.push(elm.data.file.content);
+        if (elm.type === "reason") {
+          pendingReasoning += elm.data.text || "";
         } else if (elm.type === "text") {
-          formatedMsg.content = elm.data.text;
-          formatedMsg._content_type = "text";
-          subArray.push(formatedMsg);
-          if (!firstTextElmRef) {
-            firstTextElmRef = formatedMsg;
+          const assistantMsg = {
+            role: "assistant",
+            content: elm.data.text || "",
+          };
+          if (pendingReasoning) {
+            assistantMsg.reasoning_content = pendingReasoning;
+            pendingReasoning = "";
           }
-        } else if (elm.type === "file") {
-          fileList.push(elm.data.file);
+          subArray.push(assistantMsg);
+        } else if (elm.type === "tool_call") {
+          const toolCallMsg = {
+            role: "assistant",
+            tool_calls: [
+              {
+                id: elm.data.id,
+                type: "function",
+                function: {
+                  name: elm.data.name,
+                  arguments: elm.data.parameters,
+                },
+              }
+            ]
+          };
+          if (pendingReasoning) {
+            toolCallMsg.reasoning_content = pendingReasoning;
+            pendingReasoning = "";
+          }
+          subArray.push(toolCallMsg);
+
+          subArray.push({
+            role: "tool",
+            content: typeof elm.data.result === "string" ? elm.data.result : JSON.stringify(elm.data.result),
+            tool_call_id: elm.data.id,
+            name: elm.data.name,
+          });
+        }
+      });
+
+      if (pendingReasoning) {
+        subArray.push({
+          role: "assistant",
+          content: "",
+          reasoning_content: pendingReasoning,
+        });
+      }
+    } else {
+      message.content.forEach((elm) => {
+        if (elm.type === "prompt_hint" && elm.data.prompt) {
+          cmds.push(elm.data.prompt);
+        }
+      });
+
+      const cmdPrefix = cmds.length > 0 ? cmds.join("\n") + "\n" : "";
+      let firstTextElmRef = null;
+
+      message.content.forEach((elm) => {
+        if (elm.type === "prompt_hint") {
+          return;
+        }
+
+        const role =
+          elm.type === "tool_call"
+            ? "tool"
+            : message.role === "user"
+              ? "user"
+              : "assistant";
+
+        const formatedMsg = {
+          role: role,
+          content: "none",
+          _content_type: undefined,
+        };
+
+        if (role === "tool") {
+          formatedMsg.role = "assistant";
+          formatedMsg.content = null;
+          formatedMsg.tool_calls = [
+            {
+              id: elm.data.id,
+              function: {
+                name: elm.data.name,
+                arguments: elm.data.parameters,
+              },
+              type: "function",
+            },
+          ];
+          subArray.push({ ...formatedMsg });
+
+          delete formatedMsg.tool_calls;
+          formatedMsg.role = "tool";
+          formatedMsg.content = JSON.stringify(elm.data.result);
+          formatedMsg.tool_call_id = elm.data.id;
+          formatedMsg.name = elm.data.name;
+          subArray.push({ ...formatedMsg });
+
+          formatedMsg.role = role;
+        } else if (role === "user" || role === "assistant") {
+          if (elm.type === "image") {
+            formatedMsg.content = elm.data.file;
+            formatedMsg._content_type = "image";
+            subArray.push(formatedMsg);
+            imageList.push(elm.data.file.content);
+          } else if (elm.type === "text") {
+            formatedMsg.content = elm.data.text;
+            formatedMsg._content_type = "text";
+            subArray.push(formatedMsg);
+            if (!firstTextElmRef) {
+              firstTextElmRef = formatedMsg;
+            }
+          } else if (elm.type === "file") {
+            fileList.push(elm.data.file);
+          }
+        }
+      });
+
+      if (cmdPrefix) {
+        if (firstTextElmRef) {
+          firstTextElmRef.content = cmdPrefix + firstTextElmRef.content;
+        } else {
+          subArray.push({
+            role: message.role === "user" ? "user" : "assistant",
+            content: cmdPrefix.trim(),
+            _content_type: "text",
+          });
         }
       }
-    });
 
-    if (cmdPrefix) {
-      if (firstTextElmRef) {
-        firstTextElmRef.content = cmdPrefix + firstTextElmRef.content;
-      } else {
-        subArray.push({
-          role: message.role === "user" ? "user" : "assistant",
-          content: cmdPrefix.trim(),
-          _content_type: "text",
-        });
-      }
-    }
-
-    if (fileList.length > 0) {
-      const textElm = subArray.filter((elm) => elm._content_type === "text");
-      if (textElm.length === 0) {
-        subArray.push({
-          role: "user",
-          content: getFilePrompt(fileList),
-          _content_type: "text",
-        });
+      if (fileList.length > 0) {
+        const textElm = subArray.filter((elm) => elm._content_type === "text");
+        if (textElm.length === 0) {
+          subArray.push({
+            role: "user",
+            content: getFilePrompt(fileList),
+            _content_type: "text",
+          });
+        }
       }
     }
     return subArray;
@@ -425,6 +483,7 @@ export const gateway = {
         contactorId,
         messageId,
         namePolicy: contactor?.namePolicy || 0,
+        contactorName: contactor?.name || null,
       };
 
       // 在 settings 中注入结晶相关参数
