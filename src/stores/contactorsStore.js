@@ -172,6 +172,10 @@ export const useContactorsStore = defineStore("contactors", () => {
         lastMessageSummary: "",
       };
 
+      if (item.platform === "openai" && !newContactors[item.id].options.crystallization) {
+        newContactors[item.id].options.crystallization = { enabled: true, latestSummary: "", tokenWatermark: 64000 };
+      }
+
       // Auto initialize details
       loadContactorName(newContactors[item.id]);
       loadContactorAvatar(newContactors[item.id]);
@@ -202,6 +206,10 @@ export const useContactorsStore = defineStore("contactors", () => {
       lastMessageSummary: "",
     };
 
+    if (platform === "openai" && !newContactor.options.crystallization) {
+      newContactor.options.crystallization = { enabled: true, latestSummary: "", tokenWatermark: 64000 };
+    }
+
     loadContactorName(newContactor);
     loadContactorAvatar(newContactor);
     updateContactorSummary(newContactor);
@@ -230,7 +238,12 @@ export const useContactorsStore = defineStore("contactors", () => {
     });
 
     if (id && contactors.value[id]) {
-      contactors.value[id].hasPendingTask = false;
+      const contactor = contactors.value[id];
+      contactor.hasPendingTask = false;
+      if (contactor.platform === "openai" && !contactor.options.crystallization) {
+        contactor.options.crystallization = { enabled: true, latestSummary: "", tokenWatermark: 64000 };
+        client.setLocalStorage();
+      }
     }
   }
 
@@ -574,7 +587,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     const contactor = contactors.value[contactorId];
     if (!contactor) return;
     if (!contactor.options.crystallization) {
-      contactor.options.crystallization = { enabled: false, latestSummary: "", tokenWatermark: 64000 };
+      contactor.options.crystallization = { enabled: true, latestSummary: "", tokenWatermark: 64000 };
     }
     Object.assign(contactor.options.crystallization, patch);
     client.setLocalStorage();

@@ -300,6 +300,11 @@ export default class Config {
         max_messages_num: 10,
         stream: true,
       },
+      crystallization: {
+        enabled: true,
+        latestSummary: "",
+        tokenWatermark: 64000,
+      },
       chatParams: {
         temperature: 1,
         top_p: 1,
