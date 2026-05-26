@@ -45,7 +45,30 @@ export function getValidOpenaiMessage(
     const cmds = [];
 
     if (message.role === "assistant" || message.role === "other") {
+      let currentAssistant = null;
       let pendingReasoning = "";
+      let pendingToolMessages = [];
+
+      const flushAssistant = () => {
+        if (currentAssistant) {
+          if (pendingReasoning) {
+            currentAssistant.reasoning_content = pendingReasoning;
+            pendingReasoning = "";
+          }
+          if (!currentAssistant.content) {
+            delete currentAssistant.content;
+          }
+          if (!currentAssistant.tool_calls || currentAssistant.tool_calls.length === 0) {
+            delete currentAssistant.tool_calls;
+          }
+          subArray.push(currentAssistant);
+          currentAssistant = null;
+        }
+        if (pendingToolMessages.length > 0) {
+          subArray.push(...pendingToolMessages);
+          pendingToolMessages = [];
+        }
+      };
 
       message.content.forEach((elm) => {
         if (elm.type === "prompt_hint") {
@@ -53,38 +76,35 @@ export function getValidOpenaiMessage(
         }
 
         if (elm.type === "reason") {
+          if (currentAssistant && currentAssistant.tool_calls && currentAssistant.tool_calls.length > 0) {
+            flushAssistant();
+          }
           pendingReasoning += elm.data.text || "";
         } else if (elm.type === "text") {
-          const assistantMsg = {
-            role: "assistant",
-            content: elm.data.text || "",
-          };
-          if (pendingReasoning) {
-            assistantMsg.reasoning_content = pendingReasoning;
-            pendingReasoning = "";
+          if (currentAssistant && currentAssistant.tool_calls && currentAssistant.tool_calls.length > 0) {
+            flushAssistant();
           }
-          subArray.push(assistantMsg);
+          if (!currentAssistant) {
+            currentAssistant = { role: "assistant", content: "" };
+          }
+          currentAssistant.content = (currentAssistant.content || "") + (elm.data.text || "");
         } else if (elm.type === "tool_call") {
-          const toolCallMsg = {
-            role: "assistant",
-            tool_calls: [
-              {
-                id: elm.data.id,
-                type: "function",
-                function: {
-                  name: elm.data.name,
-                  arguments: elm.data.parameters,
-                },
-              }
-            ]
-          };
-          if (pendingReasoning) {
-            toolCallMsg.reasoning_content = pendingReasoning;
-            pendingReasoning = "";
+          if (!currentAssistant) {
+            currentAssistant = { role: "assistant" };
           }
-          subArray.push(toolCallMsg);
+          if (!currentAssistant.tool_calls) {
+            currentAssistant.tool_calls = [];
+          }
+          currentAssistant.tool_calls.push({
+            id: elm.data.id,
+            type: "function",
+            function: {
+              name: elm.data.name,
+              arguments: elm.data.parameters,
+            },
+          });
 
-          subArray.push({
+          pendingToolMessages.push({
             role: "tool",
             content: typeof elm.data.result === "string" ? elm.data.result : JSON.stringify(elm.data.result),
             tool_call_id: elm.data.id,
@@ -92,6 +112,8 @@ export function getValidOpenaiMessage(
           });
         }
       });
+
+      flushAssistant();
 
       if (pendingReasoning) {
         subArray.push({
