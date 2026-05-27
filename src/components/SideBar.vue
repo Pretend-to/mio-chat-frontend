@@ -92,7 +92,7 @@ export default {
         route.path.includes("/profile/")
       ) {
         return PageStatus.PROFILE;
-      } else if (route.path === "/settings") {
+      } else if (route.path.startsWith("/settings")) {
         return PageStatus.SETTINGS;
       }
       return PageStatus.NONE;

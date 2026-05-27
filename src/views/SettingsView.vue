@@ -126,6 +126,9 @@
             <div class="quick-action-item" @click="handleResetCache">
               <span>清理缓存</span>
             </div>
+            <div class="quick-action-item" @click="router.push('/dashboard'); closeMobileMenu()">
+              <span>审计大盘</span>
+            </div>
           </div>
         </div>
       </div>
@@ -162,6 +165,15 @@
             style="width: 100%"
           >
             清理缓存
+          </el-button>
+          <el-button
+            type="primary"
+            plain
+            @click="router.push('/dashboard')"
+            style="width: 100%"
+          >
+            <el-icon style="margin-right: 6px;"><DataAnalysis /></el-icon>
+            审计大盘
           </el-button>
         </div>
       </aside>
@@ -213,6 +225,7 @@ import {
   ChatDotRound,
   ChromeFilled,
   Connection,
+  DataAnalysis,
   Document,
   Grid,
   Menu,
@@ -750,11 +763,15 @@ onUnmounted(() => {
     height: 40px;
     justify-content: flex-start;
     padding-left: 20px;
-    border: none;
+    border: 1px solid transparent;
     background: rgba(255, 255, 255, 0.6);
+    color: #303133;
 
     &:hover {
       background: #fff;
+      border-color: #e0e0e0;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      color: #303133;
     }
   }
 }

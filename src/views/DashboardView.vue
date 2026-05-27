@@ -45,6 +45,14 @@
       </div>
 
       <div class="sidebar-footer">
+        <div
+          class="back-to-app"
+          @click="router.push('/')"
+          title="返回主程序"
+        >
+          <i class="fa-solid fa-arrow-left-long"></i>
+          <span>返回主程序</span>
+        </div>
         <div class="system-time">
           <i class="fa-regular fa-clock"></i> {{ store.currentTime }}
         </div>
@@ -136,6 +144,7 @@
 
 <script setup>
 import { onMounted, onUnmounted, computed, nextTick, ref } from "vue";
+import { useRouter } from "vue-router";
 import { useDashboardStore } from "@/stores/dashboardStore";
 
 // Import Subcomponents
@@ -147,6 +156,7 @@ import CostCalculatorDialog from "@/components/dashboard/CostCalculatorDialog.vu
 import TraceModal from "@/components/dashboard/TraceModal.vue";
 
 const store = useDashboardStore();
+const router = useRouter();
 const isSidebarOpen = ref(false);
 
 const tabTitle = computed(() => {
@@ -315,6 +325,30 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.back-to-app {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.back-to-app:hover {
+  color: #2563eb;
+}
+
+.back-to-app i {
+  font-size: 13px;
+  width: 16px;
+  text-align: center;
 }
 
 .system-time {
