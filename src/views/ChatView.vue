@@ -458,6 +458,11 @@ watch(
   (newVal, oldVal) => {
     if (!newVal) return;
 
+    // 清空上一个会话中残留的待处理交互浮层，防止跨会话串屏
+    import("@/stores/interactionStore.js").then(({ useInteractionStore }) => {
+      useInteractionStore().clearInteraction();
+    });
+
     // Deactivate old contactor
     if (oldVal) {
       const oldContactor = contactorsStore.contactors[oldVal];

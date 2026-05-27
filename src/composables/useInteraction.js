@@ -28,8 +28,8 @@ export function useInteraction() {
       console.error("[useInteraction] Socket.IO raw connection is not ready!");
     }
 
-    // 2. 清除 store 状态，收起交互浮层
-    store.clearInteraction();
+    // 2. 消费当前决策后的交互，将其从队列中移除，展示下一个待处理交互
+    store.resolveInteraction(interactionId);
   };
 
   return {
