@@ -28,20 +28,43 @@
         <!-- B. 危险指令二次审批授权 -->
         <div 
           v-else-if="activeInteraction.actionType === 'REQUEST_APPROVAL'" 
-          class="interaction-options"
+          class="interaction-options-wrapper"
         >
-          <button 
-            class="interaction-btn approve-btn" 
-            @click="submitResponse({ approved: true })"
-          >
-            授权执行
-          </button>
-          <button 
-            class="interaction-btn reject-btn" 
-            @click="submitResponse({ approved: false })"
-          >
-            拒绝
-          </button>
+          <div v-if="!showRejectReason" class="interaction-options">
+            <button 
+              class="interaction-btn approve-btn" 
+              @click="submitResponse({ approved: true })"
+            >
+              授权执行
+            </button>
+            <button 
+              class="interaction-btn reject-btn" 
+              @click="showRejectReason = true"
+            >
+              拒绝
+            </button>
+          </div>
+          
+          <div v-else class="reject-reason-form">
+            <input 
+              v-model="rejectReasonText" 
+              class="reason-input" 
+              placeholder="请输入拒绝理由（可选）..." 
+              @keyup.enter="submitResponse({ approved: false, reason: rejectReasonText })"
+            />
+            <button 
+              class="reason-submit-btn" 
+              @click="submitResponse({ approved: false, reason: rejectReasonText })"
+            >
+              确认拒绝
+            </button>
+            <button 
+              class="reason-cancel-btn" 
+              @click="showRejectReason = false"
+            >
+              返回
+            </button>
+          </div>
         </div>
       </div>
     </transition>
@@ -173,6 +196,7 @@
 </template>
 
 <script>
+import { ref, watch } from "vue";
 import { client, config } from "@/lib/runtime.js";
 import { debounce } from "../utils/tools.js";
 import { useConfigStore } from "@/stores/configStore.js";
@@ -182,10 +206,20 @@ import { useInteraction } from "@/composables/useInteraction.js";
 export default {
   setup() {
     const { activeInteraction, hasActiveInteraction, submitResponse } = useInteraction();
+    const showRejectReason = ref(false);
+    const rejectReasonText = ref("");
+
+    watch(() => activeInteraction.value, () => {
+      showRejectReason.value = false;
+      rejectReasonText.value = "";
+    });
+
     return {
       activeInteraction,
       hasActiveInteraction,
-      submitResponse
+      submitResponse,
+      showRejectReason,
+      rejectReasonText,
     };
   },
   props: {
@@ -1992,6 +2026,56 @@ i
         &:hover
           background: #f5222d
           color: #fff
+
+  .reject-reason-form
+    display: flex
+    align-items: center
+    gap: 8px
+    width: 100%
+
+    .reason-input
+      flex: 1
+      height: 24px
+      padding: 2px 8px
+      font-size: 11px
+      border: 1px solid rgba(0, 0, 0, 0.08)
+      border-radius: 4px
+      outline: none
+      transition: border-color 0.2s
+      background: #fff
+
+      &:focus
+        border-color: #ffa39e
+
+    .reason-submit-btn
+      padding: 4px 10px
+      font-size: 11px
+      font-weight: 500
+      border-radius: 4px
+      cursor: pointer
+      background: #fff1f0
+      border: 1px solid #ffa39e
+      color: #f5222d
+      transition: all 0.15s ease
+
+      &:hover
+        background: #f5222d
+        color: #fff
+
+    .reason-cancel-btn
+      padding: 4px 10px
+      font-size: 11px
+      font-weight: 500
+      border-radius: 4px
+      cursor: pointer
+      background: #fafafa
+      border: 1px solid rgba(0, 0, 0, 0.08)
+      color: #666
+      transition: all 0.15s ease
+
+      &:hover
+        background: #efefef
+        color: #111
 
 .slide-up-enter-active, .slide-up-leave-active
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1)
