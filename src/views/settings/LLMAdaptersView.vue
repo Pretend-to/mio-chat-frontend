@@ -923,7 +923,8 @@ onUnmounted(() => {
 .adapters-list {
   background: white;
   border-radius: 8px;
-  overflow: hidden;
+  overflow-y: auto;
+  max-height: calc(100vh - 260px);
 
   .empty-state {
     padding: 48px 0;
