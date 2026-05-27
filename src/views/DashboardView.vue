@@ -78,7 +78,7 @@
       </div>
 
       <!-- Tab Contents -->
-      <div class="view-body">
+      <div class="view-body" :class="{ 'flex-layout': store.activeTab === 'toolcalls' }">
         <div
           v-show="store.activeTab === 'overview'"
           class="tab-pane-content fade-in"
@@ -95,7 +95,7 @@
 
         <div
           v-show="store.activeTab === 'toolcalls'"
-          class="tab-pane-content fade-in"
+          class="tab-pane-content fade-in toolcalls-pane"
         >
           <DashboardTrace />
         </div>
@@ -376,8 +376,22 @@ onUnmounted(() => {
   padding: 30px;
 }
 
+.view-body.flex-layout {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .tab-pane-content {
   width: 100%;
+}
+
+.toolcalls-pane {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 /* Animations */

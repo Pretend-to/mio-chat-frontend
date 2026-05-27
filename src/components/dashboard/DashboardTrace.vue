@@ -258,28 +258,46 @@ function formatTime(timestamp) {
 .trace-view-container {
   display: flex;
   flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
 
 .row-flex {
   display: flex;
   gap: 20px;
   flex-wrap: wrap;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
 }
 
 .left-col-4 {
   width: calc(33.333% - 14px);
   min-width: 280px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .right-col-8 {
   width: calc(66.666% - 6px);
   flex-grow: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 @media (max-width: 900px) {
   .left-col-4,
   .right-col-8 {
     width: 100%;
+    height: 500px;
+  }
+  .row-flex {
+    flex-direction: column;
+    height: auto;
+    overflow-y: auto;
   }
 }
 
@@ -290,14 +308,16 @@ function formatTime(timestamp) {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
 
 .list-card {
-  height: 600px;
+  /* Flex height is handled by parent saas-card */
 }
 
 .timeline-card {
-  height: 600px;
+  /* Flex height is handled by parent saas-card */
 }
 
 .card-header {
