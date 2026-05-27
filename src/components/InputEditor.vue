@@ -38,18 +38,18 @@
           </button>
           
           <div class="reject-reason-container">
-            <input 
-              v-model="rejectReasonText" 
-              class="reason-input-inline" 
-              placeholder="拒绝理由（可选）" 
-              @keyup.enter="submitResponse({ approved: false, reason: rejectReasonText })"
-            />
             <button 
               class="interaction-btn reject-btn" 
               @click="submitResponse({ approved: false, reason: rejectReasonText })"
             >
               拒绝
             </button>
+            <input 
+              v-model="rejectReasonText" 
+              class="reason-input-inline" 
+              placeholder="拒绝理由（可选）" 
+              @keyup.enter="submitResponse({ approved: false, reason: rejectReasonText })"
+            />
           </div>
         </div>
       </div>
