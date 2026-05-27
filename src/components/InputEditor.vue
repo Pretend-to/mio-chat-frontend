@@ -204,19 +204,43 @@ export default {
 
     const isHighRiskCommand = (command) => {
       if (!command) return true;
-      const trimmed = command.trim().toLowerCase();
+      const trimmed = command.trim();
       
+      // 1. Strip all quoted strings to avoid parsing operators or keywords inside quotes
+      const stripQuotesRegex = /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'|`([^`\\]|\\.)*`/g;
+      const commandWithoutQuotes = trimmed.replace(stripQuotesRegex, ' ');
+
+      // 2. Split by shell command separators: &&, ||, |, ;
+      const subCommands = commandWithoutQuotes.split(/&&|\|\||\||;/);
+
       const highRiskExecutables = [
         'rm', 'rmdir', 'node', 'python', 'python3', 'pip', 'pip3', 'npm', 'yarn', 'pnpm',
-        'sh', 'bash', 'zsh', 'sudo', 'curl', 'wget', 'docker', 'mv', 'chmod', 'chown'
+        'sh', 'bash', 'zsh', 'sudo', 'curl', 'wget', 'docker', 'mv', 'chmod', 'chown', 'unlink'
       ];
 
-      const words = trimmed.split(/[^a-zA-Z0-9_\-/]+/);
-      return words.some(word => {
-        return highRiskExecutables.some(exec => {
-          return word === exec || word.endsWith('/' + exec);
+      for (let subCmd of subCommands) {
+        subCmd = subCmd.trim();
+        if (!subCmd) continue;
+
+        // Extract first word, filtering out environment variables (e.g. PORT=3000)
+        const words = subCmd.split(/\s+/).filter(w => !w.includes('=') && w.length > 0);
+        if (words.length === 0) continue;
+
+        // Strip parenthesis, brackets and redirection characters around the executable name
+        const executable = words[0]
+          .replace(/^[^a-zA-Z0-9_\-/]+|[^a-zA-Z0-9_\-/]+$/g, '')
+          .toLowerCase();
+
+        const isRisk = highRiskExecutables.some(exec => {
+          return executable === exec || executable.endsWith('/' + exec);
         });
-      });
+
+        if (isRisk) {
+          return true;
+        }
+      }
+
+      return false;
     };
 
     const checkAutoApproval = (interaction) => {
