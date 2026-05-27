@@ -2014,6 +2014,7 @@ i
     display: flex
     align-items: center
     gap: 6px
+    flex: 1
 
     .reason-input-inline
       border: none
@@ -2021,7 +2022,7 @@ i
       border-radius: 0
       padding: 2px 4px
       font-size: 11px
-      width: 140px
+      flex: 1
       outline: none
       background: transparent
       transition: border-color 0.2s
