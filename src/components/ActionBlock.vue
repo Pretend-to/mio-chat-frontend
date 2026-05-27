@@ -190,6 +190,9 @@ watch(() => props.defaultExpanded, (newVal) => {
   transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease
   opacity: 0
   will-change: max-height
+  user-select: text
+  *
+    user-select: text
 
   &.is-expanded
     max-height: 160px
