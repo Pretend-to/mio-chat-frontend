@@ -1,34 +1,25 @@
 <template>
-  <div class="reason-block" :class="{ 'is-collapsed': !show }">
-    <div class="head-bar" @click="toggleShow">
-      <i class="mio-icon mio-icon-thinking"></i>
-      <div class="reason-info" :class="{ 'is-loading': isThinking }">
-        {{ getReasonInfo }}
-      </div>
-      <button :class="{ active: show, 'extra-info-button': true }">
-        <svg class="chevron" viewBox="0 0 1024 1024" width="10" height="10">
-          <path
-            d="M338.752 104.704a64 64 0 0 0 0 90.496l316.8 316.8-316.8 316.8a64 64 0 0 0 90.496 90.496l362.048-362.048a64 64 0 0 0 0-90.496L429.248 14.208a64 64 0 0 0-90.496 90.496z"
-            fill="currentColor"
-          ></path>
-        </svg>
-      </button>
+  <ActionBlock
+    iconClass="mio-icon-thinking"
+    :title="getReasonInfo"
+    :isLoading="isThinking"
+    :defaultExpanded="show"
+    @toggle="toggleShow"
+    @scroll="handleScroll"
+  >
+    <div class="content-text" ref="contentEl">
+      {{ content }}
     </div>
-    <div
-      ref="reasonContent"
-      class="reason-content"
-      :class="{ 'is-expanded': show }"
-      @scroll="handleScroll"
-    >
-      <div class="content-text">
-        {{ content }}
-      </div>
-    </div>
-  </div>
+  </ActionBlock>
 </template>
 
 <script>
+import ActionBlock from './ActionBlock.vue';
+
 export default {
+  components: {
+    ActionBlock
+  },
   props: {
     content: {
       required: true,
@@ -130,8 +121,8 @@ export default {
         this.timer = null;
       }
     },
-    toggleShow() {
-      this.show = !this.show;
+    toggleShow(expanded) {
+      this.show = expanded;
       this.wasManuallyToggled = true; // 只要用户点过，我们就停止自动干预
       if (this.show) {
         this.isUserScrolledUp = false;
@@ -154,7 +145,8 @@ export default {
         el.scrollHeight - el.scrollTop - el.clientHeight > 20;
     },
     scrollToBottomIfNeeded() {
-      const el = this.$refs.reasonContent;
+      // 找到实际滚动容器：ActionBlock.vue 中的 action-block-details，通过寻找 DOM 父级或子级容器
+      const el = this.$el.querySelector('.action-block-details');
       if (!el) return;
       if (!this.isUserScrolledUp) {
         el.scrollTop = el.scrollHeight;
@@ -165,123 +157,13 @@ export default {
 </script>
 
 <style scoped>
-.reason-block {
-  margin: 2px 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.head-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 28px;
-  padding: 0 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  user-select: none;
-  width: fit-content;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  margin-left: -8px; /* Offset padding */
-}
-
-.head-bar:hover {
-  background-color: rgba(0, 0, 0, 0.04);
-}
-
-.head-bar .reason-info {
-  color: #666;
-  font-weight: 450;
-}
-
-.head-bar:hover .reason-info {
-  color: #111;
-}
-
-.head-bar .extra-info-button {
-  color: #bbb;
-}
-
-.head-bar:hover .extra-info-button {
-  color: #888;
-}
-
-.reason-info {
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.2px;
-  line-height: 1;
-  transition: color 0.2s;
-}
-
-.is-loading {
-  animation: dot-blink 1.5s infinite;
-}
-
-@keyframes dot-blink {
-  0%,
-  100% {
-    opacity: 0.35;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-.extra-info-button {
-  background: transparent;
-  border: none;
-  color: #bbb; /* 统一颜色 */
-  display: flex;
-  align-items: center;
-  padding: 0;
-  transition: transform 0.3s ease;
-  cursor: pointer;
-}
-
-.chevron {
-  transition: transform 0.3s ease;
-  transform: rotate(90deg);
-}
-
-.extra-info-button.active .chevron {
-  transform: rotate(-90deg);
-}
-
-.reason-content {
-  max-width: 100%;
-  max-height: 0;
-  overflow: hidden;
-  transition:
-    max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.3s ease;
-  opacity: 0;
-  will-change: max-height; /* 性能优化 */
-}
-
-.reason-content.is-expanded {
-  max-height: 120px;
-  overflow-y: auto; /* 开启滚动 */
-  opacity: 1;
-  margin-bottom: 4px;
-}
-
 .content-text {
   font-size: 12.5px;
   line-height: 1.6;
   color: #666;
   white-space: pre-line;
   word-break: break-word;
-  padding: 4px 12px;
-  border-left: 2px solid #efefef;
-  margin-left: 1px;
-}
-
-.reason-content::-webkit-scrollbar {
-  width: 3px;
-}
-.reason-content::-webkit-scrollbar-thumb {
-  background-color: #eee;
-  border-radius: 2px;
+  padding: 4px 0; /* 边框缩进交给 ActionBlock 的 details-inner */
 }
 </style>
+

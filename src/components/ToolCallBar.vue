@@ -1,112 +1,41 @@
 <template>
-  <div class="tool-call-block">
-    <div
-      class="tool-call-bar"
-      :class="[
-        toolCall.action,
-        { 'is-success': toolCallSuccess, 'is-fail': toolCallFail },
-      ]"
-      @click="toggleExtraInfo"
-    >
-      <template
-        v-if="
-          toolCall.name.startsWith('Skill_mid_') || toolCall.name === 'Skill'
-        "
-      >
-        <i class="mio-icon mio-icon-skill"></i>
-        <span class="tool-name">
-          {{ getSkillName(toolCall.parameters) }}
-        </span>
-        <span
-          class="tool-status-text"
-          :class="{
-            'is-loading':
-              toolCall.action === 'running' ||
-              toolCall.action === 'pending' ||
-              toolCall.action === 'started',
-          }"
-          >{{ skill_status_text }}</span
-        >
-      </template>
-      <template
-        v-else-if="(toolCall.name || '').split('_mid_')[0] === 'memory'"
-      >
-        <i class="mio-icon mio-icon-memory"></i>
-        <span class="tool-name"> 记录记忆 </span>
-        <span
-          class="tool-status-text"
-          :class="{
-            'is-loading':
-              toolCall.action === 'running' ||
-              toolCall.action === 'pending' ||
-              toolCall.action === 'started',
-          }"
-          >{{ call_status }}</span
-        >
-      </template>
-      <template v-else>
-        <i class="mio-icon mio-icon-tool"></i>
-        <span class="tool-name">
-          {{ toolCall.name.split("_mid_")[0] }}
-        </span>
-        <span
-          class="tool-status-text"
-          :class="{
-            'is-loading':
-              toolCall.action === 'running' ||
-              toolCall.action === 'pending' ||
-              toolCall.action === 'started',
-          }"
-          >{{ call_status }}</span
-        >
-      </template>
-
-      <!-- 状态指示器 (仅在失败时显示) -->
-      <div v-if="toolCallFail" class="status-indicator">
-        <div class="dot fail"></div>
-      </div>
-
-      <!-- 右侧操作区 -->
-      <div class="tool-actions">
-        <button :class="{ active: showExtraInfo, 'action-btn': true }">
-          <svg class="chevron" viewBox="0 0 1024 1024" width="10" height="10">
-            <path
-              d="M338.752 104.704a64 64 0 0 0 0 90.496l316.8 316.8-316.8 316.8a64 64 0 0 0 90.496 90.496l362.048-362.048a64 64 0 0 0 0-90.496L429.248 14.208a64 64 0 0 0-90.496 90.496z"
-              fill="currentColor"
-            ></path>
-          </svg>
+  <ActionBlock
+    :iconClass="iconClass"
+    :title="toolTitle"
+    :statusText="statusText"
+    :isLoading="isLoading"
+    :isFailed="toolCallFail"
+    :defaultExpanded="showExtraInfo"
+    @toggle="toggleExtraInfo"
+  >
+    <div class="detail-section">
+      <div class="section-header">
+        <div class="section-label">参数</div>
+        <button class="copy-text-btn" @click.stop="copyParameters">
+          复制
         </button>
       </div>
+      <pre class="json-box">{{ formattedParameters }}</pre>
     </div>
-
-    <!-- 内联展开详情区 -->
-    <div class="tool-details" :class="{ 'is-expanded': showExtraInfo }">
-      <div class="details-inner">
-        <div class="detail-section">
-          <div class="section-header">
-            <div class="section-label">参数</div>
-            <button class="copy-text-btn" @click.stop="copyParameters">
-              复制
-            </button>
-          </div>
-          <pre class="json-box">{{ formattedParameters }}</pre>
-        </div>
-        <div v-if="toolCall.result" class="detail-section">
-          <div class="section-header">
-            <div class="section-label">结果</div>
-            <button class="copy-text-btn" @click.stop="copyResult">复制</button>
-          </div>
-          <pre class="json-box" :class="{ 'error-text': toolCallFail }">{{
-            formattedResult
-          }}</pre>
-        </div>
+    <div v-if="toolCall.result" class="detail-section">
+      <div class="section-header">
+        <div class="section-label">结果</div>
+        <button class="copy-text-btn" @click.stop="copyResult">复制</button>
       </div>
+      <pre class="json-box" :class="{ 'error-text': toolCallFail }">{{
+        formattedResult
+      }}</pre>
     </div>
-  </div>
+  </ActionBlock>
 </template>
 
 <script>
+import ActionBlock from './ActionBlock.vue';
+
 export default {
+  components: {
+    ActionBlock
+  },
   props: {
     toolCall: {
       type: Object,
@@ -124,6 +53,37 @@ export default {
     };
   },
   computed: {
+    iconClass() {
+      const name = this.toolCall.name || '';
+      if (name.startsWith('Skill_mid_') || name === 'Skill') {
+        return 'mio-icon-skill';
+      }
+      if (name.split('_mid_')[0] === 'memory') {
+        return 'mio-icon-memory';
+      }
+      return 'mio-icon-tool';
+    },
+    toolTitle() {
+      const name = this.toolCall.name || '';
+      if (name.startsWith('Skill_mid_') || name === 'Skill') {
+        return this.getSkillName(this.toolCall.parameters);
+      }
+      if (name.split('_mid_')[0] === 'memory') {
+        return '记录记忆';
+      }
+      return name.split('_mid_')[0] || '未知工具';
+    },
+    statusText() {
+      const name = this.toolCall.name || '';
+      if (name.startsWith('Skill_mid_') || name === 'Skill') {
+        return this.skill_status_text;
+      }
+      return this.call_status;
+    },
+    isLoading() {
+      const action = this.toolCall.action;
+      return action === 'running' || action === 'pending' || action === 'started';
+    },
     toolCallSuccess() {
       return (
         this.toolCall.action === "finished" && !this.toolCall?.result?.error
@@ -199,8 +159,8 @@ export default {
     }
   },
   methods: {
-    toggleExtraInfo() {
-      this.showExtraInfo = !this.showExtraInfo;
+    toggleExtraInfo(expanded) {
+      this.showExtraInfo = expanded;
       this.wasManuallyToggled = true;
     },
     handleAutoCollapse() {
@@ -231,144 +191,6 @@ export default {
 </script>
 
 <style scoped>
-.tool-call-block {
-  display: flex;
-  flex-direction: column;
-  margin: 2px 0;
-}
-
-.tool-call-bar {
-  display: flex;
-  align-items: center;
-  width: fit-content;
-  height: 28px;
-  padding: 0 8px;
-  border-radius: 6px;
-  background: transparent;
-  border: none;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  user-select: none;
-  cursor: pointer;
-  gap: 8px;
-  margin-left: -8px; /* Offset padding */
-}
-
-.tool-call-bar:hover {
-  background-color: rgba(0, 0, 0, 0.04);
-}
-
-.tool-call-bar .tool-name {
-  color: #666;
-  font-weight: 450;
-}
-
-.tool-call-bar:hover .tool-name {
-  color: #111;
-}
-
-.tool-call-bar .tool-actions {
-  color: #bbb;
-}
-
-.tool-call-bar:hover .tool-actions {
-  color: #888;
-}
-
-.tool-name {
-  font-size: 13px;
-  font-weight: 500;
-  transition: color 0.2s;
-}
-
-.tool-status-text {
-  font-size: 12px;
-  color: #999;
-}
-
-.status-indicator {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-}
-
-.dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-}
-
-.dot.fail {
-  background: #ff4d4f;
-}
-
-.is-loading {
-  animation: dot-blink 1.5s infinite;
-}
-
-@keyframes dot-blink {
-  0%,
-  100% {
-    opacity: 0.35;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-.tool-actions {
-  display: flex;
-  align-items: center;
-  color: #bbb;
-  /* 统一颜色 */
-}
-
-.action-btn {
-  background: transparent;
-  border: none;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  color: inherit;
-}
-
-.chevron {
-  transition: transform 0.3s ease;
-  transform: rotate(90deg);
-}
-
-.action-btn.active .chevron {
-  transform: rotate(-90deg);
-}
-
-.tool-details {
-  max-width: 100%;
-  max-height: 0;
-  overflow: hidden;
-  transition:
-    max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.3s ease;
-  opacity: 0;
-  will-change: max-height;
-  /* 性能优化 */
-}
-
-.tool-details.is-expanded {
-  max-height: 160px;
-  overflow-y: auto;
-  opacity: 1;
-  margin-bottom: 8px;
-}
-
-.details-inner {
-  padding: 8px 12px;
-  border-left: 2px solid #efefef;
-  margin-left: 1px;
-  background: rgba(0, 0, 0, 0.01);
-  border-radius: 0 4px 4px 4px;
-}
-
 .detail-section {
   margin-bottom: 8px;
 }
@@ -424,14 +246,5 @@ export default {
 
 .error-text {
   color: #cf1322;
-}
-
-.tool-details::-webkit-scrollbar {
-  width: 3px;
-}
-
-.tool-details::-webkit-scrollbar-thumb {
-  background-color: #eee;
-  border-radius: 2px;
 }
 </style>

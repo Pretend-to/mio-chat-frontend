@@ -644,6 +644,18 @@ export const gateway = {
             messageId,
             data.content,
           );
+        } else if (data.type === "action") {
+          // 原子动作拦截器：捕获长连接双向指令并存入 Store，驱动输入框上方就地交互面板渲染
+          import("@/stores/interactionStore.js").then(({ useInteractionStore }) => {
+            const store = useInteractionStore();
+            store.setInteraction({
+              actionType: data.content.actionType,
+              interactionId: data.content.interactionId,
+              requestId: messageId,
+              options: data.content.options,
+              prompt: data.content.prompt,
+            });
+          });
         }
       }
     } else if (["complete", "failed"].includes(e.message)) {

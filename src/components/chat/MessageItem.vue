@@ -191,68 +191,21 @@
                   v-else-if="element.type === 'tool_call'"
                   :tool-call="element.data"
                 />
-                <div
+                <ActionBlock
                   v-else-if="element.type === 'crystallize_event'"
-                  class="crystallize-event-block"
+                  iconClass="mio-icon-memory"
+                  title="整理记忆"
+                  :statusText="element.data.status === 'running' ? '整理中' : '完成'"
+                  :isLoading="element.data.status === 'running'"
+                  :collapsible="!!element.data.summary"
+                  :defaultExpanded="isCrystallizeExpanded(elmIndex)"
+                  @toggle="toggleCrystallizeDetails(elmIndex)"
                 >
-                  <div
-                    class="crystallize-event-bar"
-                    :class="[
-                      element.data.status,
-                      { 'is-success': element.data.status === 'finished' },
-                    ]"
-                    @click="toggleCrystallizeDetails(elmIndex)"
-                  >
-                    <i class="mio-icon mio-icon-memory"></i>
-                    <span class="tool-name">整理记忆</span>
-                    <span
-                      class="tool-status-text"
-                      :class="{
-                        'is-loading': element.data.status === 'running',
-                      }"
-                    >
-                      {{
-                        element.data.status === "running" ? "整理中" : "完成"
-                      }}
-                    </span>
-
-                    <!-- 右侧展开按钮 -->
-                    <div class="tool-actions" v-if="element.data.summary">
-                      <button
-                        :class="{
-                          active: isCrystallizeExpanded(elmIndex),
-                          'action-btn': true,
-                        }"
-                      >
-                        <svg
-                          class="chevron"
-                          viewBox="0 0 1024 1024"
-                          width="10"
-                          height="10"
-                        >
-                          <path
-                            d="M338.752 104.704a64 64 0 0 0 0 90.496l316.8 316.8-316.8 316.8a64 64 0 0 0 90.496 90.496l362.048-362.048a64 64 0 0 0 0-90.496L429.248 14.208a64 64 0 0 0-90.496 90.496z"
-                            fill="currentColor"
-                          ></path>
-                        </svg>
-                      </button>
-                    </div>
+                  <div class="detail-section">
+                    <div class="section-label">整理后记忆结晶 (XML)</div>
+                    <pre class="xml-box">{{ element.data.summary }}</pre>
                   </div>
-
-                  <!-- 内联展开详情区 -->
-                  <div
-                    v-if="element.data.summary"
-                    class="crystallize-details"
-                    :class="{ 'is-expanded': isCrystallizeExpanded(elmIndex) }"
-                  >
-                    <div class="details-inner">
-                      <div class="detail-section">
-                        <div class="section-label">整理后记忆结晶 (XML)</div>
-                        <pre class="xml-box">{{ element.data.summary }}</pre>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                </ActionBlock>
               </div>
             </div>
           </div>
@@ -280,6 +233,7 @@ import ForwardMsg from "@/components/ForwardMsg.vue";
 import FileBlock from "@/components/FileBlock.vue";
 import ToolCallBar from "@/components/ToolCallBar.vue";
 import ReasonBlock from "@/components/ReasonBlock.vue";
+import ActionBlock from "@/components/ActionBlock.vue";
 import MdRenderer from "mio-previewer";
 
 import { Loading, Warning, CollectionTag } from "@element-plus/icons-vue";
@@ -570,110 +524,25 @@ $icon-hover: #09f
     color: rgb(0, 153, 255) !important
     line-height: 1 !important
 
-.crystallize-event-block
-  display: flex
-  flex-direction: column
-  margin: 2px 0
+.detail-section
+  margin-bottom: 8px
+  &:last-child
+    margin-bottom: 0
 
-  .crystallize-event-bar
-    display: flex
-    align-items: center
-    width: fit-content
-    height: 28px
-    padding: 0 8px
-    border-radius: 6px
-    background: transparent
-    border: none
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1)
-    user-select: none
-    cursor: pointer
-    gap: 8px
-    margin-left: -8px
+.section-label
+  font-size: 10px
+  color: #aaa
+  text-transform: uppercase
+  font-weight: bold
+  margin-bottom: 4px
 
-    &:hover
-      background-color: rgba(0, 0, 0, 0.04)
-      .tool-name
-        color: #111
-      .tool-actions
-        color: #888
-
-    .tool-name
-      font-size: 13px
-      font-weight: 500
-      color: #666
-      transition: color 0.2s
-
-    .tool-status-text
-      font-size: 12px
-      color: #999
-
-      &.is-loading
-        animation: dot-blink 1.5s infinite
-
-    .tool-actions
-      display: flex
-      align-items: center
-      color: #bbb
-      transition: color 0.2s
-      margin-left: 4px
-
-      .action-btn
-        background: transparent
-        border: none
-        padding: 0
-        display: flex
-        align-items: center
-        cursor: pointer
-        color: inherit
-
-        .chevron
-          transition: transform 0.3s ease
-          transform: rotate(90deg)
-
-        &.active .chevron
-          transform: rotate(-90deg)
-
-  .crystallize-details
-    max-width: 100%
-    max-height: 0
-    overflow: hidden
-    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease
-    opacity: 0
-    will-change: max-height
-
-    &.is-expanded
-      max-height: 160px
-      overflow-y: auto
-      opacity: 1
-      margin-bottom: 8px
-
-    .details-inner
-      padding: 8px 12px
-      border-left: 2px solid #efefef
-      margin-left: 1px
-      background: rgba(0, 0, 0, 0.01)
-      border-radius: 0 4px 4px 4px
-
-      .section-label
-        font-size: 10px
-        color: #aaa
-        text-transform: uppercase
-        font-weight: bold
-        margin-bottom: 4px
-
-      .xml-box
-        font-family: "Fira Code", monospace
-        font-size: 11px
-        background: transparent
-        color: #666
-        white-space: pre-wrap
-        word-break: break-all
-        margin: 0
-        padding: 0
-
-@keyframes dot-blink
-  0%, 100%
-    opacity: 0.35
-  50%
-    opacity: 1
+.xml-box
+  font-family: "Fira Code", monospace
+  font-size: 11px
+  background: transparent
+  color: #666
+  white-space: pre-wrap
+  word-break: break-all
+  margin: 0
+  padding: 0
 </style>

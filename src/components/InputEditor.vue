@@ -1,5 +1,51 @@
 <template>
   <div class="input-bar">
+    <!-- 双向长连接就地交互选择面板 -->
+    <transition name="slide-up">
+      <div v-if="hasActiveInteraction" class="interaction-bar">
+        <div class="interaction-info">
+          <i class="mio-icon mio-icon-tool animate-bounce"></i>
+          <span class="interaction-prompt">
+            {{ activeInteraction.prompt || '请进行选择/授权：' }}
+          </span>
+        </div>
+        
+        <!-- A. 选项多项扁平单选 -->
+        <div 
+          v-if="activeInteraction.actionType === 'SHOW_SELECT_OVERLAY'" 
+          class="interaction-options"
+        >
+          <button 
+            v-for="opt in activeInteraction.options" 
+            :key="opt.value" 
+            class="interaction-btn"
+            @click="submitResponse({ selectResult: opt.value })"
+          >
+            {{ opt.label || opt.value }}
+          </button>
+        </div>
+
+        <!-- B. 危险指令二次审批授权 -->
+        <div 
+          v-else-if="activeInteraction.actionType === 'REQUEST_APPROVAL'" 
+          class="interaction-options"
+        >
+          <button 
+            class="interaction-btn approve-btn" 
+            @click="submitResponse({ approved: true })"
+          >
+            授权执行
+          </button>
+          <button 
+            class="interaction-btn reject-btn" 
+            @click="submitResponse({ approved: false })"
+          >
+            拒绝
+          </button>
+        </div>
+      </div>
+    </transition>
+
     <!-- Command Popup List -->
     <transition name="popup-fade">
       <div
@@ -131,8 +177,17 @@ import { client, config } from "@/lib/runtime.js";
 import { debounce } from "../utils/tools.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { skillAPI } from "@/lib/configApi.js";
+import { useInteraction } from "@/composables/useInteraction.js";
 
 export default {
+  setup() {
+    const { activeInteraction, hasActiveInteraction, submitResponse } = useInteraction();
+    return {
+      activeInteraction,
+      hasActiveInteraction,
+      submitResponse
+    };
+  },
   props: {
     activeContactor: {
       type: Object,
@@ -1871,4 +1926,77 @@ i
       font-weight: bold !important
       color: rgb(0, 153, 255) !important
       line-height: 1 !important
+
+.interaction-bar
+  position: absolute
+  bottom: 100%
+  left: 12px
+  right: 12px
+  background: rgba(255, 255, 255, 0.98)
+  backdrop-filter: blur(10px)
+  border: 1px solid rgba(0, 0, 0, 0.08)
+  border-bottom: none
+  border-radius: 8px 8px 0 0
+  padding: 8px 12px
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.04)
+  display: flex
+  flex-direction: column
+  gap: 8px
+  z-index: 99
+  margin-bottom: 0px
+  transform-origin: bottom
+
+  .interaction-info
+    display: flex
+    align-items: center
+    gap: 6px
+    
+    .interaction-prompt
+      font-size: 12px
+      color: #666
+      font-weight: 500
+
+  .interaction-options
+    display: flex
+    flex-wrap: wrap
+    gap: 6px
+
+    .interaction-btn
+      padding: 4px 10px
+      font-size: 11px
+      font-weight: 500
+      border-radius: 4px
+      border: 1px solid rgba(0, 0, 0, 0.08)
+      background: #fafafa
+      cursor: pointer
+      transition: all 0.15s ease
+      color: #555
+
+      &:hover
+        background: #efefef
+        color: #111
+        border-color: rgba(0,0,0,0.15)
+
+      &.approve-btn
+        background: #e6f7ff
+        border-color: #91d5ff
+        color: #1890ff
+        &:hover
+          background: #1890ff
+          color: #fff
+
+      &.reject-btn
+        background: #fff1f0
+        border-color: #ffa39e
+        color: #f5222d
+        &:hover
+          background: #f5222d
+          color: #fff
+
+.slide-up-enter-active, .slide-up-leave-active
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1)
+
+.slide-up-enter-from, .slide-up-leave-to
+  transform: translateY(10px) scaleY(0.9)
+  opacity: 0
 </style>
