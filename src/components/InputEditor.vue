@@ -1251,7 +1251,7 @@ export default {
 
       const occurrences = [];
       let match;
-      const regex = /(?:^|\s)[\/#](?!\/)/g;
+      const regex = /(?:^|\s)[/#](?!\/)/g;
       while ((match = regex.exec(textWithoutBadge)) !== null) {
         const isTriggerAtStart = match[0] === "/" || match[0] === "#";
         const slashIdx = match.index + (isTriggerAtStart ? 0 : 1);
@@ -1271,7 +1271,7 @@ export default {
             this.textareaRef.innerText || this.textareaRef.textContent || "";
           const newOccurrences = [];
           let newMatch;
-          const newRegex = /(?:^|\s)[\/#](?!\/)/g;
+          const newRegex = /(?:^|\s)[/#](?!\/)/g;
           while ((newMatch = newRegex.exec(text)) !== null) {
             const isTriggerAtStart = newMatch[0] === "/" || newMatch[0] === "#";
             const slashIdx = newMatch.index + (isTriggerAtStart ? 0 : 1);
@@ -1314,7 +1314,7 @@ export default {
 
           const newOccurrences = [];
           let newMatch;
-          const newRegex = /(?:^|\s)[\/#](?!\/)/g;
+          const newRegex = /(?:^|\s)[/#](?!\/)/g;
           while ((newMatch = newRegex.exec(newText)) !== null) {
             const isTriggerAtStart = newMatch[0] === "/" || newMatch[0] === "#";
             const slashIdx = newMatch.index + (isTriggerAtStart ? 0 : 1);
@@ -1351,7 +1351,12 @@ export default {
     },
     getPureTextOfTextNodes(container) {
       let text = "";
-      const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+      const walk = document.createTreeWalker(
+        container,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false,
+      );
       let textNode;
       while ((textNode = walk.nextNode())) {
         let isInsideBadge = false;
@@ -1371,7 +1376,7 @@ export default {
     },
     confirmCommand(cmd) {
       const text = this.getPureTextOfTextNodes(this.textareaRef);
-      const regex = /(?:^|\s)[\/#](?!\/)/g;
+      const regex = /(?:^|\s)[/#](?!\/)/g;
       let match;
       let lastSlashIdx = -1;
       let triggerChar = "/";

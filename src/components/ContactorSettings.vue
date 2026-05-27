@@ -340,10 +340,7 @@
 
       <!-- Tab: Memory Crystallization -->
       <div v-if="activeTab === 'memory'" class="tab-pane">
-        <MemoryManager
-          v-if="contactorId"
-          :contactor-id="contactorId"
-        />
+        <MemoryManager v-if="contactorId" :contactor-id="contactorId" />
         <div v-else class="no-skills" style="padding: 20px; text-align: center">
           <p>无法获取联系人信息</p>
         </div>

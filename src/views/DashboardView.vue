@@ -1,7 +1,14 @@
 <template>
   <div class="dashboard-root">
-    <!-- Sidebar -->
-    <div class="sidebar">
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div
+      v-if="isSidebarOpen"
+      class="sidebar-overlay"
+      @click="isSidebarOpen = false"
+    ></div>
+
+    <!-- Sidebar Drawer -->
+    <div class="sidebar" :class="{ 'drawer-open': isSidebarOpen }">
       <div class="logo-area">
         <i class="fa-solid fa-chart-line logo-icon"></i>
         <span>MioChat 审计大盘</span>
@@ -26,7 +33,7 @@
           :class="{ active: store.activeTab === 'toolcalls' }"
           @click="switchTab('toolcalls')"
         >
-          <i class="fa-solid fa-network-wired"></i> Tool Call 级联链
+          <i class="fa-solid fa-network-wired"></i> 会话与调用 Trace
         </div>
         <div
           class="menu-item"
@@ -51,9 +58,18 @@
     <!-- Main Content Area -->
     <div class="main-content">
       <div class="header-bar">
-        <div class="page-title">
-          <h2>{{ tabTitle }}</h2>
-          <p class="subtitle">实时监控与审计分析平台</p>
+        <div class="title-area">
+          <button
+            class="burger-btn"
+            @click="isSidebarOpen = !isSidebarOpen"
+            aria-label="Toggle Navigation Menu"
+          >
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div class="page-title">
+            <h2>{{ tabTitle }}</h2>
+            <p class="subtitle">实时监控与审计分析平台</p>
+          </div>
         </div>
         <div class="header-actions">
           <el-radio-group
@@ -78,7 +94,10 @@
       </div>
 
       <!-- Tab Contents -->
-      <div class="view-body" :class="{ 'flex-layout': store.activeTab === 'toolcalls' }">
+      <div
+        class="view-body"
+        :class="{ 'flex-layout': store.activeTab === 'toolcalls' }"
+      >
         <div
           v-show="store.activeTab === 'overview'"
           class="tab-pane-content fade-in"
@@ -116,7 +135,7 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, computed, nextTick } from "vue";
+import { onMounted, onUnmounted, computed, nextTick, ref } from "vue";
 import { useDashboardStore } from "@/stores/dashboardStore";
 
 // Import Subcomponents
@@ -128,6 +147,7 @@ import CostCalculatorDialog from "@/components/dashboard/CostCalculatorDialog.vu
 import TraceModal from "@/components/dashboard/TraceModal.vue";
 
 const store = useDashboardStore();
+const isSidebarOpen = ref(false);
 
 const tabTitle = computed(() => {
   switch (store.activeTab) {
@@ -136,7 +156,7 @@ const tabTitle = computed(() => {
     case "users":
       return "会话画像与调用分布";
     case "toolcalls":
-      return "Tool Call 调用链审计 (Trace)";
+      return "会话与调用链路 Trace";
     case "failures":
       return "异常分析与故障归因";
     default:
@@ -149,6 +169,7 @@ let timeClockTimer = null;
 
 function switchTab(tab) {
   store.activeTab = tab;
+  isSidebarOpen.value = false; // Close drawer on mobile upon tab selection
   nextTick(() => {
     store.refreshData();
     // Trigger a window resize event to force ECharts to redraw and size properly
@@ -326,6 +347,31 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
+.title-area {
+  display: flex;
+  align-items: center;
+}
+
+.burger-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  color: #475569;
+  cursor: pointer;
+  padding: 8px;
+  margin-right: 14px;
+  border-radius: 6px;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.burger-btn:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
 .header-bar {
   background: #ffffff;
   border-bottom: 1px solid #e2e8f0;
@@ -424,5 +470,63 @@ onUnmounted(() => {
   background-color: #2563eb !important;
   border-color: #2563eb !important;
   color: #ffffff !important;
+}
+
+/* Tablet & Mobile Layout Adaptations */
+@media (max-width: 1024px) {
+  .burger-btn {
+    display: inline-flex;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+    box-shadow: none;
+  }
+
+  .sidebar.drawer-open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(15, 23, 42, 0.15);
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(8px);
+    z-index: 9;
+    animation: fadeInOverlay 0.2s ease-out;
+  }
+
+  .header-bar {
+    padding: 14px 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .view-body {
+    padding: 20px;
+  }
+}
+
+@keyframes fadeInOverlay {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 </style>

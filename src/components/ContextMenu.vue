@@ -115,10 +115,13 @@ export default {
         const rect = el.getBoundingClientRect();
         let relativeX = this.clientX - rect.left;
         const arrowMargin = 16;
-        relativeX = Math.max(arrowMargin, Math.min(rect.width - arrowMargin, relativeX));
-        el.style.setProperty('--arrow-left', `${relativeX}px`);
+        relativeX = Math.max(
+          arrowMargin,
+          Math.min(rect.width - arrowMargin, relativeX),
+        );
+        el.style.setProperty("--arrow-left", `${relativeX}px`);
       } else {
-        el.style.setProperty('--arrow-left', '50%');
+        el.style.setProperty("--arrow-left", "50%");
       }
     },
     onWindowResize() {

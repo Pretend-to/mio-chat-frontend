@@ -68,80 +68,89 @@
         >
       </div>
       <div class="card-body p-none">
-        <el-table
-          :data="filteredModelsTable"
-          style="width: 100%"
-          class="saas-table"
-        >
-          <el-table-column prop="model" label="模型名称" min-width="180">
-            <template #default="scope">
-              <span class="model-name-badge">{{ scope.row.model }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column
-            prop="provider"
-            label="提供商"
-            width="120"
-            align="center"
+        <div class="table-responsive-wrapper">
+          <el-table
+            :data="filteredModelsTable"
+            style="width: 100%"
+            class="saas-table"
           >
-            <template #default="scope">
-              <el-tag
-                size="small"
-                :type="getProviderTagType(scope.row.provider)"
-              >
-                {{ scope.row.provider }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column
-            prop="callCount"
-            label="调用次数"
-            width="120"
-            align="right"
-          >
-            <template #default="scope">{{
-              formatNumber(scope.row.callCount)
-            }}</template>
-          </el-table-column>
-          <el-table-column
-            prop="promptTokens"
-            label="输入 (Prompt)"
-            align="right"
-          >
-            <template #default="scope">{{
-              formatNumber(scope.row.promptTokens)
-            }}</template>
-          </el-table-column>
-          <el-table-column
-            prop="candidatesTokens"
-            label="输出 (Candidates)"
-            align="right"
-          >
-            <template #default="scope">{{
-              formatNumber(scope.row.candidatesTokens)
-            }}</template>
-          </el-table-column>
-          <el-table-column prop="cacheHitTokens" label="缓存命中" align="right">
-            <template #default="scope">
-              <span v-if="scope.row.cacheHitTokens > 0" class="text-green">{{
-                formatNumber(scope.row.cacheHitTokens)
-              }}</span>
-              <span v-else class="text-muted">-</span>
-            </template>
-          </el-table-column>
-          <el-table-column
-            prop="totalTokens"
-            label="总消耗 (Tokens)"
-            width="150"
-            align="right"
-          >
-            <template #default="scope">
-              <span class="token-value-text">{{
-                formatNumber(scope.row.totalTokens)
-              }}</span>
-            </template>
-          </el-table-column>
-        </el-table>
+            <el-table-column prop="model" label="模型名称" min-width="180">
+              <template #default="scope">
+                <span class="model-name-badge">{{ scope.row.model }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="provider"
+              label="提供商"
+              width="120"
+              align="center"
+            >
+              <template #default="scope">
+                <el-tag
+                  size="small"
+                  :type="getProviderTagType(scope.row.provider)"
+                >
+                  {{ scope.row.provider }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="callCount"
+              label="调用次数"
+              width="120"
+              align="right"
+            >
+              <template #default="scope">{{
+                formatNumber(scope.row.callCount)
+              }}</template>
+            </el-table-column>
+            <el-table-column
+              prop="promptTokens"
+              label="输入 (Prompt)"
+              min-width="140"
+              align="right"
+            >
+              <template #default="scope">{{
+                formatNumber(scope.row.promptTokens)
+              }}</template>
+            </el-table-column>
+            <el-table-column
+              prop="candidatesTokens"
+              label="输出 (Candidates)"
+              min-width="160"
+              align="right"
+            >
+              <template #default="scope">{{
+                formatNumber(scope.row.candidatesTokens)
+              }}</template>
+            </el-table-column>
+            <el-table-column
+              prop="cacheHitTokens"
+              label="缓存命中"
+              min-width="120"
+              align="right"
+            >
+              <template #default="scope">
+                <span v-if="scope.row.cacheHitTokens > 0" class="text-green">{{
+                  formatNumber(scope.row.cacheHitTokens)
+                }}</span>
+                <span v-else class="text-muted">-</span>
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="totalTokens"
+              label="总消耗 (Tokens)"
+              width="150"
+              align="right"
+            >
+              <template #default="scope">
+                <span class="token-value-text">{{
+                  formatNumber(scope.row.totalTokens)
+                }}</span>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
       </div>
     </div>
 
@@ -153,79 +162,41 @@
             <span class="card-title">活跃用户排行 (Top 10)</span>
           </div>
           <div class="card-body p-none">
-            <el-table
-              :data="store.userRankings"
-              size="default"
-              class="saas-table"
-            >
-              <el-table-column label="排名" width="80" align="center">
-                <template #default="scope">
-                  <span
-                    class="rank-badge"
-                    :class="'rank-' + (scope.$index + 1)"
-                  >
-                    {{ scope.$index + 1 }}
-                  </span>
-                </template>
-              </el-table-column>
-              <el-table-column prop="userId" label="用户 ID"></el-table-column>
-              <el-table-column
-                prop="calls"
-                label="调用次数"
-                width="120"
-                align="right"
-              ></el-table-column>
-              <el-table-column prop="tokens" label="消耗 Token" align="right">
-                <template #default="scope">
-                  <span class="token-value-text">{{
-                    formatNumber(scope.row.tokens)
-                  }}</span>
-                </template>
-              </el-table-column>
-            </el-table>
-          </div>
-        </div>
-      </div>
-
-      <div class="ranking-col">
-        <div class="saas-card">
-          <div class="card-header">
-            <span class="card-title">会话窗口排行 (Top 10)</span>
-          </div>
-          <div class="card-body p-none">
-            <el-table
-              :data="store.windowRankings"
-              size="default"
-              class="saas-table"
-            >
-              <el-table-column label="排名" width="80" align="center">
-                <template #default="scope">
-                  <span
-                    class="rank-badge"
-                    :class="'rank-' + (scope.$index + 1)"
-                  >
-                    {{ scope.$index + 1 }}
-                  </span>
-                </template>
-              </el-table-column>
-              <el-table-column
-                prop="contactorId"
-                label="窗口 / 对话ID"
-              ></el-table-column>
-              <el-table-column
-                prop="calls"
-                label="调用次数"
-                width="120"
-                align="right"
-              ></el-table-column>
-              <el-table-column prop="tokens" label="消耗 Token" align="right">
-                <template #default="scope">
-                  <span class="token-value-text">{{
-                    formatNumber(scope.row.tokens)
-                  }}</span>
-                </template>
-              </el-table-column>
-            </el-table>
+            <div class="table-responsive-wrapper">
+              <el-table
+                :data="store.userRankings"
+                size="default"
+                class="saas-table"
+              >
+                <el-table-column label="排名" width="80" align="center">
+                  <template #default="scope">
+                    <span
+                      class="rank-badge"
+                      :class="'rank-' + (scope.$index + 1)"
+                    >
+                      {{ scope.$index + 1 }}
+                    </span>
+                  </template>
+                </el-table-column>
+                <el-table-column
+                  prop="userId"
+                  label="用户 ID"
+                ></el-table-column>
+                <el-table-column
+                  prop="calls"
+                  label="调用次数"
+                  width="120"
+                  align="right"
+                ></el-table-column>
+                <el-table-column prop="tokens" label="消耗 Token" align="right">
+                  <template #default="scope">
+                    <span class="token-value-text">{{
+                      formatNumber(scope.row.tokens)
+                    }}</span>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
           </div>
         </div>
       </div>
@@ -631,5 +602,28 @@ onUnmounted(() => {
 
 .text-muted {
   color: #94a3b8;
+}
+
+.table-responsive-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 900px) {
+  .left-col-4,
+  .right-col-8 {
+    width: 100%;
+  }
+
+  .list-card,
+  .chart-card {
+    height: auto;
+    min-height: 300px;
+  }
+
+  .chart-container-models {
+    height: 250px;
+  }
 }
 </style>

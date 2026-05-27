@@ -172,8 +172,15 @@ export const useContactorsStore = defineStore("contactors", () => {
         lastMessageSummary: "",
       };
 
-      if (item.platform === "openai" && !newContactors[item.id].options.crystallization) {
-        newContactors[item.id].options.crystallization = { enabled: true, latestSummary: "", tokenWatermark: 64000 };
+      if (
+        item.platform === "openai" &&
+        !newContactors[item.id].options.crystallization
+      ) {
+        newContactors[item.id].options.crystallization = {
+          enabled: true,
+          latestSummary: "",
+          tokenWatermark: 64000,
+        };
       }
 
       // Auto initialize details
@@ -207,7 +214,11 @@ export const useContactorsStore = defineStore("contactors", () => {
     };
 
     if (platform === "openai" && !newContactor.options.crystallization) {
-      newContactor.options.crystallization = { enabled: true, latestSummary: "", tokenWatermark: 64000 };
+      newContactor.options.crystallization = {
+        enabled: true,
+        latestSummary: "",
+        tokenWatermark: 64000,
+      };
     }
 
     loadContactorName(newContactor);
@@ -240,8 +251,15 @@ export const useContactorsStore = defineStore("contactors", () => {
     if (id && contactors.value[id]) {
       const contactor = contactors.value[id];
       contactor.hasPendingTask = false;
-      if (contactor.platform === "openai" && !contactor.options.crystallization) {
-        contactor.options.crystallization = { enabled: true, latestSummary: "", tokenWatermark: 64000 };
+      if (
+        contactor.platform === "openai" &&
+        !contactor.options.crystallization
+      ) {
+        contactor.options.crystallization = {
+          enabled: true,
+          latestSummary: "",
+          tokenWatermark: 64000,
+        };
         client.setLocalStorage();
       }
     }
@@ -443,7 +461,11 @@ export const useContactorsStore = defineStore("contactors", () => {
     // 1. 如果有后端返回的全新 summary，直接覆盖！(最优、最干净的 CRUD 同步路径)
     if (result && result.summary !== undefined) {
       if (!contactor.options.crystallization) {
-        contactor.options.crystallization = { enabled: true, latestSummary: "", tokenWatermark: 64000 };
+        contactor.options.crystallization = {
+          enabled: true,
+          latestSummary: "",
+          tokenWatermark: 64000,
+        };
       }
       contactor.options.crystallization.latestSummary = result.summary;
       contactor.options.crystallization.lastUpdatedAt = Date.now();
@@ -464,7 +486,10 @@ export const useContactorsStore = defineStore("contactors", () => {
     if (!question || !answer) return;
 
     // 开启结晶时，将记忆追加到 latestSummary 的 <long_term_profile>
-    if (contactor.options?.crystallization?.enabled && contactor.options.crystallization.latestSummary !== undefined) {
+    if (
+      contactor.options?.crystallization?.enabled &&
+      contactor.options.crystallization.latestSummary !== undefined
+    ) {
       const fact = `Q: ${question}\nA: ${answer}`;
       const summary = contactor.options.crystallization.latestSummary || "";
       contactor.options.crystallization.latestSummary = appendToXmlZone(
@@ -535,10 +560,14 @@ export const useContactorsStore = defineStore("contactors", () => {
     if (status === "running") {
       const message = getOrCreateMessage(contactorId, messageId);
       if (message) {
-        let eventElm = message.content.find((c) => c.type === "crystallize_event");
+        let eventElm = message.content.find(
+          (c) => c.type === "crystallize_event",
+        );
         if (!eventElm) {
           // 移除等待中的 blank 占位块
-          const blankIndex = message.content.findIndex((elm) => elm.type === "blank");
+          const blankIndex = message.content.findIndex(
+            (elm) => elm.type === "blank",
+          );
           if (blankIndex !== -1) {
             message.content.splice(blankIndex, 1);
           }
@@ -556,14 +585,20 @@ export const useContactorsStore = defineStore("contactors", () => {
       }
     } else if (status === "finished" && summary) {
       if (!contactor.options.crystallization) {
-        contactor.options.crystallization = { enabled: true, latestSummary: "", tokenWatermark: 64000 };
+        contactor.options.crystallization = {
+          enabled: true,
+          latestSummary: "",
+          tokenWatermark: 64000,
+        };
       }
       contactor.options.crystallization.latestSummary = summary;
       contactor.options.crystallization.lastUpdatedAt = Date.now();
 
       const message = getOrCreateMessage(contactorId, messageId);
       if (message) {
-        const eventElm = message.content.find((c) => c.type === "crystallize_event");
+        const eventElm = message.content.find(
+          (c) => c.type === "crystallize_event",
+        );
         if (eventElm) {
           eventElm.data.status = "finished";
           eventElm.data.summary = summary;
@@ -587,7 +622,11 @@ export const useContactorsStore = defineStore("contactors", () => {
     const contactor = contactors.value[contactorId];
     if (!contactor) return;
     if (!contactor.options.crystallization) {
-      contactor.options.crystallization = { enabled: true, latestSummary: "", tokenWatermark: 64000 };
+      contactor.options.crystallization = {
+        enabled: true,
+        latestSummary: "",
+        tokenWatermark: 64000,
+      };
     }
     Object.assign(contactor.options.crystallization, patch);
     client.setLocalStorage();

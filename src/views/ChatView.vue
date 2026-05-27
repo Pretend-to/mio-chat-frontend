@@ -375,16 +375,16 @@ const getMenuStyle = computed(() => {
     const estimatedHeight = 340;
     const isUp = menuTop.value + estimatedHeight > window.innerHeight;
     const horizontalOffset = 150;
-    
+
     const style = {};
     if (isUp) {
-      style.bottom = (window.innerHeight - menuTop.value) + "px";
+      style.bottom = window.innerHeight - menuTop.value + "px";
     } else {
       style.top = menuTop.value + "px";
     }
-    
+
     if (menuLeft.value + horizontalOffset > window.innerWidth) {
-      style.left = (menuLeft.value - horizontalOffset) + "px";
+      style.left = menuLeft.value - horizontalOffset + "px";
     } else {
       style.left = menuLeft.value + "px";
     }

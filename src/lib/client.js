@@ -44,7 +44,7 @@ export default class Client extends EventEmitter {
       const store = getStore();
       if (!store) return [];
       return Object.values(store.contactors);
-    } catch (e) {
+    } catch {
       return [];
     }
   }
@@ -172,7 +172,7 @@ export default class Client extends EventEmitter {
     return bot;
   }
 
-  initContactor(contactor) {
+  initContactor(_contactor) {
     // No-op: listeners are handled reactively in the store
   }
 
@@ -925,7 +925,7 @@ export default class Client extends EventEmitter {
           try {
             const data = JSON.parse(xhr.responseText);
             resolve(data);
-          } catch (e) {
+          } catch {
             reject(new Error("Parse response failed"));
           }
         } else {

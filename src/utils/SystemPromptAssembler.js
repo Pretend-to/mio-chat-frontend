@@ -9,12 +9,12 @@
 
 // 结晶的 5 个分区标签
 export const CRYSTAL_ZONES = [
-  { key: 'long_term_profile', label: '用户画像', icon: '👤' },
-  { key: 'short_term_goals', label: '短期目标', icon: '🎯' },
-  { key: 'current_plan', label: '运行计划', icon: '📋' },
-  { key: 'file_architecture_delta', label: '文件变更', icon: '📁' },
-  { key: 'constraints', label: '开发约束', icon: '🔒' },
-]
+  { key: "long_term_profile", label: "用户画像", icon: "👤" },
+  { key: "short_term_goals", label: "短期目标", icon: "🎯" },
+  { key: "current_plan", label: "运行计划", icon: "📋" },
+  { key: "file_architecture_delta", label: "文件变更", icon: "📁" },
+  { key: "constraints", label: "开发约束", icon: "🔒" },
+];
 
 /**
  * 将联系人的系统 prompt 与结晶数据组装为单条 system message 内容
@@ -24,21 +24,21 @@ export const CRYSTAL_ZONES = [
  * @returns {string} 组装好的单条 system message 内容
  */
 export function assembleSystemPrompt(baseSystemPrompt, latestSummary) {
-  const hasCrystal = latestSummary && latestSummary.trim().length > 0
+  const hasCrystal = latestSummary && latestSummary.trim().length > 0;
 
   if (!hasCrystal) {
     // 即使没有结晶内容，也注入空模板，让后端有准备压缩的基础
-    if (!baseSystemPrompt) return ''
-    return baseSystemPrompt
+    if (!baseSystemPrompt) return "";
+    return baseSystemPrompt;
   }
 
-  const parts = []
+  const parts = [];
   if (baseSystemPrompt && baseSystemPrompt.trim()) {
-    parts.push(baseSystemPrompt.trim())
+    parts.push(baseSystemPrompt.trim());
   }
-  parts.push(`<memory_crystal>\n${latestSummary.trim()}\n</memory_crystal>`)
+  parts.push(`<memory_crystal>\n${latestSummary.trim()}\n</memory_crystal>`);
 
-  return parts.join('\n\n')
+  return parts.join("\n\n");
 }
 
 /**
@@ -48,24 +48,26 @@ export function assembleSystemPrompt(baseSystemPrompt, latestSummary) {
  * @returns {Record<string, string>} 键为 tagName，值为区块文本内容
  */
 export function parseXmlZones(xmlStr) {
-  const result = {}
+  const result = {};
   if (!xmlStr) {
-    CRYSTAL_ZONES.forEach(z => { result[z.key] = '' })
-    return result
+    CRYSTAL_ZONES.forEach((z) => {
+      result[z.key] = "";
+    });
+    return result;
   }
 
   CRYSTAL_ZONES.forEach(({ key }) => {
-    const openTag = `<${key}>`
-    const closeTag = `</${key}>`
-    const startIdx = xmlStr.indexOf(openTag)
-    const endIdx = xmlStr.indexOf(closeTag)
+    const openTag = `<${key}>`;
+    const closeTag = `</${key}>`;
+    const startIdx = xmlStr.indexOf(openTag);
+    const endIdx = xmlStr.indexOf(closeTag);
     if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-      result[key] = xmlStr.slice(startIdx + openTag.length, endIdx).trim()
+      result[key] = xmlStr.slice(startIdx + openTag.length, endIdx).trim();
     } else {
-      result[key] = ''
+      result[key] = "";
     }
-  })
-  return result
+  });
+  return result;
 }
 
 /**
@@ -76,9 +78,9 @@ export function parseXmlZones(xmlStr) {
  */
 export function buildXmlFromZones(zones) {
   return CRYSTAL_ZONES.map(({ key }) => {
-    const content = (zones[key] || '').trim()
-    return `<${key}>\n${content}\n</${key}>`
-  }).join('\n\n')
+    const content = (zones[key] || "").trim();
+    return `<${key}>\n${content}\n</${key}>`;
+  }).join("\n\n");
 }
 
 export default {
@@ -86,4 +88,4 @@ export default {
   parseXmlZones,
   buildXmlFromZones,
   CRYSTAL_ZONES,
-}
+};

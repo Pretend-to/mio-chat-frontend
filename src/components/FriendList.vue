@@ -94,7 +94,7 @@ const getMenuStyle = computed(() => {
     left: menuX.value + "px",
   };
   if (isUp) {
-    style.bottom = (window.innerHeight - menuY.value) + "px";
+    style.bottom = window.innerHeight - menuY.value + "px";
   } else {
     style.top = menuY.value + "px";
   }

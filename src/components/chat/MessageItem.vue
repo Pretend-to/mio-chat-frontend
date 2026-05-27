@@ -197,22 +197,39 @@
                 >
                   <div
                     class="crystallize-event-bar"
-                    :class="[element.data.status, { 'is-success': element.data.status === 'finished' }]"
+                    :class="[
+                      element.data.status,
+                      { 'is-success': element.data.status === 'finished' },
+                    ]"
                     @click="toggleCrystallizeDetails(elmIndex)"
                   >
                     <i class="mio-icon mio-icon-memory"></i>
                     <span class="tool-name">整理记忆</span>
                     <span
                       class="tool-status-text"
-                      :class="{ 'is-loading': element.data.status === 'running' }"
+                      :class="{
+                        'is-loading': element.data.status === 'running',
+                      }"
                     >
-                      {{ element.data.status === 'running' ? '整理中' : '完成' }}
+                      {{
+                        element.data.status === "running" ? "整理中" : "完成"
+                      }}
                     </span>
 
                     <!-- 右侧展开按钮 -->
                     <div class="tool-actions" v-if="element.data.summary">
-                      <button :class="{ active: isCrystallizeExpanded(elmIndex), 'action-btn': true }">
-                        <svg class="chevron" viewBox="0 0 1024 1024" width="10" height="10">
+                      <button
+                        :class="{
+                          active: isCrystallizeExpanded(elmIndex),
+                          'action-btn': true,
+                        }"
+                      >
+                        <svg
+                          class="chevron"
+                          viewBox="0 0 1024 1024"
+                          width="10"
+                          height="10"
+                        >
                           <path
                             d="M338.752 104.704a64 64 0 0 0 0 90.496l316.8 316.8-316.8 316.8a64 64 0 0 0 90.496 90.496l362.048-362.048a64 64 0 0 0 0-90.496L429.248 14.208a64 64 0 0 0-90.496 90.496z"
                             fill="currentColor"
@@ -360,7 +377,7 @@ const isCrystallizeExpanded = (elmIndex) => {
   if (expandedCrystallizeEvents.value[key] === undefined) {
     // 正在整理中且有数据时，默认自动展开，让用户能够直接看到酷炫的流式打字机效果
     const element = props.item.content[elmIndex];
-    if (element && element.data?.status === 'running' && element.data.summary) {
+    if (element && element.data?.status === "running" && element.data.summary) {
       return true;
     }
     return false;
@@ -659,5 +676,4 @@ $icon-hover: #09f
     opacity: 0.35
   50%
     opacity: 1
-
 </style>

@@ -91,44 +91,48 @@
         <span class="card-title">模型服务提供商及缓存命中审计</span>
       </div>
       <div class="card-body p-none">
-        <el-table
-          :data="store.providerStats"
-          style="width: 100%"
-          class="saas-table"
-        >
-          <el-table-column
-            prop="name"
-            label="Provider / 实例"
-          ></el-table-column>
-          <el-table-column label="缓存命中率" min-width="120">
-            <template #default="scope">
-              <div class="progress-wrapper">
-                <span class="progress-num">{{ scope.row.cacheHitRate }}%</span>
-                <el-progress
-                  :percentage="scope.row.cacheHitRate"
-                  :stroke-width="6"
-                  :color="scope.row.cacheHitRate > 50 ? '#10b981' : '#3b82f6'"
-                  :show-text="false"
-                />
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column prop="hitTokens" label="命中 Token 数">
-            <template #default="scope">{{
-              formatNumber(scope.row.hitTokens)
-            }}</template>
-          </el-table-column>
-          <el-table-column prop="missTokens" label="未命中 Token 数">
-            <template #default="scope">{{
-              formatNumber(scope.row.missTokens)
-            }}</template>
-          </el-table-column>
-          <el-table-column prop="calls" label="总调用次数">
-            <template #default="scope">{{
-              formatNumber(scope.row.calls)
-            }}</template>
-          </el-table-column>
-        </el-table>
+        <div class="table-responsive-wrapper">
+          <el-table
+            :data="store.providerStats"
+            style="width: 100%"
+            class="saas-table"
+          >
+            <el-table-column
+              prop="name"
+              label="Provider / 实例"
+            ></el-table-column>
+            <el-table-column label="缓存命中率" min-width="120">
+              <template #default="scope">
+                <div class="progress-wrapper">
+                  <span class="progress-num"
+                    >{{ scope.row.cacheHitRate }}%</span
+                  >
+                  <el-progress
+                    :percentage="scope.row.cacheHitRate"
+                    :stroke-width="6"
+                    :color="scope.row.cacheHitRate > 50 ? '#10b981' : '#3b82f6'"
+                    :show-text="false"
+                  />
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column prop="hitTokens" label="命中 Token 数">
+              <template #default="scope">{{
+                formatNumber(scope.row.hitTokens)
+              }}</template>
+            </el-table-column>
+            <el-table-column prop="missTokens" label="未命中 Token 数">
+              <template #default="scope">{{
+                formatNumber(scope.row.missTokens)
+              }}</template>
+            </el-table-column>
+            <el-table-column prop="calls" label="总调用次数">
+              <template #default="scope">{{
+                formatNumber(scope.row.calls)
+              }}</template>
+            </el-table-column>
+          </el-table>
+        </div>
       </div>
     </div>
   </div>
@@ -568,5 +572,30 @@ onUnmounted(() => {
 :deep(.saas-table td.el-table__cell),
 :deep(.saas-table th.el-table__cell) {
   padding: 14px 20px !important;
+}
+
+.table-responsive-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 16px;
+  }
+
+  .stat-value {
+    font-size: 20px;
+  }
+
+  .card-body {
+    padding: 12px;
+  }
 }
 </style>

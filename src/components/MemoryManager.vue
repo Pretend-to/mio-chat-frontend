@@ -12,7 +12,7 @@
           />
         </div>
       </div>
-      
+
       <div v-if="crystallizationEnabled" class="setting-field">
         <div class="field-label">Token 水位线</div>
         <div class="field-value">
@@ -41,9 +41,7 @@
             <span class="last-updated" v-else-if="hasCrystallizationContent">
               记忆结晶已保存并生效
             </span>
-            <span class="last-updated" v-else>
-              暂无已保存的结晶事实
-            </span>
+            <span class="last-updated" v-else> 暂无已保存的结晶事实 </span>
           </div>
           <div class="row-actions">
             <el-button size="small" type="danger" plain @click="clearSummary">
@@ -75,11 +73,15 @@
         </el-tabs>
       </div>
     </template>
-    
+
     <div v-else class="settings-card disabled-hint-card">
       <div class="disabled-hint-content">
         <span class="lock-icon">🔒</span>
-        <span class="hint-text">自动结晶功能已关闭。开启自动结晶后，长对话中将自动启用 Token 水位线控制，并在此处直观地进行用户画像、短期目标、开发约束等多分区记忆的 CRUD 交互式管理与保存。</span>
+        <span class="hint-text"
+          >自动结晶功能已关闭。开启自动结晶后，长对话中将自动启用 Token
+          水位线控制，并在此处直观地进行用户画像、短期目标、开发约束等多分区记忆的
+          CRUD 交互式管理与保存。</span
+        >
       </div>
     </div>
   </div>
@@ -88,7 +90,11 @@
 <script setup>
 import { ref, computed, watch } from "vue";
 import { useContactorsStore } from "@/stores/contactorsStore.js";
-import { CRYSTAL_ZONES, parseXmlZones, buildXmlFromZones } from "@/utils/SystemPromptAssembler.js";
+import {
+  CRYSTAL_ZONES,
+  parseXmlZones,
+  buildXmlFromZones,
+} from "@/utils/SystemPromptAssembler.js";
 
 const props = defineProps({
   contactorId: {
@@ -100,13 +106,19 @@ const props = defineProps({
 const contactorStore = useContactorsStore();
 
 const contactor = computed(() => contactorStore.contactors[props.contactorId]);
-const crystallization = computed(() => contactor.value?.options?.crystallization);
+const crystallization = computed(
+  () => contactor.value?.options?.crystallization,
+);
 
-const crystallizationEnabled = computed(() => crystallization.value?.enabled === true);
+const crystallizationEnabled = computed(
+  () => crystallization.value?.enabled === true,
+);
 const localWatermark = ref(crystallization.value?.tokenWatermark ?? 64000);
 
 // Zone contents parsed from latestSummary
-const zoneContents = ref(parseXmlZones(crystallization.value?.latestSummary || ""));
+const zoneContents = ref(
+  parseXmlZones(crystallization.value?.latestSummary || ""),
+);
 
 const activeTab = ref(CRYSTAL_ZONES[0]?.key || "");
 
@@ -150,7 +162,9 @@ function onToggle(val) {
 }
 
 function onWatermarkChange(val) {
-  contactorStore.updateCrystallization(props.contactorId, { tokenWatermark: val });
+  contactorStore.updateCrystallization(props.contactorId, {
+    tokenWatermark: val,
+  });
 }
 
 function onZoneInput() {

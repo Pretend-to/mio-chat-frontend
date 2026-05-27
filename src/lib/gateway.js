@@ -58,7 +58,10 @@ export function getValidOpenaiMessage(
           if (!currentAssistant.content) {
             delete currentAssistant.content;
           }
-          if (!currentAssistant.tool_calls || currentAssistant.tool_calls.length === 0) {
+          if (
+            !currentAssistant.tool_calls ||
+            currentAssistant.tool_calls.length === 0
+          ) {
             delete currentAssistant.tool_calls;
           }
           subArray.push(currentAssistant);
@@ -76,18 +79,27 @@ export function getValidOpenaiMessage(
         }
 
         if (elm.type === "reason") {
-          if (currentAssistant && currentAssistant.tool_calls && currentAssistant.tool_calls.length > 0) {
+          if (
+            currentAssistant &&
+            currentAssistant.tool_calls &&
+            currentAssistant.tool_calls.length > 0
+          ) {
             flushAssistant();
           }
           pendingReasoning += elm.data.text || "";
         } else if (elm.type === "text") {
-          if (currentAssistant && currentAssistant.tool_calls && currentAssistant.tool_calls.length > 0) {
+          if (
+            currentAssistant &&
+            currentAssistant.tool_calls &&
+            currentAssistant.tool_calls.length > 0
+          ) {
             flushAssistant();
           }
           if (!currentAssistant) {
             currentAssistant = { role: "assistant", content: "" };
           }
-          currentAssistant.content = (currentAssistant.content || "") + (elm.data.text || "");
+          currentAssistant.content =
+            (currentAssistant.content || "") + (elm.data.text || "");
         } else if (elm.type === "tool_call") {
           if (!currentAssistant) {
             currentAssistant = { role: "assistant" };
@@ -106,7 +118,10 @@ export function getValidOpenaiMessage(
 
           pendingToolMessages.push({
             role: "tool",
-            content: typeof elm.data.result === "string" ? elm.data.result : JSON.stringify(elm.data.result),
+            content:
+              typeof elm.data.result === "string"
+                ? elm.data.result
+                : JSON.stringify(elm.data.result),
             tool_call_id: elm.data.id,
             name: elm.data.name,
           });
@@ -336,8 +351,6 @@ export function getCrystallizationMessages(
   return getValidOpenaiMessage(windowMessages, 0, Infinity);
 }
 
-
-
 class StreamBuffer {
   constructor(contactorId, messageId, store) {
     this.contactorId = contactorId;
@@ -485,12 +498,20 @@ export const gateway = {
         // 在消息链头部注入组装好的 system 消息（全局人格 + memory_crystal XML）
         const baseSystemPrompt = options?.presetSettings?.opening || "";
         const latestSummary = crystallization.latestSummary || "";
-        const assembledSystem = assembleSystemPrompt(baseSystemPrompt, latestSummary);
+        const assembledSystem = assembleSystemPrompt(
+          baseSystemPrompt,
+          latestSummary,
+        );
 
         if (assembledSystem) {
           // 移除消息链中已有的 system 消息（避免重复）
-          const withoutSystem = finalMessages.filter((m) => m.role !== "system");
-          finalMessages = [{ role: "system", content: assembledSystem }, ...withoutSystem];
+          const withoutSystem = finalMessages.filter(
+            (m) => m.role !== "system",
+          );
+          finalMessages = [
+            { role: "system", content: assembledSystem },
+            ...withoutSystem,
+          ];
         }
       } else {
         // 普通模式：使用滑动窗口截取
@@ -511,12 +532,16 @@ export const gateway = {
       // 在 settings 中注入结晶相关参数
       const enrichedOptions = { ...options };
       if (crystallizationEnabled) {
-        enrichedOptions.crystallization_token_watermark = crystallization.tokenWatermark || 64000;
+        enrichedOptions.crystallization_token_watermark =
+          crystallization.tokenWatermark || 64000;
         enrichedOptions.previous_summary = crystallization.latestSummary || "";
         enrichedOptions.crystallization_keep_turns = 2;
         // 移除 system prompt 中的 opening（已合并到消息链头部）
         if (enrichedOptions.presetSettings) {
-          enrichedOptions.presetSettings = { ...enrichedOptions.presetSettings, opening: "" };
+          enrichedOptions.presetSettings = {
+            ...enrichedOptions.presetSettings,
+            opening: "",
+          };
         }
       }
 
@@ -582,10 +607,18 @@ export const gateway = {
         });
       } else {
         if (data.type === "reason") {
-          const buffer = getOrCreateBuffer(contactorId, messageId, contactorStore);
+          const buffer = getOrCreateBuffer(
+            contactorId,
+            messageId,
+            contactorStore,
+          );
           buffer.addReason(data.data?.text ?? "", data.data);
         } else if (data.type === "content") {
-          const buffer = getOrCreateBuffer(contactorId, messageId, contactorStore);
+          const buffer = getOrCreateBuffer(
+            contactorId,
+            messageId,
+            contactorStore,
+          );
           buffer.addContent(data.content);
         } else if (data.type === "toolCall") {
           const buffer = streamBuffers.get(messageId);
@@ -606,7 +639,11 @@ export const gateway = {
           if (buffer) {
             buffer.flush();
           }
-          contactorStore.handleCrystallizeEvent(contactorId, messageId, data.content);
+          contactorStore.handleCrystallizeEvent(
+            contactorId,
+            messageId,
+            data.content,
+          );
         }
       }
     } else if (["complete", "failed"].includes(e.message)) {

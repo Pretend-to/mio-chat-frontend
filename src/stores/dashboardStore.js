@@ -185,15 +185,17 @@ export const useDashboardStore = defineStore("dashboard", () => {
     }
   }
 
-  async function fetchTurns() {
+  async function fetchTurns(search = "") {
     try {
-      const res = await configAPI.request(
-        "/api/admin/dashboard/turns?limit=50&offset=0",
-      );
+      const url = search 
+        ? `/api/admin/dashboard/turns?limit=50&offset=0&search=${encodeURIComponent(search)}`
+        : "/api/admin/dashboard/turns?limit=50&offset=0";
+      const res = await configAPI.request(url);
       if (res.success) {
         toolCallTurns.value = res.data.turns.map((t) => ({
           requestId: t.requestId,
           user: t.userId,
+          userIp: t.userIp || "未知",
           presetName: t.presetName,
           contactorId: t.contactorId,
           sessionTitle: t.sessionTitle,
@@ -211,6 +213,19 @@ export const useDashboardStore = defineStore("dashboard", () => {
     } catch (err) {
       console.error("获取最近活跃对话失败:", err);
     }
+  }
+
+  async function fetchUserDetail(userId) {
+    try {
+      const res = await configAPI.request(`/api/admin/dashboard/user/${encodeURIComponent(userId)}`);
+      if (res.success) {
+        return res.data;
+      }
+    } catch (err) {
+      console.error("获取用户画像详情失败:", err);
+      ElMessage.error("获取用户画像详情失败");
+    }
+    return null;
   }
 
   async function selectTurn(turn) {
@@ -266,6 +281,7 @@ export const useDashboardStore = defineStore("dashboard", () => {
     fetchHistoricalStats,
     fetchFailures,
     fetchTurns,
+    fetchUserDetail,
     selectTurn,
     refreshData,
   };
