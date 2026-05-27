@@ -654,6 +654,7 @@ export const gateway = {
               requestId: messageId,
               options: data.content.options,
               prompt: data.content.prompt,
+              meta: data.content.meta,
             });
           });
         }

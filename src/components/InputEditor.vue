@@ -37,6 +37,14 @@
             授权执行
           </button>
           
+          <button 
+            v-if="activeInteraction.meta?.command && !isHighRiskCommand(activeInteraction.meta.command)"
+            class="interaction-btn approve-once-btn" 
+            @click="handleApproveAndRemember"
+          >
+            确认并不再提醒
+          </button>
+          
           <div class="reject-reason-container">
             <button 
               class="interaction-btn reject-btn" 
@@ -194,15 +202,75 @@ export default {
     const { activeInteraction, hasActiveInteraction, submitResponse } = useInteraction();
     const rejectReasonText = ref("");
 
-    watch(() => activeInteraction.value, () => {
+    const isHighRiskCommand = (command) => {
+      if (!command) return true;
+      const trimmed = command.trim().toLowerCase();
+      
+      const highRiskExecutables = [
+        'rm', 'rmdir', 'node', 'python', 'python3', 'pip', 'pip3', 'npm', 'yarn', 'pnpm',
+        'sh', 'bash', 'zsh', 'sudo', 'curl', 'wget', 'docker', 'mv', 'chmod', 'chown'
+      ];
+
+      const words = trimmed.split(/[^a-zA-Z0-9_\-/]+/);
+      return words.some(word => {
+        return highRiskExecutables.some(exec => {
+          return word === exec || word.endsWith('/' + exec);
+        });
+      });
+    };
+
+    const checkAutoApproval = (interaction) => {
+      if (!interaction || interaction.actionType !== 'REQUEST_APPROVAL') return;
+      const command = interaction.meta?.command;
+      if (!command) return;
+      
+      if (isHighRiskCommand(command)) return;
+
+      try {
+        const listStr = localStorage.getItem('mio_auto_approved_commands') || '[]';
+        const list = JSON.parse(listStr);
+        if (Array.isArray(list) && list.includes(command)) {
+          console.log(`[Auto Approval] Automatically approving command: ${command}`);
+          submitResponse({ approved: true });
+        }
+      } catch (err) {
+        console.error('Failed to process auto-approval check:', err);
+      }
+    };
+
+    const handleApproveAndRemember = () => {
+      const interaction = activeInteraction.value;
+      if (!interaction) return;
+      const command = interaction.meta?.command;
+      if (command && !isHighRiskCommand(command)) {
+        try {
+          const listStr = localStorage.getItem('mio_auto_approved_commands') || '[]';
+          const list = JSON.parse(listStr);
+          if (Array.isArray(list) && !list.includes(command)) {
+            list.push(command);
+            localStorage.setItem('mio_auto_approved_commands', JSON.stringify(list));
+          }
+        } catch (err) {
+          console.error('Failed to save auto-approved command:', err);
+        }
+      }
+      submitResponse({ approved: true });
+    };
+
+    watch(() => activeInteraction.value, (newVal) => {
       rejectReasonText.value = "";
-    });
+      if (newVal) {
+        checkAutoApproval(newVal);
+      }
+    }, { immediate: true });
 
     return {
       activeInteraction,
       hasActiveInteraction,
       submitResponse,
       rejectReasonText,
+      isHighRiskCommand,
+      handleApproveAndRemember,
     };
   },
   props: {
@@ -2000,6 +2068,14 @@ i
         color: #1890ff
         &:hover
           background: #1890ff
+          color: #fff
+
+      &.approve-once-btn
+        background: #f6ffed
+        border-color: #b7eb8f
+        color: #52c41a
+        &:hover
+          background: #52c41a
           color: #fff
 
       &.reject-btn
