@@ -457,6 +457,7 @@ export default class Config {
       value: provider.displayName,
       label: provider.displayName,
       adapterType: provider.adapterType,
+      description: provider.description,
     }));
   }
 

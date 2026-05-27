@@ -77,7 +77,7 @@
                     <div class="adapter-name">{{ provider.label }}</div>
                   </div>
                   <div class="adapter-desc">
-                    {{ getProviderDesc(provider.adapterType) }}
+                    {{ provider.description || "大语言模型适配器" }}
                   </div>
                 </div>
                 <el-button
@@ -254,7 +254,7 @@
                   <div class="adapter-name">{{ provider.label }}</div>
                 </div>
                 <div class="adapter-desc">
-                  {{ getProviderDesc(provider.adapterType) }}
+                  {{ provider.description || "大语言模型适配器" }}
                 </div>
               </div>
               <el-button
@@ -475,23 +475,9 @@ const handleAddByProvider = (provider) => {
   close();
 };
 
-const getProviderDesc = (provider) => {
-  const descMap = {
-    openai: "OpenAI GPT 系列模型",
-    gemini: "Google Gemini 模型",
-    vertex: "Google Vertex AI 平台",
-    onebot: "OneBot 协议 (QQ, etc.)",
-    deepseek: "DeepSeek 深度求索模型",
-    anthropic: "Anthropic Claude 模型",
-    xiaomimimo: "小米 MiMo 模型平台",
-    volcengine: "火山引擎大模型服务",
-    kuaishou: "快手可灵大模型服务",
-    meituan: "美团龙猫大模型服务",
-  };
-  return descMap[provider?.toLowerCase()] || "大语言模型适配器";
-};
-
 const getProviderTagType = (provider) => {
+  if (!provider) return "info";
+  const name = provider.toLowerCase();
   const typeMap = {
     openai: "primary",
     gemini: "success",
@@ -499,28 +485,38 @@ const getProviderTagType = (provider) => {
     onebot: "info",
     deepseek: "primary",
     anthropic: "warning",
-    xiaomimimo: "warning",
-    volcengine: "danger",
-    kuaishou: "warning",
-    meituan: "warning",
   };
-  return typeMap[provider?.toLowerCase()] || "info";
+  if (typeMap[name]) return typeMap[name];
+  
+  // 动态哈希一个合法的 tag 类型，避免硬编码
+  const tags = ["primary", "success", "warning", "danger", "info"];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return tags[Math.abs(hash) % tags.length];
 };
 
 const getProviderColor = (provider) => {
+  if (!provider) return "#f5f5f5";
+  const name = provider.toLowerCase();
   const colorMap = {
-    openai: "#f0f9ff", // 浅蓝色背景
-    gemini: "#f0f7ff", // 浅蓝色背景
-    vertex: "#fffbeb", // 浅黄色背景
-    onebot: "#f0f4ff", // 浅紫蓝色背景
-    deepseek: "#f0f4ff", // 浅蓝色背景
-    anthropic: "#fff0f0", // 浅红色背景
-    xiaomimimo: "rgba(255, 103, 0, 0.05)", // 极浅橙色
-    volcengine: "rgba(248, 89, 89, 0.05)", // 极浅火山红色
-    kuaishou: "rgba(255, 140, 0, 0.05)", // 极浅橘色
-    meituan: "rgba(254, 197, 0, 0.05)", // 极浅黄色
+    openai: "#f0f9ff", // 浅蓝色
+    gemini: "#f0f7ff", // 浅蓝色
+    vertex: "#fffbeb", // 浅黄色
+    onebot: "#f0f4ff", // 浅紫蓝色
+    deepseek: "#f0f4ff", // 浅蓝色
+    anthropic: "#fff0f0", // 浅红色
   };
-  return colorMap[provider?.toLowerCase()] || "#f5f5f5"; // 默认浅灰色
+  if (colorMap[name]) return colorMap[name];
+  
+  // 否则，根据名称哈希产生一个柔和淡色背景，彻底免除后续硬编码
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const h = Math.abs(hash % 360);
+  return `hsla(${h}, 70%, 96%, 0.5)`;
 };
 
 const handleAddByShareCode = async () => {
