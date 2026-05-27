@@ -64,6 +64,9 @@ export default {
       return 'mio-icon-tool';
     },
     toolTitle() {
+      if (this.toolCall.displayName) {
+        return this.toolCall.displayName;
+      }
       const name = this.toolCall.name || '';
       if (name.startsWith('Skill_mid_') || name === 'Skill') {
         return this.getSkillName(this.toolCall.parameters);
