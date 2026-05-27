@@ -28,41 +28,27 @@
         <!-- B. 危险指令二次审批授权 -->
         <div 
           v-else-if="activeInteraction.actionType === 'REQUEST_APPROVAL'" 
-          class="interaction-options-wrapper"
+          class="interaction-options"
         >
-          <div v-if="!showRejectReason" class="interaction-options">
-            <button 
-              class="interaction-btn approve-btn" 
-              @click="submitResponse({ approved: true })"
-            >
-              授权执行
-            </button>
-            <button 
-              class="interaction-btn reject-btn" 
-              @click="showRejectReason = true"
-            >
-              拒绝
-            </button>
-          </div>
+          <button 
+            class="interaction-btn approve-btn" 
+            @click="submitResponse({ approved: true })"
+          >
+            授权执行
+          </button>
           
-          <div v-else class="reject-reason-form">
+          <div class="reject-reason-container">
             <input 
               v-model="rejectReasonText" 
-              class="reason-input" 
-              placeholder="请输入拒绝理由（可选）..." 
+              class="reason-input-inline" 
+              placeholder="拒绝理由（可选）" 
               @keyup.enter="submitResponse({ approved: false, reason: rejectReasonText })"
             />
             <button 
-              class="reason-submit-btn" 
+              class="interaction-btn reject-btn" 
               @click="submitResponse({ approved: false, reason: rejectReasonText })"
             >
-              确认拒绝
-            </button>
-            <button 
-              class="reason-cancel-btn" 
-              @click="showRejectReason = false"
-            >
-              返回
+              拒绝
             </button>
           </div>
         </div>
@@ -206,11 +192,9 @@ import { useInteraction } from "@/composables/useInteraction.js";
 export default {
   setup() {
     const { activeInteraction, hasActiveInteraction, submitResponse } = useInteraction();
-    const showRejectReason = ref(false);
     const rejectReasonText = ref("");
 
     watch(() => activeInteraction.value, () => {
-      showRejectReason.value = false;
       rejectReasonText.value = "";
     });
 
@@ -218,7 +202,6 @@ export default {
       activeInteraction,
       hasActiveInteraction,
       submitResponse,
-      showRejectReason,
       rejectReasonText,
     };
   },
@@ -2027,55 +2010,27 @@ i
           background: #f5222d
           color: #fff
 
-  .reject-reason-form
+  .reject-reason-container
     display: flex
     align-items: center
-    gap: 8px
-    width: 100%
+    gap: 6px
 
-    .reason-input
-      flex: 1
-      height: 24px
-      padding: 2px 8px
+    .reason-input-inline
+      border: none
+      border-bottom: 1px solid rgba(0, 0, 0, 0.15)
+      border-radius: 0
+      padding: 2px 4px
       font-size: 11px
-      border: 1px solid rgba(0, 0, 0, 0.08)
-      border-radius: 4px
+      width: 140px
       outline: none
+      background: transparent
       transition: border-color 0.2s
-      background: #fff
+
+      &::placeholder
+        color: #bbb
 
       &:focus
-        border-color: #ffa39e
-
-    .reason-submit-btn
-      padding: 4px 10px
-      font-size: 11px
-      font-weight: 500
-      border-radius: 4px
-      cursor: pointer
-      background: #fff1f0
-      border: 1px solid #ffa39e
-      color: #f5222d
-      transition: all 0.15s ease
-
-      &:hover
-        background: #f5222d
-        color: #fff
-
-    .reason-cancel-btn
-      padding: 4px 10px
-      font-size: 11px
-      font-weight: 500
-      border-radius: 4px
-      cursor: pointer
-      background: #fafafa
-      border: 1px solid rgba(0, 0, 0, 0.08)
-      color: #666
-      transition: all 0.15s ease
-
-      &:hover
-        background: #efefef
-        color: #111
+        border-bottom-color: #ffa39e
 
 .slide-up-enter-active, .slide-up-leave-active
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1)
