@@ -67,7 +67,7 @@ export default {
       // 3. 正在思考中，显示实时计时器
       const liveDiff = this.currentTime - this.startTime;
       const seconds = Math.max(0, liveDiff / 1000).toFixed(1);
-      return `正在深度思考 (${seconds}s)`;
+      return `深度思考 (${seconds}s)`;
     },
     isThinking() {
       // 只有既没有 endTime 也没有正数 duration 时，才认为正在思考

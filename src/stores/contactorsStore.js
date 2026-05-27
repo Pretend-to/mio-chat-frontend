@@ -107,7 +107,7 @@ export function getMessageText(element) {
     case "reason":
       return element.data.text;
     case "blank":
-      return "正在思考中...";
+      return "思考中...";
     case "reply":
       return "";
     case "nodes":
