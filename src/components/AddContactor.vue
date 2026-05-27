@@ -483,6 +483,10 @@ const getProviderDesc = (provider) => {
     onebot: "OneBot 协议 (QQ, etc.)",
     deepseek: "DeepSeek 深度求索模型",
     anthropic: "Anthropic Claude 模型",
+    xiaomimimo: "小米 MiMo 模型平台",
+    volcengine: "火山引擎大模型服务",
+    kuaishou: "快手可灵大模型服务",
+    meituan: "美团龙猫大模型服务",
   };
   return descMap[provider?.toLowerCase()] || "大语言模型适配器";
 };
@@ -495,6 +499,10 @@ const getProviderTagType = (provider) => {
     onebot: "info",
     deepseek: "primary",
     anthropic: "warning",
+    xiaomimimo: "warning",
+    volcengine: "danger",
+    kuaishou: "warning",
+    meituan: "warning",
   };
   return typeMap[provider?.toLowerCase()] || "info";
 };
@@ -507,6 +515,10 @@ const getProviderColor = (provider) => {
     onebot: "#f0f4ff", // 浅紫蓝色背景
     deepseek: "#f0f4ff", // 浅蓝色背景
     anthropic: "#fff0f0", // 浅红色背景
+    xiaomimimo: "rgba(255, 103, 0, 0.05)", // 极浅橙色
+    volcengine: "rgba(248, 89, 89, 0.05)", // 极浅火山红色
+    kuaishou: "rgba(255, 140, 0, 0.05)", // 极浅橘色
+    meituan: "rgba(254, 197, 0, 0.05)", // 极浅黄色
   };
   return colorMap[provider?.toLowerCase()] || "#f5f5f5"; // 默认浅灰色
 };
