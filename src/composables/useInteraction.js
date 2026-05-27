@@ -17,15 +17,15 @@ export function useInteraction() {
 
     const { interactionId, requestId } = store.activeInteraction;
 
-    // 1. 通过全局 socket 实例双向实时发射数据给后端
-    if (client && client.socket) {
-      client.socket.emit("tool:interact", {
+    // 1. 通过全局 Socket.IO 连接实例双向实时发射数据给后端
+    if (client && client.socket && client.socket.socket) {
+      client.socket.socket.emit("tool:interact", {
         interactionId,
         requestId,
         payload,
       });
     } else {
-      console.error("[useInteraction] Socket.IO connection is not ready!");
+      console.error("[useInteraction] Socket.IO raw connection is not ready!");
     }
 
     // 2. 清除 store 状态，收起交互浮层
