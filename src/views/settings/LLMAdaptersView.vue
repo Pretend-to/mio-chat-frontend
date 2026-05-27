@@ -64,24 +64,13 @@
             >
               刷新全部模型
             </el-button>
-            <el-dropdown @command="handleAddAdapter" trigger="click">
-              <el-button type="primary" :icon="Plus">
-                添加适配器
-                <el-icon class="el-icon--right"><ArrowDown /></el-icon>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item
-                    v-for="type in adapterTypes"
-                    :key="type"
-                    :command="type"
-                  >
-                    <el-icon><Connection /></el-icon>
-                    {{ formatTypeLabel(type) }}
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
+             <el-button
+              type="primary"
+              :icon="Plus"
+              @click="showAddSelector = true"
+            >
+              添加适配器
+            </el-button>
           </div>
 
           <!-- 移动端操作按钮 -->
@@ -95,23 +84,14 @@
             >
               刷新
             </el-button>
-            <el-dropdown @command="handleAddAdapter" trigger="click">
-              <el-button type="primary" :icon="Plus" size="small">
-                添加
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item
-                    v-for="type in adapterTypes"
-                    :key="type"
-                    :command="type"
-                  >
-                    <el-icon><Connection /></el-icon>
-                    {{ formatTypeLabel(type) }}
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
+             <el-button
+              type="primary"
+              :icon="Plus"
+              size="small"
+              @click="showAddSelector = true"
+            >
+              添加
+            </el-button>
           </div>
         </div>
 
@@ -162,21 +142,13 @@
         <div class="adapters-list">
           <div v-if="allAdapters.length === 0" class="empty-state">
             <el-empty description="暂无适配器实例">
-              <el-dropdown @command="handleAddAdapter" trigger="click">
-                <el-button type="primary" :icon="Plus"> 添加适配器 </el-button>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item
-                      v-for="type in adapterTypes"
-                      :key="type"
-                      :command="type"
-                    >
-                      <el-icon><Connection /></el-icon>
-                      {{ formatTypeLabel(type) }}
-                    </el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
+               <el-button
+                type="primary"
+                :icon="Plus"
+                @click="showAddSelector = true"
+              >
+                添加适配器
+              </el-button>
             </el-empty>
           </div>
 
@@ -190,7 +162,14 @@
 
             <el-table-column label="类型" width="120">
               <template #default="{ row }">
-                <el-tag :type="getTypeTagType(row.type)" effect="light">
+                <el-tag
+                  :style="{
+                    color: getThemeColor(row.type),
+                    borderColor: getThemeColor(row.type) + '33',
+                    backgroundColor: getThemeColor(row.type) + '11'
+                  }"
+                  effect="plain"
+                >
                   {{ formatTypeLabel(row.type) }}
                 </el-tag>
               </template>
@@ -289,12 +268,64 @@
       @close="handleEditorClose"
       @submit="handleEditorSubmit"
     />
+
+    <!-- 适配器类型选择器对话框 -->
+    <!-- 适配器类型选择器对话框 -->
+    <el-dialog
+      v-model="showAddSelector"
+      title="选择适配器类型"
+      width="900px"
+      destroy-on-close
+      class="adapter-selector-dialog"
+      :align-center="true"
+    >
+      <div class="selector-container">
+        <div class="selector-header">
+          <div class="search-box">
+            <el-input
+              v-model="selectorSearch"
+              placeholder="输入关键词搜索适配器..."
+              :prefix-icon="Search"
+              clearable
+            />
+          </div>
+        </div>
+
+        <el-scrollbar max-height="460px" class="selector-scrollbar">
+          <div class="grid-container">
+            <div
+              v-for="type in filteredSelectorTypes"
+              :key="type"
+              class="selector-card"
+              :style="{
+                '--card-theme-color': getThemeColor(type),
+                '--card-bg-color': getProviderBgColor(type)
+              }"
+              @click="handleSelectType(type)"
+            >
+              <div class="card-glow"></div>
+              <div class="card-icon">
+                <img :src="getAvatarByAdapterType(type)" alt="Icon" />
+              </div>
+              <div class="card-info">
+                <div class="card-title">{{ formatTypeLabel(type) }}</div>
+                <div class="card-desc">{{ getProviderDesc(type) }}</div>
+              </div>
+              <div class="card-action">
+                <el-icon><Plus /></el-icon>
+              </div>
+            </div>
+          </div>
+        </el-scrollbar>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import AdapterEditor from "@/components/settings/AdapterEditor.vue";
 import { useConfigStore } from "@/stores/configStore.js";
+import { getAvatarByAdapterType } from "@/utils/avatar.js";
 import {
   ArrowDown,
   Check,
@@ -303,6 +334,7 @@ import {
   Delete,
   Plus,
   Refresh,
+  Search,
 } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, onUnmounted, ref } from "vue";
@@ -377,26 +409,10 @@ const formatTypeLabel = (type) => {
     }
   }
 
-  // 后备方案：使用硬编码映射
-  const map = {
-    openai: "OpenAI",
-    gemini: "Gemini",
-    vertex: "Vertex AI",
-    deepseek: "DeepSeek",
-    anthropic: "Anthropic",
-  };
-  if (map[type]) return map[type];
-  return type.charAt(0).toUpperCase() + type.slice(1);
-};
-
-// 获取类型标签的颜色
-const getTypeTagType = (type) => {
-  const map = {
-    openai: "success",
-    gemini: "warning",
-    vertex: "info",
-  };
-  return map[type] || "primary";
+  // 动态后备方案：自动将首字母大写，且把短横线/下划线转换为空格
+  return type
+    ? type.charAt(0).toUpperCase() + type.slice(1).replace(/[-_]/g, " ")
+    : "适配器";
 };
 
 // 获取模型数量标签的颜色
@@ -607,7 +623,58 @@ const handleEditorSubmit = async ({ type, index, data, mode }) => {
     throw error; // 重新抛出错误，让编辑器保持打开
   }
 };
+// 适配器选择器状态
+const showAddSelector = ref(false);
+const selectorSearch = ref("");
 
+const getProviderDesc = (type) => {
+  if (configStore?.adapterTypes?.adapters) {
+    const info = configStore.adapterTypes.adapters.find((a) => a.type === type);
+    if (info?.description) {
+      const desc = info.description.split('\n\n')[0] || info.description;
+      return desc.replace(/\*\*.*?\*\*/g, '').replace(/\[.*?\]\(.*?\)/g, ''); // 移除 markdown
+    }
+  }
+  return "通用大语言模型接口适配器。";
+};
+
+const getThemeColor = (type) => {
+  const name = type.toLowerCase();
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const h = Math.abs(hash % 360);
+  return `hsl(${h}, 75%, 60%)`;
+};
+
+const getProviderBgColor = (type) => {
+  const name = type.toLowerCase();
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const h = Math.abs(hash % 360);
+  return `hsla(${h}, 70%, 97%, 0.45)`;
+};
+
+const filteredSelectorTypes = computed(() => {
+  const allTypes = adapterTypes.value;
+  if (!selectorSearch.value.trim()) {
+    return allTypes;
+  }
+  const keyword = selectorSearch.value.toLowerCase();
+  return allTypes.filter(type => {
+    const label = formatTypeLabel(type).toLowerCase();
+    const desc = getProviderDesc(type).toLowerCase();
+    return label.includes(keyword) || type.toLowerCase().includes(keyword) || desc.includes(keyword);
+  });
+});
+
+const handleSelectType = (type) => {
+  showAddSelector.value = false;
+  handleAddAdapter(type);
+};
 // 初始化
 onMounted(async () => {
   // 检测移动端
@@ -987,11 +1054,217 @@ onUnmounted(() => {
   .page-header {
     .header-actions {
       gap: 8px;
-
+  
       .el-button {
         padding: 8px 12px;
         font-size: 13px;
       }
+    }
+  }
+}
+
+// 适配器选择器高级样式 (Glassmorphism & Harmonious Layout)
+.adapter-selector-dialog {
+  :deep(.el-dialog) {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(235, 238, 245, 0.6);
+  }
+  
+  :deep(.el-dialog__header) {
+    margin-right: 0;
+    padding: 20px 24px 10px;
+    border-bottom: 1px solid rgba(235, 238, 245, 0.6);
+    
+    .el-dialog__title {
+      font-weight: 600;
+      font-size: 18px;
+      color: #303133;
+    }
+  }
+
+  :deep(.el-dialog__body) {
+    padding: 16px 24px 24px;
+  }
+}
+
+.selector-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .search-box {
+    margin-bottom: 4px;
+    
+    :deep(.el-input__wrapper) {
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      border: 1px solid #dcdfe6;
+      transition: all 0.3s;
+      
+      &:hover, &.is-focus {
+        border-color: #409eff;
+        box-shadow: 0 4px 12px rgba(64, 158, 255, 0.1);
+      }
+    }
+  }
+}
+
+.category-tabs {
+  :deep(.el-tabs__header) {
+    margin-bottom: 16px;
+  }
+  
+  :deep(.el-tabs__item) {
+    font-size: 14px;
+    font-weight: 500;
+    color: #606266;
+    padding: 0 20px;
+    height: 40px;
+    line-height: 40px;
+    
+    &.is-active {
+      color: #409eff;
+      font-weight: 600;
+    }
+  }
+  
+  :deep(.el-tabs__active-bar) {
+    height: 3px;
+    border-radius: 2px;
+  }
+}
+
+.selector-scrollbar {
+  max-height: 460px;
+  padding-right: 4px;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+  padding: 4px 2px 16px;
+}
+
+.selector-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(235, 238, 245, 0.8);
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+
+  .card-glow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 12px;
+    opacity: 0;
+    background: var(--card-bg-color);
+    transition: opacity 0.3s ease;
+    z-index: 1;
+  }
+
+  .card-icon {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid rgba(235, 238, 245, 0.8);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s;
+
+    img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+    }
+  }
+
+  .card-info {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    overflow: hidden;
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #303133;
+      transition: color 0.3s;
+    }
+
+    .card-desc {
+      font-size: 12px;
+      color: #909399;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  }
+
+  .card-action {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #f4f4f5;
+    color: #909399;
+    font-size: 12px;
+    opacity: 0;
+    transform: translateX(10px);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+
+  &:hover {
+    border-color: var(--card-theme-color);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05), 0 0 0 1px var(--card-theme-color);
+
+    .card-glow {
+      opacity: 1;
+    }
+
+    .card-icon {
+      border-color: var(--card-theme-color);
+      transform: scale(1.05);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+    }
+
+    .card-info .card-title {
+      color: var(--card-theme-color);
+    }
+
+    .card-action {
+      opacity: 1;
+      transform: translateX(0);
+      background: var(--card-theme-color);
+      color: #ffffff;
     }
   }
 }

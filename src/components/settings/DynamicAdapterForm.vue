@@ -119,45 +119,12 @@
       </el-form-item>
     </template>
 
-    <!-- 特殊处理：Vertex AI 的 JSON 文件上传 -->
-    <template v-if="type === 'vertex' && schema.service_account_json">
-      <el-form-item label="认证方式">
-        <el-radio-group v-model="vertexAuthType">
-          <el-radio value="json">粘贴 JSON</el-radio>
-          <el-radio value="file">上传文件</el-radio>
-        </el-radio-group>
-      </el-form-item>
 
-      <el-form-item v-if="vertexAuthType === 'file'" label="JSON 文件">
-        <el-upload
-          :before-upload="handleJsonUpload"
-          :show-file-list="false"
-          accept=".json"
-          drag
-        >
-          <el-icon class="el-icon--upload">
-            <UploadFilled />
-          </el-icon>
-          <div class="el-upload__text">拖拽文件到此处或 <em>点击上传</em></div>
-          <template #tip>
-            <div class="el-upload__tip">仅支持 .json 格式的服务账号文件</div>
-          </template>
-        </el-upload>
-        <el-input
-          v-if="modelValue.service_account_json"
-          :model-value="jsonFilePreview"
-          type="textarea"
-          :rows="3"
-          readonly
-          style="margin-top: 8px"
-        />
-      </el-form-item>
-    </template>
   </div>
 </template>
 
 <script setup>
-import { Hide, InfoFilled, UploadFilled, View } from "@element-plus/icons-vue";
+import { Hide, InfoFilled, View } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { computed, ref } from "vue";
 
@@ -187,10 +154,9 @@ const props = defineProps({
 const emit = defineEmits([
   "update:modelValue",
   "toggle-api-key",
-  "json-upload",
 ]);
 
-const vertexAuthType = ref("json");
+
 
 // 简单的 Markdown 渲染逻辑
 const renderedDescription = computed(() => {
@@ -233,39 +199,7 @@ const updateField = (fieldName, value) => {
   emit("update:modelValue", newValue);
 };
 
-// JSON 文件预览
-const jsonFilePreview = computed(() => {
-  if (!props.modelValue.service_account_json) return "";
-  try {
-    const json = JSON.parse(props.modelValue.service_account_json);
-    return `项目: ${json.project_id}\n客户端邮箱: ${json.client_email}`;
-  } catch {
-    return "已上传 JSON 文件";
-  }
-});
 
-// 处理 JSON 文件上传
-const handleJsonUpload = (file) => {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const json = e.target.result;
-      JSON.parse(json); // 验证 JSON 格式
-
-      // 更新模型值
-      const newValue = { ...props.modelValue };
-      newValue.service_account_json = json;
-      emit("update:modelValue", newValue);
-
-      ElMessage.success("JSON 文件上传成功");
-    } catch (error) {
-      ElMessage.error("JSON 文件格式不正确");
-    }
-  };
-  reader.readAsText(file);
-  emit("json-upload", file);
-  return false; // 阻止自动上传
-};
 </script>
 
 <style scoped lang="scss">

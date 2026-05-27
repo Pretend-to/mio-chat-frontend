@@ -23,7 +23,6 @@
           v-model="formData"
           :show-api-key="showApiKey"
           @toggle-api-key="showApiKey = !showApiKey"
-          @json-upload="() => {}"
         />
 
         <!-- 模型配置 -->
@@ -98,8 +97,6 @@ const formData = ref({
   enable: true,
   api_key: "",
   base_url: "",
-  region: "us-central1",
-  service_account_json: "",
   models: [],
   default_model: "",
   guest_models: {
@@ -134,16 +131,10 @@ const formatTypeLabel = (type) => {
     }
   }
 
-  // 后备方案：使用硬编码映射
-  const map = {
-    openai: "OpenAI",
-    gemini: "Gemini",
-    vertex: "Vertex AI",
-    deepseek: "DeepSeek",
-    anthropic: "Anthropic",
-  };
-  if (map[type]) return map[type];
-  return type ? type.charAt(0).toUpperCase() + type.slice(1) : "适配器";
+  // 动态后备方案：自动将首字母大写，且把短横线/下划线转换为空格
+  return type
+    ? type.charAt(0).toUpperCase() + type.slice(1).replace(/[-_]/g, " ")
+    : "适配器";
 };
 
 const dialogTitle = computed(() => {
@@ -229,36 +220,11 @@ const previewModels = computed(() => {
     return Array.from(typeModels).sort();
   }
 
-  // 5. 最后的后备方案：根据类型返回默认列表
-  if (props.type === "openai") {
-    return ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"];
-  } else if (props.type === "gemini") {
-    return ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"];
-  } else if (props.type === "vertex") {
-    return ["gemini-2.0-flash-001", "claude-3-5-sonnet-v2@20241022"];
-  } else if (props.type === "deepseek") {
-    return ["deepseek-chat", "deepseek-coder"];
-  } else if (props.type === "anthropic") {
-    return [
-      "claude-3-5-sonnet-20241022",
-      "claude-3-5-haiku-20241022",
-      "claude-3-opus-20240229",
-    ];
-  }
-
+  // 5. 最后的后备方案：返回空，由获取模型按钮或用户输入驱动
   return [];
 });
 
-// JSON 文件预览
-const jsonFilePreview = computed(() => {
-  if (!formData.value.service_account_json) return "";
-  try {
-    const json = JSON.parse(formData.value.service_account_json);
-    return `项目: ${json.project_id}\n客户端邮箱: ${json.client_email}`;
-  } catch {
-    return "已上传 JSON 文件";
-  }
-});
+
 
 // 表单验证规则
 const rules = computed(() => {
@@ -334,22 +300,7 @@ const rules = computed(() => {
       });
     }
 
-    if (
-      fieldConfig.type === "textarea" &&
-      fieldName === "service_account_json"
-    ) {
-      fieldRules.push({
-        validator: (rule, value, callback) => {
-          try {
-            JSON.parse(value);
-            callback();
-          } catch {
-            callback(new Error("JSON 格式不正确"));
-          }
-        },
-        trigger: "blur",
-      });
-    }
+
 
     if (fieldRules.length > 0) {
       rules[fieldName] = fieldRules;
@@ -361,66 +312,25 @@ const rules = computed(() => {
 
 // 获取模型列表
 const handleFetchModels = async () => {
-  // 验证必要字段
-  if (props.type !== "vertex") {
-    if (!formData.value.api_key) {
-      ElMessage.warning("请先填写 API Key");
-      return;
-    }
-    if (!formData.value.base_url) {
-      ElMessage.warning("请先填写 Base URL");
-      return;
-    }
-  } else if (props.type === "vertex") {
-    if (!formData.value.region) {
-      ElMessage.warning("请先选择区域");
-      return;
-    }
-    if (!formData.value.service_account_json) {
-      ElMessage.warning("请先提供服务账号 JSON");
+  const schema = currentAdapterSchema.value;
+
+  // 动态验证必填字段
+  for (const [fieldName, fieldConfig] of Object.entries(schema)) {
+    if (fieldConfig.required && !formData.value[fieldName]) {
+      ElMessage.warning(`请先填写 ${fieldConfig.label || fieldName}`);
       return;
     }
   }
 
   fetchingModels.value = true;
   try {
-    // 构建测试请求参数（包含所有相关字段）
+    // 动态构建测试请求参数：仅包含 schema 中定义的有效字段
     const testConfig = {};
-
-    // 根据适配器类型添加必要的认证信息和配置
-    if (props.type === "vertex") {
-      testConfig.region = formData.value.region;
-      testConfig.service_account_json = formData.value.service_account_json;
-
-      // 包含手动模型配置
-      if (formData.value.models && formData.value.models.length > 0) {
-        testConfig.models = formData.value.models;
+    Object.keys(schema).forEach((key) => {
+      if (formData.value[key] !== undefined) {
+        testConfig[key] = formData.value[key];
       }
-
-      // 包含手动模型字符串（如果有的话）
-      if (formData.value.manual_models && formData.value.manual_models.trim()) {
-        testConfig.manual_models = formData.value.manual_models.trim();
-      }
-
-      // 包含其他可能的 Vertex 特定配置
-      if (formData.value.name) {
-        testConfig.name = formData.value.name;
-      }
-      if (formData.value.enable !== undefined) {
-        testConfig.enable = formData.value.enable;
-      }
-    } else {
-      testConfig.api_key = formData.value.api_key;
-      testConfig.base_url = formData.value.base_url;
-
-      // 包含其他通用配置
-      if (formData.value.name) {
-        testConfig.name = formData.value.name;
-      }
-      if (formData.value.enable !== undefined) {
-        testConfig.enable = formData.value.enable;
-      }
-    }
+    });
 
     console.log("发送测试配置:", testConfig); // 添加调试日志
 
@@ -468,80 +378,44 @@ const handleSubmit = async () => {
     await formRef.value.validate();
 
     let submitData;
+    const schema = currentAdapterSchema.value;
 
     if (props.mode === "add") {
-      // 添加模式：提交所有字段
-      submitData = {
-        ...formData.value,
-        default_model: modelConfig.value.default,
-        guest_models: modelConfig.value.guest,
-      };
-
-      // 清理不需要的字段
-      if (props.type !== "vertex") {
-        delete submitData.region;
-        delete submitData.service_account_json;
-        delete submitData.models;
-        delete submitData.manual_models;
-      } else {
-        delete submitData.api_key;
-        delete submitData.base_url;
-      }
+      // 添加模式：只提交 schema 中定义的字段
+      submitData = {};
+      Object.keys(schema).forEach((key) => {
+        if (formData.value[key] !== undefined) {
+          submitData[key] = formData.value[key];
+        }
+      });
+      submitData.default_model = modelConfig.value.default;
+      submitData.guest_models = modelConfig.value.guest;
 
       console.log("提交数据 (添加模式):", submitData); // 添加调试日志
     } else {
       // 编辑模式：只提交变更的字段
       submitData = {};
 
-      // 比对基本字段
-      const fieldsToCheck = [
-        "name",
-        "enable",
-        "api_key",
-        "base_url",
-        "region",
-        "service_account_json",
-        "models",
-        "manual_models",
-      ];
-      for (const field of fieldsToCheck) {
-        // 跳过加密字段（以 *** 开头的值表示未修改）
-        if (field === "api_key" && formData.value[field]?.startsWith("***")) {
-          continue;
+      // 动态比对 schema 中的所有字段
+      Object.keys(schema).forEach((key) => {
+        // 跳过只读字段（例如只读的 models 字段）
+        if (schema[key]?.readonly) {
+          return;
         }
-        if (
-          field === "service_account_json" &&
-          formData.value[field]?.startsWith("***")
-        ) {
-          continue;
+
+        // 跳过加密字段占位符（以 *** 开头的值表示未修改，不提交以避免覆盖后端真实密钥）
+        if (typeof formData.value[key] === "string" && formData.value[key]?.startsWith("***")) {
+          return;
         }
 
         // 只在字段值发生变化时添加
         if (
-          JSON.stringify(formData.value[field]) !==
-          JSON.stringify(originalData.value?.[field])
+          JSON.stringify(formData.value[key]) !==
+          JSON.stringify(originalData.value?.[key])
         ) {
-          // 根据适配器类型过滤字段
-          if (
-            props.type !== "vertex" &&
-            [
-              "region",
-              "service_account_json",
-              "models",
-              "manual_models",
-            ].includes(field)
-          ) {
-            continue;
-          }
-          if (
-            props.type === "vertex" &&
-            ["api_key", "base_url"].includes(field)
-          ) {
-            continue;
-          }
-          submitData[field] = formData.value[field];
+          submitData[key] = formData.value[key];
         }
-      }
+      });
 
       // 检查模型配置变更
       if (
@@ -633,7 +507,6 @@ const initFormData = () => {
       ...defaultData,
       // 确保关键字段总是被初始化
       models: defaultData.models || [],
-      manual_models: defaultData.manual_models || "",
       default_model: "",
       guest_models: {
         keywords: [],
