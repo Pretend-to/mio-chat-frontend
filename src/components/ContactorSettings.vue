@@ -898,6 +898,8 @@ export default {
 
 .profile-info {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
   padding-top: 4px;
 }
 
@@ -912,12 +914,18 @@ export default {
   font-size: 20px;
   font-weight: 600;
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .profile-id {
   font-size: 13px;
   color: #999;
   margin: 4px 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .status-text {

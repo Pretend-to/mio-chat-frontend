@@ -35,6 +35,7 @@ const { proxy } = getCurrentInstance();
 // Data
 const onPhone = ref(window.innerWidth < 768);
 const processedImage = ref(client.avatar || "/p/qava?q=1099834705");
+const rawAdminAvatar = ref(client.avatar || "/p/qava?q=1099834705");
 const connectionStore = useConnectionStore();
 const contactorsStore = useContactorsStore();
 const isConnected = computed(() => connectionStore.isConnected);
@@ -110,6 +111,7 @@ const handleResize = () => {
 
 const loadAvatar = async (adminId) => {
   const adminAvatar = getAdminAvatarUrl(adminId);
+  rawAdminAvatar.value = adminAvatar;
   try {
     processedImage.value = await processAvatarWithStatusHole(adminAvatar);
   } catch (error) {
@@ -397,7 +399,7 @@ onBeforeUnmount(() => {
       <div class="header-top">
         <div class="user-info">
           <div class="user-avatar">
-            <img :src="processedImage" alt="avatar" />
+            <img :src="rawAdminAvatar" alt="avatar" />
           </div>
           <div class="user-detail">
             <div class="user-name">

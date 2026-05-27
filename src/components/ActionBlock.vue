@@ -122,7 +122,10 @@ watch(() => props.defaultExpanded, (newVal) => {
 .action-block-header
   display: flex
   align-items: center
+  flex-wrap: nowrap
+  min-width: 0
   width: fit-content
+  max-width: 100%
   height: 28px
   padding: 0 8px
   border-radius: 6px
@@ -146,10 +149,17 @@ watch(() => props.defaultExpanded, (newVal) => {
   font-weight: 500
   color: #666
   transition: color 0.2s
+  white-space: nowrap
+  overflow: hidden
+  text-overflow: ellipsis
+  flex: 1 1 0
+  min-width: 40px
 
 .block-status-text
   font-size: 12px
   color: #999
+  flex-shrink: 0
+  white-space: nowrap
   &.is-loading
     animation: dot-blink 1.5s infinite
 
@@ -163,6 +173,7 @@ watch(() => props.defaultExpanded, (newVal) => {
 .block-actions
   display: flex
   align-items: center
+  flex-shrink: 0
   color: #bbb
   transition: color 0.2s
   margin-left: 4px
