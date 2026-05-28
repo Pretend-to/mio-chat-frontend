@@ -605,6 +605,25 @@ export const gateway = {
           messageId,
           metaData,
         });
+
+        // 断线同步恢复：若消息未完成/未失败，且同步的 chunks 中含有挂起待处理的 action，则还原至 interactionStore
+        if (data.status !== "completed" && data.status !== "failed" && Array.isArray(data.chunks)) {
+          const actionChunk = data.chunks.find(c => c.type === "action");
+          if (actionChunk) {
+            import("@/stores/interactionStore.js").then(({ useInteractionStore }) => {
+              const store = useInteractionStore();
+              store.setInteraction({
+                contactorId,
+                actionType: actionChunk.content.actionType,
+                interactionId: actionChunk.content.interactionId,
+                requestId: messageId,
+                options: actionChunk.content.options,
+                prompt: actionChunk.content.prompt,
+                meta: actionChunk.content.meta,
+              });
+            });
+          }
+        }
       } else {
         if (data.type === "reason") {
           const buffer = getOrCreateBuffer(
