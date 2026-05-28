@@ -64,20 +64,7 @@
           </template>
         </el-form-item>
 
-        <el-form-item label="对话压缩提示词" prop="system_llm_compact_prompt">
-          <el-input
-            v-model="formData.system_llm_compact_prompt"
-            type="textarea"
-            :rows="6"
-            placeholder="请输入提示词..."
-            style="width: 100%"
-          />
-          <template #extra>
-            <span class="form-item-tip">
-              用于长对话压缩（总结）的提示词。当对话过长时，系统会使用此提示词提取有效信息并精简上下文。
-            </span>
-          </template>
-        </el-form-item>
+
       </el-form>
     </el-card>
 
@@ -221,7 +208,6 @@ const saving = ref(false);
 const formData = reactive({
   system_llm_channel: "",
   system_llm_title_prompt: "",
-  system_llm_compact_prompt: "",
 });
 const originalData = reactive({});
 
@@ -258,8 +244,6 @@ const loadData = async () => {
     formData.system_llm_channel = systemConfig.system_llm_channel || "";
     formData.system_llm_title_prompt =
       systemConfig.system_llm_title_prompt || "";
-    formData.system_llm_compact_prompt =
-      systemConfig.system_llm_compact_prompt || "";
     Object.assign(originalData, formData);
 
     await fetchTasks();
