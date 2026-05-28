@@ -583,7 +583,8 @@ export const useContactorsStore = defineStore("contactors", () => {
           }
         }
       }
-    } else if (status === "finished" && summary) {
+    } else if (status === "finished") {
+      const displaySummary = summary || "";
       if (!contactor.options.crystallization) {
         contactor.options.crystallization = {
           enabled: true,
@@ -591,7 +592,7 @@ export const useContactorsStore = defineStore("contactors", () => {
           tokenWatermark: 64000,
         };
       }
-      contactor.options.crystallization.latestSummary = summary;
+      contactor.options.crystallization.latestSummary = displaySummary;
       contactor.options.crystallization.lastUpdatedAt = Date.now();
 
       const message = getOrCreateMessage(contactorId, messageId);
@@ -601,12 +602,12 @@ export const useContactorsStore = defineStore("contactors", () => {
         );
         if (eventElm) {
           eventElm.data.status = "finished";
-          eventElm.data.summary = summary;
+          eventElm.data.summary = displaySummary;
         } else {
           // 兜底：如果错过了 running 事件直接渲染完成
           message.content.push({
             type: "crystallize_event",
-            data: { status: "finished", summary },
+            data: { status: "finished", summary: displaySummary },
           });
         }
       }
