@@ -181,6 +181,19 @@
             placeholder="告诉 Agent 要做什么..."
           />
         </el-form-item>
+        <el-form-item label="Shell 白名单">
+          <el-input
+            v-model="editingTask.shWhitelist"
+            type="textarea"
+            :rows="2"
+            placeholder="例如: pnpm run dev, ls -la (多个规则请用换行或逗号分隔)"
+          />
+          <template #extra>
+            <span class="form-item-tip">
+              后台定时任务在运行 shell 命令时将自动匹配此白名单。非白名单内的命令在后台运行将直接拒绝。
+            </span>
+          </template>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -224,6 +237,7 @@ const editingTask = reactive({
   cron: "",
   preset: "",
   prompt: "",
+  shWhitelist: "",
   status: "active",
 });
 
@@ -301,13 +315,17 @@ const handleAddTask = () => {
     cron: "",
     preset: "",
     prompt: "",
+    shWhitelist: "",
     status: "active",
   });
   dialogVisible.value = true;
 };
 
 const handleEditTask = (row) => {
-  Object.assign(editingTask, { ...row });
+  Object.assign(editingTask, {
+    shWhitelist: "",
+    ...row,
+  });
   dialogVisible.value = true;
 };
 

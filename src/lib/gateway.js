@@ -649,6 +649,7 @@ export const gateway = {
           import("@/stores/interactionStore.js").then(({ useInteractionStore }) => {
             const store = useInteractionStore();
             store.setInteraction({
+              contactorId, // 绑定联系人ID
               actionType: data.content.actionType,
               interactionId: data.content.interactionId,
               requestId: messageId,

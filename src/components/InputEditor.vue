@@ -37,13 +37,21 @@
             授权执行
           </button>
           
-          <button 
-            v-if="activeInteraction.meta?.command && !isHighRiskCommand(activeInteraction.meta.command)"
-            class="interaction-btn approve-once-btn" 
-            @click="handleApproveAndRemember"
-          >
-            确认并不再提醒
-          </button>
+          <template v-if="activeInteraction.meta?.command && !isHighRiskCommand(activeInteraction.meta.command)">
+            <button 
+              class="interaction-btn approve-once-btn" 
+              @click="handleApproveAndRememberSpecific"
+            >
+              记住此具体命令免确认
+            </button>
+            
+            <button 
+              class="interaction-btn approve-once-btn" 
+              @click="handleApproveAndRememberPrefix"
+            >
+              记住命令前缀 [{{ getCommandPrefix(activeInteraction.meta.command) }}] 免确认
+            </button>
+          </template>
           
           <div class="reject-reason-container">
             <button 
@@ -190,7 +198,7 @@
 </template>
 
 <script>
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import { client, config } from "@/lib/runtime.js";
 import { debounce } from "../utils/tools.js";
 import { useConfigStore } from "@/stores/configStore.js";
@@ -198,8 +206,8 @@ import { skillAPI } from "@/lib/configApi.js";
 import { useInteraction } from "@/composables/useInteraction.js";
 
 export default {
-  setup() {
-    const { activeInteraction, hasActiveInteraction, submitResponse } = useInteraction();
+  setup(props) {
+    const { activeInteraction, hasActiveInteraction, submitResponse } = useInteraction(computed(() => props.activeContactor?.id));
     const rejectReasonText = ref("");
 
     const isHighRiskCommand = (command) => {
@@ -243,6 +251,14 @@ export default {
       return false;
     };
 
+    const getCommandPrefix = (command) => {
+      if (!command) return '';
+      const trimmed = command.trim();
+      const words = trimmed.split(/\s+/).filter(w => !w.includes('=') && w.length > 0);
+      if (words.length === 0) return '';
+      return words[0].replace(/^[^a-zA-Z0-9_\-/]+|[^a-zA-Z0-9_\-/]+$/g, '').toLowerCase();
+    };
+
     const checkAutoApproval = (interaction) => {
       if (!interaction || interaction.actionType !== 'REQUEST_APPROVAL') return;
       const command = interaction.meta?.command;
@@ -251,10 +267,21 @@ export default {
       if (isHighRiskCommand(command)) return;
 
       try {
+        // 1. 优先校验具体命令是否被记住免密
         const listStr = localStorage.getItem('mio_auto_approved_commands') || '[]';
         const list = JSON.parse(listStr);
         if (Array.isArray(list) && list.includes(command)) {
-          console.log(`[Auto Approval] Automatically approving command: ${command}`);
+          console.log(`[Auto Approval] 自动批准具体命令: ${command}`);
+          submitResponse({ approved: true });
+          return;
+        }
+
+        // 2. 校验命令前缀是否被记住免密
+        const prefixListStr = localStorage.getItem('mio_auto_approved_command_prefixes') || '[]';
+        const prefixList = JSON.parse(prefixListStr);
+        const prefix = getCommandPrefix(command);
+        if (prefix && Array.isArray(prefixList) && prefixList.includes(prefix)) {
+          console.log(`[Auto Approval] 根据前缀 "${prefix}" 自动批准命令: ${command}`);
           submitResponse({ approved: true });
         }
       } catch (err) {
@@ -262,7 +289,7 @@ export default {
       }
     };
 
-    const handleApproveAndRemember = () => {
+    const handleApproveAndRememberSpecific = () => {
       const interaction = activeInteraction.value;
       if (!interaction) return;
       const command = interaction.meta?.command;
@@ -281,6 +308,26 @@ export default {
       submitResponse({ approved: true });
     };
 
+    const handleApproveAndRememberPrefix = () => {
+      const interaction = activeInteraction.value;
+      if (!interaction) return;
+      const command = interaction.meta?.command;
+      const prefix = getCommandPrefix(command);
+      if (prefix && !isHighRiskCommand(command)) {
+        try {
+          const prefixListStr = localStorage.getItem('mio_auto_approved_command_prefixes') || '[]';
+          const prefixList = JSON.parse(prefixListStr);
+          if (Array.isArray(prefixList) && !prefixList.includes(prefix)) {
+            prefixList.push(prefix);
+            localStorage.setItem('mio_auto_approved_command_prefixes', JSON.stringify(prefixList));
+          }
+        } catch (err) {
+          console.error('Failed to save auto-approved command prefix:', err);
+        }
+      }
+      submitResponse({ approved: true });
+    };
+
     watch(() => activeInteraction.value, (newVal) => {
       rejectReasonText.value = "";
       if (newVal) {
@@ -294,7 +341,9 @@ export default {
       submitResponse,
       rejectReasonText,
       isHighRiskCommand,
-      handleApproveAndRemember,
+      getCommandPrefix,
+      handleApproveAndRememberSpecific,
+      handleApproveAndRememberPrefix,
     };
   },
   props: {
@@ -2134,9 +2183,103 @@ i
         border-bottom-color: #ffa39e
 
 .slide-up-enter-active, .slide-up-leave-active
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1)
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)
 
 .slide-up-enter-from, .slide-up-leave-to
   transform: translateY(10px) scaleY(0.9)
   opacity: 0
+
+@media (max-width: 768px)
+  .slide-up-enter-from, .slide-up-leave-to
+    transform: translateY(100%) !important
+    opacity: 1 !important
+
+  .interaction-bar
+    position: fixed
+    bottom: 0
+    left: 0
+    right: 0
+    padding: 16px 20px
+    border-radius: 12px 12px 0 0
+    border: none
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.15)
+    overflow-y: auto
+    background: #ffffff
+    z-index: 2000
+    display: flex
+    flex-direction: column
+    gap: 12px
+    max-height: 80vh
+
+    .interaction-info
+      flex-shrink: 0
+      margin-bottom: 4px
+
+      .interaction-prompt
+        font-size: 14px !important
+        color: #333 !important
+        font-weight: 600 !important
+
+    .interaction-options
+      flex-direction: column
+      width: 100%
+      gap: 10px !important
+      flex-grow: 1
+
+      .interaction-btn
+        width: 100%
+        box-sizing: border-box
+        text-align: center
+        padding: 12px 16px !important
+        font-size: 13px !important
+        border-radius: 8px !important
+        background: transparent !important
+        border: 1px solid rgba(0, 0, 0, 0.12) !important
+        margin: 0 !important
+        font-weight: 500
+
+        &.approve-btn
+          color: #1890ff !important
+          border-color: rgba(24, 144, 255, 0.4) !important
+          background: rgba(24, 144, 255, 0.02) !important
+          &:active, &:hover
+            background: rgba(24, 144, 255, 0.08) !important
+
+        &.approve-once-btn
+          color: #52c41a !important
+          border-color: rgba(82, 196, 26, 0.4) !important
+          background: rgba(82, 196, 26, 0.02) !important
+          &:active, &:hover
+            background: rgba(82, 196, 26, 0.08) !important
+
+        &.reject-btn
+          color: #ff4d4f !important
+          border-color: rgba(255, 77, 79, 0.4) !important
+          background: rgba(255, 77, 79, 0.02) !important
+          &:active, &:hover
+            background: rgba(255, 77, 79, 0.08) !important
+
+      .reject-reason-container
+        width: 100%
+        flex-direction: column
+        align-items: stretch !important
+        gap: 8px !important
+        margin-top: 4px
+
+        .reject-btn
+          width: 100%
+
+        .reason-input-inline
+          width: 100%
+          box-sizing: border-box
+          padding: 12px 14px !important
+          font-size: 13px !important
+          border: 1px solid rgba(0, 0, 0, 0.15) !important
+          border-radius: 8px !important
+          background: rgba(0, 0, 0, 0.02) !important
+          margin-top: 2px
+          outline: none
+          &:focus
+            border-color: #ff4d4f !important
+            background: #fff !important
 </style>

@@ -383,6 +383,22 @@
           </template>
         </div>
 
+        <!-- Bypass shell command confirmation safety switch -->
+        <div class="group-title">安全与授权设置</div>
+        <div class="settings-card">
+          <div class="setting-field">
+            <div class="field-label">
+              <span style="font-weight: bold;">YOLO 模式</span>
+              <el-tooltip content="开启后，LLM 执行 shell 命令（sh）时将跳过所有二次确认步骤。此模式极度危险，可能导致系统损坏或数据丢失！" placement="top">
+                <span style="color: #e6a23c; margin-left: 4px; cursor: help;">⚠️</span>
+              </el-tooltip>
+            </div>
+            <div class="field-value">
+              <el-switch v-model="localYoloMode" @change="updateGeneralSettings" active-color="#f56c6c" />
+            </div>
+          </div>
+        </div>
+
         <DynamicSettingsForm
           v-if="
             currentExtraSettingsSchema &&
@@ -500,6 +516,7 @@ export default {
         JSON.stringify(this.modelValue?.extraSettings || {}),
       ),
       localBasicInfo: JSON.parse(JSON.stringify(this.basicInfo || {})),
+      localYoloMode: this.modelValue?.yolo || false,
       adapterMetadata: [], // 存储所有适配器的元数据
 
       showPresetsDetail: false,
@@ -607,6 +624,7 @@ export default {
         this.localExtraSettings = JSON.parse(
           JSON.stringify(newVal.extraSettings || {}),
         );
+        this.localYoloMode = newVal.yolo || false;
         this.initializeSettings();
       },
       deep: true,
@@ -796,6 +814,8 @@ export default {
       );
       console.log("Active tools:", activeTools);
       newOptions.toolCallSettings.tools = activeTools;
+
+      newOptions.yolo = this.localYoloMode;
 
       if (!newOptions.extraSettings) newOptions.extraSettings = {};
       newOptions.extraSettings = JSON.parse(
