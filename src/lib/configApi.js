@@ -507,6 +507,15 @@ class TaskAPI {
   }
 
   /**
+   * 获取单个任务详情（含完整上下文）
+   * @param {string} id - 任务 ID
+   * @returns {Promise<object>} 任务完整数据
+   */
+  async getTaskDetail(id) {
+    return this.configAPI.request(`/api/tasks/${id}`);
+  }
+
+  /**
    * 创建或更新任务
    * @param {object} taskData - 任务数据
    * @returns {Promise<object>} 响应数据
