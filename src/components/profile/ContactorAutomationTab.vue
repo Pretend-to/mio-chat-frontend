@@ -1,11 +1,6 @@
 <template>
   <div class="tab-pane">
-    <div class="group-title" style="display: flex; align-items: center; justify-content: space-between;">
-      <span>关联定时任务</span>
-      <el-button type="primary" size="small" @click="handleAddTask" style="font-weight: 500;">
-        新建任务
-      </el-button>
-    </div>
+
     <div class="settings-card" v-loading="loadingTasks" style="padding: 12px 16px;">
       <!-- 桌面端表格展示 -->
       <div class="desktop-tasks-table">
