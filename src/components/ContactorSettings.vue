@@ -451,13 +451,6 @@ onBeforeUnmount(() => {
     width: 64px;
     height: 64px;
   }
-
-  .tab-pane {
-    width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-    overflow: hidden;
-  }
 }
 
 .tab-pane {
