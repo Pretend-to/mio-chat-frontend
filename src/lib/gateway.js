@@ -301,7 +301,7 @@ export function getValidOpenaiMessage(
 export function getCrystallizationMessages(
   messageChain,
   firstMessageIndex = 0,
-  keepTurns = 2,
+  keepTurns = 1,
 ) {
   const fromIndex = messageChain.slice(firstMessageIndex);
 
@@ -488,7 +488,7 @@ export const gateway = {
       if (crystallizationEnabled) {
         // 结晶模式：只发送「结晶点之后」的原始消息（与后端 scanFrontendTurns 保留范围对称）
         // latestSummary 已经代替了结晶点之前的所有历史，无需重复发送
-        const keepTurns = 2;
+        const keepTurns = 1;
         finalMessages = getCrystallizationMessages(
           messagesChain,
           contactor?.firstMessageIndex || 0,
@@ -535,7 +535,7 @@ export const gateway = {
         enrichedOptions.crystallization_token_watermark =
           crystallization.tokenWatermark || 64000;
         enrichedOptions.previous_summary = crystallization.latestSummary || "";
-        enrichedOptions.crystallization_keep_turns = 2;
+        enrichedOptions.crystallization_keep_turns = 1;
         // 移除 system prompt 中的 opening（已合并到消息链头部）
         if (enrichedOptions.presetSettings) {
           enrichedOptions.presetSettings = {
@@ -563,6 +563,11 @@ export const gateway = {
       buffer.flush();
       streamBuffers.delete(messageId);
     }
+
+    // Set message status to completed locally immediately to stop the spinner
+    const contactorStore = useContactorsStore();
+    contactorStore.completeMessage(contactorId, messageId);
+
     if (platform === "openai") {
       if (!client.socket) return;
       client.socket.interruptGeneration(messageId, contactorId);

@@ -176,10 +176,55 @@ export default class Client extends EventEmitter {
     // No-op: listeners are handled reactively in the store
   }
 
-  rmContactor(id) {
+  async rmContactor(id) {
     const store = getStore();
     if (!store) return;
+
+    const contactor = store.contactors[id];
+    if (contactor) {
+      try {
+        const { taskAPI } = await import("./configApi.js");
+        const res = await taskAPI.getTasks();
+        const tasks = res?.data || [];
+        const relatedTasks = tasks.filter(
+          (t) => t.preset === contactor.name || t.preset === id || t.contactorId === id,
+        );
+
+        if (relatedTasks.length > 0) {
+          const { ElMessageBox } = await import("element-plus");
+          try {
+            await ElMessageBox.confirm(
+              `当前 Agent 存在 ${relatedTasks.length} 个关联的定时任务，删除 Agent 将同步彻底删除这些后台任务。是否确定删除？`,
+              "提示",
+              {
+                confirmButtonText: "确定删除",
+                cancelButtonText: "取消",
+                type: "warning",
+              },
+            );
+          } catch (e) {
+            // 用户取消了删除
+            return;
+          }
+        }
+
+        // 清理后台任务
+        for (const task of relatedTasks) {
+          console.log(
+            `[rmContactor] 发现关联定时任务: ${task.name} (${task.id})，正在同步删除...`,
+          );
+          await taskAPI.deleteTask(task.id);
+        }
+      } catch (err) {
+        console.warn(
+          "未获得定时任务清理权限或请求失败，跳过定时任务同步清理:",
+          err.message,
+        );
+      }
+    }
+
     store.removeContactor(id);
+    this.setLocalStorage();
   }
 
   async loadOriginalContactors(shareId) {

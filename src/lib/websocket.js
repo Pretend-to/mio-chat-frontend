@@ -23,6 +23,7 @@ export default class Socket extends EventEmitter {
     this.firstLogin = firstLogin;
     this.requests = [];
     this.pendingRequests = new Set(); // Track ongoing request_ids
+    this.pendingInterrupts = new Set(); // Keep track of messageIds that need to be interrupted on the server
   }
 
   /**
@@ -67,6 +68,7 @@ export default class Socket extends EventEmitter {
       `SocketIO transport established via: ${transport}. Session is active.`,
     );
     this.emit("connection_changed", true);
+    this.sendPendingInterrupts();
   }
 
   /**
@@ -342,17 +344,30 @@ export default class Socket extends EventEmitter {
    * @param {string} contactorId - 联系人 ID
    */
   interruptGeneration(messageId, contactorId) {
+    this.pendingInterrupts.add(JSON.stringify({ messageId, contactorId }));
+    this.sendPendingInterrupts();
+  }
+
+  /**
+   * 批量向服务端发送挂起的中断请求
+   */
+  sendPendingInterrupts() {
     if (!this.socket || !this.socket.connected) return;
-
-    // 遵循 spec.md 中的直接事件发送方式
-    this.socket.emit("interruptGeneration", {
-      contactorId,
-      messageId,
-    });
-
-    console.log("WebSocket emitting interruptGeneration", {
-      contactorId,
-      messageId,
-    });
+    for (const itemStr of this.pendingInterrupts) {
+      try {
+        const { messageId, contactorId } = JSON.parse(itemStr);
+        this.socket.emit("interruptGeneration", {
+          contactorId,
+          messageId,
+        });
+        console.log("WebSocket emitting queued interruptGeneration", {
+          contactorId,
+          messageId,
+        });
+        this.pendingInterrupts.delete(itemStr);
+      } catch (err) {
+        console.error("Failed to parse or send queued interrupt:", err);
+      }
+    }
   }
 }
