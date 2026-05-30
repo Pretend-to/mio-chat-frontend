@@ -150,12 +150,12 @@
               <span class="form-item-tip">设置后将作为 system prompt 注入，第一轮写入后常驻 history。配合精简的 taskPrompt 使用效果最佳。</span>
             </template>
           </el-form-item>
-          <el-form-item label="任务指令">
+          <el-form-item label="唤醒指令">
             <el-input
-              v-model="editingTask.prompt"
+              v-model="editingTask.triggerPrompt"
               type="textarea"
               :rows="4"
-              placeholder="告诉 Agent 要做什么..."
+              placeholder="可选。任务触发时唤醒 Agent 的消息，留空时使用默认提示词。"
             />
           </el-form-item>
           <el-form-item label="Shell 白名单">
@@ -240,7 +240,7 @@ const editingTask = reactive({
   name: "",
   cron: "",
   preset: "",
-  prompt: "",
+  triggerPrompt: "",
   systemPrompt: "",
   shWhitelist: "",
   toolsDisplay: "",
@@ -312,7 +312,7 @@ const handleAddTask = () => {
     name: "",
     cron: "",
     preset: "",
-    prompt: "",
+    triggerPrompt: "",
     systemPrompt: "",
     shWhitelist: "",
     toolsDisplay: "",
@@ -340,7 +340,7 @@ const handleEditTask = async (row) => {
       name: task.name || "",
       cron: task.cron || "",
       preset: task.preset || "",
-      prompt: task.prompt || "",
+      triggerPrompt: task.triggerPrompt || "",
       systemPrompt: task.systemPrompt || "",
       shWhitelist: task.shWhitelist || "",
       toolsDisplay: Array.isArray(tools) ? tools.join(", ") : "",
@@ -379,8 +379,8 @@ const handleEditTask = async (row) => {
 };
 
 const saveTask = async () => {
-  if (!editingTask.name || !editingTask.cron || !editingTask.preset || !editingTask.prompt) {
-    return ElMessage.warning("请填写完整任务信息");
+  if (!editingTask.name || !editingTask.cron || !editingTask.preset) {
+    return ElMessage.warning("请填写任务名称、执行周期和执行预设");
   }
   try {
     savingTask.value = true;
