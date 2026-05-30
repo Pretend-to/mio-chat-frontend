@@ -178,6 +178,8 @@ onBeforeUnmount(() => {
   .skills-scroll-container {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
+    width: 100%;
     -webkit-overflow-scrolling: touch;
     max-height: none !important;
   }
@@ -187,6 +189,9 @@ onBeforeUnmount(() => {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   .mobile-skills .skill-item {
