@@ -190,6 +190,8 @@
                 <ToolCallBar
                   v-else-if="element.type === 'tool_call'"
                   :tool-call="element.data"
+                  :mio-plugins="mioPlugins"
+                  :katex-plugin-list="katexPluginList"
                 />
                 <ActionBlock
                   v-else-if="element.type === 'crystallize_event'"

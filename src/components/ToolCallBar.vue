@@ -6,6 +6,7 @@
     :isLoading="isLoading"
     :isFailed="toolCallFail"
     :defaultExpanded="showExtraInfo"
+    :expandedMaxHeight="toolCall.extraRender && toolCall.extraRender.length ? '800px' : '160px'"
     @toggle="toggleExtraInfo"
   >
     <div class="detail-section">
@@ -26,20 +27,71 @@
         formattedResult
       }}</pre>
     </div>
+
+    <!-- Extra Render UI section -->
+    <div v-if="toolCall.extraRender && toolCall.extraRender.length" class="extra-render-section">
+      <div v-for="(item, idx) in toolCall.extraRender" :key="idx" class="extra-render-item">
+        <template v-if="item.type === 'image'">
+          <div class="extra-render-image-container">
+            <MdRenderer
+              :md="`![image](${item.url})`"
+              :custom-plugins="mioPlugins"
+              :markdown-it-plugins="katexPluginList"
+              :theme="'github'"
+              :key="item.url"
+              class="extra-render-image"
+            />
+          </div>
+        </template>
+        <template v-else-if="item.type === 'text'">
+          <div class="extra-render-text">{{ item.content }}</div>
+        </template>
+        <template v-else-if="item.type === 'alert'">
+          <el-alert
+            :title="item.title"
+            :type="item.alertType || 'info'"
+            :description="item.description"
+            show-icon
+            :closable="false"
+            class="extra-render-alert"
+          />
+        </template>
+        <template v-else-if="item.type === 'link'">
+          <el-link
+            :href="item.url"
+            target="_blank"
+            type="primary"
+            class="extra-render-link"
+          >
+            {{ item.text || '查看链接' }}
+          </el-link>
+        </template>
+      </div>
+    </div>
   </ActionBlock>
 </template>
 
 <script>
 import ActionBlock from './ActionBlock.vue';
+import MdRenderer from "mio-previewer";
 
 export default {
   components: {
-    ActionBlock
+    ActionBlock,
+    MdRenderer
   },
   props: {
     toolCall: {
       type: Object,
       required: true,
+    },
+    mioPlugins: {
+      type: Array,
+      default: () => [],
+    },
+    katexPluginList: {
+      type: Array,
+      default: () => [],
     },
   },
   data() {
@@ -93,7 +145,7 @@ export default {
       );
     },
     toolCallFail() {
-      return (
+      return !!(
         (this.toolCall.action === "finished" && this.toolCall?.result?.error) ||
         this.toolCall.action === "failed"
       );
@@ -249,5 +301,53 @@ export default {
 
 .error-text {
   color: #cf1322;
+}
+
+.extra-render-section {
+  margin-top: 10px;
+  border-top: 1px dashed #eee;
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.extra-render-item {
+  width: 100%;
+}
+
+.extra-render-image-container {
+  display: inline-block;
+  max-width: 100%;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e8e8e8;
+  background-color: #f9f9f9;
+}
+
+.extra-render-image {
+  display: block;
+  max-height: 350px;
+  width: auto;
+  max-width: 100%;
+  cursor: zoom-in;
+}
+
+.extra-render-text {
+  font-size: 13px;
+  color: #333;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.extra-render-alert {
+  margin: 4px 0;
+}
+
+.extra-render-link {
+  font-size: 13px;
+  text-decoration: none;
 }
 </style>
