@@ -13,7 +13,7 @@
       </el-button>
     </div>
     <div class="skills-scroll-container" style="margin-top: 12px;">
-      <div class="skills-grid" :class="{ 'mobile-skills': isMobile }">
+      <div class="skills-grid">
         <div v-if="availableSkills.length === 0" class="no-skills">
           <p>暂无可用技能，点击同步刷新</p>
         </div>
@@ -103,6 +103,9 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 16px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .skill-item {
@@ -115,6 +118,7 @@ onBeforeUnmount(() => {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
   border: 1px solid #f0f0f0;
   transition: all 0.2s;
+  min-width: 0;
 }
 
 .skill-item:hover {
@@ -138,6 +142,9 @@ onBeforeUnmount(() => {
   max-height: 500px;
   overflow-y: auto;
   padding: 4px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .skill-info {
@@ -176,24 +183,27 @@ onBeforeUnmount(() => {
 
 @media (max-width: 768px) {
   .skills-scroll-container {
-    flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow: visible;
     max-height: none !important;
+    width: 100%;
+    padding: 0;
   }
 
-  .mobile-skills {
-    padding: 0 12px;
-    display: grid;
+  .skills-grid {
     grid-template-columns: 1fr 1fr;
     gap: 12px;
+    padding: 0 12px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
-  .mobile-skills .skill-item {
+  .skills-grid .skill-item {
     background: #fff;
     margin-bottom: 0;
     border: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    min-width: 0;
   }
 }
 </style>

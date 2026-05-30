@@ -447,6 +447,16 @@ onBeforeUnmount(() => {
     flex-direction: column;
   }
 
+  .tab-pane {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 0 4rem;
+  }
+
   .avatar {
     width: 64px;
     height: 64px;
