@@ -30,6 +30,11 @@
           v-else-if="activeInteraction.actionType === 'REQUEST_APPROVAL'" 
           class="interaction-options"
         >
+          <!-- Command Code Block -->
+          <div v-if="activeInteraction.meta?.command" class="command-preview-box">
+            <code>{{ activeInteraction.meta.command }}</code>
+          </div>
+
           <button 
             class="interaction-btn approve-btn" 
             @click="submitResponse({ approved: true })"
@@ -68,6 +73,7 @@
             />
           </div>
         </div>
+
       </div>
     </transition>
 
@@ -2119,6 +2125,22 @@ i
     flex-wrap: wrap
     gap: 6px
 
+    .command-preview-box
+      width: 100%
+      box-sizing: border-box
+      background: #1e293b
+      color: #38bdf8
+      font-family: Menlo, Monaco, Consolas, "Courier New", monospace
+      font-size: 11px
+      padding: 6px 10px
+      border-radius: 6px
+      max-height: 80px
+      overflow-y: auto
+      word-break: break-all
+      margin: 2px 0 6px 0
+      border: 1px solid #334155
+      text-align: left
+
     .interaction-btn
       padding: 4px 10px
       font-size: 11px
@@ -2225,6 +2247,12 @@ i
       width: 100%
       gap: 10px !important
       flex-grow: 1
+
+      .command-preview-box
+        font-size: 12px
+        max-height: 100px
+        padding: 8px 12px
+        margin-bottom: 8px
 
       .interaction-btn
         width: 100%
