@@ -49,6 +49,7 @@
       ref="detailsEl"
       class="action-block-details"
       :class="{ 'is-expanded': isExpanded }"
+      :style="{ maxHeight: isExpanded ? expandedMaxHeight : '0px' }"
       @scroll="handleScroll"
     >
       <div class="details-inner">
@@ -76,7 +77,11 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
-  statusClass: String
+  statusClass: String,
+  expandedMaxHeight: {
+    type: String,
+    default: '160px'
+  }
 });
 
 const emit = defineEmits(['toggle', 'scroll']);
