@@ -2,6 +2,66 @@ import EventEmitter from "./event.js";
 import { randomString } from "../utils/generate.js";
 import io from "socket.io-client";
 
+class ElectronSocketBridge {
+  constructor() {
+    this.connected = false;
+    this.listeners = {};
+    
+    if (window.electronAPI) {
+      window.electronAPI.onMessage((message) => {
+        this.trigger("message", message);
+      });
+      window.electronAPI.onDisconnect((reason) => {
+        this.connected = false;
+        this.trigger("disconnect", reason);
+      });
+      window.electronAPI.onConnected(() => {
+        this.connected = true;
+        this.trigger("connect");
+      });
+    }
+  }
+
+  on(event, callback) {
+    if (!this.listeners[event]) {
+      this.listeners[event] = [];
+    }
+    this.listeners[event].push(callback);
+  }
+
+  off(event) {
+    delete this.listeners[event];
+  }
+
+  trigger(event, ...args) {
+    if (this.listeners[event]) {
+      this.listeners[event].forEach((cb) => cb(...args));
+    }
+  }
+
+  emit(event, data) {
+    if (!window.electronAPI) return;
+    if (event === "message") {
+      window.electronAPI.sendMessage(data);
+    } else if (event === "interruptGeneration") {
+      window.electronAPI.interruptGeneration(data);
+    } else if (event === "tool:interact") {
+      window.electronAPI.toolInteract(data);
+    }
+  }
+
+  connect() {
+    if (window.electronAPI) {
+      window.electronAPI.connect();
+    }
+  }
+
+  disconnect() {
+    this.connected = false;
+    this.trigger("disconnect", "manual");
+  }
+}
+
 /**
  * WebSocket Connection Class
  * Handles WebSocket connection and message sending/receiving.
@@ -169,6 +229,16 @@ export default class Socket extends EventEmitter {
    * Connects to the SocketIO server, starting with WebSocket.
    */
   async connect() {
+    if (window.electronAPI) {
+      console.log("[Electron Client] Initializing Electron IPC Socket Bridge");
+      if (!this.socket) {
+        this.socket = new ElectronSocketBridge();
+        this.initEventListeners();
+      }
+      this.socket.connect();
+      return;
+    }
+
     if (this.socket && this.socket.connected) {
       console.log("Already connected.");
       return;
