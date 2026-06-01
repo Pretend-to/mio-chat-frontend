@@ -476,15 +476,28 @@ watch(
 
     autoScroll.value = false;
     nextTick(() => {
-      toButtom();
-      setTimeout(() => {
+      if (route.query.scrollTo) {
+        performScrollToMessage(route.query.scrollTo);
+      } else {
         toButtom();
-      }, 100);
+        setTimeout(() => {
+          toButtom();
+        }, 100);
+      }
     });
 
     // Sync with socket for the new contactor
     trySync();
   },
+);
+
+watch(
+  () => route.query.scrollTo,
+  (newVal) => {
+    if (newVal) {
+      performScrollToMessage(newVal);
+    }
+  }
 );
 
 watch(
@@ -545,6 +558,57 @@ const toButtom = (clicked) => {
 
   execScroll();
   nextTick(() => requestAnimationFrame(execScroll));
+};
+
+const currentScrollTargetId = ref(null);
+
+const performScrollToMessage = (messageId, shouldFlash = true) => {
+  if (!messageId) return;
+  autoScroll.value = false;
+  
+  if (shouldFlash) {
+    currentScrollTargetId.value = messageId;
+  }
+
+  const scrollAction = () => {
+    const elm = chatWindow.value || document.getElementById("main-messages-window");
+    if (!elm) return;
+    const element = elm.querySelector(`[data-id="${messageId}"]`);
+    if (element) {
+      element.scrollIntoView({ behavior: shouldFlash ? "smooth" : "instant", block: "center" });
+      if (shouldFlash) {
+        element.classList.add("highlight-flash");
+      }
+    }
+  };
+
+  nextTick(() => {
+    // Stage 1: Immediate scroll to get close
+    setTimeout(scrollAction, 150);
+    
+    // Stage 2: Correct positioning after markdown/latex rendering
+    setTimeout(scrollAction, 450);
+    
+    // Stage 3: Stabilize after rendering finishes
+    setTimeout(scrollAction, 900);
+
+    if (shouldFlash) {
+      // Consumed parameters: clear from URL query
+      router.replace({
+        query: { ...route.query, scrollTo: undefined, t: undefined },
+      });
+
+      // Release target lock and remove flash highlight after animation completes
+      setTimeout(() => {
+        const elm = chatWindow.value || document.getElementById("main-messages-window");
+        const element = elm?.querySelector(`[data-id="${messageId}"]`);
+        if (element) {
+          element.classList.remove("highlight-flash");
+        }
+        currentScrollTargetId.value = null;
+      }, 1200);
+    }
+  });
 };
 
 const cleanScreen = () => {
@@ -1001,6 +1065,12 @@ const handleImageLoad = (e) => {
   if (e.target.tagName === "IMG") {
     const elm = chatWindow.value;
     if (!elm) return;
+
+    // Recalculate and re-adjust scroll position when any image finishes loading
+    if (currentScrollTargetId.value) {
+      performScrollToMessage(currentScrollTargetId.value, false);
+    }
+
     const isNearBottom =
       elm.scrollHeight - elm.scrollTop - elm.clientHeight < 150;
     if (isNearBottom) {
@@ -1029,10 +1099,14 @@ onMounted(() => {
   autoScroll.value = false;
   if (!preview.value && scroll.value) {
     nextTick(() => {
-      toButtom();
-      setTimeout(() => {
+      if (route.query.scrollTo) {
+        performScrollToMessage(route.query.scrollTo);
+      } else {
         toButtom();
-      }, 100);
+        setTimeout(() => {
+          toButtom();
+        }, 100);
+      }
     });
   }
 
@@ -1067,11 +1141,13 @@ onMounted(() => {
   }
 
   client.on("plugins_updated", handlePluginsUpdated);
+  client.on("scroll_to_message", performScrollToMessage);
   window.addEventListener("beforeunload", handleBeforeUnload);
 });
 
 onBeforeUnmount(() => {
   client.off("plugins_updated", handlePluginsUpdated);
+  client.off("scroll_to_message", performScrollToMessage);
   client.off("socket_ready");
   window.removeEventListener("beforeunload", handleBeforeUnload);
 
@@ -1679,4 +1755,17 @@ $icon-hover: #09f
     display: none !important
     width: 0 !important
     height: 0 !important
+
+:global(.highlight-flash)
+    animation: flash-animation 1s cubic-bezier(0.25, 0.8, 0.25, 1)
+
+@keyframes flash-animation
+    0%
+        background-color: transparent
+    20%
+        background-color: rgba(0, 0, 0, 0.06)
+    80%
+        background-color: rgba(0, 0, 0, 0.06)
+    100%
+        background-color: transparent
 </style>
