@@ -1,14 +1,19 @@
 <template>
   <div class="tab-pane">
-
-    <div class="settings-card" v-loading="loadingTasks" style="padding: 12px 16px;">
+    <div
+      class="settings-card"
+      v-loading="loadingTasks"
+      style="padding: 12px 16px"
+    >
       <!-- 桌面端表格展示 -->
       <div class="desktop-tasks-table">
         <el-table :data="tasks" style="width: 100%" size="small">
           <el-table-column prop="name" label="任务名称" min-width="120" />
           <el-table-column prop="cron" label="Cron 表达式" width="130">
             <template #default="{ row }">
-              <el-tag size="small" type="info" effect="plain">{{ row.cron }}</el-tag>
+              <el-tag size="small" type="info" effect="plain">{{
+                row.cron
+              }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="status" label="状态" width="80">
@@ -23,8 +28,20 @@
           <el-table-column label="操作" width="120" fixed="right">
             <template #default="{ row }">
               <el-button-group>
-                <el-button size="small" link type="primary" @click="handleEditTask(row)">编辑</el-button>
-                <el-button size="small" link type="danger" @click="handleDeleteTask(row)">删除</el-button>
+                <el-button
+                  size="small"
+                  link
+                  type="primary"
+                  @click="handleEditTask(row)"
+                  >编辑</el-button
+                >
+                <el-button
+                  size="small"
+                  link
+                  type="danger"
+                  @click="handleDeleteTask(row)"
+                  >删除</el-button
+                >
               </el-button-group>
             </template>
           </el-table-column>
@@ -45,8 +62,20 @@
           <div class="task-card-body">
             <span class="task-card-cron">📋 {{ row.cron }}</span>
             <div class="task-card-actions">
-              <el-button size="small" link type="primary" @click="handleEditTask(row)">编辑</el-button>
-              <el-button size="small" link type="danger" @click="handleDeleteTask(row)">删除</el-button>
+              <el-button
+                size="small"
+                link
+                type="primary"
+                @click="handleEditTask(row)"
+                >编辑</el-button
+              >
+              <el-button
+                size="small"
+                link
+                type="danger"
+                @click="handleDeleteTask(row)"
+                >删除</el-button
+              >
             </div>
           </div>
         </div>
@@ -61,12 +90,23 @@
       append-to-body
     >
       <div v-loading="loadingTaskDetail">
-        <el-form :model="editingTask" label-width="100px" label-position="left" size="small">
+        <el-form
+          :model="editingTask"
+          label-width="100px"
+          label-position="left"
+          size="small"
+        >
           <el-form-item label="任务名称">
-            <el-input v-model="editingTask.name" placeholder="起个名字方便识别" />
+            <el-input
+              v-model="editingTask.name"
+              placeholder="起个名字方便识别"
+            />
           </el-form-item>
           <el-form-item label="Cron 周期">
-            <el-input v-model="editingTask.cron" placeholder="例如: 0 9 * * * 或 +10m" />
+            <el-input
+              v-model="editingTask.cron"
+              placeholder="例如: 0 9 * * * 或 +10m"
+            />
           </el-form-item>
           <el-form-item label="执行预设">
             <el-input :model-value="name" disabled />
@@ -106,15 +146,23 @@
         </el-form>
       </div>
       <template #footer>
-        <el-button size="small" @click="taskDialogVisible = false">取消</el-button>
-        <el-button size="small" type="primary" :loading="savingTask" @click="saveTask">确定</el-button>
+        <el-button size="small" @click="taskDialogVisible = false"
+          >取消</el-button
+        >
+        <el-button
+          size="small"
+          type="primary"
+          :loading="savingTask"
+          @click="saveTask"
+          >确定</el-button
+        >
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue';
+import { ref, reactive, onMounted, watch } from "vue";
 import { taskAPI } from "@/lib/configApi.js";
 import { ElMessage, ElMessageBox } from "element-plus";
 
@@ -156,7 +204,12 @@ const fetchTasks = async () => {
   try {
     const res = await taskAPI.getTasks();
     tasks.value = (res.data || [])
-      .filter((t) => t.preset === props.name || t.preset === props.contactorId || t.contactorId === props.contactorId)
+      .filter(
+        (t) =>
+          t.preset === props.name ||
+          t.preset === props.contactorId ||
+          t.contactorId === props.contactorId,
+      )
       .map((t) => ({
         ...t,
         isActive: t.status === "active",
@@ -190,7 +243,9 @@ const handleEditTask = async (row) => {
     const res = await taskAPI.getTaskDetail(row.id);
     const task = res.data;
     const tools = task.tools
-      ? (typeof task.tools === "string" ? JSON.parse(task.tools) : task.tools)
+      ? typeof task.tools === "string"
+        ? JSON.parse(task.tools)
+        : task.tools
       : [];
     Object.assign(editingTask, {
       id: task.id,
@@ -266,9 +321,12 @@ onMounted(() => {
 });
 
 // Watch contactor/preset name and ID updates
-watch(() => [props.name, props.contactorId], () => {
-  fetchTasks();
-});
+watch(
+  () => [props.name, props.contactorId],
+  () => {
+    fetchTasks();
+  },
+);
 </script>
 
 <style scoped>
@@ -334,4 +392,3 @@ watch(() => [props.name, props.contactorId], () => {
   }
 }
 </style>
-

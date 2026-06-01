@@ -19,13 +19,15 @@
           <el-input
             v-if="basicInfo.avatarPolicy !== 1"
             :value="
-              activeContactorPlatform === 'onebot'
-                ? '跟随QQ头像'
-                : '跟随模型'
+              activeContactorPlatform === 'onebot' ? '跟随QQ头像' : '跟随模型'
             "
             disabled
           />
-          <el-input v-else v-model="basicInfo.avatar" @change="emitBasicInfoUpdate" />
+          <el-input
+            v-else
+            v-model="basicInfo.avatar"
+            @change="emitBasicInfoUpdate"
+          />
         </div>
       </div>
       <div class="setting-field">
@@ -65,7 +67,10 @@
       <div class="setting-field">
         <div class="field-label">会话置顶</div>
         <div class="field-value">
-          <el-switch v-model="basicInfo.priority" @change="emitBasicInfoUpdate" />
+          <el-switch
+            v-model="basicInfo.priority"
+            @change="emitBasicInfoUpdate"
+          />
         </div>
       </div>
     </div>
@@ -162,7 +167,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from 'vue';
+import { ref, reactive, computed, watch } from "vue";
 import { config } from "@/lib/runtime.js";
 
 const props = defineProps({
@@ -244,7 +249,9 @@ const currentModelsList = computed(() => {
     if (flatModels.length > 0) return flatModels;
   }
   const adapterType = config.getProviderAdapterType(provider);
-  const meta = (props.adapterMetadata || []).find((m) => m.type === adapterType);
+  const meta = (props.adapterMetadata || []).find(
+    (m) => m.type === adapterType,
+  );
   return meta?.models || [];
 });
 
@@ -262,13 +269,8 @@ const getShownKey = (key) => {
 // Emit option updates
 const emitUpdate = () => {
   const newOptions = JSON.parse(JSON.stringify(props.modelValue || {}));
-  const {
-    model,
-    stream,
-    max_messages_num,
-    temperature,
-    reasoning_effort,
-  } = localLlmGeneralKeys.value;
+  const { model, stream, max_messages_num, temperature, reasoning_effort } =
+    localLlmGeneralKeys.value;
 
   newOptions.base = {
     ...newOptions.base,
@@ -301,19 +303,27 @@ const handleProviderChange = (newProvider) => {
 };
 
 // Watchers
-watch(() => props.modelValue, (newVal) => {
-  if (newVal) {
-    localLlmProvider.value = newVal.provider || "";
-    localLlmGeneralKeys.value = {
-      ...(newVal.base || {}),
-      ...(newVal.chatParams || {}),
-    };
-  }
-}, { deep: true });
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    if (newVal) {
+      localLlmProvider.value = newVal.provider || "";
+      localLlmGeneralKeys.value = {
+        ...(newVal.base || {}),
+        ...(newVal.chatParams || {}),
+      };
+    }
+  },
+  { deep: true },
+);
 
-watch(() => props.basicInfo, (newVal) => {
-  if (newVal) {
-    Object.assign(basicInfo, newVal);
-  }
-}, { deep: true });
+watch(
+  () => props.basicInfo,
+  (newVal) => {
+    if (newVal) {
+      Object.assign(basicInfo, newVal);
+    }
+  },
+  { deep: true },
+);
 </script>

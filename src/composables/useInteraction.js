@@ -7,11 +7,18 @@ export function useInteraction(contactorIdRef) {
 
   const activeInteraction = computed(() => {
     if (!contactorIdRef) return store.activeInteraction;
-    const cid = contactorIdRef.value !== undefined ? contactorIdRef.value : contactorIdRef;
+    const cid =
+      contactorIdRef.value !== undefined
+        ? contactorIdRef.value
+        : contactorIdRef;
     if (cid === undefined || cid === null) return null;
-    return store.interactionsQueue.find(item => String(item.contactorId) === String(cid)) || null;
+    return (
+      store.interactionsQueue.find(
+        (item) => String(item.contactorId) === String(cid),
+      ) || null
+    );
   });
-  
+
   const hasActiveInteraction = computed(() => !!activeInteraction.value);
 
   /**

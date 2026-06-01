@@ -6,15 +6,15 @@
     :isLoading="isLoading"
     :isFailed="toolCallFail"
     :defaultExpanded="showExtraInfo"
-    :expandedMaxHeight="toolCall.extraRender && toolCall.extraRender.length ? '800px' : '160px'"
+    :expandedMaxHeight="
+      toolCall.extraRender && toolCall.extraRender.length ? '800px' : '160px'
+    "
     @toggle="toggleExtraInfo"
   >
     <div class="detail-section">
       <div class="section-header">
         <div class="section-label">参数</div>
-        <button class="copy-text-btn" @click.stop="copyParameters">
-          复制
-        </button>
+        <button class="copy-text-btn" @click.stop="copyParameters">复制</button>
       </div>
       <pre class="json-box">{{ formattedParameters }}</pre>
     </div>
@@ -29,8 +29,15 @@
     </div>
 
     <!-- Extra Render UI section -->
-    <div v-if="toolCall.extraRender && toolCall.extraRender.length" class="extra-render-section">
-      <div v-for="(item, idx) in toolCall.extraRender" :key="idx" class="extra-render-item">
+    <div
+      v-if="toolCall.extraRender && toolCall.extraRender.length"
+      class="extra-render-section"
+    >
+      <div
+        v-for="(item, idx) in toolCall.extraRender"
+        :key="idx"
+        class="extra-render-item"
+      >
         <template v-if="item.type === 'image'">
           <div class="extra-render-image-container">
             <MdRenderer
@@ -63,7 +70,7 @@
             type="primary"
             class="extra-render-link"
           >
-            {{ item.text || '查看链接' }}
+            {{ item.text || "查看链接" }}
           </el-link>
         </template>
       </div>
@@ -72,13 +79,13 @@
 </template>
 
 <script>
-import ActionBlock from './ActionBlock.vue';
+import ActionBlock from "./ActionBlock.vue";
 import MdRenderer from "mio-previewer";
 
 export default {
   components: {
     ActionBlock,
-    MdRenderer
+    MdRenderer,
   },
   props: {
     toolCall: {
@@ -106,38 +113,40 @@ export default {
   },
   computed: {
     iconClass() {
-      const name = this.toolCall.name || '';
-      if (name.startsWith('Skill_mid_') || name === 'Skill') {
-        return 'mio-icon-skill';
+      const name = this.toolCall.name || "";
+      if (name.startsWith("Skill_mid_") || name === "Skill") {
+        return "mio-icon-skill";
       }
-      if (name.split('_mid_')[0] === 'memory') {
-        return 'mio-icon-memory';
+      if (name.split("_mid_")[0] === "memory") {
+        return "mio-icon-memory";
       }
-      return 'mio-icon-tool';
+      return "mio-icon-tool";
     },
     toolTitle() {
       if (this.toolCall.displayName) {
         return this.toolCall.displayName;
       }
-      const name = this.toolCall.name || '';
-      if (name.startsWith('Skill_mid_') || name === 'Skill') {
+      const name = this.toolCall.name || "";
+      if (name.startsWith("Skill_mid_") || name === "Skill") {
         return this.getSkillName(this.toolCall.parameters);
       }
-      if (name.split('_mid_')[0] === 'memory') {
-        return '记录记忆';
+      if (name.split("_mid_")[0] === "memory") {
+        return "记录记忆";
       }
-      return name.split('_mid_')[0] || '未知工具';
+      return name.split("_mid_")[0] || "未知工具";
     },
     statusText() {
-      const name = this.toolCall.name || '';
-      if (name.startsWith('Skill_mid_') || name === 'Skill') {
+      const name = this.toolCall.name || "";
+      if (name.startsWith("Skill_mid_") || name === "Skill") {
         return this.skill_status_text;
       }
       return this.call_status;
     },
     isLoading() {
       const action = this.toolCall.action;
-      return action === 'running' || action === 'pending' || action === 'started';
+      return (
+        action === "running" || action === "pending" || action === "started"
+      );
     },
     toolCallSuccess() {
       return (

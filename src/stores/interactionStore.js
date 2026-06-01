@@ -11,7 +11,7 @@ export const useInteractionStore = defineStore("interaction", () => {
   function setInteraction(interaction) {
     // 避免重复推入相同 ID 的交互以防重复推送
     const exists = interactionsQueue.value.some(
-      (item) => item.interactionId === interaction.interactionId
+      (item) => item.interactionId === interaction.interactionId,
     );
     if (!exists) {
       interactionsQueue.value.push(interaction);
@@ -20,7 +20,7 @@ export const useInteractionStore = defineStore("interaction", () => {
 
   function resolveInteraction(interactionId) {
     interactionsQueue.value = interactionsQueue.value.filter(
-      (item) => item.interactionId !== interactionId
+      (item) => item.interactionId !== interactionId,
     );
   }
 

@@ -6,18 +6,18 @@
         <div class="interaction-info">
           <i class="mio-icon mio-icon-tool animate-bounce"></i>
           <span class="interaction-prompt">
-            {{ activeInteraction.prompt || '请进行选择/授权：' }}
+            {{ activeInteraction.prompt || "请进行选择/授权：" }}
           </span>
         </div>
-        
+
         <!-- A. 选项多项扁平单选 -->
-        <div 
-          v-if="activeInteraction.actionType === 'SHOW_SELECT_OVERLAY'" 
+        <div
+          v-if="activeInteraction.actionType === 'SHOW_SELECT_OVERLAY'"
           class="interaction-options"
         >
-          <button 
-            v-for="opt in activeInteraction.options" 
-            :key="opt.value" 
+          <button
+            v-for="opt in activeInteraction.options"
+            :key="opt.value"
             class="interaction-btn"
             @click="submitResponse({ selectResult: opt.value })"
           >
@@ -26,54 +26,67 @@
         </div>
 
         <!-- B. 危险指令二次审批授权 -->
-        <div 
-          v-else-if="activeInteraction.actionType === 'REQUEST_APPROVAL'" 
+        <div
+          v-else-if="activeInteraction.actionType === 'REQUEST_APPROVAL'"
           class="interaction-options"
         >
           <!-- Command Code Block -->
-          <div v-if="activeInteraction.meta?.command" class="command-preview-box">
+          <div
+            v-if="activeInteraction.meta?.command"
+            class="command-preview-box"
+          >
             <code>{{ activeInteraction.meta.command }}</code>
           </div>
 
-          <button 
-            class="interaction-btn approve-btn" 
+          <button
+            class="interaction-btn approve-btn"
             @click="submitResponse({ approved: true })"
           >
             授权执行
           </button>
-          
-          <template v-if="activeInteraction.meta?.command && !isHighRiskCommand(activeInteraction.meta.command)">
-            <button 
-              class="interaction-btn approve-once-btn" 
+
+          <template
+            v-if="
+              activeInteraction.meta?.command &&
+              !isHighRiskCommand(activeInteraction.meta.command)
+            "
+          >
+            <button
+              class="interaction-btn approve-once-btn"
               @click="handleApproveAndRememberSpecific"
             >
               记住此具体命令免确认
             </button>
-            
-            <button 
-              class="interaction-btn approve-once-btn" 
+
+            <button
+              class="interaction-btn approve-once-btn"
               @click="handleApproveAndRememberPrefix"
             >
-              记住命令前缀 [{{ getCommandPrefix(activeInteraction.meta.command) }}] 免确认
+              记住命令前缀 [{{
+                getCommandPrefix(activeInteraction.meta.command)
+              }}] 免确认
             </button>
           </template>
-          
+
           <div class="reject-reason-container">
-            <button 
-              class="interaction-btn reject-btn" 
-              @click="submitResponse({ approved: false, reason: rejectReasonText })"
+            <button
+              class="interaction-btn reject-btn"
+              @click="
+                submitResponse({ approved: false, reason: rejectReasonText })
+              "
             >
               拒绝
             </button>
-            <input 
-              v-model="rejectReasonText" 
-              class="reason-input-inline" 
-              placeholder="拒绝理由（可选）" 
-              @keyup.enter="submitResponse({ approved: false, reason: rejectReasonText })"
+            <input
+              v-model="rejectReasonText"
+              class="reason-input-inline"
+              placeholder="拒绝理由（可选）"
+              @keyup.enter="
+                submitResponse({ approved: false, reason: rejectReasonText })
+              "
             />
           </div>
         </div>
-
       </div>
     </transition>
 
@@ -213,23 +226,44 @@ import { useInteraction } from "@/composables/useInteraction.js";
 
 export default {
   setup(props) {
-    const { activeInteraction, hasActiveInteraction, submitResponse } = useInteraction(computed(() => props.activeContactor?.id));
+    const { activeInteraction, hasActiveInteraction, submitResponse } =
+      useInteraction(computed(() => props.activeContactor?.id));
     const rejectReasonText = ref("");
 
     const isHighRiskCommand = (command) => {
       if (!command) return true;
       const trimmed = command.trim();
-      
+
       // 1. Strip all quoted strings to avoid parsing operators or keywords inside quotes
-      const stripQuotesRegex = /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'|`([^`\\]|\\.)*`/g;
-      const commandWithoutQuotes = trimmed.replace(stripQuotesRegex, ' ');
+      const stripQuotesRegex =
+        /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'|`([^`\\]|\\.)*`/g;
+      const commandWithoutQuotes = trimmed.replace(stripQuotesRegex, " ");
 
       // 2. Split by shell command separators: &&, ||, |, ;
       const subCommands = commandWithoutQuotes.split(/&&|\|\||\||;/);
 
       const highRiskExecutables = [
-        'rm', 'rmdir', 'node', 'python', 'python3', 'pip', 'pip3', 'npm', 'yarn', 'pnpm',
-        'sh', 'bash', 'zsh', 'sudo', 'curl', 'wget', 'docker', 'mv', 'chmod', 'chown', 'unlink'
+        "rm",
+        "rmdir",
+        "node",
+        "python",
+        "python3",
+        "pip",
+        "pip3",
+        "npm",
+        "yarn",
+        "pnpm",
+        "sh",
+        "bash",
+        "zsh",
+        "sudo",
+        "curl",
+        "wget",
+        "docker",
+        "mv",
+        "chmod",
+        "chown",
+        "unlink",
       ];
 
       for (let subCmd of subCommands) {
@@ -237,16 +271,18 @@ export default {
         if (!subCmd) continue;
 
         // Extract first word, filtering out environment variables (e.g. PORT=3000)
-        const words = subCmd.split(/\s+/).filter(w => !w.includes('=') && w.length > 0);
+        const words = subCmd
+          .split(/\s+/)
+          .filter((w) => !w.includes("=") && w.length > 0);
         if (words.length === 0) continue;
 
         // Strip parenthesis, brackets and redirection characters around the executable name
         const executable = words[0]
-          .replace(/^[^a-zA-Z0-9_\-/]+|[^a-zA-Z0-9_\-/]+$/g, '')
+          .replace(/^[^a-zA-Z0-9_\-/]+|[^a-zA-Z0-9_\-/]+$/g, "")
           .toLowerCase();
 
-        const isRisk = highRiskExecutables.some(exec => {
-          return executable === exec || executable.endsWith('/' + exec);
+        const isRisk = highRiskExecutables.some((exec) => {
+          return executable === exec || executable.endsWith("/" + exec);
         });
 
         if (isRisk) {
@@ -258,23 +294,28 @@ export default {
     };
 
     const getCommandPrefix = (command) => {
-      if (!command) return '';
+      if (!command) return "";
       const trimmed = command.trim();
-      const words = trimmed.split(/\s+/).filter(w => !w.includes('=') && w.length > 0);
-      if (words.length === 0) return '';
-      return words[0].replace(/^[^a-zA-Z0-9_\-/]+|[^a-zA-Z0-9_\-/]+$/g, '').toLowerCase();
+      const words = trimmed
+        .split(/\s+/)
+        .filter((w) => !w.includes("=") && w.length > 0);
+      if (words.length === 0) return "";
+      return words[0]
+        .replace(/^[^a-zA-Z0-9_\-/]+|[^a-zA-Z0-9_\-/]+$/g, "")
+        .toLowerCase();
     };
 
     const checkAutoApproval = (interaction) => {
-      if (!interaction || interaction.actionType !== 'REQUEST_APPROVAL') return;
+      if (!interaction || interaction.actionType !== "REQUEST_APPROVAL") return;
       const command = interaction.meta?.command;
       if (!command) return;
-      
+
       if (isHighRiskCommand(command)) return;
 
       try {
         // 1. 优先校验具体命令是否被记住免密
-        const listStr = localStorage.getItem('mio_auto_approved_commands') || '[]';
+        const listStr =
+          localStorage.getItem("mio_auto_approved_commands") || "[]";
         const list = JSON.parse(listStr);
         if (Array.isArray(list) && list.includes(command)) {
           console.log(`[Auto Approval] 自动批准具体命令: ${command}`);
@@ -283,15 +324,22 @@ export default {
         }
 
         // 2. 校验命令前缀是否被记住免密
-        const prefixListStr = localStorage.getItem('mio_auto_approved_command_prefixes') || '[]';
+        const prefixListStr =
+          localStorage.getItem("mio_auto_approved_command_prefixes") || "[]";
         const prefixList = JSON.parse(prefixListStr);
         const prefix = getCommandPrefix(command);
-        if (prefix && Array.isArray(prefixList) && prefixList.includes(prefix)) {
-          console.log(`[Auto Approval] 根据前缀 "${prefix}" 自动批准命令: ${command}`);
+        if (
+          prefix &&
+          Array.isArray(prefixList) &&
+          prefixList.includes(prefix)
+        ) {
+          console.log(
+            `[Auto Approval] 根据前缀 "${prefix}" 自动批准命令: ${command}`,
+          );
           submitResponse({ approved: true });
         }
       } catch (err) {
-        console.error('Failed to process auto-approval check:', err);
+        console.error("Failed to process auto-approval check:", err);
       }
     };
 
@@ -301,14 +349,18 @@ export default {
       const command = interaction.meta?.command;
       if (command && !isHighRiskCommand(command)) {
         try {
-          const listStr = localStorage.getItem('mio_auto_approved_commands') || '[]';
+          const listStr =
+            localStorage.getItem("mio_auto_approved_commands") || "[]";
           const list = JSON.parse(listStr);
           if (Array.isArray(list) && !list.includes(command)) {
             list.push(command);
-            localStorage.setItem('mio_auto_approved_commands', JSON.stringify(list));
+            localStorage.setItem(
+              "mio_auto_approved_commands",
+              JSON.stringify(list),
+            );
           }
         } catch (err) {
-          console.error('Failed to save auto-approved command:', err);
+          console.error("Failed to save auto-approved command:", err);
         }
       }
       submitResponse({ approved: true });
@@ -321,25 +373,33 @@ export default {
       const prefix = getCommandPrefix(command);
       if (prefix && !isHighRiskCommand(command)) {
         try {
-          const prefixListStr = localStorage.getItem('mio_auto_approved_command_prefixes') || '[]';
+          const prefixListStr =
+            localStorage.getItem("mio_auto_approved_command_prefixes") || "[]";
           const prefixList = JSON.parse(prefixListStr);
           if (Array.isArray(prefixList) && !prefixList.includes(prefix)) {
             prefixList.push(prefix);
-            localStorage.setItem('mio_auto_approved_command_prefixes', JSON.stringify(prefixList));
+            localStorage.setItem(
+              "mio_auto_approved_command_prefixes",
+              JSON.stringify(prefixList),
+            );
           }
         } catch (err) {
-          console.error('Failed to save auto-approved command prefix:', err);
+          console.error("Failed to save auto-approved command prefix:", err);
         }
       }
       submitResponse({ approved: true });
     };
 
-    watch(() => activeInteraction.value, (newVal) => {
-      rejectReasonText.value = "";
-      if (newVal) {
-        checkAutoApproval(newVal);
-      }
-    }, { immediate: true });
+    watch(
+      () => activeInteraction.value,
+      (newVal) => {
+        rejectReasonText.value = "";
+        if (newVal) {
+          checkAutoApproval(newVal);
+        }
+      },
+      { immediate: true },
+    );
 
     return {
       activeInteraction,
@@ -2114,7 +2174,7 @@ i
     display: flex
     align-items: center
     gap: 6px
-    
+
     .interaction-prompt
       font-size: 12px
       color: #666

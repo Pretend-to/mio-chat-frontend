@@ -93,7 +93,8 @@
                   {{ formatTime(turn.createdAt) }}
                 </span>
                 <span class="turn-ip-meta">
-                  <i class="fa-solid fa-earth-asia"></i> {{ turn.userIp || '未知' }}
+                  <i class="fa-solid fa-earth-asia"></i>
+                  {{ turn.userIp || "未知" }}
                 </span>
                 <span class="turn-tokens">
                   <i class="fa-solid fa-coins"></i>
@@ -118,10 +119,16 @@
               >
                 <i class="fa-solid fa-chevron-left"></i> 返回
               </button>
-              <span class="card-title">{{ isMobile ? '级联链路' : '调用级联链路分析 (Trace)' }}</span>
+              <span class="card-title">{{
+                isMobile ? "级联链路" : "调用级联链路分析 (Trace)"
+              }}</span>
             </div>
             <span class="total-tokens-badge" v-if="store.activeTurn">
-              {{ isMobile ? '' : '累计: ' }}<strong>{{ formatNumber(store.activeTurn.totalTokens) }}</strong> Tokens
+              {{ isMobile ? "" : "累计: "
+              }}<strong>{{
+                formatNumber(store.activeTurn.totalTokens)
+              }}</strong>
+              Tokens
             </span>
           </div>
 
@@ -175,7 +182,15 @@
                     >
                       <i class="fa-solid fa-bolt"></i>
                       <span class="desktop-only-inline"> 命中:</span>
-                      <span> {{ Math.round((step.cacheHitTokens / (step.cacheHitTokens + step.cacheMissTokens)) * 100) }}%</span>
+                      <span>
+                        {{
+                          Math.round(
+                            (step.cacheHitTokens /
+                              (step.cacheHitTokens + step.cacheMissTokens)) *
+                              100,
+                          )
+                        }}%</span
+                      >
                     </el-tag>
                   </div>
 
@@ -305,7 +320,8 @@
         <div class="user-meta-info">
           <h3 class="profile-user-id">{{ userDetail.userId }}</h3>
           <span class="profile-ip-badge">
-            <i class="fa-solid fa-earth-asia"></i> 最近活跃 IP: {{ userDetail.lastIp }}
+            <i class="fa-solid fa-earth-asia"></i> 最近活跃 IP:
+            {{ userDetail.lastIp }}
           </span>
         </div>
       </div>
@@ -313,11 +329,15 @@
       <div class="profile-metrics">
         <div class="metric-card-mini">
           <span class="mini-label">总计调用</span>
-          <span class="mini-value">{{ formatNumber(userDetail.totalCalls) }} 次</span>
+          <span class="mini-value"
+            >{{ formatNumber(userDetail.totalCalls) }} 次</span
+          >
         </div>
         <div class="metric-card-mini">
           <span class="mini-label">累计消耗 Tokens</span>
-          <span class="mini-value">{{ formatNumber(userDetail.totalTokens) }}</span>
+          <span class="mini-value">{{
+            formatNumber(userDetail.totalTokens)
+          }}</span>
         </div>
       </div>
 
@@ -332,10 +352,19 @@
         </div>
       </div>
 
-      <div class="fav-models-section" v-if="userDetail.favModels && userDetail.favModels.length > 0">
-        <h4 class="section-title-mini"><i class="fa-solid fa-heart-pulse"></i> 渠道与模型偏好 Top 5</h4>
+      <div
+        class="fav-models-section"
+        v-if="userDetail.favModels && userDetail.favModels.length > 0"
+      >
+        <h4 class="section-title-mini">
+          <i class="fa-solid fa-heart-pulse"></i> 渠道与模型偏好 Top 5
+        </h4>
         <div class="fav-model-list">
-          <div v-for="m in userDetail.favModels" :key="m.model" class="fav-model-item">
+          <div
+            v-for="m in userDetail.favModels"
+            :key="m.model"
+            class="fav-model-item"
+          >
             <span class="fav-model-name">{{ m.model }}</span>
             <span class="fav-model-calls">{{ m.calls }} 次调用</span>
           </div>
@@ -344,7 +373,8 @@
 
       <div class="profile-footer">
         <span class="last-active-time">
-          <i class="fa-regular fa-clock"></i> 最近活动: {{ formatFullTime(userDetail.lastActive) }}
+          <i class="fa-regular fa-clock"></i> 最近活动:
+          {{ formatFullTime(userDetail.lastActive) }}
         </span>
       </div>
     </div>
@@ -368,15 +398,15 @@ const searchKeyword = ref("");
 const activeUsersList = computed(() => {
   const list = new Set();
   if (store.userRankings && store.userRankings.length > 0) {
-    store.userRankings.forEach(item => {
-      if (item.userId && item.userId !== 'Direct Chat / API') {
+    store.userRankings.forEach((item) => {
+      if (item.userId && item.userId !== "Direct Chat / API") {
         list.add(item.userId);
       }
     });
   }
   if (store.toolCallTurns && store.toolCallTurns.length > 0) {
-    store.toolCallTurns.forEach(turn => {
-      if (turn.user && turn.user !== 'Direct Chat / API') {
+    store.toolCallTurns.forEach((turn) => {
+      if (turn.user && turn.user !== "Direct Chat / API") {
         list.add(turn.user);
       }
     });
@@ -398,7 +428,9 @@ function debounceSearch() {
 }
 
 function triggerSearch() {
-  const query = selectedUserFilter.value ? selectedUserFilter.value : searchKeyword.value;
+  const query = selectedUserFilter.value
+    ? selectedUserFilter.value
+    : searchKeyword.value;
   store.fetchTurns(query);
 }
 
@@ -410,14 +442,14 @@ const userDetail = ref(null);
 function isRealUser(userId) {
   if (!userId) return false;
   const virtualUsers = [
-    'Direct Chat / API',
-    '标题生成 (Title)',
-    '会话压缩 (Compress)',
-    '定时任务 (Task)',
-    '视觉分析 (Vision)',
-    '系统内部任务 (System)'
+    "Direct Chat / API",
+    "标题生成 (Title)",
+    "会话压缩 (Compress)",
+    "定时任务 (Task)",
+    "视觉分析 (Vision)",
+    "系统内部任务 (System)",
   ];
-  return !virtualUsers.some(vu => userId.includes(vu));
+  return !virtualUsers.some((vu) => userId.includes(vu));
 }
 
 async function openUserDetail(userId) {

@@ -224,8 +224,6 @@ const previewModels = computed(() => {
   return [];
 });
 
-
-
 // 表单验证规则
 const rules = computed(() => {
   const rules = {};
@@ -299,8 +297,6 @@ const rules = computed(() => {
         },
       });
     }
-
-
 
     if (fieldRules.length > 0) {
       rules[fieldName] = fieldRules;
@@ -404,7 +400,10 @@ const handleSubmit = async () => {
         }
 
         // 跳过加密字段占位符（以 *** 开头的值表示未修改，不提交以避免覆盖后端真实密钥）
-        if (typeof formData.value[key] === "string" && formData.value[key]?.startsWith("***")) {
+        if (
+          typeof formData.value[key] === "string" &&
+          formData.value[key]?.startsWith("***")
+        ) {
           return;
         }
 

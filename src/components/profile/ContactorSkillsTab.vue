@@ -1,18 +1,37 @@
 <template>
   <div class="tab-pane skills-tab-pane">
-    <div class="group-title" v-if="!isMobile" style="display: flex; align-items: center; justify-content: space-between;">
+    <div
+      class="group-title"
+      v-if="!isMobile"
+      style="display: flex; align-items: center; justify-content: space-between"
+    >
       <span>Agent Skills 技能库</span>
-      <el-button type="primary" size="small" :loading="reloadingSkills" @click="handleReloadSkills" style="font-weight: 500;">
+      <el-button
+        type="primary"
+        size="small"
+        :loading="reloadingSkills"
+        @click="handleReloadSkills"
+        style="font-weight: 500"
+      >
         同步技能库
       </el-button>
     </div>
     <!-- 移动端额外提供刷新按钮 -->
-    <div v-else style="padding: 10px 12px 0; display: flex; justify-content: flex-end;">
-      <el-button type="primary" size="small" :loading="reloadingSkills" @click="handleReloadSkills" style="font-weight: 500;">
+    <div
+      v-else
+      style="padding: 10px 12px 0; display: flex; justify-content: flex-end"
+    >
+      <el-button
+        type="primary"
+        size="small"
+        :loading="reloadingSkills"
+        @click="handleReloadSkills"
+        style="font-weight: 500"
+      >
         同步技能库
       </el-button>
     </div>
-    <div class="skills-scroll-container" style="margin-top: 12px;">
+    <div class="skills-scroll-container" style="margin-top: 12px">
       <div class="skills-grid">
         <div v-if="availableSkills.length === 0" class="no-skills">
           <p>暂无可用技能，点击同步刷新</p>
@@ -26,11 +45,7 @@
             <i class="iconfont robot"></i>
           </div>
           <div class="skill-info">
-            <el-tooltip
-              :content="skill.name"
-              placement="top"
-              :show-after="800"
-            >
+            <el-tooltip :content="skill.name" placement="top" :show-after="800">
               <div class="skill-name">{{ skill.name }}</div>
             </el-tooltip>
             <div class="skill-description">{{ skill.description }}</div>
@@ -42,7 +57,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import { skillAPI } from "@/lib/configApi.js";
 import { client } from "@/lib/runtime.js";
 import { ElMessage } from "element-plus";
@@ -207,4 +222,3 @@ onBeforeUnmount(() => {
   }
 }
 </style>
-

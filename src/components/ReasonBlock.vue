@@ -14,11 +14,11 @@
 </template>
 
 <script>
-import ActionBlock from './ActionBlock.vue';
+import ActionBlock from "./ActionBlock.vue";
 
 export default {
   components: {
-    ActionBlock
+    ActionBlock,
   },
   props: {
     content: {
@@ -146,7 +146,7 @@ export default {
     },
     scrollToBottomIfNeeded() {
       // 找到实际滚动容器：ActionBlock.vue 中的 action-block-details，通过寻找 DOM 父级或子级容器
-      const el = this.$el.querySelector('.action-block-details');
+      const el = this.$el.querySelector(".action-block-details");
       if (!el) return;
       if (!this.isUserScrolledUp) {
         el.scrollTop = el.scrollHeight;
@@ -166,4 +166,3 @@ export default {
   padding: 4px 0; /* 边框缩进交给 ActionBlock 的 details-inner */
 }
 </style>
-

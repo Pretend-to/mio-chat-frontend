@@ -5,7 +5,9 @@
     <div class="settings-card">
       <template v-for="(_, key) in localLlmGeneralKeys" :key="key">
         <div
-          v-if="['top_p', 'frequency_penalty', 'presence_penalty'].includes(key)"
+          v-if="
+            ['top_p', 'frequency_penalty', 'presence_penalty'].includes(key)
+          "
           class="setting-field"
         >
           <div class="field-label">{{ getShownKey(key) }}</div>
@@ -19,7 +21,9 @@
               @change="updateGeneralSettings"
             />
             <el-slider
-              v-else-if="['frequency_penalty', 'presence_penalty'].includes(key)"
+              v-else-if="
+                ['frequency_penalty', 'presence_penalty'].includes(key)
+              "
               v-model="localLlmGeneralKeys[key]"
               :step="sliderTypes.c.step"
               :min="sliderTypes.c.min"
@@ -36,21 +40,37 @@
     <div class="settings-card">
       <div class="setting-field">
         <div class="field-label">
-          <span style="font-weight: bold;">YOLO 模式</span>
-          <el-tooltip content="开启后，LLM 执行 shell 命令（sh）时将跳过所有二次确认步骤。此模式极度危险，可能导致系统损坏或数据丢失！" placement="top">
-            <span style="color: #e6a23c; margin-left: 4px; cursor: help;">⚠️</span>
+          <span style="font-weight: bold">YOLO 模式</span>
+          <el-tooltip
+            content="开启后，LLM 执行 shell 命令（sh）时将跳过所有二次确认步骤。此模式极度危险，可能导致系统损坏或数据丢失！"
+            placement="top"
+          >
+            <span style="color: #e6a23c; margin-left: 4px; cursor: help"
+              >⚠️</span
+            >
           </el-tooltip>
         </div>
         <div class="field-value">
-          <el-switch v-model="localYoloMode" @change="updateGeneralSettings" active-color="#f56c6c" />
+          <el-switch
+            v-model="localYoloMode"
+            @change="updateGeneralSettings"
+            active-color="#f56c6c"
+          />
         </div>
       </div>
     </div>
 
     <DynamicSettingsForm
-      v-if="currentExtraSettingsSchema && Object.keys(currentExtraSettingsSchema).length > 0"
+      v-if="
+        currentExtraSettingsSchema &&
+        Object.keys(currentExtraSettingsSchema).length > 0
+      "
       :schema="currentExtraSettingsSchema"
-      :values="extraSettingsKey ? localExtraSettings[extraSettingsKey] || {} : localExtraSettings"
+      :values="
+        extraSettingsKey
+          ? localExtraSettings[extraSettingsKey] || {}
+          : localExtraSettings
+      "
       @update:values="handleExtraSettingsChange"
     />
     <div v-else class="settings-card no-skills" style="padding: 20px 0">
@@ -60,7 +80,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed } from "vue";
 import { config } from "@/lib/runtime.js";
 import DynamicSettingsForm from "@/components/DynamicSettingsForm.vue";
 
@@ -81,7 +101,9 @@ const localLlmGeneralKeys = ref({
   ...(props.modelValue?.chatParams || {}),
 });
 const localYoloMode = ref(props.modelValue?.yolo || false);
-const localExtraSettings = ref(JSON.parse(JSON.stringify(props.modelValue?.extraSettings || {})));
+const localExtraSettings = ref(
+  JSON.parse(JSON.stringify(props.modelValue?.extraSettings || {})),
+);
 
 const sliderTypes = {
   b: { min: 0, max: 1, step: 0.1 },
@@ -120,8 +142,9 @@ const currentExtraSettingsSchema = computed(() => {
 const emitUpdate = () => {
   const newOptions = JSON.parse(JSON.stringify(props.modelValue || {}));
   if (!newOptions.chatParams) newOptions.chatParams = {};
-  
-  const { top_p, frequency_penalty, presence_penalty } = localLlmGeneralKeys.value;
+
+  const { top_p, frequency_penalty, presence_penalty } =
+    localLlmGeneralKeys.value;
   Object.assign(newOptions.chatParams, {
     top_p,
     frequency_penalty,
@@ -129,7 +152,9 @@ const emitUpdate = () => {
   });
 
   newOptions.yolo = localYoloMode.value;
-  newOptions.extraSettings = JSON.parse(JSON.stringify(localExtraSettings.value));
+  newOptions.extraSettings = JSON.parse(
+    JSON.stringify(localExtraSettings.value),
+  );
 
   emit("update:modelValue", newOptions);
 };
@@ -147,15 +172,21 @@ const handleExtraSettingsChange = (newValues) => {
   emitUpdate();
 };
 
-watch(() => props.modelValue, (newVal) => {
-  if (newVal) {
-    localLlmGeneralKeys.value = {
-      ...(newVal.chatParams || {}),
-    };
-    localYoloMode.value = newVal.yolo || false;
-    localExtraSettings.value = JSON.parse(JSON.stringify(newVal.extraSettings || {}));
-  }
-}, { deep: true });
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    if (newVal) {
+      localLlmGeneralKeys.value = {
+        ...(newVal.chatParams || {}),
+      };
+      localYoloMode.value = newVal.yolo || false;
+      localExtraSettings.value = JSON.parse(
+        JSON.stringify(newVal.extraSettings || {}),
+      );
+    }
+  },
+  { deep: true },
+);
 </script>
 
 <style scoped>
@@ -166,4 +197,3 @@ watch(() => props.modelValue, (newVal) => {
   font-size: 13px;
 }
 </style>
-

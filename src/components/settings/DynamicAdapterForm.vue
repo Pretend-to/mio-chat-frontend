@@ -118,8 +118,6 @@
         </div>
       </el-form-item>
     </template>
-
-
   </div>
 </template>
 
@@ -151,12 +149,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits([
-  "update:modelValue",
-  "toggle-api-key",
-]);
-
-
+const emit = defineEmits(["update:modelValue", "toggle-api-key"]);
 
 // 简单的 Markdown 渲染逻辑
 const renderedDescription = computed(() => {
@@ -198,8 +191,6 @@ const updateField = (fieldName, value) => {
   newValue[fieldName] = value;
   emit("update:modelValue", newValue);
 };
-
-
 </script>
 
 <style scoped lang="scss">

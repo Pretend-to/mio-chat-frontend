@@ -187,7 +187,10 @@ export default class Client extends EventEmitter {
         const res = await taskAPI.getTasks();
         const tasks = res?.data || [];
         const relatedTasks = tasks.filter(
-          (t) => t.preset === contactor.name || t.preset === id || t.contactorId === id,
+          (t) =>
+            t.preset === contactor.name ||
+            t.preset === id ||
+            t.contactorId === id,
         );
 
         if (relatedTasks.length > 0) {

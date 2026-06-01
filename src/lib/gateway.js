@@ -612,21 +612,27 @@ export const gateway = {
         });
 
         // 断线同步恢复：若消息未完成/未失败，且同步的 chunks 中含有挂起待处理的 action，则还原至 interactionStore
-        if (data.status !== "completed" && data.status !== "failed" && Array.isArray(data.chunks)) {
-          const actionChunk = data.chunks.find(c => c.type === "action");
+        if (
+          data.status !== "completed" &&
+          data.status !== "failed" &&
+          Array.isArray(data.chunks)
+        ) {
+          const actionChunk = data.chunks.find((c) => c.type === "action");
           if (actionChunk) {
-            import("@/stores/interactionStore.js").then(({ useInteractionStore }) => {
-              const store = useInteractionStore();
-              store.setInteraction({
-                contactorId,
-                actionType: actionChunk.content.actionType,
-                interactionId: actionChunk.content.interactionId,
-                requestId: messageId,
-                options: actionChunk.content.options,
-                prompt: actionChunk.content.prompt,
-                meta: actionChunk.content.meta,
-              });
-            });
+            import("@/stores/interactionStore.js").then(
+              ({ useInteractionStore }) => {
+                const store = useInteractionStore();
+                store.setInteraction({
+                  contactorId,
+                  actionType: actionChunk.content.actionType,
+                  interactionId: actionChunk.content.interactionId,
+                  requestId: messageId,
+                  options: actionChunk.content.options,
+                  prompt: actionChunk.content.prompt,
+                  meta: actionChunk.content.meta,
+                });
+              },
+            );
           }
         }
       } else {
@@ -670,18 +676,20 @@ export const gateway = {
           );
         } else if (data.type === "action") {
           // 原子动作拦截器：捕获长连接双向指令并存入 Store，驱动输入框上方就地交互面板渲染
-          import("@/stores/interactionStore.js").then(({ useInteractionStore }) => {
-            const store = useInteractionStore();
-            store.setInteraction({
-              contactorId, // 绑定联系人ID
-              actionType: data.content.actionType,
-              interactionId: data.content.interactionId,
-              requestId: messageId,
-              options: data.content.options,
-              prompt: data.content.prompt,
-              meta: data.content.meta,
-            });
-          });
+          import("@/stores/interactionStore.js").then(
+            ({ useInteractionStore }) => {
+              const store = useInteractionStore();
+              store.setInteraction({
+                contactorId, // 绑定联系人ID
+                actionType: data.content.actionType,
+                interactionId: data.content.interactionId,
+                requestId: messageId,
+                options: data.content.options,
+                prompt: data.content.prompt,
+                meta: data.content.meta,
+              });
+            },
+          );
         }
       }
     } else if (["complete", "failed"].includes(e.message)) {

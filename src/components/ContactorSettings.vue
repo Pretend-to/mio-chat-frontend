@@ -95,10 +95,7 @@
       />
 
       <!-- Tab: Skills -->
-      <ContactorSkillsTab
-        v-if="activeTab === 'skills'"
-        :is-mobile="isMobile"
-      />
+      <ContactorSkillsTab v-if="activeTab === 'skills'" :is-mobile="isMobile" />
 
       <!-- Tab: Presets -->
       <div v-if="activeTab === 'presets'" class="tab-pane">
@@ -255,7 +252,7 @@ const fetchAdapterMetadata = async () => {
       console.log(
         "[Debug] 适配器元数据加载成功，共",
         adapterMetadata.value.length,
-        "个"
+        "个",
       );
     }
   } catch (err) {

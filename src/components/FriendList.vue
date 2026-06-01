@@ -22,7 +22,8 @@ import {
 } from "@/utils/avatar.js";
 import StatusDot from "@/components/StatusDot.vue";
 import { useConnectionStore } from "@/stores/connectionStore";
-import Fuse from "fuse.js";
+import { useSearch } from "@/composables/useSearch.js";
+import SearchPanel from "@/components/SearchPanel.vue";
 
 // Emits
 const emit = defineEmits(["open-share-code-window"]);
@@ -54,259 +55,21 @@ const swipeOffset = ref(0);
 const isSwiping = ref(false);
 const MAX_SWIPE = 140; // 两个按钮的宽度和
 
-// Search States
-const searchQuery = ref("");
-const isSearchingMobile = ref(false);
-const mobileSearchInput = ref(null);
-const isSearchFocused = ref(false);
-const searchHistory = ref([]);
-
-const loadSearchHistory = () => {
-  try {
-    const stored = localStorage.getItem("mio_chat_search_history");
-    searchHistory.value = stored ? JSON.parse(stored) : [];
-  } catch (e) {
-    searchHistory.value = [];
-  }
-};
-
-const saveSearchHistory = (query) => {
-  const trimmed = query.trim();
-  if (!trimmed) return;
-  searchHistory.value = searchHistory.value.filter((h) => h !== trimmed);
-  searchHistory.value.unshift(trimmed);
-  if (searchHistory.value.length > 5) {
-    searchHistory.value = searchHistory.value.slice(0, 5);
-  }
-  localStorage.setItem("mio_chat_search_history", JSON.stringify(searchHistory.value));
-};
-
-const removeHistoryItem = (item) => {
-  searchHistory.value = searchHistory.value.filter((h) => h !== item);
-  localStorage.setItem("mio_chat_search_history", JSON.stringify(searchHistory.value));
-};
-
-const selectHistoryItem = (item) => {
-  searchQuery.value = item;
-};
-
-const triggerSearchEnter = () => {
-  const q = searchQuery.value.trim();
-  if (q) {
-    saveSearchHistory(q);
-  }
-};
-
-const startMobileSearch = () => {
-  isSearchingMobile.value = true;
-  nextTick(() => {
-    mobileSearchInput.value?.focus();
-  });
-};
-
-const handleSearchBlur = () => {
-  setTimeout(() => {
-    isSearchFocused.value = false;
-  }, 200);
-};
-
-const handleMobileSearchBlur = () => {
-  setTimeout(() => {
-    isSearchFocused.value = false;
-    if (!searchQuery.value) {
-      isSearchingMobile.value = false;
-    }
-  }, 200);
-};
-
-const clearSearch = () => {
-  searchQuery.value = "";
-  isSearchingMobile.value = false;
-};
-
-const selectAndCloseSearch = (contactId) => {
-  const q = searchQuery.value.trim();
-  if (q) saveSearchHistory(q);
-  showChat(contactId);
-  clearSearch();
-};
-
-const jumpToMessage = (contactId, messageId) => {
-  const q = searchQuery.value.trim();
-  if (q) saveSearchHistory(q);
-  if (String(contactId) === String(contactorsStore.activeContactorId)) {
-    client.emit("scroll_to_message", messageId);
-  } else {
-    router.push({
-      name: "chat_view",
-      params: { id: contactId },
-      query: { scrollTo: messageId, t: Date.now() },
-    });
-  }
-  clearSearch();
-};
-
-const formatTime = (timestamp) => {
-  if (!timestamp) return "";
-  const d = new Date(timestamp);
-  const hours = d.getHours().toString().padStart(2, "0");
-  const minutes = d.getMinutes().toString().padStart(2, "0");
-  return `${d.getMonth() + 1}/${d.getDate()} ${hours}:${minutes}`;
-};
-
-const highlight = (text, query) => {
-  if (!text) return "";
-  if (!query) return text;
-  const idx = text.toLowerCase().indexOf(query.toLowerCase());
-  if (idx === -1) return text;
-  return (
-    text.substring(0, idx) +
-    `<mark class="search-highlight">${text.substring(idx, idx + query.length)}</mark>` +
-    text.substring(idx + query.length)
-  );
-};
-
-// Robust function to extract text content from any message item content representation
-const extractTextFromContent = (content) => {
-  if (!content) return "";
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    return content.map(item => extractTextFromContent(item)).join(" ");
-  }
-  if (typeof content === "object") {
-    if (content.type === "file") {
-      return content.data?.name || "";
-    }
-    if (content.data) {
-      if (typeof content.data === "string") return content.data;
-      if (typeof content.data.text === "string") return content.data.text;
-    }
-    if (typeof content.text === "string") return content.text;
-    if (typeof content.content === "string") return content.content;
-  }
-  return "";
-};
-
-// Search results computed property
-const searchResults = computed(() => {
-  const query = searchQuery.value.trim();
-  if (!query) {
-    return { contacts: [], messages: [] };
-  }
-
-  const contactList = Object.values(contactorsStore.contactors);
-
-  // 1. Search Contacts (by name only)
-  const contactFuse = new Fuse(contactList, {
-    keys: ["name"],
-    threshold: 0.4,
-  });
-  const contactMatches = contactFuse.search(query).map(res => res.item);
-
-  // 2. Search Messages
-  const allMessages = [];
-  contactList.forEach((c) => {
-    c.messageChain.forEach((msg) => {
-      const textContent = extractTextFromContent(msg.content);
-      if (textContent.trim()) {
-        allMessages.push({
-          contactorId: c.id,
-          contactorName: c.name,
-          contactorAvatar: c.avatar,
-          message: msg,
-          textContent: textContent.trim(),
-        });
-      }
-    });
-  });
-
-  const messageFuse = new Fuse(allMessages, {
-    keys: ["textContent"],
-    threshold: 0.5,
-    includeMatches: true,
-  });
-
-  const messageMatches = messageFuse.search(query).map((res) => {
-    const matches = res.matches?.[0];
-    const text = res.item.textContent;
-    
-    let matchStart = -1;
-    let matchEnd = -1;
-    
-    if (matches && matches.indices && matches.indices.length > 0) {
-      matchStart = matches.indices[0][0];
-      matchEnd = matches.indices[0][1];
-    } else {
-      const idx = text.toLowerCase().indexOf(query.toLowerCase());
-      if (idx !== -1) {
-        matchStart = idx;
-        matchEnd = idx + query.length - 1;
-      }
-    }
-    
-    // Position match center around 6th char of preview.
-    // If cropped prefix starts with "..." (3 chars) and leaves 2 context chars, match starts at 6th character (index 5)
-    let start = 0;
-    if (matchStart !== -1 && matchEnd !== -1) {
-      if (matchStart > 5) {
-        start = matchStart - 2;
-      } else {
-        start = 0;
-      }
-    }
-    
-    // Suffix limit to 100 characters so browser doesn't struggle, and CSS ellipsis handles the visual cut-off
-    let end = text.length;
-    if (matchStart !== -1) {
-      end = Math.min(text.length, matchStart + 100);
-    }
-    
-    const croppedText = text.substring(start, end);
-    let highlightedText = croppedText;
-    
-    if (matches && matches.indices && matches.indices.length > 0) {
-      // Shift indices by start offset and filter out-of-bound ranges
-      const shiftedIndices = matches.indices
-        .map(([s, e]) => [s - start, e - start])
-        .filter(([s, e]) => s >= 0 && e < croppedText.length);
-        
-      const sortedIndices = [...shiftedIndices].sort((a, b) => b[0] - a[0]);
-      let html = croppedText;
-      sortedIndices.forEach(([s, e]) => {
-        html =
-          html.substring(0, s) +
-          `<mark class="search-highlight">${html.substring(s, e + 1)}</mark>` +
-          html.substring(e + 1);
-      });
-      highlightedText = html;
-    } else {
-      const idx = croppedText.toLowerCase().indexOf(query.toLowerCase());
-      if (idx !== -1) {
-        highlightedText =
-          croppedText.substring(0, idx) +
-          `<mark class="search-highlight">${croppedText.substring(idx, idx + query.length)}</mark>` +
-          croppedText.substring(idx + query.length);
-      }
-    }
-    
-    if (start > 0) {
-      highlightedText = "..." + highlightedText;
-    }
-    if (end < text.length) {
-      highlightedText = highlightedText + "...";
-    }
-
-    return {
-      ...res.item,
-      highlightedText,
-    };
-  });
-
-  return {
-    contacts: contactMatches,
-    messages: messageMatches,
-  };
-});
+// Search logic from composable
+const {
+  searchQuery,
+  isSearchFocused,
+  searchHistory,
+  loadSearchHistory,
+  removeHistoryItem,
+  selectHistoryItem,
+  triggerSearchEnter,
+  handleSearchBlur,
+  clearSearch,
+  selectAndCloseSearch,
+  jumpToMessage,
+  searchResults,
+} = useSearch();
 
 // Network Status
 const isOnline = ref(navigator.onLine);
@@ -673,22 +436,9 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <div class="header-search">
-        <div class="search-bar" :class="{ 'is-active': isSearchingMobile }">
+        <div class="search-bar">
           <i class="iconfont sousuo"></i>
-          <input
-            v-if="isSearchingMobile"
-            ref="mobileSearchInput"
-            v-model="searchQuery"
-            type="text"
-            placeholder="搜索联系人、聊天记录"
-            class="mobile-search-input"
-            @focus="isSearchFocused = true"
-            @blur="handleMobileSearchBlur"
-            @keydown.esc="clearSearch"
-            @keydown.enter="triggerSearchEnter"
-          />
-          <span v-else class="search-placeholder" @click="startMobileSearch">搜索</span>
-          <i v-if="isSearchingMobile && searchQuery" class="clear-btn-mobile" @click.stop="clearSearch"></i>
+          <span>搜索</span>
         </div>
       </div>
     </div>
@@ -786,78 +536,16 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Floating Search Results Panel -->
-    <div v-if="isSearchFocused" class="search-floating-panel">
-      <!-- Search History (Shown when searchQuery is empty) -->
-      <template v-if="!searchQuery">
-        <div v-if="searchHistory.length > 0" class="search-group">
-          <div class="search-group-title">历史搜索</div>
-          <div
-            v-for="(historyItem, idx) in searchHistory"
-            :key="idx"
-            class="search-history-item"
-            @mousedown.prevent="selectHistoryItem(historyItem)"
-          >
-            <span class="mio-icon mio-icon-history"></span>
-            <span class="history-text">{{ historyItem }}</span>
-            <span class="delete-history-btn" @mousedown.prevent.stop="removeHistoryItem(historyItem)">✕</span>
-          </div>
-        </div>
-        <div v-else class="search-empty">
-          <i class="iconfont sousuo empty-icon"></i>
-          <div class="empty-text">输入关键词搜索联系人或聊天记录</div>
-        </div>
-      </template>
-
-      <!-- Active Search Results -->
-      <template v-else>
-        <!-- Contacts matched -->
-        <div v-if="searchResults.contacts.length > 0" class="search-group">
-          <div class="search-group-title">联系人</div>
-          <div
-            v-for="contact in searchResults.contacts"
-            :key="contact.id"
-            class="search-item"
-            @click="selectAndCloseSearch(contact.id)"
-          >
-            <div class="avatar" :class="contact.avatarPolicy == 1 ? 'custom' : 'model'">
-              <img :src="contact.avatar" :alt="contact.name" />
-            </div>
-            <div class="info">
-              <div class="name" v-html="highlight(contact.name, searchQuery)"></div>
-              <div class="title-text">{{ contact.title || 'Bot' }}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Messages matched -->
-        <div v-if="searchResults.messages.length > 0" class="search-group">
-          <div class="search-group-title">聊天记录</div>
-          <div
-            v-for="msgResult in searchResults.messages"
-            :key="msgResult.message.id"
-            class="search-item"
-            @click="jumpToMessage(msgResult.contactorId, msgResult.message.id)"
-          >
-            <div class="avatar">
-              <img :src="msgResult.contactorAvatar" :alt="msgResult.contactorName" />
-            </div>
-            <div class="info">
-              <div class="search-msg-header">
-                <span class="name">{{ msgResult.contactorName }}</span>
-                <span class="time">{{ formatTime(msgResult.message.time) }}</span>
-              </div>
-              <div class="search-msg-preview" v-html="msgResult.highlightedText"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Empty state -->
-        <div v-if="searchResults.contacts.length === 0 && searchResults.messages.length === 0" class="search-empty">
-          <i class="iconfont sousuo empty-icon"></i>
-          <div class="empty-text">未找到相关联系人或聊天记录</div>
-        </div>
-      </template>
-    </div>
+    <SearchPanel
+      v-if="isSearchFocused && !onPhone"
+      :search-query="searchQuery"
+      :search-results="searchResults"
+      :search-history="searchHistory"
+      @select-history="selectHistoryItem"
+      @remove-history="removeHistoryItem"
+      @select-contact="selectAndCloseSearch"
+      @jump-message="jumpToMessage"
+    />
     <div class="resizer" @mousedown="startResize"></div>
     <AddContactor
       v-model:show="showAddWindow"
@@ -1273,7 +961,7 @@ button#addcont:hover {
 }
 .clear-btn::before,
 .clear-btn::after {
-  content: '';
+  content: "";
   position: absolute;
   width: 6px;
   height: 1.2px;
@@ -1287,241 +975,5 @@ button#addcont:hover {
 }
 .clear-btn:hover {
   background-color: #999;
-}
-
-/* Clear button on mobile */
-.clear-btn-mobile {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background-color: #ccc;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  position: relative;
-  margin-right: 6px;
-}
-.clear-btn-mobile::before,
-.clear-btn-mobile::after {
-  content: '';
-  position: absolute;
-  width: 6px;
-  height: 1.2px;
-  background-color: #ffffff;
-}
-.clear-btn-mobile::before {
-  transform: rotate(45deg);
-}
-.clear-btn-mobile::after {
-  transform: rotate(-45deg);
-}
-.clear-btn-mobile:hover {
-  background-color: #999;
-}
-
-/* Mobile search input active state styling */
-.mobile-search-input {
-  flex: 1;
-  height: 100%;
-  border: none;
-  background: transparent;
-  outline: none;
-  font-size: 0.95rem;
-  color: #333;
-  padding-left: 4px;
-}
-.search-placeholder {
-  cursor: pointer;
-  width: 100%;
-  text-align: center;
-}
-
-/* Floating Search Results Panel */
-.search-floating-panel {
-  position: absolute;
-  top: 4rem;
-  left: 0.5rem;
-  right: -2rem; /* Exceeds friendList by 2rem */
-  background-color: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  max-height: calc(100vh - 6rem);
-  overflow-y: auto;
-  overflow-x: hidden !important;
-  z-index: 1000;
-  padding: 0.5rem 0;
-  display: flex;
-  flex-direction: column;
-}
-
-@media (max-width: 768px) {
-  .search-floating-panel {
-    top: 5.5rem;
-    left: 0.5rem;
-    right: 0.5rem;
-    max-height: calc(100vh - 7rem);
-  }
-}
-
-.search-group {
-  margin-bottom: 0.5rem;
-}
-
-.search-group-title {
-  font-size: 0.75rem;
-  color: #8c8c8c;
-  text-align: left;
-  padding: 0.4rem 0.8rem 0.2rem 0.8rem;
-  font-weight: 500;
-}
-
-.search-item {
-  display: flex;
-  padding: 0.5rem 0.8rem;
-  align-items: center;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  gap: 0.75rem;
-  min-width: 0;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.search-item:hover {
-  background-color: #f5f5f5;
-}
-
-.search-item .avatar {
-  width: 2.2rem;
-  height: 2.2rem;
-  border-radius: 50%;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.search-item .avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.search-item .info {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.search-item .name {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #333;
-}
-
-.search-item .title-text {
-  font-size: 0.75rem;
-  color: #999;
-}
-
-.search-msg-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  margin-bottom: 2px;
-  min-width: 0;
-}
-
-.search-msg-header .name {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #333;
-}
-
-.search-msg-header .time {
-  font-size: 0.7rem;
-  color: #999;
-  flex-shrink: 0;
-  margin-left: 0.5rem;
-}
-
-.search-msg-preview {
-  font-size: 0.8rem;
-  color: #666;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.search-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 1rem;
-  color: #aaa;
-  text-align: center;
-}
-
-.search-empty .empty-icon {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-  color: #ddd;
-}
-
-.search-empty .empty-text {
-  font-size: 0.85rem;
-}
-
-:deep(.search-highlight) {
-  background-color: transparent !important;
-  color: rgb(0, 153, 255) !important;
-  font-weight: bold;
-  padding: 0;
-}
-
-/* Search History Styling */
-.search-history-item {
-  display: flex;
-  align-items: center;
-  padding: 0.5rem 0.8rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  gap: 0.6rem;
-  font-size: 0.85rem;
-  color: #555;
-  min-width: 0;
-}
-
-.search-history-item:hover {
-  background-color: #f5f5f5;
-}
-
-.search-history-item .history-text {
-  flex-grow: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.search-history-item .delete-history-btn {
-  color: #ccc;
-  cursor: pointer;
-  padding: 2px 6px;
-  font-size: 0.75rem;
-  transition: color 0.2s, background-color 0.2s;
-  border-radius: 4px;
-  flex-shrink: 0;
-}
-
-.search-history-item .delete-history-btn:hover {
-  color: #ff4d4f;
-  background-color: rgba(255, 77, 79, 0.08);
 }
 </style>

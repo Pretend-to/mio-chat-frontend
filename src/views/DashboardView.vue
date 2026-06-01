@@ -45,11 +45,7 @@
       </div>
 
       <div class="sidebar-footer">
-        <div
-          class="back-to-app"
-          @click="router.push('/')"
-          title="返回主程序"
-        >
+        <div class="back-to-app" @click="router.push('/')" title="返回主程序">
           <i class="fa-solid fa-arrow-left-long"></i>
           <span>返回主程序</span>
         </div>
@@ -518,7 +514,9 @@ onUnmounted(() => {
     left: 0;
     bottom: 0;
     transform: translateX(-100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+    transition:
+      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.3s ease;
     box-shadow: none;
   }
 

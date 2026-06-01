@@ -197,7 +197,9 @@
                   v-else-if="element.type === 'crystallize_event'"
                   iconClass="mio-icon-memory"
                   title="整理记忆"
-                  :statusText="element.data.status === 'running' ? '整理中' : '完成'"
+                  :statusText="
+                    element.data.status === 'running' ? '整理中' : '完成'
+                  "
                   :isLoading="element.data.status === 'running'"
                   :collapsible="!!element.data.summary"
                   :defaultExpanded="isCrystallizeExpanded(elmIndex)"

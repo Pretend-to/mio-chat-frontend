@@ -497,7 +497,7 @@ watch(
     if (newVal) {
       performScrollToMessage(newVal);
     }
-  }
+  },
 );
 
 watch(
@@ -565,17 +565,21 @@ const currentScrollTargetId = ref(null);
 const performScrollToMessage = (messageId, shouldFlash = true) => {
   if (!messageId) return;
   autoScroll.value = false;
-  
+
   if (shouldFlash) {
     currentScrollTargetId.value = messageId;
   }
 
   const scrollAction = () => {
-    const elm = chatWindow.value || document.getElementById("main-messages-window");
+    const elm =
+      chatWindow.value || document.getElementById("main-messages-window");
     if (!elm) return;
     const element = elm.querySelector(`[data-id="${messageId}"]`);
     if (element) {
-      element.scrollIntoView({ behavior: shouldFlash ? "smooth" : "instant", block: "center" });
+      element.scrollIntoView({
+        behavior: shouldFlash ? "smooth" : "instant",
+        block: "center",
+      });
       if (shouldFlash) {
         element.classList.add("highlight-flash");
       }
@@ -585,10 +589,10 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
   nextTick(() => {
     // Stage 1: Immediate scroll to get close
     setTimeout(scrollAction, 150);
-    
+
     // Stage 2: Correct positioning after markdown/latex rendering
     setTimeout(scrollAction, 450);
-    
+
     // Stage 3: Stabilize after rendering finishes
     setTimeout(scrollAction, 900);
 
@@ -600,7 +604,8 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
 
       // Release target lock and remove flash highlight after animation completes
       setTimeout(() => {
-        const elm = chatWindow.value || document.getElementById("main-messages-window");
+        const elm =
+          chatWindow.value || document.getElementById("main-messages-window");
         const element = elm?.querySelector(`[data-id="${messageId}"]`);
         if (element) {
           element.classList.remove("highlight-flash");

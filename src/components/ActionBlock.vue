@@ -1,22 +1,25 @@
 <template>
-  <div class="action-block-container" :class="[statusClass, { 'is-expanded': isExpanded }]">
+  <div
+    class="action-block-container"
+    :class="[statusClass, { 'is-expanded': isExpanded }]"
+  >
     <!-- 头部 Trigger 触发栏 -->
     <div class="action-block-header" @click="handleHeaderClick">
       <!-- 1. 左侧图标插槽 -->
       <slot name="icon">
         <i v-if="iconClass" :class="['mio-icon', iconClass]"></i>
       </slot>
-      
+
       <!-- 2. 主标题 -->
       <slot name="title">
         <span class="block-title">{{ title }}</span>
       </slot>
-      
+
       <!-- 3. 状态/实时计时辅助文本 -->
       <slot name="status">
-        <span 
-          v-if="statusText" 
-          class="block-status-text" 
+        <span
+          v-if="statusText"
+          class="block-status-text"
           :class="{ 'is-loading': isLoading }"
         >
           {{ statusText }}
@@ -27,7 +30,7 @@
       <slot name="indicator">
         <div v-if="isFailed" class="status-indicator-dot failed"></div>
       </slot>
-      
+
       <!-- 5. 右侧折叠折角按钮/其它动作挂载 -->
       <slot name="actions">
         <div class="block-actions" v-if="collapsible">
@@ -44,7 +47,7 @@
     </div>
 
     <!-- 折叠详情区 -->
-    <div 
+    <div
       v-if="collapsible"
       ref="detailsEl"
       class="action-block-details"
@@ -61,7 +64,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch } from "vue";
 
 const props = defineProps({
   iconClass: String,
@@ -71,20 +74,20 @@ const props = defineProps({
   isFailed: Boolean,
   collapsible: {
     type: Boolean,
-    default: true
+    default: true,
   },
   defaultExpanded: {
     type: Boolean,
-    default: false
+    default: false,
   },
   statusClass: String,
   expandedMaxHeight: {
     type: String,
-    default: '160px'
-  }
+    default: "160px",
+  },
 });
 
-const emit = defineEmits(['toggle', 'scroll']);
+const emit = defineEmits(["toggle", "scroll"]);
 
 const isExpanded = ref(props.defaultExpanded);
 const detailsEl = ref(null);
@@ -94,28 +97,34 @@ const handleHeaderClick = () => {
   if (!props.collapsible) return;
   isExpanded.value = !isExpanded.value;
   wasManuallyToggled = true;
-  emit('toggle', isExpanded.value);
+  emit("toggle", isExpanded.value);
 };
 
 const handleScroll = (e) => {
-  emit('scroll', e);
+  emit("scroll", e);
 };
 
 // 如果加载（执行）结束且没有被手动点过，延迟自动折叠，给用户良好的查看视觉回馈
-watch(() => props.isLoading, (newVal) => {
-  if (!newVal && !wasManuallyToggled) {
-    setTimeout(() => {
-      isExpanded.value = false;
-    }, 800);
-  }
-});
+watch(
+  () => props.isLoading,
+  (newVal) => {
+    if (!newVal && !wasManuallyToggled) {
+      setTimeout(() => {
+        isExpanded.value = false;
+      }, 800);
+    }
+  },
+);
 
 // 监听 defaultExpanded 外部状态，用于响应式重置
-watch(() => props.defaultExpanded, (newVal) => {
-  if (!wasManuallyToggled) {
-    isExpanded.value = newVal;
-  }
-});
+watch(
+  () => props.defaultExpanded,
+  (newVal) => {
+    if (!wasManuallyToggled) {
+      isExpanded.value = newVal;
+    }
+  },
+);
 </script>
 
 <style lang="sass" scoped>

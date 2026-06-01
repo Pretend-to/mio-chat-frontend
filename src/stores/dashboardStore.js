@@ -187,7 +187,7 @@ export const useDashboardStore = defineStore("dashboard", () => {
 
   async function fetchTurns(search = "") {
     try {
-      const url = search 
+      const url = search
         ? `/api/admin/dashboard/turns?limit=50&offset=0&search=${encodeURIComponent(search)}`
         : "/api/admin/dashboard/turns?limit=50&offset=0";
       const res = await configAPI.request(url);
@@ -217,7 +217,9 @@ export const useDashboardStore = defineStore("dashboard", () => {
 
   async function fetchUserDetail(userId) {
     try {
-      const res = await configAPI.request(`/api/admin/dashboard/user/${encodeURIComponent(userId)}`);
+      const res = await configAPI.request(
+        `/api/admin/dashboard/user/${encodeURIComponent(userId)}`,
+      );
       if (res.success) {
         return res.data;
       }

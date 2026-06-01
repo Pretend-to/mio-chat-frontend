@@ -478,7 +478,7 @@ const handleAddByProvider = (provider) => {
 const getProviderTagType = (provider) => {
   if (!provider) return "info";
   const name = provider.toLowerCase();
-  
+
   // 动态哈希一个合法的 tag 类型，避免任何硬编码
   const tags = ["primary", "success", "warning", "danger", "info"];
   let hash = 0;
@@ -491,7 +491,7 @@ const getProviderTagType = (provider) => {
 const getProviderColor = (provider) => {
   if (!provider) return "#f5f5f5";
   const name = provider.toLowerCase();
-  
+
   // 根据名称哈希产生一个好看的、高饱和度的柔和淡色背景，彻底免除后续硬编码
   let hash = 0;
   for (let i = 0; i < name.length; i++) {

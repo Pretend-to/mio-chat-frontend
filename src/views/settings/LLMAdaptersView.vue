@@ -64,7 +64,7 @@
             >
               刷新全部模型
             </el-button>
-             <el-button
+            <el-button
               type="primary"
               :icon="Plus"
               @click="showAddSelector = true"
@@ -84,7 +84,7 @@
             >
               刷新
             </el-button>
-             <el-button
+            <el-button
               type="primary"
               :icon="Plus"
               size="small"
@@ -142,7 +142,7 @@
         <div class="adapters-list">
           <div v-if="allAdapters.length === 0" class="empty-state">
             <el-empty description="暂无适配器实例">
-               <el-button
+              <el-button
                 type="primary"
                 :icon="Plus"
                 @click="showAddSelector = true"
@@ -166,7 +166,7 @@
                   :style="{
                     color: getThemeColor(row.type),
                     borderColor: getThemeColor(row.type) + '33',
-                    backgroundColor: getThemeColor(row.type) + '11'
+                    backgroundColor: getThemeColor(row.type) + '11',
                   }"
                   effect="plain"
                 >
@@ -299,7 +299,7 @@
               class="selector-card"
               :style="{
                 '--card-theme-color': getThemeColor(type),
-                '--card-bg-color': getProviderBgColor(type)
+                '--card-bg-color': getProviderBgColor(type),
               }"
               @click="handleSelectType(type)"
             >
@@ -631,8 +631,8 @@ const getProviderDesc = (type) => {
   if (configStore?.adapterTypes?.adapters) {
     const info = configStore.adapterTypes.adapters.find((a) => a.type === type);
     if (info?.description) {
-      const desc = info.description.split('\n\n')[0] || info.description;
-      return desc.replace(/\*\*.*?\*\*/g, '').replace(/\[.*?\]\(.*?\)/g, ''); // 移除 markdown
+      const desc = info.description.split("\n\n")[0] || info.description;
+      return desc.replace(/\*\*.*?\*\*/g, "").replace(/\[.*?\]\(.*?\)/g, ""); // 移除 markdown
     }
   }
   return "通用大语言模型接口适配器。";
@@ -664,10 +664,14 @@ const filteredSelectorTypes = computed(() => {
     return allTypes;
   }
   const keyword = selectorSearch.value.toLowerCase();
-  return allTypes.filter(type => {
+  return allTypes.filter((type) => {
     const label = formatTypeLabel(type).toLowerCase();
     const desc = getProviderDesc(type).toLowerCase();
-    return label.includes(keyword) || type.toLowerCase().includes(keyword) || desc.includes(keyword);
+    return (
+      label.includes(keyword) ||
+      type.toLowerCase().includes(keyword) ||
+      desc.includes(keyword)
+    );
   });
 });
 
@@ -1055,7 +1059,7 @@ onUnmounted(() => {
   .page-header {
     .header-actions {
       gap: 8px;
-  
+
       .el-button {
         padding: 8px 12px;
         font-size: 13px;
@@ -1074,12 +1078,12 @@ onUnmounted(() => {
     backdrop-filter: blur(20px);
     border: 1px solid rgba(235, 238, 245, 0.6);
   }
-  
+
   :deep(.el-dialog__header) {
     margin-right: 0;
     padding: 20px 24px 10px;
     border-bottom: 1px solid rgba(235, 238, 245, 0.6);
-    
+
     .el-dialog__title {
       font-weight: 600;
       font-size: 18px;
@@ -1099,14 +1103,15 @@ onUnmounted(() => {
 
   .search-box {
     margin-bottom: 4px;
-    
+
     :deep(.el-input__wrapper) {
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
       border: 1px solid #dcdfe6;
       transition: all 0.3s;
-      
-      &:hover, &.is-focus {
+
+      &:hover,
+      &.is-focus {
         border-color: #409eff;
         box-shadow: 0 4px 12px rgba(64, 158, 255, 0.1);
       }
@@ -1118,7 +1123,7 @@ onUnmounted(() => {
   :deep(.el-tabs__header) {
     margin-bottom: 16px;
   }
-  
+
   :deep(.el-tabs__item) {
     font-size: 14px;
     font-weight: 500;
@@ -1126,13 +1131,13 @@ onUnmounted(() => {
     padding: 0 20px;
     height: 40px;
     line-height: 40px;
-    
+
     &.is-active {
       color: #409eff;
       font-weight: 600;
     }
   }
-  
+
   :deep(.el-tabs__active-bar) {
     height: 3px;
     border-radius: 2px;
@@ -1245,7 +1250,9 @@ onUnmounted(() => {
 
   &:hover {
     border-color: var(--card-theme-color);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05), 0 0 0 1px var(--card-theme-color);
+    box-shadow:
+      0 8px 20px rgba(0, 0, 0, 0.05),
+      0 0 0 1px var(--card-theme-color);
 
     .card-glow {
       opacity: 1;

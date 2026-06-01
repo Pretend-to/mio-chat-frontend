@@ -29,11 +29,7 @@
       class="settings-card plugin-card"
     >
       <div class="plugin-header">
-        <el-tooltip
-          :content="plugin.name"
-          placement="top"
-          :show-after="800"
-        >
+        <el-tooltip :content="plugin.name" placement="top" :show-after="800">
           <span class="plugin-name">{{ plugin.name }}</span>
         </el-tooltip>
         <el-switch
@@ -54,9 +50,7 @@
                 placement="top"
                 :show-after="800"
               >
-                <span class="tool-name">{{
-                  tool.name.split("_mid_")[0]
-                }}</span>
+                <span class="tool-name">{{ tool.name.split("_mid_")[0] }}</span>
               </el-tooltip>
             </div>
             <el-switch
@@ -72,7 +66,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch } from "vue";
 
 const props = defineProps({
   modelValue: {
@@ -91,8 +85,12 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue"]);
 
-const localLlmToolCallMode = ref(props.modelValue?.toolCallSettings?.mode || "");
-const localAllLLMTools = ref(JSON.parse(JSON.stringify(props.allLlmToolsData || [])));
+const localLlmToolCallMode = ref(
+  props.modelValue?.toolCallSettings?.mode || "",
+);
+const localAllLLMTools = ref(
+  JSON.parse(JSON.stringify(props.allLlmToolsData || [])),
+);
 
 const updateEnabledTools = () => {
   const enabledTools = props.modelValue?.toolCallSettings?.tools || [];
@@ -188,19 +186,27 @@ const handleToggleAllTools = (plugin, value) => {
 updateEnabledTools();
 
 // Watchers
-watch(() => props.modelValue, (newVal) => {
-  if (newVal) {
-    localLlmToolCallMode.value = newVal.toolCallSettings?.mode || "";
-    updateEnabledTools();
-  }
-}, { deep: true });
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    if (newVal) {
+      localLlmToolCallMode.value = newVal.toolCallSettings?.mode || "";
+      updateEnabledTools();
+    }
+  },
+  { deep: true },
+);
 
-watch(() => props.allLlmToolsData, (newVal) => {
-  if (newVal) {
-    localAllLLMTools.value = JSON.parse(JSON.stringify(newVal));
-    updateEnabledTools();
-  }
-}, { deep: true });
+watch(
+  () => props.allLlmToolsData,
+  (newVal) => {
+    if (newVal) {
+      localAllLLMTools.value = JSON.parse(JSON.stringify(newVal));
+      updateEnabledTools();
+    }
+  },
+  { deep: true },
+);
 </script>
 
 <style scoped>
@@ -261,4 +267,3 @@ watch(() => props.allLlmToolsData, (newVal) => {
   cursor: help;
 }
 </style>
-

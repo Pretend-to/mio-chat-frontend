@@ -58,11 +58,11 @@
           />
           <template #extra>
             <span class="form-item-tip">
-              用于指导 AI 生成会话标题的系统提示词。注意：系统会自动过滤推理内容。
+              用于指导 AI
+              生成会话标题的系统提示词。注意：系统会自动过滤推理内容。
             </span>
           </template>
         </el-form-item>
-
       </el-form>
     </el-card>
 
@@ -108,8 +108,15 @@
         <el-table-column label="操作" width="140" fixed="right">
           <template #default="{ row }">
             <el-button-group>
-              <el-button size="small" @click="handleEditTask(row)">编辑</el-button>
-              <el-button size="small" type="danger" @click="handleDeleteTask(row)">删除</el-button>
+              <el-button size="small" @click="handleEditTask(row)"
+                >编辑</el-button
+              >
+              <el-button
+                size="small"
+                type="danger"
+                @click="handleDeleteTask(row)"
+                >删除</el-button
+              >
             </el-button-group>
           </template>
         </el-table-column>
@@ -126,17 +133,34 @@
       <div v-loading="loadingTaskDetail" class="edit-dialog-body">
         <el-form :model="editingTask" label-width="100px" label-position="left">
           <el-form-item label="任务名称">
-            <el-input v-model="editingTask.name" placeholder="起个名字方便识别" />
+            <el-input
+              v-model="editingTask.name"
+              placeholder="起个名字方便识别"
+            />
           </el-form-item>
           <el-form-item label="Cron 周期">
-            <el-input v-model="editingTask.cron" placeholder="例如: 0 9 * * * (每天上午9点)" />
+            <el-input
+              v-model="editingTask.cron"
+              placeholder="例如: 0 9 * * * (每天上午9点)"
+            />
             <template #extra>
-              <span class="form-item-tip">标准 Cron 格式，或者输入 "+10m" 表示 10 分钟后执行一次。</span>
+              <span class="form-item-tip"
+                >标准 Cron 格式，或者输入 "+10m" 表示 10 分钟后执行一次。</span
+              >
             </template>
           </el-form-item>
           <el-form-item label="执行预设">
-            <el-select v-model="editingTask.preset" placeholder="请选择 Agent 预设" style="width: 100%">
-              <el-option v-for="p in presets" :key="p.name" :label="p.name" :value="p.name" />
+            <el-select
+              v-model="editingTask.preset"
+              placeholder="请选择 Agent 预设"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="p in presets"
+                :key="p.name"
+                :label="p.name"
+                :value="p.name"
+              />
             </el-select>
           </el-form-item>
           <el-form-item label="System Prompt">
@@ -147,7 +171,10 @@
               placeholder="可选。固化领域知识到系统层，如 API 文档、规则等。留空使用默认。"
             />
             <template #extra>
-              <span class="form-item-tip">设置后将作为 system prompt 注入，第一轮写入后常驻 history。配合精简的 taskPrompt 使用效果最佳。</span>
+              <span class="form-item-tip"
+                >设置后将作为 system prompt 注入，第一轮写入后常驻
+                history。配合精简的 taskPrompt 使用效果最佳。</span
+              >
             </template>
           </el-form-item>
           <el-form-item label="唤醒指令">
@@ -166,7 +193,9 @@
               placeholder="例如: curl,cat,node (多个用逗号分隔)"
             />
             <template #extra>
-              <span class="form-item-tip">后台定时任务在执行 shell 命令时自动匹配此白名单。</span>
+              <span class="form-item-tip"
+                >后台定时任务在执行 shell 命令时自动匹配此白名单。</span
+              >
             </template>
           </el-form-item>
           <el-form-item label="工具集">
@@ -180,15 +209,27 @@
         </el-form>
 
         <!-- ── 执行历史 ── -->
-        <div v-if="editingTask.id" class="detail-section" style="margin-top: 24px;">
+        <div
+          v-if="editingTask.id"
+          class="detail-section"
+          style="margin-top: 24px"
+        >
           <h4>📜 执行历史 (共 {{ editingHistory.length }} 轮)</h4>
-          <div v-if="editingHistory.length === 0" class="empty-history">尚无执行历史</div>
-          <div v-for="(entry, i) in editingHistory" :key="i" class="history-entry">
+          <div v-if="editingHistory.length === 0" class="empty-history">
+            尚无执行历史
+          </div>
+          <div
+            v-for="(entry, i) in editingHistory"
+            :key="i"
+            class="history-entry"
+          >
             <div class="history-header">
               <span :class="['role-badge', `role-${entry.role}`]">
                 {{ roleLabel(entry.role) }}
               </span>
-              <span v-if="entry.time" class="history-time">{{ formatTime(entry.time) }}</span>
+              <span v-if="entry.time" class="history-time">{{
+                formatTime(entry.time)
+              }}</span>
               <span class="history-index">#{{ i + 1 }}</span>
             </div>
             <div
@@ -200,14 +241,17 @@
             </div>
           </div>
         </div>
-        <div v-else class="form-item-tip" style="margin-top: 16px;">新建任务尚无执行历史。</div>
+        <div v-else class="form-item-tip" style="margin-top: 16px">
+          新建任务尚无执行历史。
+        </div>
       </div>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="savingTask" @click="saveTask">确定</el-button>
+        <el-button type="primary" :loading="savingTask" @click="saveTask"
+          >确定</el-button
+        >
       </template>
     </el-dialog>
-
   </div>
 </template>
 <script setup>
@@ -265,7 +309,8 @@ const loadData = async () => {
   try {
     const systemConfig = await configStore.fetchConfigSection("system");
     formData.system_llm_channel = systemConfig.system_llm_channel || "";
-    formData.system_llm_title_prompt = systemConfig.system_llm_title_prompt || "";
+    formData.system_llm_title_prompt =
+      systemConfig.system_llm_title_prompt || "";
     Object.assign(originalData, formData);
 
     await fetchTasks();
@@ -290,15 +335,17 @@ const fetchTasks = async () => {
 
 const fetchPresets = async () => {
   try {
-    const res = await configAPI.getConfigSection("presets") || configAPI.getConfig();
+    const res =
+      (await configAPI.getConfigSection("presets")) || configAPI.getConfig();
     if (Array.isArray(res?.data?.presets)) {
-      presets.value = [{ name: "default" }, ...res.data.presets.map((p) => ({ name: p.name || p }))];
+      presets.value = [
+        { name: "default" },
+        ...res.data.presets.map((p) => ({ name: p.name || p })),
+      ];
     }
   } catch {
     // 静默失败
   }
-
-
 };
 const handleReset = () => {
   Object.assign(formData, originalData);
@@ -333,7 +380,9 @@ const handleEditTask = async (row) => {
 
     // 填充编辑表单
     const tools = task.tools
-      ? (typeof task.tools === "string" ? JSON.parse(task.tools) : task.tools)
+      ? typeof task.tools === "string"
+        ? JSON.parse(task.tools)
+        : task.tools
       : [];
     Object.assign(editingTask, {
       id: task.id,
@@ -425,20 +474,25 @@ const handleToggleTask = async (row, val) => {
   }
 };
 
-
-
 const toolsDisplay = (tools) => {
   if (!tools) return "(无 — 继承 Persona 全部工具)";
   try {
     const arr = typeof tools === "string" ? JSON.parse(tools) : tools;
-    return Array.isArray(arr) && arr.length > 0 ? JSON.stringify(arr, null, 2) : "(无 — 继承 Persona 全部工具)";
+    return Array.isArray(arr) && arr.length > 0
+      ? JSON.stringify(arr, null, 2)
+      : "(无 — 继承 Persona 全部工具)";
   } catch {
     return String(tools);
   }
 };
 
 const roleLabel = (role) => {
-  const map = { system: "系统", user: "用户", assistant: "助手", developer: "开发" };
+  const map = {
+    system: "系统",
+    user: "用户",
+    assistant: "助手",
+    developer: "开发",
+  };
   return map[role?.toLowerCase()] || role || "未知";
 };
 
