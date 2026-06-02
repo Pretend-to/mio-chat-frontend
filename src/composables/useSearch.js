@@ -163,8 +163,14 @@ export function useSearch() {
     });
     const contactMatches = contactFuse.search(query)
       .map((res) => res.item)
-      // 确保完整关键词存在于结果中，避免模糊匹配拆解中文字符（如搜索"傻逼"不会匹配只含"傻"或"逼"的结果）
-      .filter(c => c.name.toLowerCase().includes(query.toLowerCase()));
+      // 确保完整关键词存在于结果中，避免模糊匹配将中文逐字拆分命中（如搜索"测试"不会匹配仅含"测"或"试"的结果）
+      .filter(c => c.name.toLowerCase().includes(query.toLowerCase()))
+      // 最新联系排在前面（根据最后一条消息时间或创建时间）
+      .sort((a, b) => {
+        const aTime = a.messageChain?.length ? a.messageChain[a.messageChain.length - 1].time : a.createTime;
+        const bTime = b.messageChain?.length ? b.messageChain[b.messageChain.length - 1].time : b.createTime;
+        return (bTime || 0) - (aTime || 0);
+      });
 
     // 2. Search Messages
     const allMessages = [];
@@ -178,6 +184,7 @@ export function useSearch() {
             contactorAvatar: c.avatar,
             message: msg,
             textContent: textContent.trim(),
+            msgTime: msg.time,
           });
         }
       });
@@ -191,7 +198,7 @@ export function useSearch() {
     });
 
     const messageMatches = messageFuse.search(query)
-      // 先过滤：确保完整关键词存在于文本中，避免中文字符被逐字模糊匹配
+      // 先过滤：确保完整关键词完整存在于文本中，避免中文逐字拆分命中
       .filter(res => res.item.textContent.toLowerCase().includes(query.toLowerCase()))
       .map((res) => {
       const matches = res.matches?.[0];
@@ -265,7 +272,9 @@ export function useSearch() {
         ...res.item,
         highlightedText,
       };
-    });
+    })
+    // 最新消息排在前面
+    .sort((a, b) => (b.msgTime || 0) - (a.msgTime || 0));
 
     return {
       contacts: contactMatches,
