@@ -21,6 +21,7 @@
         配置 SMTP 邮箱信息后，当 GitHub Webhook 触发部署时，系统会自动发送部署结果通知邮件。
         接收通知的邮箱可配置多个（用逗号分隔）。
         仅监听 <code>allowed_branches</code> 中指定的分支推送事件。
+        可选配 Webhook Secret 校验请求签名，防止恶意触发。
       </template>
     </el-alert>
 
@@ -141,6 +142,21 @@
           </template>
         </el-form-item>
 
+        <el-form-item label="Webhook Secret" prop="secret">
+          <el-input
+            v-model="formData.secret"
+            type="password"
+            show-password
+            placeholder="GitHub Webhook 设置的 Secret（可选）"
+            style="width: 400px"
+          />
+          <template #extra>
+            <span class="form-item-tip">
+              在 GitHub 仓库 Settings → Webhooks 中配置相同的 Secret，用于校验请求来源，防止恶意触发
+            </span>
+          </template>
+        </el-form-item>
+
         <el-form-item label="监听分支" prop="allowed_branches">
           <el-select
             v-model="formData.allowed_branches"
@@ -230,6 +246,7 @@ const formData = reactive({
   email_from: "",
   email_from_name: "MioChat 部署",
   email_to: "",
+  secret: "",
   allowed_branches: ["master", "production"],
 });
 
@@ -306,6 +323,7 @@ const loadConfig = async () => {
       email_from: webhookConfig.email_from || "",
       email_from_name: webhookConfig.email_from_name || "MioChat 部署",
       email_to: webhookConfig.email_to || "",
+      secret: webhookConfig.secret || "",
       allowed_branches: webhookConfig.allowed_branches || ["master", "production"],
     });
 
@@ -331,6 +349,7 @@ const handleSave = async () => {
       email_from: formData.email_from,
       email_from_name: formData.email_from_name,
       email_to: formData.email_to,
+      secret: formData.secret,
       allowed_branches: formData.allowed_branches,
     });
 
