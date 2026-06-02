@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, nextTick } from "vue";
 import { useSearch } from "@/composables/useSearch.js";
 
 const emit = defineEmits(["close"]);
@@ -23,10 +23,17 @@ const inputRef = ref(null);
 
 onMounted(() => {
   loadSearchHistory();
-  // Auto focus input on mount
-  setTimeout(() => {
+  // Auto focus input on mount with multiple fallback timings to ensure compatibility with transition animations and mobile browsers
+  inputRef.value?.focus();
+  nextTick(() => {
     inputRef.value?.focus();
-  }, 100);
+  });
+  const delays = [50, 100, 200, 300, 500];
+  delays.forEach((delay) => {
+    setTimeout(() => {
+      inputRef.value?.focus();
+    }, delay);
+  });
 });
 
 const handleCancel = () => {
@@ -56,6 +63,7 @@ const handleJumpMessage = (contactId, messageId) => {
           v-model="searchQuery"
           type="search"
           placeholder="搜索"
+          autofocus
           @keydown.esc="handleCancel"
           @keydown.enter="triggerSearchEnter"
         />

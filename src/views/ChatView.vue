@@ -604,8 +604,34 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
     const scrollContainer = chatWindow.value || document.getElementById("main-messages-window");
     if (scrollContainer) {
       let stabilizeTimer = null;
+      let fallbackTimer = null;
+      let observer = null;
+
+      const cleanup = () => {
+        if (observer) {
+          observer.disconnect();
+          observer = null;
+        }
+        if (stabilizeTimer) {
+          clearTimeout(stabilizeTimer);
+          stabilizeTimer = null;
+        }
+        if (fallbackTimer) {
+          clearTimeout(fallbackTimer);
+          fallbackTimer = null;
+        }
+        scrollContainer.removeEventListener("wheel", handleUserInteraction, { passive: true });
+        scrollContainer.removeEventListener("touchstart", handleUserInteraction, { passive: true });
+        scrollContainer.removeEventListener("mousedown", handleUserInteraction, { passive: true });
+      };
+
+      const handleUserInteraction = () => {
+        // 用户手动滚动、点击或触控了，立即停止自动定位
+        cleanup();
+      };
+
       const prevScrollHeight = scrollContainer.scrollHeight;
-      const observer = new ResizeObserver(() => {
+      observer = new ResizeObserver(() => {
         // 只有 scrollHeight 变了才说明有内容渲染完成
         if (scrollContainer.scrollHeight === prevScrollHeight) return;
         scrollAction();
@@ -613,14 +639,21 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
         // 连续 400ms 无变化 → 认为渲染稳定
         stabilizeTimer = setTimeout(() => {
           scrollAction();
-          observer.disconnect();
+          cleanup();
         }, 400);
       });
+
       observer.observe(scrollContainer);
+
+      // 监听用户交互事件以取消自动定位，避免覆盖用户手动操作
+      scrollContainer.addEventListener("wheel", handleUserInteraction, { passive: true });
+      scrollContainer.addEventListener("touchstart", handleUserInteraction, { passive: true });
+      scrollContainer.addEventListener("mousedown", handleUserInteraction, { passive: true });
+
       // 安全兜底：最多等 5s
-      setTimeout(() => {
-        observer.disconnect();
+      fallbackTimer = setTimeout(() => {
         scrollAction();
+        cleanup();
       }, 5000);
     }
 

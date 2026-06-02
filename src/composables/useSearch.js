@@ -76,12 +76,20 @@ export function useSearch() {
     }
   };
 
+  const blurSearchInput = () => {
+    const inputEl = document.getElementById("main-search");
+    if (inputEl) {
+      inputEl.blur();
+    }
+  };
+
   const selectAndCloseSearch = (contactId) => {
     const q = searchQuery.value.trim();
     if (q) saveSearchHistory(q);
     isSearchFocused.value = false;
     showChat(contactId);
     clearSearch();
+    blurSearchInput();
   };
 
   const jumpToMessage = (contactId, messageId) => {
@@ -101,6 +109,7 @@ export function useSearch() {
       });
     }
     clearSearch();
+    blurSearchInput();
   };
 
   const formatTime = (timestamp) => {
