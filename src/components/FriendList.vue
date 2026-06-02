@@ -24,6 +24,7 @@ import StatusDot from "@/components/StatusDot.vue";
 import { useConnectionStore } from "@/stores/connectionStore";
 import { useSearch } from "@/composables/useSearch.js";
 import SearchPanel from "@/components/SearchPanel.vue";
+import MobileSearch from "@/components/MobileSearch.vue";
 
 // Emits
 const emit = defineEmits(["open-share-code-window"]);
@@ -44,6 +45,35 @@ const contactorsStore = useContactorsStore();
 const isConnected = computed(() => connectionStore.isConnected);
 const showAddWindow = ref(false);
 const showMenu = ref(false);
+const showMobileSearch = ref(false);
+const headerTopRef = ref(null);
+const isAnimatingCollapse = ref(false);
+const placeholderHeight = ref(0);
+
+const handleOpenMobileSearch = () => {
+  const h = headerTopRef.value?.offsetHeight || 0;
+  placeholderHeight.value = h;
+  isAnimatingCollapse.value = true;
+  showMobileSearch.value = true;
+  nextTick(() => {
+    const placeholder = document.querySelector(".header-placeholder");
+    if (placeholder) {
+      void placeholder.offsetHeight; // Force layout/reflow to guarantee height transition triggers
+    }
+    placeholderHeight.value = 0;
+    
+    // Cleanup the animation helper flag after the height transition completes (0.3s)
+    setTimeout(() => {
+      isAnimatingCollapse.value = false;
+    }, 300);
+  });
+};
+
+const handleCloseMobileSearch = () => {
+  showMobileSearch.value = false;
+  isAnimatingCollapse.value = false;
+  placeholderHeight.value = 0;
+};
 const menuX = ref(0);
 const menuY = ref(0);
 const selectedFriend = ref(null);
@@ -414,9 +444,14 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div id="friendlists" ref="friendlists">
+  <div id="friendlists" ref="friendlists" :class="{ 'search-overlay-active': showMobileSearch }">
     <div v-if="onPhone" class="mobile-qq-header">
-      <div class="header-top">
+      <div
+        v-if="isAnimatingCollapse"
+        class="header-placeholder"
+        :style="{ height: placeholderHeight + 'px' }"
+      ></div>
+      <div ref="headerTopRef" class="header-top">
         <div class="user-info">
           <div class="user-avatar">
             <img :src="rawAdminAvatar" alt="avatar" />
@@ -436,7 +471,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <div class="header-search">
-        <div class="search-bar">
+        <div class="search-bar" @click="handleOpenMobileSearch">
           <i class="iconfont sousuo"></i>
           <span>搜索</span>
         </div>
@@ -563,6 +598,12 @@ onBeforeUnmount(() => {
       @message-option="handleFriendOption"
       @close="showMenu = false"
     />
+    <Transition name="fade">
+      <MobileSearch
+        v-if="showMobileSearch"
+        @close="handleCloseMobileSearch"
+      />
+    </Transition>
   </div>
 </template>
 
@@ -678,14 +719,16 @@ button#addcont:hover {
   background-color: #ebebeb;
 }
 
-.lists:hover {
-  background-color: rgb(240, 240, 240);
-  /* border: .0625rem solid pink; */
-}
+@media (hover: hover) {
+  .lists:hover {
+    background-color: rgb(240, 240, 240);
+    /* border: .0625rem solid pink; */
+  }
 
-.lists-wrapper#important:hover {
-  background-color: #e0e0e0;
-  /* border: .0625rem solid pink; */
+  .lists-wrapper#important:hover {
+    background-color: #e0e0e0;
+    /* border: .0625rem solid pink; */
+  }
 }
 
 .lists-wrapper#active .lists {
@@ -789,6 +832,7 @@ button#addcont:hover {
   }
 
   .mobile-qq-header {
+    position: relative;
     padding: 0.75rem 1rem 0.5rem 1rem;
     background-color: #f1f4fe;
     display: flex;
@@ -936,9 +980,15 @@ button#addcont:hover {
     background-color: #f1f4fe;
   }
 
-  .lists:hover,
+  /* 明确禁用移动端联系人列表项 hover 态变色 */
+  .lists:hover {
+    background-color: transparent;
+  }
   .lists-wrapper#important:hover {
-    background-color: inherit;
+    background-color: #f1f4fe;
+  }
+  .lists-wrapper#active .lists:hover {
+    background-color: rgb(0, 153, 255);
   }
 }
 
@@ -975,5 +1025,48 @@ button#addcont:hover {
 }
 .clear-btn:hover {
   background-color: #999;
+}
+
+/* Transition Animations */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Normal state transitions */
+.header-placeholder {
+  transition: height 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  overflow: hidden;
+  width: 100%;
+}
+
+.header-top {
+  transition: opacity 0.3s ease;
+}
+
+.people,
+.header-search {
+  transition: opacity 0.5s ease;
+}
+
+/* Active search transition states */
+#friendlists.search-overlay-active .header-top {
+  position: absolute;
+  top: 0.75rem;
+  left: 1rem;
+  right: 1rem;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#friendlists.search-overlay-active .people,
+#friendlists.search-overlay-active .header-search {
+  opacity: 0;
+  pointer-events: none;
 }
 </style>

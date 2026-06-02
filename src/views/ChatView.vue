@@ -573,7 +573,7 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
   const scrollAction = () => {
     const elm =
       chatWindow.value || document.getElementById("main-messages-window");
-    if (!elm) return;
+    if (!elm) return false;
     const element = elm.querySelector(`[data-id="${messageId}"]`);
     if (element) {
       element.scrollIntoView({
@@ -583,18 +583,29 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
       if (shouldFlash) {
         element.classList.add("highlight-flash");
       }
+      return true;
     }
+    return false;
   };
 
+  // Try scrolling immediately first
+  const scrolledImmediately = scrollAction();
+
   nextTick(() => {
-    // Stage 1: Immediate scroll to get close
-    setTimeout(scrollAction, 150);
+    if (!scrolledImmediately) {
+      // If not scrolled immediately, try now since DOM should be ready
+      const scrolledInNextTick = scrollAction();
+      if (!scrolledInNextTick) {
+        // Fallback for slight DOM update lags
+        setTimeout(scrollAction, 50);
+      }
+    }
 
     // Stage 2: Correct positioning after markdown/latex rendering
-    setTimeout(scrollAction, 450);
+    setTimeout(scrollAction, 300);
 
     // Stage 3: Stabilize after rendering finishes
-    setTimeout(scrollAction, 900);
+    setTimeout(scrollAction, 800);
 
     if (shouldFlash) {
       // Consumed parameters: clear from URL query

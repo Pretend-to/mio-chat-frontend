@@ -79,6 +79,7 @@ export function useSearch() {
   const selectAndCloseSearch = (contactId) => {
     const q = searchQuery.value.trim();
     if (q) saveSearchHistory(q);
+    isSearchFocused.value = false;
     showChat(contactId);
     clearSearch();
   };
@@ -86,7 +87,11 @@ export function useSearch() {
   const jumpToMessage = (contactId, messageId) => {
     const q = searchQuery.value.trim();
     if (q) saveSearchHistory(q);
-    if (String(contactId) === String(contactorsStore.activeContactorId)) {
+    isSearchFocused.value = false;
+    if (
+      route.name === "chat_view" &&
+      String(contactId) === String(contactorsStore.activeContactorId)
+    ) {
       client.emit("scroll_to_message", messageId);
     } else {
       router.push({
@@ -118,22 +123,26 @@ export function useSearch() {
     );
   };
 
-  const extractTextFromContent = (content) => {
+  const extractTextFromContent = (content, msgId = null, role = null) => {
     if (!content) return "";
     if (typeof content === "string") return content;
     if (Array.isArray(content)) {
-      return content.map((item) => extractTextFromContent(item)).join(" ");
+      return content.map((item) => extractTextFromContent(item, msgId, role)).join(" ");
     }
     if (typeof content === "object") {
+      let result = "";
       if (content.type === "file") {
-        return content.data?.name || "";
+        result = content.data?.name || "";
+      } else if (content.data) {
+        if (typeof content.data === "string") result = content.data;
+        else if (typeof content.data.text === "string") result = content.data.text;
+      } else if (typeof content.text === "string") {
+        result = content.text;
+      } else if (typeof content.content === "string") {
+        result = content.content;
       }
-      if (content.data) {
-        if (typeof content.data === "string") return content.data;
-        if (typeof content.data.text === "string") return content.data.text;
-      }
-      if (typeof content.text === "string") return content.text;
-      if (typeof content.content === "string") return content.content;
+
+      return result;
     }
     return "";
   };
@@ -158,7 +167,7 @@ export function useSearch() {
     const allMessages = [];
     contactList.forEach((c) => {
       c.messageChain.forEach((msg) => {
-        const textContent = extractTextFromContent(msg.content);
+        const textContent = extractTextFromContent(msg.content, msg.id, msg.role);
         if (textContent.trim()) {
           allMessages.push({
             contactorId: c.id,
@@ -173,7 +182,8 @@ export function useSearch() {
 
     const messageFuse = new Fuse(allMessages, {
       keys: ["textContent"],
-      threshold: 0.5,
+      threshold: 0.6,
+      ignoreLocation: true,
       includeMatches: true,
     });
 

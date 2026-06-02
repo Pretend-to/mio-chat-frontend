@@ -78,7 +78,7 @@ const highlight = (text, query) => {
           v-for="contact in searchResults.contacts"
           :key="contact.id"
           class="search-item"
-          @click="$emit('select-contact', contact.id)"
+          @mousedown.prevent="$emit('select-contact', contact.id)"
         >
           <div
             class="avatar"
@@ -103,7 +103,7 @@ const highlight = (text, query) => {
           v-for="msgResult in searchResults.messages"
           :key="msgResult.message.id"
           class="search-item"
-          @click="
+          @mousedown.prevent="
             $emit('jump-message', msgResult.contactorId, msgResult.message.id)
           "
         >
