@@ -217,6 +217,9 @@ const highlight = (text, query) => {
   font-size: 0.85rem;
   font-weight: 600;
   color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .search-item .title-text {
@@ -237,6 +240,9 @@ const highlight = (text, query) => {
   font-size: 0.85rem;
   font-weight: 600;
   color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .search-msg-header .time {

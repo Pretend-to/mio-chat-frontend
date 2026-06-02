@@ -326,6 +326,9 @@ const handleJumpMessage = (contactId, messageId) => {
   font-weight: 600;
   color: #333;
   margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .search-item .title-text {
@@ -345,6 +348,9 @@ const handleJumpMessage = (contactId, messageId) => {
   font-size: 0.95rem;
   font-weight: 600;
   color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .search-msg-header .time {
