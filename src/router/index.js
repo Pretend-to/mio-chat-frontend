@@ -144,6 +144,12 @@ const router = createRouter({
           meta: { title: "存储设置" },
         },
         {
+          path: "webhook",
+          name: "settings_webhook",
+          component: () => import("../views/settings/WebhookConfigView.vue"),
+          meta: { title: "Webhook 配置" },
+        },
+        {
           path: "logs",
           name: "settings_logs",
           component: () => import("../views/settings/LogsView.vue"),

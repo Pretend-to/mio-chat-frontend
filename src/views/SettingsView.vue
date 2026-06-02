@@ -269,6 +269,7 @@ const menuItems = [
   { index: "plugins", label: "插件管理", icon: Grid },
   { index: "presets", label: "预设管理", icon: Document },
   { index: "storage", label: "存储配置", icon: Box },
+  { index: "webhook", label: "Webhook 配置", icon: ChatDotRound },
   { index: "logs", label: "日志管理", icon: Document },
 ];
 
@@ -297,6 +298,7 @@ const activeMenu = computed(() => {
   if (path.includes("llm-adapters")) return "llm-adapters";
   if (path.includes("automation")) return "automation";
   if (path.includes("server")) return "server";
+  if (path.includes("webhook")) return "webhook";
   if (path.includes("web")) return "web";
   if (path.includes("onebot")) return "onebot";
   if (path.includes("plugins")) return "plugins";
