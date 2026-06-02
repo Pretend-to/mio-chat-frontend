@@ -593,19 +593,36 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
 
   nextTick(() => {
     if (!scrolledImmediately) {
-      // If not scrolled immediately, try now since DOM should be ready
       const scrolledInNextTick = scrollAction();
       if (!scrolledInNextTick) {
-        // Fallback for slight DOM update lags
         setTimeout(scrollAction, 50);
       }
     }
 
-    // Stage 2: Correct positioning after markdown/latex rendering
-    setTimeout(scrollAction, 300);
-
-    // Stage 3: Stabilize after rendering finishes
-    setTimeout(scrollAction, 800);
+    // 用 ResizeObserver 监听滚动容器 scrollHeight 变化
+    // （Markdown/LaTeX 渲染会使任意消息高度变化，进而改变 target 在容器中的位置）
+    const scrollContainer = chatWindow.value || document.getElementById("main-messages-window");
+    if (scrollContainer) {
+      let stabilizeTimer = null;
+      const prevScrollHeight = scrollContainer.scrollHeight;
+      const observer = new ResizeObserver(() => {
+        // 只有 scrollHeight 变了才说明有内容渲染完成
+        if (scrollContainer.scrollHeight === prevScrollHeight) return;
+        scrollAction();
+        if (stabilizeTimer) clearTimeout(stabilizeTimer);
+        // 连续 400ms 无变化 → 认为渲染稳定
+        stabilizeTimer = setTimeout(() => {
+          scrollAction();
+          observer.disconnect();
+        }, 400);
+      });
+      observer.observe(scrollContainer);
+      // 安全兜底：最多等 5s
+      setTimeout(() => {
+        observer.disconnect();
+        scrollAction();
+      }, 5000);
+    }
 
     if (shouldFlash) {
       // Consumed parameters: clear from URL query
