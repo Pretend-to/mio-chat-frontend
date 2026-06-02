@@ -500,11 +500,15 @@ class TaskAPI {
 
   /**
    * 获取所有任务列表
+   * @param {object} params - 查询参数
    * @returns {Promise<object>} 任务列表数据
    */
-  async getTasks() {
-    return this.configAPI.request("/api/tasks");
+  async getTasks(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const endpoint = query ? `/api/tasks?${query}` : "/api/tasks";
+    return this.configAPI.request(endpoint);
   }
+
 
   /**
    * 获取单个任务详情（含完整上下文）
@@ -550,7 +554,17 @@ class TaskAPI {
       body: JSON.stringify({ enable }),
     });
   }
+
+  /**
+   * 获取任务执行记录
+   * @param {string} id - 任务 ID
+   * @returns {Promise<object>} 执行记录列表
+   */
+  async getTaskExecutions(id) {
+    return this.configAPI.request(`/api/tasks/${id}/executions`);
+  }
 }
+
 
 // 导出单例实例
 export const configAPI = new ConfigAPI();

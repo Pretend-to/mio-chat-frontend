@@ -81,22 +81,26 @@
         </el-button>
       </div>
 
-      <el-table :data="tasks" style="width: 100%" v-loading="loadingTasks">
+      <el-table :data="tasks" style="width: 100%" v-loading="loadingTasks" :row-class-name="tableRowClassName">
         <el-table-column prop="name" label="任务名称" min-width="120" />
+
         <el-table-column prop="cron" label="Cron 表达式" width="150">
           <template #default="{ row }">
             <el-tag size="small">{{ row.cron }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="preset" label="执行 Agent" width="150" />
-        <el-table-column prop="status" label="状态" width="80">
+        <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
+            <el-tag v-if="row.status === 'deleted'" type="danger" size="small" effect="plain">已删除</el-tag>
             <el-switch
+              v-else
               v-model="row.isActive"
               @change="(val) => handleToggleTask(row, val)"
             />
           </template>
         </el-table-column>
+
         <el-table-column prop="lastRunAt" label="最后运行" width="170">
           <template #default="{ row }">
             <span v-if="row.lastRunAt">{{
@@ -105,21 +109,35 @@
             <span v-else class="text-secondary">-</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="140" fixed="right">
+        <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
-            <el-button-group>
-              <el-button size="small" @click="handleEditTask(row)"
-                >编辑</el-button
-              >
-              <el-button
-                size="small"
-                type="danger"
-                @click="handleDeleteTask(row)"
-                >删除</el-button
-              >
-            </el-button-group>
+            <el-button 
+              size="small" 
+              link 
+              type="primary" 
+              :disabled="row.status === 'deleted'"
+              @click="handleEditTask(row)"
+              >编辑</el-button
+            >
+            <el-button
+              size="small"
+              link
+              type="success"
+              @click="handleShowExecutions(row)"
+              >运行记录</el-button
+            >
+            <el-button
+              size="small"
+              link
+              type="danger"
+              :disabled="row.status === 'deleted'"
+              @click="handleDeleteTask(row)"
+              >删除</el-button
+            >
           </template>
         </el-table-column>
+
+
       </el-table>
     </el-card>
 
@@ -252,8 +270,111 @@
         >
       </template>
     </el-dialog>
+
+    <!-- 任务执行记录对话框 -->
+    <el-dialog
+      v-model="executionsDialogVisible"
+      :title="`📊 运行记录 - ${currentTaskName}`"
+      width="900px"
+      top="8vh"
+      append-to-body
+    >
+      <div v-loading="loadingExecutions" style="min-height: 200px;">
+        <el-table :data="executionsList" style="width: 100%" size="small" border>
+          <!-- 展开显示详细 Input/Output -->
+          <el-table-column type="expand">
+            <template #default="{ row }">
+              <div class="execution-expand-details">
+                <el-form label-position="top" size="small">
+                  <el-form-item v-slot:label v-if="row.triggerPrompt" label="唤醒指令 (Trigger Prompt)">
+                    <span>唤醒指令 (Trigger Prompt)</span>
+                  </el-form-item>
+                  <el-input
+                    v-if="row.triggerPrompt"
+                    type="textarea"
+                    :rows="2"
+                    readonly
+                    :model-value="row.triggerPrompt"
+                    style="margin-bottom: 12px"
+                  />
+                  
+                  <el-form-item v-slot:label v-if="row.errorMessage" label="错误信息 (Error Message)">
+                    <span>错误信息 (Error Message)</span>
+                  </el-form-item>
+                  <el-alert
+                    v-if="row.errorMessage"
+                    :title="row.errorMessage"
+                    type="error"
+                    :closable="false"
+                    show-icon
+                    style="margin-bottom: 12px"
+                  />
+
+                  <el-row :gutter="20">
+                    <el-col :span="12">
+                      <el-form-item v-slot:label label="输入消息历史 (Input Messages)">
+                        <span>输入消息历史 (Input Messages)</span>
+                      </el-form-item>
+                      <div class="json-box">
+                        <pre>{{ formatJson(row.inputMessages) }}</pre>
+                      </div>
+                    </el-col>
+                    <el-col :span="12">
+                      <el-form-item v-slot:label label="最终回复/流块 (Output Assistant Message / Chunks)">
+                        <span>最终回复/流块 (Output Assistant Message / Chunks)</span>
+                      </el-form-item>
+                      <div class="json-box">
+                        <pre v-if="row.finalAssistantMsg">{{ formatJson(row.finalAssistantMsg) }}</pre>
+                        <pre v-else-if="row.outputChunks">{{ formatJson(row.outputChunks) }}</pre>
+                        <span v-else class="text-secondary">无输出</span>
+                      </div>
+                    </el-col>
+                  </el-row>
+                </el-form>
+              </div>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="round" label="轮次" width="60" align="center" />
+          
+          <el-table-column prop="status" label="状态" width="90" align="center">
+            <template #default="{ row }">
+              <el-tag :type="getStatusType(row.status)" size="small">
+                {{ getStatusLabel(row.status) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="provider" label="渠道" width="130">
+            <template #default="{ row }">
+              <el-tag v-if="row.provider" size="small" type="info">{{ row.provider }}</el-tag>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          
+          <el-table-column prop="model" label="模型" min-width="140" show-overflow-tooltip />
+
+
+          <el-table-column prop="startedAt" label="执行时间" width="170">
+            <template #default="{ row }">
+              <span>{{ new Date(row.startedAt).toLocaleString() }}</span>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="耗时" width="80" align="center">
+            <template #default="{ row }">
+              <span>{{ formatDuration(row) }}</span>
+            </template>
+          </el-table-column>
+        </el-table>
+        <div v-if="executionsList.length === 0" class="empty-executions">
+          暂无运行记录
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
+
 <script setup>
 import { ref, reactive, onMounted, computed } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
@@ -291,9 +412,77 @@ const editingTask = reactive({
   status: "active",
 });
 
-// 编辑面板中执行历史
 const editingHistory = ref([]);
 const loadingTaskDetail = ref(false);
+
+// 执行记录相关状态和方法
+const executionsDialogVisible = ref(false);
+const loadingExecutions = ref(false);
+const executionsList = ref([]);
+const currentTaskName = ref("");
+
+const tableRowClassName = ({ row }) => {
+  if (row.status === 'deleted') {
+    return 'deleted-row';
+  }
+  return '';
+};
+
+const formatDuration = (row) => {
+
+  if (!row.startedAt) return '-';
+  const start = new Date(row.startedAt).getTime();
+  const end = row.finishedAt ? new Date(row.finishedAt).getTime() : Date.now();
+  const diff = end - start;
+  if (diff < 1000) return `${diff}ms`;
+  return `${(diff / 1000).toFixed(1)}s`;
+};
+
+const getStatusType = (status) => {
+  switch (status) {
+    case 'completed': return 'success';
+    case 'failed': return 'danger';
+    case 'running': return 'warning';
+    default: return 'info';
+  }
+};
+
+const getStatusLabel = (status) => {
+  switch (status) {
+    case 'completed': return '成功';
+    case 'failed': return '失败';
+    case 'running': return '运行中';
+    default: return status;
+  }
+};
+
+const formatJson = (val) => {
+  if (!val) return '';
+  if (typeof val === 'string') {
+    try {
+      return JSON.stringify(JSON.parse(val), null, 2);
+    } catch {
+      return val;
+    }
+  }
+  return JSON.stringify(val, null, 2);
+};
+
+const handleShowExecutions = async (row) => {
+  currentTaskName.value = row.name || row.id;
+  executionsDialogVisible.value = true;
+  loadingExecutions.value = true;
+  executionsList.value = [];
+  try {
+    const res = await taskAPI.getTaskExecutions(row.id);
+    executionsList.value = res.data || [];
+  } catch (error) {
+    ElMessage.error("获取执行记录失败: " + error.message);
+  } finally {
+    loadingExecutions.value = false;
+  }
+};
+
 
 // 获取所有适配器列表
 const allAdapters = computed(() => {
@@ -323,11 +512,12 @@ const loadData = async () => {
 const fetchTasks = async () => {
   loadingTasks.value = true;
   try {
-    const res = await taskAPI.getTasks();
+    const res = await taskAPI.getTasks({ showDeleted: true });
     tasks.value = res.data.map((t) => ({
       ...t,
       isActive: t.status === "active",
     }));
+
   } finally {
     loadingTasks.value = false;
   }
@@ -721,4 +911,37 @@ onMounted(async () => {
   font-size: 13px;
   padding: 8px 0;
 }
+
+.json-box {
+  background: #f5f7fa;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  padding: 8px 12px;
+  max-height: 250px;
+  overflow-y: auto;
+  font-family: "SF Mono", "Fira Code", "Menlo", monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: #4c4f56;
+}
+.execution-expand-details {
+  padding: 15px 24px;
+  background-color: #fafbfd;
+  border-radius: 4px;
+}
+.empty-executions {
+  text-align: center;
+  color: #909399;
+  padding: 40px 0;
+  font-size: 13px;
+}
+
+:deep(.el-table .deleted-row) {
+  opacity: 0.65;
+  color: #a8abb2;
+}
 </style>
+
+
