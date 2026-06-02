@@ -161,7 +161,10 @@ export function useSearch() {
       keys: ["name"],
       threshold: 0.4,
     });
-    const contactMatches = contactFuse.search(query).map((res) => res.item);
+    const contactMatches = contactFuse.search(query)
+      .map((res) => res.item)
+      // 确保完整关键词存在于结果中，避免模糊匹配拆解中文字符（如搜索"傻逼"不会匹配只含"傻"或"逼"的结果）
+      .filter(c => c.name.toLowerCase().includes(query.toLowerCase()));
 
     // 2. Search Messages
     const allMessages = [];
@@ -187,7 +190,10 @@ export function useSearch() {
       includeMatches: true,
     });
 
-    const messageMatches = messageFuse.search(query).map((res) => {
+    const messageMatches = messageFuse.search(query)
+      // 先过滤：确保完整关键词存在于文本中，避免中文字符被逐字模糊匹配
+      .filter(res => res.item.textContent.toLowerCase().includes(query.toLowerCase()))
+      .map((res) => {
       const matches = res.matches?.[0];
       const text = res.item.textContent;
 
