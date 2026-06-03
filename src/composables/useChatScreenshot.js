@@ -152,11 +152,21 @@ export function useChatScreenshot({ chatWindowRef, selectedMessages }) {
       const allImgs = Array.from(exportEl.querySelectorAll("img"));
       const imgPromises = allImgs.map((img) => {
         img.setAttribute("loading", "eager");
-        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
 
         return new Promise((resolve) => {
-          img.onload = () => resolve();
-          img.onerror = () => resolve();
+          // Register listeners synchronously to avoid missing any load event
+          img.addEventListener("load", () => resolve(), { once: true });
+          img.addEventListener("error", () => resolve(), { once: true });
+
+          // In case the image is already loaded (or data URI), check complete status after a short delay
+          // to bypass Chrome's stale clone complete status bug.
+          setTimeout(() => {
+            if (img.complete && img.naturalWidth > 0) {
+              resolve();
+            }
+          }, 50);
+
+          // Absolute fallback timeout
           setTimeout(resolve, 5000);
         });
       });

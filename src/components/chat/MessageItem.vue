@@ -53,9 +53,15 @@
             v-if="item.role === 'other'"
             :src="activeContactor.avatar"
             :alt="activeContactor.name"
+            :crossorigin="isExternal(activeContactor.avatar) ? 'anonymous' : undefined"
             @click="$emit('to-profile')"
           />
-          <img v-else :src="client.avatar" :alt="client.name" />
+          <img
+            v-else
+            :src="client.avatar"
+            :alt="client.name"
+            :crossorigin="isExternal(client.avatar) ? 'anonymous' : undefined"
+          />
         </div>
         <div v-if="item.role !== 'mio_system'" class="msg">
           <div class="wholename">
@@ -145,6 +151,7 @@
                   :custom-plugins="mioPlugins"
                   :markdown-it-plugins="katexPluginList"
                   :markdown-it-options="mdOptions"
+                  :auto-cors="corsOption"
                 />
                 <MdRenderer
                   v-if="element.type === 'image'"
@@ -153,6 +160,7 @@
                   :markdown-it-plugins="katexPluginList"
                   :theme="'github'"
                   :key="element.data.file"
+                  :auto-cors="corsOption"
                 />
                 <MdRenderer
                   v-else-if="element.type === 'reply'"
@@ -161,6 +169,7 @@
                   :custom-plugins="mioPlugins"
                   :markdown-it-plugins="katexPluginList"
                   :markdown-it-options="mdOptions"
+                  :auto-cors="corsOption"
                 />
                 <ForwardMsg
                   v-else-if="element.type === 'nodes'"
@@ -231,7 +240,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { client } from "@/lib/runtime.js";
 import ForwardMsg from "@/components/ForwardMsg.vue";
 import FileBlock from "@/components/FileBlock.vue";
@@ -241,6 +250,40 @@ import ActionBlock from "@/components/ActionBlock.vue";
 import MdRenderer from "mio-previewer";
 
 import { Loading, Warning, CollectionTag } from "@element-plus/icons-vue";
+
+const corsOption = computed(() => {
+  const domains = [];
+  const storage = client.config?.baseConfig?.storage_config;
+  if (storage && storage.type === 's3') {
+    if (storage.baseUrl) {
+      try {
+        domains.push(new URL(storage.baseUrl).hostname);
+      } catch (e) {
+        domains.push(storage.baseUrl);
+      }
+    }
+    if (storage.endpoint) {
+      try {
+        domains.push(new URL(storage.endpoint).hostname);
+      } catch (e) {
+        domains.push(storage.endpoint);
+      }
+    }
+  }
+  return domains.length > 0 ? domains : false;
+});
+
+const isExternal = (url) => {
+  if (!url) return false;
+  const isOuter = (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("//")) && !url.includes(window.location.host);
+  if (!isOuter) return false;
+
+  const option = corsOption.value;
+  if (Array.isArray(option)) {
+    return option.some(domain => url.includes(domain));
+  }
+  return option === true;
+};
 
 const props = defineProps({
   item: {

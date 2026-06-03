@@ -59,6 +59,7 @@
                   <img
                     :src="getAvatarUrl(message.data.uin)"
                     :alt="message.data.name"
+                    :crossorigin="isExternal(getAvatarUrl(message.data.uin)) ? 'anonymous' : undefined"
                   />
                 </div>
                 <div class="msg-details">
@@ -78,6 +79,7 @@
                         :md="elm.data.text"
                         :theme="'github'"
                         :markdown-it-options="{ breaks: true }"
+                        :auto-cors="corsOption"
                       />
                       <MdRenderer
                         v-else-if="elm.type === 'image'"
@@ -85,6 +87,7 @@
                         :key="elm.data.file"
                         :custom-plugins="mioPlugins"
                         :theme="'github'"
+                        :auto-cors="corsOption"
                       />
                       <ForwardMsg
                         v-else-if="elm.type === 'nodes'"
@@ -94,6 +97,7 @@
                       <MdRenderer
                         v-else
                         :md="`尚未支持的消息类型：${elm.type}`"
+                        :auto-cors="corsOption"
                       />
                     </template>
                   </div>
@@ -113,6 +117,8 @@ import { client } from "@/lib/runtime.js";
 import { imageViewerPlugin } from "mio-previewer/plugins/custom";
 import { getLastMessageSummary } from "@/stores/contactorsStore.js";
 
+
+
 export default {
   name: "ForwardMsg",
   components: {
@@ -128,6 +134,29 @@ export default {
       default: () => ({}),
     },
   },
+  computed: {
+    corsOption() {
+      const domains = [];
+      const storage = client.config?.baseConfig?.storage_config;
+      if (storage && storage.type === 's3') {
+        if (storage.baseUrl) {
+          try {
+            domains.push(new URL(storage.baseUrl).hostname);
+          } catch (e) {
+            domains.push(storage.baseUrl);
+          }
+        }
+        if (storage.endpoint) {
+          try {
+            domains.push(new URL(storage.endpoint).hostname);
+          } catch (e) {
+            domains.push(storage.endpoint);
+          }
+        }
+      }
+      return domains.length > 0 ? domains : false;
+    }
+  },
   data() {
     const mioPlugins = [
       {
@@ -135,8 +164,8 @@ export default {
       },
     ];
     return {
-      showBox: false,
       onPhone: false,
+      showBox: false,
       mioPlugins: mioPlugins,
     };
   },
@@ -156,6 +185,17 @@ export default {
     );
   },
   methods: {
+    isExternal(url) {
+      if (!url) return false;
+      const isOuter = (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("//")) && !url.includes(window.location.host);
+      if (!isOuter) return false;
+
+      const option = this.corsOption;
+      if (Array.isArray(option)) {
+        return option.some(domain => url.includes(domain));
+      }
+      return option === true;
+    },
     getAvatarUrl(uin) {
       if (
         typeof uin === "string" &&

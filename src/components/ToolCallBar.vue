@@ -47,6 +47,7 @@
               :theme="'github'"
               :key="item.url"
               class="extra-render-image"
+              :auto-cors="corsOption"
             />
           </div>
         </template>
@@ -81,6 +82,7 @@
 <script>
 import ActionBlock from "./ActionBlock.vue";
 import MdRenderer from "mio-previewer";
+import { client } from "@/lib/runtime.js";
 
 export default {
   components: {
@@ -100,6 +102,29 @@ export default {
       type: Array,
       default: () => [],
     },
+  },
+  computed: {
+    corsOption() {
+      const domains = [];
+      const storage = client.config?.baseConfig?.storage_config;
+      if (storage && storage.type === 's3') {
+        if (storage.baseUrl) {
+          try {
+            domains.push(new URL(storage.baseUrl).hostname);
+          } catch (e) {
+            domains.push(storage.baseUrl);
+          }
+        }
+        if (storage.endpoint) {
+          try {
+            domains.push(new URL(storage.endpoint).hostname);
+          } catch (e) {
+            domains.push(storage.endpoint);
+          }
+        }
+      }
+      return domains.length > 0 ? domains : false;
+    }
   },
   data() {
     return {
