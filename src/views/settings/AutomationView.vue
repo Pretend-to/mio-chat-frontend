@@ -71,11 +71,17 @@
       <div class="section-title">
         <el-icon><AlarmClock /></el-icon>
         定时任务 (Cron Tasks)
+        <el-checkbox
+          v-model="showDeletedTasks"
+          @change="fetchTasks"
+          style="margin-left: auto; margin-right: 15px; font-weight: normal; margin-bottom: 0;"
+        >
+          显示已删除的任务
+        </el-checkbox>
         <el-button
           type="primary"
           size="small"
           @click="handleAddTask"
-          class="add-btn"
         >
           新建任务
         </el-button>
@@ -130,9 +136,8 @@
               size="small"
               link
               type="danger"
-              :disabled="row.status === 'deleted'"
               @click="handleDeleteTask(row)"
-              >删除</el-button
+              >{{ row.status === 'deleted' ? '彻底删除' : '删除' }}</el-button
             >
           </template>
         </el-table-column>
@@ -397,6 +402,7 @@ const originalData = reactive({});
 // 定时任务数据
 const tasks = ref([]);
 const loadingTasks = ref(false);
+const showDeletedTasks = ref(false);
 const dialogVisible = ref(false);
 const savingTask = ref(false);
 const presets = ref([]);
@@ -512,7 +518,7 @@ const loadData = async () => {
 const fetchTasks = async () => {
   loadingTasks.value = true;
   try {
-    const res = await taskAPI.getTasks({ showDeleted: true });
+    const res = await taskAPI.getTasks({ showDeleted: showDeletedTasks.value });
     tasks.value = res.data.map((t) => ({
       ...t,
       isActive: t.status === "active",
@@ -642,15 +648,19 @@ const saveTask = async () => {
 };
 
 const handleDeleteTask = async (row) => {
+  const isDeleted = row.status === 'deleted';
   try {
-    await ElMessageBox.confirm(`确定删除任务 "${row.name}" 吗？`, "警告", {
+    const message = isDeleted
+      ? `此操作将永久删除任务 "${row.name}" 及其所有运行记录，且不可恢复！确认彻底删除吗？`
+      : `确定删除任务 "${row.name}" 吗？`;
+    await ElMessageBox.confirm(message, "警告", {
       type: "warning",
     });
     await taskAPI.deleteTask(row.id);
-    ElMessage.success("已删除");
+    ElMessage.success(isDeleted ? "彻底删除成功" : "已删除");
     await fetchTasks();
   } catch (e) {
-    if (e !== "cancel") ElMessage.error("删除失败");
+    if (e !== "cancel") ElMessage.error(isDeleted ? "彻底删除失败" : "删除失败");
   }
 };
 
