@@ -44,6 +44,17 @@
         <template v-if="formData.type !== 'local'">
           <el-divider>云存储配置</el-divider>
 
+          <el-alert
+            type="warning"
+            :closable="false"
+            show-icon
+            style="margin-bottom: 20px"
+          >
+            <template #title>
+              <strong>重要提示</strong>：使用 S3 / R2 兼容存储时，<strong>务必在 S3 端做好跨域域名（CORS）配置</strong>（允许您的客户端域名进行 GET 访问并暴露 <code>ETag</code>），否则分享截图中的图片将无法正常渲染。
+            </template>
+          </el-alert>
+
           <el-form-item label="存储桶名称" prop="bucket">
             <el-input v-model="formData.bucket" placeholder="my-bucket-name" />
             <template #extra>
