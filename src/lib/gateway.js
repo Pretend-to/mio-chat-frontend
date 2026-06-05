@@ -361,7 +361,7 @@ class StreamBuffer {
     this.reasonMetadata = null;
     this.lastFlushTime = 0;
     this.timer = null;
-    this.flushInterval = 80; // ms
+    this.flushInterval = 30; // ms
   }
 
   addContent(chunk) {

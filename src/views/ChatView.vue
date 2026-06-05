@@ -501,13 +501,12 @@ watch(
 );
 
 watch(
-  () => activeMessageChain.value,
+  () => [activeMessageChain.value.length, activeContactor.value?.lastUpdate],
   () => {
     if (autoScroll.value) {
       toButtom();
     }
-  },
-  { deep: true },
+  }
 );
 
 watch(showImagePreview, (val) => {
@@ -556,7 +555,9 @@ const toButtom = (clicked) => {
     });
   };
 
-  execScroll();
+  if (clicked === true) {
+    execScroll();
+  }
   nextTick(() => requestAnimationFrame(execScroll));
 };
 

@@ -77,17 +77,18 @@ export function getShownTime(timestamp) {
     return `${year}/${month}/${day} ${hours}:${minutes}`;
   }
 }
-
 export function getAvatarByModel(model, provider = null) {
-  const modelOwner = config.getModelOwner(model);
-  if (!modelOwner && provider) {
+  if (model) {
+    return `/p/mava?model=${encodeURIComponent(model)}&provider=${encodeURIComponent(provider || "")}`;
+  }
+  if (provider) {
     const providers = config.baseConfig?.llm_providers || [];
     const targetProvider = providers.find((p) => p.displayName === provider);
     if (targetProvider?.adapterType) {
       return getAvatarByAdapterType(targetProvider.adapterType);
     }
   }
-  return getAvatarByOwner(modelOwner);
+  return `/p/mava?provider=${provider || "OpenAI"}`;
 }
 
 export function getMessageText(element) {
@@ -284,7 +285,7 @@ export const useContactorsStore = defineStore("contactors", () => {
   function loadContactorAvatar(contactor) {
     let avatar = "/static/icons/512*512.png";
     if (avatarPolicy[contactor.avatarPolicy] === "MODEL") {
-      const model = contactor.options?.base?.model;
+      const model = contactor.options?.base?.model || contactor.options?.model;
       avatar = getAvatarByModel(model, contactor.options?.provider);
     } else if (avatarPolicy[contactor.avatarPolicy] === "CUSTOM") {
       avatar = contactor.avatar || avatar;
