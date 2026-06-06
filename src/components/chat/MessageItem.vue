@@ -216,7 +216,7 @@
                 <div v-else-if="element.type === 'tool_call'" class="tool-call-container-wrapper" style="width: 100%">
                   <template v-if="getToolName(element.data) === 'toolsmanager'">
                     <ActionBlock
-                      iconClass="mio-icon-settings"
+                      iconClass="mio-icon-tool"
                       title="配置管理 (ToolsManager)"
                       :statusText="getToolsManagerStatus(element.data)"
                       :isLoading="element.data.action === 'running' || element.data.action === 'pending' || element.data.action === 'started'"
