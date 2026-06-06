@@ -402,7 +402,7 @@ export const useContactorsStore = defineStore("contactors", () => {
         const merged = mergeToolCall(content[index], tool_call);
         content.splice(index, 1, merged);
 
-        // Check memory tool calls
+        // Check memory and toolsmanager tool calls
         const toolName = (merged.data.name || "").split("_mid_")[0];
         if (toolName === "memory" && merged.data.result?.success) {
           recordMemory(
@@ -410,6 +410,8 @@ export const useContactorsStore = defineStore("contactors", () => {
             merged.data.parameters || merged.data.arguments,
             merged.data.result,
           );
+        } else if (toolName === "toolsmanager" && merged.data.result?.success) {
+          recordToolsUpdate(contactorId, merged.data.result);
         }
       }
     }
@@ -460,6 +462,19 @@ export const useContactorsStore = defineStore("contactors", () => {
         String(incomingToolCall.parameters || "");
     }
     return merged;
+  }
+
+  function recordToolsUpdate(contactorId, result) {
+    if (!result || !result.success || !result.activeToolsList) return;
+    const contactor = contactors.value[contactorId];
+    if (contactor) {
+      if (!contactor.options) contactor.options = {};
+      if (!contactor.options.toolCallSettings) contactor.options.toolCallSettings = {};
+      contactor.options.toolCallSettings.tools = result.activeToolsList;
+      updateContactorSummary(contactor);
+      client.setLocalStorage();
+      console.log(`[Store] Contactor ${contactorId} tools updated persistently via toolsmanager toolcall result:`, result.activeToolsList);
+    }
   }
 
   function recordMemory(contactorId, parameters, result = null) {
@@ -691,7 +706,7 @@ export const useContactorsStore = defineStore("contactors", () => {
             outerRender: chunk.content.outerRender || rawExtra.filter(r => r.placement === 'outer'),
           };
 
-          // Special memory tool handler
+          // Special tool handlers (memory and toolsmanager)
           const toolName = (toolCallData.name || "").split("_mid_")[0];
           if (toolName === "memory" && toolCallData.result?.success) {
             recordMemory(
@@ -699,6 +714,8 @@ export const useContactorsStore = defineStore("contactors", () => {
               toolCallData.parameters || toolCallData.arguments,
               toolCallData.result,
             );
+          } else if (toolName === "toolsmanager" && toolCallData.result?.success) {
+            recordToolsUpdate(contactorId, toolCallData.result);
           }
 
           newContent.push({
