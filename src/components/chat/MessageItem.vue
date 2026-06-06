@@ -589,13 +589,7 @@ const toggleToolsManagerDetails = (elmIndex) => {
 $mobile: 768px
 $icon-hover: #09f
 
-.message-container
-    content-visibility: auto
-    contain-intrinsic-size: auto 150px
 
-:global(.is-exporting) .message-container
-    content-visibility: visible !important
-    contain: none !important
 
 .message-flex-wrapper
     display: flex

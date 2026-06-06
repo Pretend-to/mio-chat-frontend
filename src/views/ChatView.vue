@@ -390,8 +390,25 @@ const mdOptions = computed(() => {
   return { breaks: activeContactor.value?.platform === "onebot" };
 });
 
+const renderedCount = ref(50);
+
+watch(
+  () => [activeContactor.value?.id, activeContactor.value?.messageChain?.length],
+  ([newId, newLength], [oldId, oldLength]) => {
+    if (newId !== oldId) {
+      renderedCount.value = 50;
+    } else if (newLength !== undefined && oldLength !== undefined) {
+      renderedCount.value = Math.max(50, renderedCount.value + (newLength - oldLength));
+    }
+  }
+);
+
 const activeMessageChain = computed(() => {
-  return activeContactor.value?.messageChain || [];
+  const chain = activeContactor.value?.messageChain || [];
+  if (chain.length <= renderedCount.value) {
+    return chain;
+  }
+  return chain.slice(chain.length - renderedCount.value);
 });
 
 const openingMessage = computed(() => {
@@ -628,6 +645,15 @@ const currentScrollTargetId = ref(null);
 const performScrollToMessage = (messageId, shouldFlash = true) => {
   if (!messageId) return;
   autoScroll.value = false;
+
+  const chain = activeContactor.value?.messageChain || [];
+  const msgIndex = chain.findIndex(m => m.id === messageId);
+  if (msgIndex !== -1) {
+    const currentRenderedStartIndex = chain.length - renderedCount.value;
+    if (msgIndex < currentRenderedStartIndex) {
+      renderedCount.value = Math.min(chain.length, chain.length - msgIndex + 10);
+    }
+  }
 
   if (shouldFlash) {
     currentScrollTargetId.value = messageId;
@@ -1076,6 +1102,17 @@ const scrollHandler = () => {
     if (isScrollingUp) {
       autoScroll.value = false;
       showRollDown.value = true;
+    }
+  }
+
+  if (currentScrollTop === 0) {
+    const chain = activeContactor.value?.messageChain || [];
+    if (renderedCount.value < chain.length) {
+      const prevScrollHeight = elm.scrollHeight;
+      renderedCount.value = Math.min(chain.length, renderedCount.value + 50);
+      nextTick(() => {
+        elm.scrollTop = elm.scrollHeight - prevScrollHeight;
+      });
     }
   }
 
