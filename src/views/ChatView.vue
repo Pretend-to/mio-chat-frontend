@@ -390,15 +390,15 @@ const mdOptions = computed(() => {
   return { breaks: activeContactor.value?.platform === "onebot" };
 });
 
-const renderedCount = ref(50);
+const renderedCount = ref(20);
 
 watch(
   () => [activeContactor.value?.id, activeContactor.value?.messageChain?.length],
   ([newId, newLength], [oldId, oldLength]) => {
     if (newId !== oldId) {
-      renderedCount.value = 50;
+      renderedCount.value = 20;
     } else if (newLength !== undefined && oldLength !== undefined) {
-      renderedCount.value = Math.max(50, renderedCount.value + (newLength - oldLength));
+      renderedCount.value = Math.max(20, renderedCount.value + (newLength - oldLength));
     }
   }
 );
@@ -1109,7 +1109,7 @@ const scrollHandler = () => {
     const chain = activeContactor.value?.messageChain || [];
     if (renderedCount.value < chain.length) {
       const prevScrollHeight = elm.scrollHeight;
-      renderedCount.value = Math.min(chain.length, renderedCount.value + 50);
+      renderedCount.value = Math.min(chain.length, renderedCount.value + 20);
       nextTick(() => {
         elm.scrollTop = elm.scrollHeight - prevScrollHeight;
       });
