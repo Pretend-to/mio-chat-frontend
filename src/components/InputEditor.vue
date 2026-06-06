@@ -651,6 +651,65 @@ export default {
     this.textareaRef = null;
   },
   methods: {
+    insertReplyBadge(message) {
+      if (!this.textareaRef) return;
+
+      const existingBadge = this.textareaRef.querySelector(".reply-badge");
+      if (existingBadge) {
+        existingBadge.remove();
+      }
+
+      const badgeEl = document.createElement("span");
+      badgeEl.className = "reply-badge";
+      badgeEl.setAttribute("contenteditable", "false");
+      badgeEl.setAttribute("data-reply-id", String(message.id));
+
+      const scopeAttr = Array.from(this.textareaRef.attributes)
+        .map((attr) => attr.name)
+        .find((name) => name.startsWith("data-v-"));
+      if (scopeAttr) {
+        badgeEl.setAttribute(scopeAttr, "");
+      } else if (this.$options._scopeId) {
+        badgeEl.setAttribute(this.$options._scopeId, "");
+      }
+
+      const senderName = message.role === "user" ? (client.name || "我") : (this.activeContactor.name || "对方");
+      let summary = "";
+      if (Array.isArray(message.content)) {
+        message.content.forEach((elm) => {
+          if (elm.type === "text") {
+            summary += elm.data.text;
+          } else if (elm.type === "image") {
+            summary += "[图片]";
+          } else if (elm.type === "file") {
+            summary += "[文件]";
+          }
+        });
+      } else if (typeof message.content === "string") {
+        summary = message.content;
+      }
+      summary = summary.replace(/\s+/g, " ").trim();
+      if (summary.length > 20) {
+        summary = summary.substring(0, 20) + "...";
+      }
+
+      badgeEl.innerHTML = `<i class="iconfont yinyong" style="margin-right: 4px; font-size: 0.85em; vertical-align: middle;"></i><span>回复 ${senderName}: ${summary}</span>`;
+
+      this.textareaRef.insertBefore(badgeEl, this.textareaRef.firstChild || null);
+
+      const spaceNode = document.createTextNode("\u00A0");
+      this.textareaRef.insertBefore(spaceNode, badgeEl.nextSibling || null);
+
+      this.textareaRef.focus();
+      const range = document.createRange();
+      const sel = window.getSelection();
+      range.setStartAfter(spaceNode);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      this.adjustTextareaHeight();
+    },
     getCaretCoordinates() {
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0) return null;
@@ -754,10 +813,13 @@ export default {
       this.$message.warning("功能暂未开放");
     },
     hasInput() {
-      // const text = this.textareaRef?.innerText.trim();
-      const hasText = this.textareaRef?.innerText.trim();
-      const hasImage = this.textareaRef?.querySelector("img");
-      return hasText || hasImage;
+      if (!this.textareaRef) return false;
+      const clone = this.textareaRef.cloneNode(true);
+      clone.querySelectorAll(".command-badge, .reply-badge").forEach((b) => b.remove());
+      const hasText = clone.innerText.trim().length > 0;
+      const hasImage = this.textareaRef.querySelector("img") !== null;
+      const hasCommand = this.textareaRef.querySelector(".command-badge") !== null;
+      return hasText || hasImage || hasCommand;
     },
     handleDroppedFile(file) {
       if (file.type.startsWith("image/")) {
@@ -1134,13 +1196,19 @@ export default {
       let msg = "";
       let isCommand = false;
       let openaiCmdElements = [];
+      let repliedIdFromBadge = null;
+
+      const replyBadge = this.textareaRef.querySelector(".reply-badge");
+      if (replyBadge) {
+        repliedIdFromBadge = replyBadge.getAttribute("data-reply-id");
+      }
+
+      const clone = this.textareaRef.cloneNode(true);
+      clone.querySelectorAll(".command-badge, .reply-badge").forEach((b) => b.remove());
+      const remainingText = this.getSafeText(clone.innerText).trim();
 
       const badges = this.textareaRef.querySelectorAll(".command-badge");
       if (badges.length > 0) {
-        const clone = this.textareaRef.cloneNode(true);
-        clone.querySelectorAll(".command-badge").forEach((b) => b.remove());
-        const remainingText = clone.innerText.trim();
-
         if (this.activeContactor.platform === "onebot") {
           const badge = badges[0];
           const preset = badge.getAttribute("data-preset");
@@ -1302,7 +1370,7 @@ export default {
           isCommand = true;
         }
       } else {
-        msg = this.getSafeText(this.textareaRef.innerText);
+        msg = remainingText;
         if (this.activeContactor.platform === "onebot") {
           this.availableCommands.forEach((cmd) => {
             const slashLabel = `/${cmd.label}`;
@@ -1344,11 +1412,41 @@ export default {
           data: { file: imgUrl },
         });
       });
-      if (this.repliedMessageId) {
+      if (repliedIdFromBadge) {
+        const targetId = isNaN(Number(repliedIdFromBadge)) ? repliedIdFromBadge : Number(repliedIdFromBadge);
         container.content.push({
           type: "reply",
-          data: { id: this.repliedMessageId },
+          data: { id: targetId },
         });
+
+        const repliedMsg = this.activeContactor.messageChain.find(
+          (m) => m.id === targetId || String(m.id) === String(targetId),
+        );
+        if (repliedMsg) {
+          let plainText = "";
+          if (Array.isArray(repliedMsg.content)) {
+            repliedMsg.content.forEach((elm) => {
+              if (elm.type === "text") {
+                plainText += elm.data.text + "\n";
+              } else if (elm.type === "image") {
+                plainText += "[图片]\n";
+              } else if (elm.type === "file") {
+                plainText += "[文件]\n";
+              }
+            });
+          } else if (typeof repliedMsg.content === "string") {
+            plainText = repliedMsg.content;
+          }
+          if (plainText.trim()) {
+            container.content.push({
+              type: "prompt_hint",
+              data: {
+                subtype: "reply",
+                prompt: `[引用消息]\n${plainText.trim()}\n`,
+              },
+            });
+          }
+        }
       }
       return container;
     },
@@ -2103,6 +2201,72 @@ i
     margin-right: 4px
     background-color: currentColor
     vertical-align: middle
+
+.reply-preview-container
+  width: 100%
+  display: flex
+  justify-content: space-between
+  align-items: center
+  background-color: rgba(0, 0, 0, 0.03)
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06)
+  padding: 6px 10px
+  box-sizing: border-box
+  border-radius: 4px 4px 0 0
+
+  @media screen and (max-width: $mobile)
+    flex-basis: 100%
+    padding: 6px 8px
+    background-color: rgba(0, 0, 0, 0.05)
+    margin: 0
+
+  .reply-preview-content
+    display: flex
+    align-items: center
+    overflow: hidden
+    white-space: nowrap
+    text-overflow: ellipsis
+    flex-grow: 1
+    margin-right: 8px
+    text-align: left
+
+    .reply-preview-label
+      font-size: 0.8rem
+      color: #999
+      margin-right: 4px
+      flex-shrink: 0
+
+    .reply-preview-text
+      font-size: 0.85rem
+      color: #555
+      overflow: hidden
+      white-space: nowrap
+      text-overflow: ellipsis
+      width: 100%
+
+      strong
+        color: #333
+        font-weight: 600
+
+  .reply-preview-close
+    width: 18px
+    height: 18px
+    border-radius: 50%
+    background-color: rgba(0, 0, 0, 0.15)
+    color: #fff
+    border: none
+    display: flex
+    align-items: center
+    justify-content: center
+    cursor: pointer
+    flex-shrink: 0
+    padding: 0
+    transition: background-color 0.2s ease
+    &:hover
+      background-color: rgba(0, 0, 0, 0.3)
+
+    .close-icon
+      width: 10px
+      height: 10px
 </style>
 
 <style lang="sass">
@@ -2150,6 +2314,36 @@ i
       font-weight: bold !important
       color: rgb(0, 153, 255) !important
       line-height: 1 !important
+
+.reply-badge
+  display: inline-flex !important
+  align-items: center !important
+  background-color: rgba(120, 120, 120, 0.15) !important
+  color: inherit !important
+  border: 1px solid rgba(120, 120, 120, 0.25) !important
+  border-radius: 4px !important
+  padding: 0 6px !important
+  margin: 0 2px !important
+  font-size: 0.8em !important
+  font-weight: 500 !important
+  height: 1.25rem !important
+  line-height: 1.25rem !important
+  user-select: none !important
+  vertical-align: middle !important
+  max-width: 220px !important
+  white-space: nowrap !important
+  overflow: hidden !important
+  text-overflow: ellipsis !important
+
+  i.iconfont
+    font-size: 0.85em !important
+    margin-right: 4px !important
+    vertical-align: middle !important
+
+  span
+    overflow: hidden !important
+    text-overflow: ellipsis !important
+    white-space: nowrap !important
 
 .interaction-bar
   position: absolute

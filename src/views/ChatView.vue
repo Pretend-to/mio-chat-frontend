@@ -67,6 +67,63 @@ if (params.has("scroll")) {
 const preview = ref(previewVal);
 const scroll = ref(scrollVal);
 
+// Speech Synthesis State & Functions
+const currentSpeakingMessageId = ref(null);
+
+const getSpeechText = (message) => {
+  if (!message || !message.content) return "";
+  return message.content
+    .filter(elm => elm.type === "text")
+    .map(elm => elm.data?.text || "")
+    .join("\n")
+    .trim();
+};
+
+const speakMessage = (message) => {
+  if (!window.speechSynthesis) {
+    ElMessage.warning("当前浏览器不支持语音合成");
+    return;
+  }
+
+  if (currentSpeakingMessageId.value === message.id) {
+    window.speechSynthesis.cancel();
+    currentSpeakingMessageId.value = null;
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+  const text = getSpeechText(message);
+  if (!text) {
+    ElMessage.info("没有可朗读的文本内容");
+    return;
+  }
+
+  currentSpeakingMessageId.value = message.id;
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  
+  // Find a good Chinese voice
+  const voices = window.speechSynthesis.getVoices();
+  const cnVoice = voices.find(v => v.lang.includes("zh-CN") || v.lang.includes("zh-"));
+  if (cnVoice) {
+    utterance.voice = cnVoice;
+  }
+
+  utterance.onend = () => {
+    if (currentSpeakingMessageId.value === message.id) {
+      currentSpeakingMessageId.value = null;
+    }
+  };
+
+  utterance.onerror = () => {
+    if (currentSpeakingMessageId.value === message.id) {
+      currentSpeakingMessageId.value = null;
+    }
+  };
+
+  window.speechSynthesis.speak(utterance);
+};
+
 // Sending message logic
 const sendMessage = async (msg, toServer = true) => {
   const store = useContactorsStore();
@@ -298,7 +355,7 @@ const menuTop = ref(0);
 const menuLeft = ref(0);
 const lastClickTime = ref(0);
 const validMessageIndex = ref(-1);
-const repliedMessageId = ref(-1);
+const inputEditor = ref(null);
 const autoScroll = ref(false);
 const fullScreen = ref(false);
 const chatWindow = ref(null);
@@ -457,6 +514,11 @@ watch(
   () => route.params.id,
   (newVal, oldVal) => {
     if (!newVal) return;
+
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      currentSpeakingMessageId.value = null;
+    }
 
     // 清空上一个会话中残留的待处理交互浮层，防止跨会话串屏
     import("@/stores/interactionStore.js").then(({ useInteractionStore }) => {
@@ -1094,14 +1156,9 @@ const handleMessageOption = async (option) => {
       toButtom();
       break;
     case "reply":
-      if (activeContactor.value.platform === "onebot") {
-        repliedMessageId.value = message.id;
+      if (inputEditor.value) {
+        inputEditor.value.insertReplyBadge(message);
         ElMessage.success("已引用该消息");
-      } else {
-        userInput.value +=
-          getReplyText(
-            activeContactor.value.messageChain[validMessageIndex.value].id,
-          ) + "\n\n";
       }
       break;
     case "delete":
@@ -1117,6 +1174,9 @@ const handleMessageOption = async (option) => {
         client.setLocalStorage();
         ElMessage.success(message.isPinned ? "消息已钉住" : "已取消钉住");
       }
+      break;
+    case "read-aloud":
+      speakMessage(message);
       break;
   }
   showMenu.value = false;
@@ -1213,6 +1273,10 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+
   client.off("plugins_updated", handlePluginsUpdated);
   client.off("scroll_to_message", performScrollToMessage);
   client.off("socket_ready");
@@ -1300,6 +1364,7 @@ onBeforeUnmount(() => {
         :seleted-image
         :style="getMenuStyle"
         :client-x="menuLeft"
+        :current-speaking-message-id="currentSpeakingMessageId"
         @message-option="handleMessageOption"
         @close="showMenu = false"
       />
@@ -1358,7 +1423,6 @@ onBeforeUnmount(() => {
       v-if="!isMultiSelect"
       ref="inputEditor"
       :active-contactor="activeContactor"
-      :replied-message-id="repliedMessageId"
       @stroge="client.setLocalStorage()"
       @set-model="setModel"
       @clean-screen="cleanScreen"
