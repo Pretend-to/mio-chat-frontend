@@ -28,7 +28,17 @@
           <i class="iconfont fuzhi"></i>
           <span>复制</span>
         </div>
-        <div v-if="seletedImage" @click.stop="copySeletedImage">
+        <div @click.stop="readAloud">
+          <template v-if="message.id === currentSpeakingMessageId">
+            <i class="mio-icon mio-icon-speaker-mute"></i>
+            <span>停止朗读</span>
+          </template>
+          <template v-else>
+            <i class="mio-icon mio-icon-speaker"></i>
+            <span>朗读</span>
+          </template>
+        </div>
+        <div v-if="seletedImage && !onPhone" @click.stop="copySeletedImage">
           <i class="iconfont fuzhi"></i>
           <span>复制图片</span>
         </div>
@@ -96,6 +106,15 @@ export default {
       type: Number,
       default: 0,
     },
+    currentSpeakingMessageId: {
+      type: [String, Number],
+      default: null,
+    },
+  },
+  computed: {
+    onPhone() {
+      return window.innerWidth < 768;
+    }
   },
   data() {
     return {
@@ -160,6 +179,10 @@ export default {
     copySeletedText() {
       console.log("[DEBUG-MENU] 复制选中文字, messageId:", this.message.id);
       this.copyTextToClipboard(this.seletedText);
+      this.$emit("close");
+    },
+    readAloud() {
+      this.$emit("message-option", "read-aloud");
       this.$emit("close");
     },
     retryMessage() {
@@ -350,6 +373,7 @@ export default {
             transform: scale(1)
 
     & div
+        position: relative
         margin: 0.4rem 0
         padding: .2rem .4rem
         border-radius: .2rem
@@ -383,6 +407,11 @@ export default {
 
     & i, & .iconfont-el
         position: absolute
+        left: 0.75rem
+        width: 16px
+        height: 16px
+        top: 50%
+        margin-top: -8px
         display: flex
         justify-content: center
         align-items: center
@@ -391,14 +420,19 @@ export default {
         // 移动端图标样式
         @media (max-width: 768px)
             position: static
+            width: 1.2rem
+            height: 1.2rem
             font-size: 1rem
             margin-bottom: 0.3rem
+            margin-top: 0
+            top: auto
+            left: auto
             color: rgba(255, 255, 255, 0.9)
 
     & span
         font-size: 0.8rem
         color: rgb(120, 124, 127)
-        margin-left: 1.8rem
+        margin-left: 2.1rem
 
         // 移动端文字样式
         @media (max-width: 768px)

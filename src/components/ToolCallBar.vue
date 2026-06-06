@@ -7,7 +7,7 @@
     :isFailed="toolCallFail"
     :defaultExpanded="showExtraInfo"
     :expandedMaxHeight="
-      toolCall.extraRender && toolCall.extraRender.length ? '800px' : '160px'
+      toolCall.innerRender && toolCall.innerRender.length ? '800px' : '160px'
     "
     @toggle="toggleExtraInfo"
   >
@@ -30,11 +30,11 @@
 
     <!-- Extra Render UI section -->
     <div
-      v-if="toolCall.extraRender && toolCall.extraRender.length"
+      v-if="toolCall.innerRender && toolCall.innerRender.length"
       class="extra-render-section"
     >
       <div
-        v-for="(item, idx) in toolCall.extraRender"
+        v-for="(item, idx) in toolCall.innerRender"
         :key="idx"
         class="extra-render-item"
       >
@@ -103,6 +103,16 @@ export default {
       default: () => [],
     },
   },
+  data() {
+    return {
+      // 正在运行、就绪或准备中时默认展开细节，结束后默认收起
+      showExtraInfo:
+        this.toolCall.action === "running" ||
+        this.toolCall.action === "pending" ||
+        this.toolCall.action === "started",
+      wasManuallyToggled: false,
+    };
+  },
   computed: {
     corsOption() {
       const domains = [];
@@ -124,19 +134,7 @@ export default {
         }
       }
       return domains.length > 0 ? domains : false;
-    }
-  },
-  data() {
-    return {
-      // 正在运行、就绪或准备中时默认展开细节，结束后默认收起
-      showExtraInfo:
-        this.toolCall.action === "running" ||
-        this.toolCall.action === "pending" ||
-        this.toolCall.action === "started",
-      wasManuallyToggled: false,
-    };
-  },
-  computed: {
+    },
     iconClass() {
       const name = this.toolCall.name || "";
       if (name.startsWith("Skill_mid_") || name === "Skill") {
