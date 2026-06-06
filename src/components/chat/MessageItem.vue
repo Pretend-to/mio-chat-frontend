@@ -214,63 +214,107 @@
                   <span class="blank-loader"></span>
                 </div>
                 <div v-else-if="element.type === 'tool_call'" class="tool-call-container-wrapper" style="width: 100%">
-                  <ToolCallBar
-                    :tool-call="element.data"
-                    :mio-plugins="mioPlugins"
-                    :katex-plugin-list="katexPluginList"
-                  />
-                  <div
-                    v-if="element.data.outerRender && element.data.outerRender.length"
-                    class="message-level-outer-render"
-                  >
-                    <div
-                      v-for="(item, idx) in element.data.outerRender"
-                      :key="idx"
-                      class="outer-render-item"
+                  <template v-if="getToolName(element.data) === 'toolsmanager'">
+                    <ActionBlock
+                      iconClass="mio-icon-settings"
+                      title="配置管理 (ToolsManager)"
+                      :statusText="getToolsManagerStatus(element.data)"
+                      :isLoading="element.data.action === 'running' || element.data.action === 'pending' || element.data.action === 'started'"
+                      :isFailed="element.data.status === 'failed' || (element.data.result && element.data.result.success === false)"
+                      :collapsible="!!element.data.result"
+                      :defaultExpanded="isToolsManagerExpanded(elmIndex)"
+                      @toggle="toggleToolsManagerDetails(elmIndex)"
                     >
-                      <template v-if="item.type === 'audio'">
-                        <div class="outer-render-audio-container">
-                          <audio :src="item.url" controls class="outer-audio"></audio>
-                        </div>
-                      </template>
-                      <template v-else-if="item.type === 'image'">
-                        <MdRenderer
-                          :md="`![image](${item.url})`"
-                          :custom-plugins="mioPlugins"
-                          :markdown-it-plugins="katexPluginList"
-                          :theme="'github'"
-                          :key="item.url"
-                          class="extra-render-image"
-                          :auto-cors="corsOption"
-                        />
-                      </template>
-                      <template v-else-if="item.type === 'text'">
-                        <div class="outer-render-text">{{ item.content }}</div>
-                      </template>
-                      <template v-else-if="item.type === 'alert'">
-                        <el-alert
-                          :title="item.title"
-                          :type="item.alertType || 'info'"
-                          :description="item.description"
-                          show-icon
-                          :closable="false"
-                          class="outer-render-alert"
-                        />
-                      </template>
-                      <template v-else-if="item.type === 'link'">
-                        <div class="outer-render-link-container">
-                          <el-link
-                            :href="item.url"
-                            target="_blank"
-                            type="primary"
-                            class="outer-render-link"
-                          >
-                            {{ item.text || "查看链接" }}
-                          </el-link>
-                        </div>
-                      </template>
+                      <div class="toolsmanager-detail">
+                        <template v-if="element.data.result && element.data.result.groups">
+                          <!-- List action details -->
+                          <div v-for="(toolsList, groupName) in element.data.result.groups" :key="groupName" class="toolsmanager-group">
+                            <div class="toolsmanager-group-title">{{ groupName }}</div>
+                            <div class="tools-grid-mini">
+                              <div v-for="t in toolsList" :key="t.name" class="tool-state-item" :class="{ disabled: !t.enabled }">
+                                <span class="tool-state-dot" :class="{ enabled: t.enabled }"></span>
+                                <span class="tool-state-name">{{ t.name }}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </template>
+                        <template v-else-if="element.data.result && element.data.result.toggledTools">
+                          <!-- Toggle action details -->
+                          <div class="toggle-summary">
+                            {{ element.data.result.enabled ? '已启用' : '已禁用' }}以下工具：
+                          </div>
+                          <div class="tools-grid-mini">
+                            <div v-for="tName in element.data.result.toggledTools" :key="tName" class="tool-state-item" :class="{ disabled: !element.data.result.enabled }">
+                              <span class="tool-state-dot" :class="{ enabled: element.data.result.enabled }"></span>
+                              <span class="tool-state-name">{{ tName }}</span>
+                            </div>
+                          </div>
+                        </template>
+                        <template v-else-if="element.data.result">
+                          <pre class="raw-result-json">{{ JSON.stringify(element.data.result, null, 2) }}</pre>
+                        </template>
+                      </div>
+                    </ActionBlock>
+                  </template>
+                  <template v-else>
+                    <ToolCallBar
+                      :tool-call="element.data"
+                      :mio-plugins="mioPlugins"
+                      :katex-plugin-list="katexPluginList"
+                    />
+                    <div
+                      v-if="element.data.outerRender && element.data.outerRender.length"
+                      class="message-level-outer-render"
+                    >
+                      <div
+                        v-for="(item, idx) in element.data.outerRender"
+                        :key="idx"
+                        class="outer-render-item"
+                      >
+                        <template v-if="item.type === 'audio'">
+                          <div class="outer-render-audio-container">
+                            <audio :src="item.url" controls class="outer-audio"></audio>
+                          </div>
+                        </template>
+                        <template v-else-if="item.type === 'image'">
+                          <MdRenderer
+                            :md="`![image](${item.url})`"
+                            :custom-plugins="mioPlugins"
+                            :markdown-it-plugins="katexPluginList"
+                            :theme="'github'"
+                            :key="item.url"
+                            class="extra-render-image"
+                            :auto-cors="corsOption"
+                          />
+                        </template>
+                        <template v-else-if="item.type === 'text'">
+                          <div class="outer-render-text">{{ item.content }}</div>
+                        </template>
+                        <template v-else-if="item.type === 'alert'">
+                          <el-alert
+                            :title="item.title"
+                            :type="item.alertType || 'info'"
+                            :description="item.description"
+                            show-icon
+                            :closable="false"
+                            class="outer-render-alert"
+                          />
+                        </template>
+                        <template v-else-if="item.type === 'link'">
+                          <div class="outer-render-link-container">
+                            <el-link
+                              :href="item.url"
+                              target="_blank"
+                              type="primary"
+                              class="outer-render-link"
+                            >
+                              {{ item.text || "查看链接" }}
+                            </el-link>
+                          </div>
+                        </template>
+                      </div>
                     </div>
-                  </div>
+                  </template>
                 </div>
                 <ActionBlock
                   v-else-if="element.type === 'crystallize_event'"
@@ -510,6 +554,35 @@ const isCrystallizeExpanded = (elmIndex) => {
 const toggleCrystallizeDetails = (elmIndex) => {
   const key = `${props.index}-${elmIndex}`;
   expandedCrystallizeEvents.value[key] = !expandedCrystallizeEvents.value[key];
+};
+
+const getToolName = (toolCall) => {
+  return (toolCall.name || "").split("_mid_")[0];
+};
+
+const getToolsManagerStatus = (toolCall) => {
+  if (toolCall.action === 'running' || toolCall.action === 'pending' || toolCall.action === 'started') {
+    return '运行中';
+  }
+  if (toolCall.status === 'failed' || (toolCall.result && toolCall.result.success === false)) {
+    return '失败';
+  }
+  return '完成';
+};
+
+const expandedToolsManagerEvents = ref({});
+
+const isToolsManagerExpanded = (elmIndex) => {
+  const key = `${props.index}-${elmIndex}`;
+  if (expandedToolsManagerEvents.value[key] === undefined) {
+    return false;
+  }
+  return expandedToolsManagerEvents.value[key] === true;
+};
+
+const toggleToolsManagerDetails = (elmIndex) => {
+  const key = `${props.index}-${elmIndex}`;
+  expandedToolsManagerEvents.value[key] = !expandedToolsManagerEvents.value[key];
 };
 </script>
 
@@ -828,5 +901,75 @@ $icon-hover: #09f
       color: rgba(0, 0, 0, 0.55)
     .reply-jump-arrow
       color: rgba(0, 0, 0, 0.65)
+
+.toolsmanager-detail
+  display: flex
+  flex-direction: column
+  gap: 12px
+  width: 100%
+  font-size: 13px
+  color: var(--el-text-color-regular)
+  margin-top: 4px
+
+.toolsmanager-group
+  display: flex
+  flex-direction: column
+  gap: 6px
+
+.toolsmanager-group-title
+  font-weight: 600
+  font-size: 12px
+  color: var(--el-text-color-secondary)
+  border-bottom: 1px solid var(--el-border-color-lighter)
+  padding-bottom: 4px
+  margin-bottom: 4px
+
+.tools-grid-mini
+  display: grid
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr))
+  gap: 6px
+
+.tool-state-item
+  display: flex
+  align-items: center
+  gap: 6px
+  padding: 4px 8px
+  border-radius: 4px
+  background-color: var(--el-fill-color-light)
+  border: 1px solid var(--el-border-color-lighter)
+  font-size: 12px
+
+  &.disabled
+    opacity: 0.6
+    background-color: var(--el-fill-color-lighter)
+
+.tool-state-dot
+  width: 6px
+  height: 6px
+  border-radius: 50%
+  background-color: #909399
+
+  &.enabled
+    background-color: #67c23a
+
+.tool-state-name
+  overflow: hidden
+  text-overflow: ellipsis
+  white-space: nowrap
+  color: var(--el-text-color-primary)
+
+.toggle-summary
+  font-weight: 500
+  font-size: 12px
+  color: var(--el-text-color-regular)
+
+.raw-result-json
+  font-family: monospace
+  font-size: 11px
+  background-color: var(--el-fill-color-light)
+  padding: 8px
+  border-radius: 4px
+  margin: 0
+  overflow-x: auto
 
 </style>
