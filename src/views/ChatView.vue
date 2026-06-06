@@ -818,14 +818,21 @@ const cleanHistory = () => {
 };
 
 const delSystemMessage = (index) => {
-  const message = activeContactor.value.messageChain[index];
+  const chain = activeContactor.value?.messageChain || [];
+  const renderedCountVal = renderedCount.value;
+  const realIndex = chain.length > renderedCountVal 
+    ? (chain.length - renderedCountVal + index) 
+    : index;
+
+  const message = chain[realIndex];
+  if (!message) return;
   if (
     message.content[0].type === "text" &&
     message.content[0].data.text === clearMessageTip
   ) {
     activeContactor.value.firstMessageIndex = 0;
   }
-  activeContactor.value.messageChain.splice(index, 1);
+  activeContactor.value.messageChain.splice(realIndex, 1);
   client.setLocalStorage();
 };
 
@@ -990,7 +997,14 @@ const showMessageMenu = (event, messageIndex) => {
     const imgElement = event.target;
     seletedImage.value = imgElement.src;
   }
-  validMessageIndex.value = messageIndex;
+  
+  const chain = activeContactor.value?.messageChain || [];
+  const renderedCountVal = renderedCount.value;
+  const realIndex = chain.length > renderedCountVal 
+    ? (chain.length - renderedCountVal + messageIndex) 
+    : messageIndex;
+
+  validMessageIndex.value = realIndex;
   if (event.preventDefault) event.preventDefault();
   showMenu.value = true;
   menuTop.value = event.clientY;
