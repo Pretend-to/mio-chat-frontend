@@ -659,15 +659,28 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
     currentScrollTargetId.value = messageId;
   }
 
-  const scrollAction = () => {
+  const scrollAction = (behaviorOverride = null) => {
     const elm =
       chatWindow.value || document.getElementById("main-messages-window");
     if (!elm) return false;
     const element = elm.querySelector(`[data-id="${messageId}"]`);
     if (element) {
-      element.scrollIntoView({
-        behavior: shouldFlash ? "smooth" : "instant",
-        block: "center",
+      const getElementOffsetTop = (el, container) => {
+        let top = 0;
+        let curr = el;
+        while (curr && curr !== container) {
+          top += curr.offsetTop;
+          curr = curr.offsetParent;
+        }
+        return top;
+      };
+      const offsetTop = getElementOffsetTop(element, elm);
+      const targetScrollTop = offsetTop - (elm.clientHeight * 0.3);
+      
+      const behavior = behaviorOverride || (shouldFlash ? "smooth" : "instant");
+      elm.scrollTo({
+        top: Math.max(0, targetScrollTop),
+        behavior: behavior,
       });
       if (shouldFlash) {
         element.classList.add("highlight-flash");
@@ -712,6 +725,10 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
         scrollContainer.removeEventListener("wheel", handleUserInteraction, { passive: true });
         scrollContainer.removeEventListener("touchstart", handleUserInteraction, { passive: true });
         scrollContainer.removeEventListener("mousedown", handleUserInteraction, { passive: true });
+        
+        if (currentScrollTargetId.value === messageId) {
+          currentScrollTargetId.value = null;
+        }
       };
 
       const handleUserInteraction = () => {
@@ -723,11 +740,11 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
       observer = new ResizeObserver(() => {
         // 只有 scrollHeight 变了才说明有内容渲染完成
         if (scrollContainer.scrollHeight === prevScrollHeight) return;
-        scrollAction();
+        scrollAction("instant");
         if (stabilizeTimer) clearTimeout(stabilizeTimer);
         // 连续 400ms 无变化 → 认为渲染稳定
         stabilizeTimer = setTimeout(() => {
-          scrollAction();
+          scrollAction("instant");
           cleanup();
         }, 400);
       });
@@ -741,7 +758,7 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
 
       // 安全兜底：最多等 5s
       fallbackTimer = setTimeout(() => {
-        scrollAction();
+        scrollAction("instant");
         cleanup();
       }, 5000);
     }
@@ -760,8 +777,14 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
         if (element) {
           element.classList.remove("highlight-flash");
         }
-        currentScrollTargetId.value = null;
       }, 1200);
+      
+      // Keep scroll target id active for 5s to adjust to late image loading
+      setTimeout(() => {
+        if (currentScrollTargetId.value === messageId) {
+          currentScrollTargetId.value = null;
+        }
+      }, 5000);
     }
   });
 };
