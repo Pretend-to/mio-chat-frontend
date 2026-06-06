@@ -75,11 +75,10 @@
             </div>
             <div class="name">
               {{ item.role === "other" ? activeContactor.name : client.name }}
-              <i
-                v-if="item.isTask"
-                class="iconfont task-indicator"
-                title="来自计划任务"
-              ></i>
+              <span
+                v-if="item.triggerType === 'task'"
+                class="task-name-tag"
+              >计划</span>
             </div>
           </div>
           <div
@@ -808,8 +807,8 @@ $icon-hover: #09f
   .outer-audio
     width: 100%
     max-width: 320px
-    height: 40px
-    border-radius: 20px
+    height: 30px
+    border-radius: 15px
     outline: none
     background-color: var(--el-fill-color-blank)
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04)

@@ -661,10 +661,15 @@ export const useContactorsStore = defineStore("contactors", () => {
     if (!contactor) return;
 
     const { chunks, status, messageId, metaData } = e;
-    const message = getOrCreateMessage(contactorId, messageId);
+    const message = getOrCreateMessage(contactorId, messageId, {
+      time: metaData?.timestamp,
+    });
 
-    if (metaData?.isTask) {
-      message.isTask = true;
+    if (message) {
+      message.triggerType = metaData?.triggerType || (metaData?.isTask ? "task" : "chat");
+      if (metaData?.timestamp) {
+        message.time = metaData.timestamp;
+      }
     }
 
     const newContent = [];
@@ -749,6 +754,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     if (!contactor.active) {
       contactor.hasPendingTask = true;
     }
+    client.setLocalStorage();
   }
 
   function completeMessage(contactorId, messageId) {

@@ -20,7 +20,10 @@ export function getValidOpenaiMessage(
   firstMessageIndex = 0,
   maxMessagesNum = 20,
 ) {
-  const fromIndexMessages = messageChain.slice(firstMessageIndex);
+  // Only include chat messages (filter out task messages)
+  const chatMessages = messageChain.filter((msg) => msg.triggerType !== "task");
+
+  const fromIndexMessages = chatMessages.slice(firstMessageIndex);
 
   // The default sliding window messages (last N messages)
   const slidingWindowMessages = fromIndexMessages.slice(-maxMessagesNum);
@@ -303,7 +306,10 @@ export function getCrystallizationMessages(
   firstMessageIndex = 0,
   keepTurns = 1,
 ) {
-  const fromIndex = messageChain.slice(firstMessageIndex);
+  // Only include chat messages (filter out task messages)
+  const chatMessages = messageChain.filter((msg) => msg.triggerType !== "task");
+
+  const fromIndex = chatMessages.slice(firstMessageIndex);
 
   // 1. 找到最后一个含 crystallize_event 内容元素的消息的下标
   let crystalMsgIndex = -1;
@@ -596,6 +602,19 @@ export const gateway = {
     }
 
     if (!contactorId) return;
+
+    // Ensure the message has triggerType populated in the store
+    const message = contactorStore.getOrCreateMessage(contactorId, messageId, {
+      time: metaData?.timestamp,
+    });
+    if (message) {
+      if (!message.triggerType) {
+        message.triggerType = metaData?.triggerType || (metaData?.isTask ? "task" : "chat");
+      }
+      if (metaData?.timestamp) {
+        message.time = metaData.timestamp;
+      }
+    }
 
     if (["update", "sync"].includes(e.message)) {
       if (e.message === "sync") {
