@@ -725,6 +725,22 @@ export default class Client extends EventEmitter {
           return;
         }
 
+        // 处理后端通过工具更新的联系人工具列表
+        if (e.type === "contactor_tools_updated" && e.data) {
+          const { contactorId, tools } = e.data;
+          const store = getStore();
+          const contactor = store.contactors[contactorId];
+          if (contactor) {
+            if (!contactor.options) contactor.options = {};
+            if (!contactor.options.toolCallSettings) contactor.options.toolCallSettings = {};
+            contactor.options.toolCallSettings.tools = tools;
+            store.updateContactorSummary(contactor);
+            this.setLocalStorage();
+            console.log(`[System] Tools configuration updated by tool call for contactor ${contactorId}`, tools);
+          }
+          return;
+        }
+
         console.log("System message received:", e);
       } catch (err) {
         console.error("Error handling system_message:", err, e);
