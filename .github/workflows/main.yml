@@ -39,7 +39,7 @@ jobs:
           fi
       - name: Clone Mio Chat Backend repository
         run: |
-          git clone https://x-access-token:${{ secrets.GH_SECRET }}@github.com/Pretend-to/mio-chat-backend.git
+          git clone --depth 1 https://x-access-token:${{ secrets.GH_SECRET }}@github.com/Pretend-to/mio-chat-backend.git
           if [ $? -ne 0 ]; then
             echo "Clone failed"
             exit 1
