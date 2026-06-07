@@ -447,13 +447,17 @@ export const useContactorsStore = defineStore("contactors", () => {
 
   function mergeToolCall(previousElm, incomingToolCall) {
     const previousData = previousElm.data || {};
+    const rawExtra = incomingToolCall.extraRender || [];
+    const incomingInner = incomingToolCall.innerRender || (rawExtra.length > 0 ? rawExtra.filter(r => r.placement !== 'outer') : null);
+    const incomingOuter = incomingToolCall.outerRender || (rawExtra.length > 0 ? rawExtra.filter(r => r.placement === 'outer') : null);
+
     const merged = {
       ...previousElm,
       data: {
         ...previousData,
         ...incomingToolCall,
-        innerRender: incomingToolCall.innerRender || previousData.innerRender || [],
-        outerRender: incomingToolCall.outerRender || previousData.outerRender || [],
+        innerRender: incomingInner || previousData.innerRender || [],
+        outerRender: incomingOuter || previousData.outerRender || [],
       },
     };
     if (incomingToolCall.action === "pending") {
@@ -463,7 +467,6 @@ export const useContactorsStore = defineStore("contactors", () => {
     }
     return merged;
   }
-
   function recordToolsUpdate(contactorId, result) {
     if (!result || !result.success || !result.activeToolsList) return;
     const contactor = contactors.value[contactorId];
@@ -739,8 +742,28 @@ export const useContactorsStore = defineStore("contactors", () => {
       });
     }
 
-    message.content = newContent;
-    updateContactorSummary(contactor);
+    // Safety length & status guard
+    const isCompletedOrFailed = status === "completed" || status === "failed";
+    const isBlank = !message.content || message.content.length === 0 || 
+                    (message.content.length === 1 && message.content[0].type === "blank");
+
+    const getLen = (content) => {
+      if (!content || !Array.isArray(content)) return 0;
+      return content.reduce((acc, item) => {
+        if (item.type === "text") return acc + (item.data?.text || "").length;
+        if (item.type === "reason") return acc + (item.data?.text || "").length;
+        if (item.type === "tool_call") {
+          const args = item.data?.arguments || item.data?.parameters || "";
+          return acc + args.length + 10;
+        }
+        if (item.type === "crystallize_event") return acc + (item.data?.summary || "").length + 10;
+        return acc;
+      }, 0);
+    };
+
+    if (isCompletedOrFailed || isBlank || getLen(newContent) >= getLen(message.content)) {
+      message.content = newContent;
+    }
 
     if (status === "completed") {
       message.status = "completed";

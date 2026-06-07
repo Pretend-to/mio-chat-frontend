@@ -530,6 +530,13 @@ export default class Client extends EventEmitter {
   async _setLocalStorage() {
     const store = getStore();
     if (!store) return;
+
+    try {
+      gateway.flushAllBuffers();
+    } catch (err) {
+      console.error("Failed to flush all stream buffers:", err);
+    }
+
     const client = {
       id: this.id,
       code: this.code,

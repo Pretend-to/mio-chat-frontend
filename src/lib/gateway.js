@@ -792,8 +792,13 @@ export const gateway = {
       }
     }
   },
-};
 
+  flushAllBuffers() {
+    for (const [, buffer] of streamBuffers.entries()) {
+      buffer.flush();
+    }
+  }
+};
 /**
  * 转换 Onebot 消息格式为 UI 消息链格式
  */
