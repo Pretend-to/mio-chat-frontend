@@ -414,6 +414,7 @@ const buttonTranslate = ref("4px");
 const moreSystemPresets = ref(true);
 const moreRecommendPresets = ref(true);
 const isMobile = ref(false);
+const availableProviders = ref([]);
 
 // Computed
 const showPresetsLoader = computed(() => {
@@ -439,10 +440,6 @@ const shownPrestsList = computed(() => {
           : [];
 });
 
-const availableProviders = computed(() => {
-  return config.getLLMProviders();
-});
-
 const filteredProviders = computed(() => {
   if (!adapterKeyword.value.trim()) {
     return availableProviders.value;
@@ -457,6 +454,9 @@ const filteredProviders = computed(() => {
 });
 
 // Methods
+const refreshProviders = () => {
+  availableProviders.value = config.getLLMProviders();
+};
 const checkMobile = () => {
   isMobile.value = window.innerWidth <= 768;
 };
@@ -669,12 +669,15 @@ onMounted(async () => {
   checkMobile();
   window.addEventListener("resize", checkMobile);
   getAddHistory();
+  refreshProviders();
+  client.on("models_updated", refreshProviders);
   await loadSpecificType();
 });
 
 // 清理事件监听器
 onUnmounted(() => {
   window.removeEventListener("resize", checkMobile);
+  client.off("models_updated", refreshProviders);
 });
 </script>
 

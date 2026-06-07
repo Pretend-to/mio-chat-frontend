@@ -453,12 +453,21 @@ export default class Config {
   /** 获取可用的 LLM Providers 列表 (用于 UI 选择) */
   getLLMProviders() {
     const providers = this.baseConfig?.llm_providers ?? [];
-    return providers.map((provider) => ({
-      value: provider.displayName,
-      label: provider.displayName,
-      adapterType: provider.adapterType,
-      description: provider.description,
-    }));
+    return providers
+      .filter((provider) => {
+        const models = this.getLlmModels(provider.displayName);
+        // 检查该 provider 下是否有任何可用的模型（兼容分组结构）
+        return (
+          models &&
+          models.some((group) => group.models && group.models.length > 0)
+        );
+      })
+      .map((provider) => ({
+        value: provider.displayName,
+        label: provider.displayName,
+        adapterType: provider.adapterType,
+        description: provider.description,
+      }));
   }
 
   /** 获取指定 Provider 的适配器类型 */
