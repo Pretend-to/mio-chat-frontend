@@ -46,7 +46,7 @@
           <i class="iconfont fuzhi"></i>
           <span>保存图片</span>
         </div>
-        <div @click.stop="retryMessage">
+        <div v-if="canRetry" @click.stop="retryMessage">
           <i class="iconfont reset"></i>
           <span>重试</span>
         </div>
@@ -109,6 +109,9 @@ export default {
     currentSpeakingMessageId: {
       type: [String, Number],
       default: null,
+    },    canRetry: {
+      type: Boolean,
+      default: true,
     },
   },
   computed: {

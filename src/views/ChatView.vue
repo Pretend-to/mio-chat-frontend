@@ -348,7 +348,7 @@ const wraperPresets = ref({});
 const selectedOption = ref(null);
 
 const seletedText = ref("");
-const seletedImage = ref("");
+const seletedImage = ref("");const canRetry = ref(true);
 const retryList = ref([]);
 const showMenu = ref(false);
 const menuTop = ref(0);
@@ -988,6 +988,26 @@ const getReplyText = (id) => {
   }
 };
 
+const getRetryTargetIndex = (chain, index) => {
+  const clickedMsg = chain[index];
+  if (!clickedMsg) return -1;
+
+  if (clickedMsg.role === 'other') {
+    // Assistant message: must be chat source
+    if (clickedMsg.triggerType === 'task') return -1;
+    return index;
+  }
+
+  if (clickedMsg.role === 'user') {
+    // User message: skip tasks until we find a chat message or end of chain
+    let targetIdx = index + 1;
+    while (targetIdx < chain.length && chain[targetIdx].triggerType === 'task') {
+      targetIdx++;
+    }
+    return targetIdx;
+  }
+
+};
 const showMessageMenu = (event, messageIndex) => {
   if (
     event.target &&
@@ -1005,6 +1025,7 @@ const showMessageMenu = (event, messageIndex) => {
     : messageIndex;
 
   validMessageIndex.value = realIndex;
+  canRetry.value = getRetryTargetIndex(chain, realIndex) !== -1;
   if (event.preventDefault) event.preventDefault();
   showMenu.value = true;
   menuTop.value = event.clientY;
@@ -1053,6 +1074,11 @@ const handleRetryMessage = async (item) => {
   const contactor = activeContactor.value;
   if (!contactor) return;
 
+  if (item.triggerType === 'task') {
+    ElMessage.warning("非聊天来源的消息不支持重试");
+    return;
+  }
+
   if (contactor.platform === "onebot") {
     item.status = "pending";
     item.time = Date.now();
@@ -1078,9 +1104,10 @@ const handleRetryMessage = async (item) => {
         role: "other",
         time: Date.now(),
         content: [{ type: "blank", data: {} }],
-        id: numberString(16),
-        status: "pending",
-      };
+            id: numberString(16),
+ status: "pending",
+            triggerType: "chat",
+          };
       contactor.messageChain.splice(targetIndex, 0, assistantMsg);
     } else {
       assistantMsg.content = [{ type: "blank", data: {} }];
@@ -1184,10 +1211,13 @@ const handleMessageOption = async (option) => {
         ElMessage.success("消息已重新发送");
       } else {
         const contactor = contactorsStore.activeContactor;
-        const targetIndex =
-          message.role === "user"
-            ? validMessageIndex.value + 1
-            : validMessageIndex.value;
+        const targetIndex = getRetryTargetIndex(contactor.messageChain, validMessageIndex.value);
+
+        if (targetIndex === -1) {
+          ElMessage.warning("非聊天来源的消息不支持重试");
+          return;
+        }
+
         let validMessage = contactor.messageChain[targetIndex];
         if (!validMessage || validMessage.role !== "other") {
           // Insert a fresh assistant placeholder at the target index
@@ -1439,6 +1469,7 @@ onBeforeUnmount(() => {
         :style="getMenuStyle"
         :client-x="menuLeft"
         :current-speaking-message-id="currentSpeakingMessageId"
+        :can-retry="canRetry"
         @message-option="handleMessageOption"
         @close="showMenu = false"
       />
