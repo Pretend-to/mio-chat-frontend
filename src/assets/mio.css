@@ -222,3 +222,116 @@ figure {
   -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJibGFjayIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBvbHlnb24gcG9pbnRzPSIxMSA1IDYgOSAyIDkgMiAxNSA2IDE1IDExIDE5IDExIDUiPjwvcG9seWdvbj48cGF0aCBkPSJNMTUuNTQgOC40NmE1IDUgMCAwIDEgMCA3LjA3Ij48L3BhdGg+PHBhdGggZD0iTTE5LjA3IDQuOTNhMTAgMTAgMCAwIDEgMCAxNC4xNCI+PC9wYXRoPjxsaW5lIHgxPSIzIiB5MT0iMyIgeDI9IjIxIiB5Mj0iMjEiPjwvbGluZT48L3N2Zz4=");
   mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJibGFjayIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBvbHlnb24gcG9pbnRzPSIxMSA1IDYgOSAyIDkgMiAxNSA2IDE1IDExIDE5IDExIDUiPjwvcG9seWdvbj48cGF0aCBkPSJNMTUuNTQgOC40NmE1IDUgMCAwIDEgMCA3LjA3Ij48L3BhdGg+PHBhdGggZD0iTTE5LjA3IDQuOTNhMTAgMTAgMCAwIDEgMCAxNC4xNCI+PC9wYXRoPjxsaW5lIHgxPSIzIiB5MT0iMyIgeDI9IjIxIiB5Mj0iMjEiPjwvbGluZT48L3N2Zz4=");
 }
+
+/* Cloned Webark IM template icon design styles */
+.rail-tab-icon {
+  position: relative;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 8px;
+  line-height: 0;
+}
+
+/* Messages active state: fill background and add two typing dots inside */
+.rail-tab-messages.active .rail-tab-icon svg * {
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.rail-tab-messages.active .rail-tab-icon::before,
+.rail-tab-messages.active .rail-tab-icon::after {
+  position: absolute;
+  top: 13px;
+  z-index: 1;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ffffff;
+  content: "";
+  pointer-events: none;
+}
+
+.rail-tab-messages.active .rail-tab-icon::before {
+  left: 9px;
+}
+
+.rail-tab-messages.active .rail-tab-icon::after {
+  left: 17px;
+}
+
+/* Contacts SVG styling */
+.rail-contact-icon {
+  width: 28px;
+  height: 28px;
+  overflow: visible;
+}
+
+.rail-contact-head,
+.rail-contact-body-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.15px;
+}
+
+.rail-contact-body-fill {
+  fill: transparent;
+  stroke: none;
+}
+
+.rail-contact-collar {
+  fill: #f5f5f5; /* Matches the desktop app background behind transparent sidebar */
+  opacity: 0;
+  transform-origin: 14px 18px;
+  transition: opacity 0.2s ease;
+}
+
+/* Contacts active state: fill the head and body, and show the collar cutout */
+.rail-tab-contacts.active .rail-contact-head,
+.rail-tab-contacts.active .rail-contact-body-fill {
+  fill: currentColor;
+}
+
+.rail-tab-contacts.active .rail-contact-body-line {
+  opacity: 0;
+}
+
+.rail-tab-contacts.active .rail-contact-collar {
+  opacity: 1;
+}
+
+@media screen and (max-width: 768px) {
+  /* Responsive styles for Webark IM icon design on mobile */
+  .rail-tab-icon {
+    width: 24px !important;
+    height: 24px !important;
+  }
+  .rail-tab-icon svg {
+    width: 21px !important;
+    height: 21px !important;
+  }
+  .rail-tab-contacts .rail-contact-icon {
+    width: 22px !important;
+    height: 22px !important;
+    margin-top: 1px;
+  }
+  .rail-tab-contacts .rail-contact-collar {
+    fill: #f1f4fe; /* Matches the mobile background */
+  }
+  .rail-tab-messages.active .rail-tab-icon::before,
+  .rail-tab-messages.active .rail-tab-icon::after {
+    top: 10px !important;
+    width: 3px !important;
+    height: 3px !important;
+  }
+  .rail-tab-messages.active .rail-tab-icon::before {
+    left: 7px !important;
+  }
+  .rail-tab-messages.active .rail-tab-icon::after {
+    left: 13px !important;
+  }
+}

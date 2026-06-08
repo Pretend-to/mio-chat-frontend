@@ -56,8 +56,6 @@ export default {
         false,
       );
     }
-
-    // Socket 连接状态现在统一通过 Pinia Store 管理
   },
   methods: {
     async toChat() {
@@ -100,6 +98,7 @@ export default {
   },
 };
 </script>
+
 <template>
   <div id="sidebar">
     <div class="admin-avatar">
@@ -108,15 +107,20 @@ export default {
     </div>
     <div id="side" class="options">
       <div class="up-half">
-        <div class="icon-back" :class="{ active: isChatActive }">
-          <div id="chatting" @click="toChat">
-            <i class="iconfont chat"></i>
-          </div>
+        <div class="icon-back rail-tab-messages" :class="{ active: isChatActive }" @click="toChat">
+          <span class="rail-tab-icon">
+            <svg class="lucide lucide-message-circle" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+          </span>
         </div>
-        <div class="icon-back" :class="{ active: isProfileActive }">
-          <div id="editing" @click="toProfile">
-            <i class="iconfont user"></i>
-          </div>
+        <div class="icon-back rail-tab-contacts" :class="{ active: isProfileActive }" @click="toProfile">
+          <span class="rail-tab-icon">
+            <svg class="rail-contact-icon" viewBox="0 0 28 28" aria-hidden="true">
+              <circle class="rail-contact-head" cx="14" cy="7.1" r="5.4" />
+              <path class="rail-contact-body-fill" d="M3.8 24.5a10.2 8.2 0 0 1 20.4 0H3.8Z" />
+              <path class="rail-contact-collar" d="M10.8 16.8h6.4L14 21.1Z" />
+              <path class="rail-contact-body-line" d="M3.8 24.5a10.2 8.2 0 0 1 20.4 0" />
+            </svg>
+          </span>
         </div>
       </div>
       <div class="down-half">
@@ -125,15 +129,20 @@ export default {
           target="_blank"
           class="side-icon"
         >
-          <i class="iconfont github"></i>
+          <span class="rail-tab-icon">
+            <svg class="lucide lucide-github" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+          </span>
         </a>
         <div class="side-icon" @click="toConfig">
-          <i class="iconfont menu"></i>
+          <span class="rail-tab-icon">
+            <svg class="lucide lucide-settings" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          </span>
         </div>
       </div>
     </div>
   </div>
 </template>
+
 <style scoped>
 #sidebar {
   display: flex;
@@ -150,41 +159,47 @@ export default {
   justify-content: space-between;
   align-items: center;
   flex-grow: 1;
-  /* margin: 1.2rem 1.2rem; */
 }
 
-.logo img {
-  width: 2.5rem;
-}
 .up-half,
 .down-half {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  flex-basis: 8rem;
-  justify-content: center;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1rem 0;
 }
-.icon-back {
-  height: 2.5rem;
+
+.icon-back,
+.side-icon {
+  width: 2.8rem;
+  height: 2.8rem;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 0.5rem 0rem;
-  border-radius: 0.5rem;
-}
-.icon-back.active {
-  padding: 0 0.5rem;
-  background-color: rgba(113, 113, 113, 0.1);
+  border-radius: 0.6rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #555;
+  text-decoration: none;
 }
 
-.icon-back i,
-.down-half i {
-  margin: 0.5rem 0rem;
-  width: 1.8rem;
-  height: 1.8rem;
-  font-size: 1.6rem;
-  color: black;
+.icon-back:hover,
+.side-icon:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #000;
 }
+
+.icon-back.active {
+  background-color: rgba(0, 153, 247, 0.1);
+  color: #0099f7;
+}
+
+.icon-back svg,
+.down-half svg {
+  transition: all 0.2s ease;
+}
+
 .admin-avatar {
   display: flex;
   justify-content: center;
@@ -205,19 +220,8 @@ export default {
   transform: translate(-50%, -50%);
   z-index: 11;
 }
-.side-icon {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-.icon-back.active i {
-  color: #007bff;
-}
 
 @media screen and (max-width: 768px) {
-  .options {
-    justify-content: space-evenly;
-  }
   #sidebar {
     width: 100%;
     flex-direction: row;
@@ -229,7 +233,6 @@ export default {
     backdrop-filter: blur(15px);
     border-top: 1px solid rgba(0, 0, 0, 0.05);
     border-right: none;
-    box-sizing: border-box;
   }
   .admin-avatar {
     display: none;
@@ -237,26 +240,17 @@ export default {
   .options {
     flex-direction: row;
     width: 100%;
+    padding: 0;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
   }
   .up-half,
   .down-half {
-    flex-basis: 50%;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-around;
-    align-items: center;
-  }
-  .icon-back {
-    margin: 0;
-    height: 2.2rem;
-  }
-  .icon-back i,
-  .down-half i {
-    margin: 0;
+    display: contents;
   }
   .icon-back.active {
     background-color: transparent;
-    padding: 0;
   }
 }
 </style>
