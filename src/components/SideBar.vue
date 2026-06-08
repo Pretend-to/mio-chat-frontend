@@ -256,6 +256,7 @@ export default {
   }
   .icon-back.active {
     background-color: transparent;
+    padding: 0;
   }
 }
 </style>
