@@ -223,6 +223,10 @@ figure {
   mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJibGFjayIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBvbHlnb24gcG9pbnRzPSIxMSA1IDYgOSAyIDkgMiAxNSA2IDE1IDExIDE5IDExIDUiPjwvcG9seWdvbj48cGF0aCBkPSJNMTUuNTQgOC40NmE1IDUgMCAwIDEgMCA3LjA3Ij48L3BhdGg+PHBhdGggZD0iTTE5LjA3IDQuOTNhMTAgMTAgMCAwIDEgMCAxNC4xNCI+PC9wYXRoPjxsaW5lIHgxPSIzIiB5MT0iMyIgeDI9IjIxIiB5Mj0iMjEiPjwvbGluZT48L3N2Zz4=");
 }
 
+.tab-label {
+  display: none;
+}
+
 /* Cloned Webark IM template icon design styles */
 .rail-tab-icon {
   position: relative;
@@ -333,5 +337,13 @@ figure {
   }
   .rail-tab-messages.active .rail-tab-icon::after {
     left: 13px !important;
+  }
+  .tab-label {
+    display: block;
+    font-size: 0.65rem;
+    line-height: 1;
+    margin-top: 3px;
+    font-weight: 500;
+    transition: color 0.2s ease;
   }
 }

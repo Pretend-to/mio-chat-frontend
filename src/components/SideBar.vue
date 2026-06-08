@@ -111,6 +111,7 @@ export default {
           <span class="rail-tab-icon">
             <svg class="lucide lucide-message-circle" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
           </span>
+          <span class="tab-label">消息</span>
         </div>
         <div class="icon-back rail-tab-contacts" :class="{ active: isProfileActive }" @click="toProfile">
           <span class="rail-tab-icon">
@@ -121,6 +122,7 @@ export default {
               <path class="rail-contact-body-line" d="M3.8 24.5a10.2 8.2 0 0 1 20.4 0" />
             </svg>
           </span>
+          <span class="tab-label">联系人</span>
         </div>
       </div>
       <div class="down-half">
@@ -132,11 +134,13 @@ export default {
           <span class="rail-tab-icon">
             <svg class="lucide lucide-github" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
           </span>
+          <span class="tab-label">开源</span>
         </a>
         <div class="side-icon" @click="toConfig">
           <span class="rail-tab-icon">
             <svg class="lucide lucide-settings" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
           </span>
+          <span class="tab-label">设置</span>
         </div>
       </div>
     </div>
@@ -233,6 +237,7 @@ export default {
     backdrop-filter: blur(15px);
     border-top: 1px solid rgba(0, 0, 0, 0.05);
     border-right: none;
+    box-sizing: border-box; /* Crucial to prevent safe-area padding from adding to height */
   }
   .admin-avatar {
     display: none;
@@ -248,6 +253,16 @@ export default {
   .up-half,
   .down-half {
     display: contents;
+  }
+  .icon-back,
+  .side-icon {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 3.5rem !important;
+    height: 100% !important;
+    border-radius: 0.5rem !important;
   }
   .icon-back.active {
     background-color: transparent;
