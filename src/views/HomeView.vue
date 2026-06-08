@@ -76,12 +76,14 @@ export default {
 
 #main-mobile {
   width: 100%;
-  max-height: calc(100vh - 4rem);
+  height: calc(100% - 3.2rem - env(safe-area-inset-bottom, 0px));
   flex-grow: 1;
+  flex-shrink: 1;
+  min-height: 0;
   display: flex;
 }
 
 .mobile-chat#main-mobile {
-  max-height: 100%;
+  height: 100%;
 }
 </style>

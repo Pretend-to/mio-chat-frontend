@@ -227,6 +227,7 @@ import ErrorBoundary from "@/components/settings/ErrorBoundary.vue";
 import { client } from "@/lib/runtime.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { useLogStore } from "@/stores/logStore.js";
+import { useStatusBarColor } from "@/composables/useStatusBarColor";
 import {
   ChatDotRound,
   ChromeFilled,
@@ -239,7 +240,7 @@ import {
   Box,
 } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 const route = useRoute();
@@ -470,6 +471,8 @@ onMounted(async () => {
     // 未登录不跳转，直接展示禁止访问（保留侧边栏可用）
     forbidden.value = true;
   }
+
+  useStatusBarColor("#ffffff");
 });
 
 onUnmounted(() => {
@@ -820,24 +823,99 @@ onUnmounted(() => {
 .content-header-spacer {
   display: none; // 新布局不需要这个占位了
 }
-</style>
 
-// 响应式样式 @media (max-width: 768px) { #settings-view { width: 100%
-!important; } .admin-panel-sidebar { display: none !important; }
-.restart-banner-content { flex-direction: column; gap: 8px; align-items:
-flex-start; span { font-size: 14px; } } .mobile-header { display: block
-!important; } .admin-panel-container { padding: 0 !important; }
-.admin-panel-content { border-radius: 0 !important; box-shadow: none !important;
-} } // 确保桌面端不显示移动端组件 @media (min-width: 769px) { .mobile-header,
-.mobile-menu-overlay { display: none !important; } } // 平板适配 @media
-(min-width: 769px) and (max-width: 1024px) { .admin-panel-sidebar { width:
-180px; } .admin-panel-menu { :deep(.el-menu-item) { span { font-size: 14px; } }
-} } // 移动端导航状态样式 @media (max-width: 768px) { .mobile-header { //
-在子页面时的样式 &.sub-page { .mobile-title { color: #409eff; } .back-button {
-color: #409eff; &:hover { background-color: #ecf5ff; } } } // 在首页时的样式
-&.main-page { .back-button { color: #909399; &:hover { background-color:
-#f5f7fa; } } } } // 面包屑导航效果 .mobile-header-content { position: relative;
-&::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
-height: 2px; background: linear-gradient(90deg, transparent 0%, #409eff 50%,
-transparent 100%); opacity: 0; transition: opacity 0.3s; } &.sub-page::after {
-opacity: 1; } } }
+// 响应式样式
+@media (max-width: 768px) {
+  #settings-view {
+    width: 100% !important;
+  }
+  .admin-panel-sidebar {
+    display: none !important;
+  }
+  .restart-banner-content {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+    span {
+      font-size: 14px;
+    }
+  }
+  .mobile-header {
+    display: block !important;
+  }
+  .admin-panel-container {
+    padding: 0 !important;
+  }
+  .admin-panel-content {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+}
+
+// 确保桌面端不显示移动端组件
+@media (min-width: 769px) {
+  .mobile-header,
+  .mobile-menu-overlay {
+    display: none !important;
+  }
+}
+
+// 平板适配
+@media (min-width: 769px) and (max-width: 1024px) {
+  .admin-panel-sidebar {
+    width: 180px;
+  }
+  .admin-panel-menu {
+    :deep(.el-menu-item) {
+      span {
+        font-size: 14px;
+      }
+    }
+  }
+}
+
+// 移动端导航状态样式
+@media (max-width: 768px) {
+  .mobile-header {
+    // 在子页面时的样式
+    &.sub-page {
+      .mobile-title {
+        color: #409eff;
+      }
+      .back-button {
+        color: #409eff;
+        &:hover {
+          background-color: #ecf5ff;
+        }
+      }
+    }
+    // 在首页时的样式
+    &.main-page {
+      .back-button {
+        color: #909399;
+        &:hover {
+          background-color: #f5f7fa;
+        }
+      }
+    }
+  }
+  // 面包屑导航效果
+  .mobile-header-content {
+    position: relative;
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent 0%, #409eff 50%, transparent 100%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    &.sub-page::after {
+      opacity: 1;
+    }
+  }
+}
+</style>

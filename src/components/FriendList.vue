@@ -2,6 +2,7 @@
 import {
   ref,
   computed,
+  watch,
   onMounted,
   onBeforeUnmount,
   getCurrentInstance,
@@ -25,6 +26,7 @@ import { useConnectionStore } from "@/stores/connectionStore";
 import { useSearch } from "@/composables/useSearch.js";
 import SearchPanel from "@/components/SearchPanel.vue";
 import MobileSearch from "@/components/MobileSearch.vue";
+import { useStatusBarColor } from "@/composables/useStatusBarColor";
 
 // Emits
 const emit = defineEmits(["open-share-code-window"]);
@@ -417,6 +419,8 @@ const stopResize = () => {
   document.removeEventListener("mousemove", resize);
   document.removeEventListener("mouseup", stopResize);
 };
+
+useStatusBarColor(() => showMobileSearch.value ? "#ffffff" : "#f1f4fe");
 
 // Lifecycle
 onMounted(() => {

@@ -221,11 +221,15 @@ export default {
   #sidebar {
     width: 100%;
     flex-direction: row;
-    flex-basis: 3.5rem;
+    height: calc(3.2rem + env(safe-area-inset-bottom, 0px)) !important;
+    max-height: calc(3.2rem + env(safe-area-inset-bottom, 0px)) !important;
+    flex-basis: calc(3.2rem + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     background-color: rgba(241, 244, 254, 0.85);
     backdrop-filter: blur(15px);
     border-top: 1px solid rgba(0, 0, 0, 0.05);
     border-right: none;
+    box-sizing: border-box;
   }
   .admin-avatar {
     display: none;
@@ -241,6 +245,14 @@ export default {
     flex-direction: row;
     justify-content: space-around;
     align-items: center;
+  }
+  .icon-back {
+    margin: 0;
+    height: 2.2rem;
+  }
+  .icon-back i,
+  .down-half i {
+    margin: 0;
   }
   .icon-back.active {
     background-color: transparent;

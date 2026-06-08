@@ -77,10 +77,14 @@ import ContactorSettings from "@/components/ContactorSettings.vue"; // Import th
 import { client, config } from "@/lib/runtime.js";
 import { useConnectionStore } from "@/stores/connectionStore";
 import { mapState } from "pinia";
+import { useStatusBarColor } from "@/composables/useStatusBarColor";
 
 export default {
   components: {
     ContactorSettings, // Register the new component
+  },
+  setup() {
+    useStatusBarColor("#ffffff");
   },
   data() {
     const currentId = parseInt(this.$route.params.id);

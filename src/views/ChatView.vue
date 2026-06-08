@@ -27,6 +27,7 @@ import { useChatScreenshot } from "@/composables/useChatScreenshot.js";
 
 // Stores & Libs
 import { useConnectionStore } from "@/stores/connectionStore";
+import { useStatusBarColor } from "@/composables/useStatusBarColor";
 import { useContactorsStore, getShownTime } from "@/stores/contactorsStore.js";
 import { client } from "@/lib/runtime.js";
 import { shareOrCopy } from "@/utils/tools.js";
@@ -1374,6 +1375,8 @@ onMounted(() => {
   client.on("plugins_updated", handlePluginsUpdated);
   client.on("scroll_to_message", performScrollToMessage);
   window.addEventListener("beforeunload", handleBeforeUnload);
+
+  useStatusBarColor("#ffffff");
 });
 
 onBeforeUnmount(() => {
