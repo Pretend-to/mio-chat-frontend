@@ -209,7 +209,7 @@
           @click="updateCursorPosition"
         ></div>
       </div>
-      <button id="sendButton" @click.prevent="send">
+      <button id="sendButton" @click.prevent="send" :disabled="isUploading">
         发送{{ getWraperName() ? ` | ${getWraperName()}` : "" }}
       </button>
     </div>
@@ -442,6 +442,9 @@ export default {
     };
   },
   computed: {
+    isUploading() {
+      return this.activeContactor.messageChain.some((m) => m.status === 'uploading');
+    },
     extraOptions() {
       if (this.activeContactor.platform == "openai") {
         return this.openaiModels;
@@ -2033,6 +2036,10 @@ i
         margin-bottom: .8rem
         margin-right: .5rem
         cursor: pointer
+        &:disabled
+          background-color: #ccc
+          cursor: not-allowed
+          opacity: 0.8
 
         @media screen and (max-width: $mobile)
           height: 2rem
