@@ -67,6 +67,11 @@ export default class Socket extends EventEmitter {
     console.log(
       `SocketIO transport established via: ${transport}. Session is active.`,
     );
+    // 如果是意外断连后的重连成功，通知上层显示提示
+    if (this._unexpectedDisconnect) {
+      this._unexpectedDisconnect = false;
+      this.emit("connection_restored");
+    }
     this.emit("connection_changed", true);
     this.sendPendingInterrupts();
   }
@@ -78,6 +83,10 @@ export default class Socket extends EventEmitter {
   handleDisconnect(reason) {
     this.available = false;
     console.error(`SocketIO disconnected. Reason: ${reason}`);
+    // 标记意外断连（传输层错误或连接被关闭，非主动断开），重连成功后给用户提示
+    if (reason === "transport error" || reason === "transport close") {
+      this._unexpectedDisconnect = true;
+    }
     this.emit("connection_changed", false); // 改名
     // 如果是 'io server disconnect'，Socket.IO 客户端不会自动重连，必须手动调用 connect()
     if (reason === "io server disconnect") {

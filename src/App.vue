@@ -1,6 +1,7 @@
 <script>
 import { client, config } from "@/lib/runtime.js";
 import sideBar from "@/components/SideBar.vue";
+import { ElMessage } from "element-plus";
 
 export default {
   components: {
@@ -40,6 +41,13 @@ export default {
     }
 
     window.addEventListener("resize", this.handleResize);
+    // 全局监听意外断连后重连成功，给用户一个 Toast
+    client.on("connection_restored", () => {
+      ElMessage.warning({
+        message: "网络连接异常断开，已自动重连",
+        duration: 3000,
+      });
+    });
   },
   beforeUnmount() {
     window.removeEventListener("resize", this.handleResize);
@@ -80,7 +88,7 @@ export default {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background: #f8fafc;
+  background: var(--mio-bg-page);
 }
 
 #mio-chat {
@@ -99,7 +107,7 @@ export default {
   z-index: 1;
   display: flex;
   overflow: hidden;
-  background-color: #f5f5f5;
+  background-color: var(--mio-bg-sidebar);
 }
 
 .app-mobile {
@@ -109,9 +117,8 @@ export default {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background-color: rgba(255, 255, 255);
+  background-color: var(--mio-bg-card);
 }
-
 a#beian {
   position: fixed;
   bottom: 1rem;
