@@ -44,6 +44,9 @@ export const useDashboardStore = defineStore("dashboard", () => {
   // Failures list
   const failures = ref([]);
 
+  // Currency setting
+  const currency = ref('USD')
+
   // Cost calculations settings
   const costCalc = ref({
     provider: "",
@@ -273,6 +276,7 @@ export const useDashboardStore = defineStore("dashboard", () => {
     activeTurn,
     failures,
     costCalc,
+    currency,
 
     // Computed
     providers,

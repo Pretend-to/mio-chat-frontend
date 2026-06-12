@@ -6,6 +6,10 @@
     class="saas-dialog"
     destroy-on-close
   >
+    <div class="time-range-hint">
+      核算时段：<strong>{{ timeRangeLabel }}</strong>
+    </div>
+
     <el-form label-width="120px" size="default">
       <el-form-item label="服务实例">
         <el-select
@@ -22,6 +26,13 @@
         </el-select>
       </el-form-item>
 
+      <el-form-item label="货币单位">
+        <el-radio-group v-model="store.currency" class="currency-radio">
+          <el-radio-button value="USD">美元 ($)</el-radio-button>
+          <el-radio-button value="CNY">人民币 (¥)</el-radio-button>
+        </el-radio-group>
+      </el-form-item>
+
       <el-form-item label="输入单价">
         <div class="price-input-row">
           <el-input-number
@@ -32,7 +43,7 @@
             controls-position="right"
             style="width: 180px"
           ></el-input-number>
-          <span class="unit-text">$/1M Tokens</span>
+          <span class="unit-text">{{ currencySymbol }}/1M Tokens</span>
         </div>
       </el-form-item>
 
@@ -46,7 +57,7 @@
             controls-position="right"
             style="width: 180px"
           ></el-input-number>
-          <span class="unit-text">$/1M Tokens</span>
+          <span class="unit-text">{{ currencySymbol }}/1M Tokens</span>
         </div>
       </el-form-item>
 
@@ -60,16 +71,16 @@
             controls-position="right"
             style="width: 180px"
           ></el-input-number>
-          <span class="unit-text">$/1M Tokens</span>
+          <span class="unit-text">{{ currencySymbol }}/1M Tokens</span>
         </div>
       </el-form-item>
     </el-form>
 
     <div class="cost-estimate-card">
       <div class="estimate-title">
-        基于本时段用量的预估总成本 ({{ store.costCalc.provider || "-" }})
+        基于 {{ timeRangeLabel }} 用量预估总成本（{{ store.costCalc.provider || "-" }}）
       </div>
-      <div class="estimate-value">${{ store.calculatedCost.toFixed(4) }}</div>
+      <div class="estimate-value">{{ currencySymbol }}{{ store.calculatedCost.toFixed(4) }}</div>
       <div class="estimate-sub">
         基于已统计到的输入、输出与缓存命中 Token 量测算。
       </div>
@@ -86,12 +97,42 @@
 </template>
 
 <script setup>
+import { computed } from "vue";
 import { useDashboardStore } from "@/stores/dashboardStore";
 
 const store = useDashboardStore();
+
+const timeRangeLabel = computed(() => {
+  const map = { "24h": "过去 24 小时", "7d": "近 7 天", "30d": "近 30 天" };
+  return map[store.timeRange] || store.timeRange;
+});
+
+const currencySymbol = computed(() => (store.currency === "CNY" ? "¥" : "$"));
 </script>
 
 <style scoped>
+.time-range-hint {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.time-range-hint strong {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.currency-radio {
+  width: 100%;
+}
+
+.currency-radio .el-radio-button__inner {
+  min-width: 100px;
+  justify-content: center;
+}
+
 .price-input-row {
   display: flex;
   align-items: center;

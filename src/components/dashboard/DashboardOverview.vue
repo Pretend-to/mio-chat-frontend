@@ -151,7 +151,9 @@ let shareChart = null;
 // Helper formatters
 function formatTokens(t) {
   if (!t && t !== 0) return "0";
-  return t >= 1000 ? (t / 1000).toFixed(1) + "k" : t.toString();
+  if (t >= 1000000) return (t / 1000000).toFixed(2) + "m";
+  if (t >= 1000) return (t / 1000).toFixed(1) + "k";
+  return t.toString();
 }
 
 function formatNumber(num) {

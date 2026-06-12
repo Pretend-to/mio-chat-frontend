@@ -111,7 +111,7 @@
               align="right"
             >
               <template #default="scope">{{
-                formatNumber(scope.row.promptTokens)
+                formatTokens(scope.row.promptTokens)
               }}</template>
             </el-table-column>
             <el-table-column
@@ -121,7 +121,7 @@
               align="right"
             >
               <template #default="scope">{{
-                formatNumber(scope.row.candidatesTokens)
+                formatTokens(scope.row.candidatesTokens)
               }}</template>
             </el-table-column>
             <el-table-column
@@ -132,7 +132,7 @@
             >
               <template #default="scope">
                 <span v-if="scope.row.cacheHitTokens > 0" class="text-green">{{
-                  formatNumber(scope.row.cacheHitTokens)
+                  formatTokens(scope.row.cacheHitTokens)
                 }}</span>
                 <span v-else class="text-muted">-</span>
               </template>
@@ -145,7 +145,7 @@
             >
               <template #default="scope">
                 <span class="token-value-text">{{
-                  formatNumber(scope.row.totalTokens)
+                  formatTokens(scope.row.totalTokens)
                 }}</span>
               </template>
             </el-table-column>
@@ -258,7 +258,9 @@ let modelsChart = null;
 
 function formatTokens(t) {
   if (!t && t !== 0) return "0";
-  return t >= 1000 ? (t / 1000).toFixed(1) + "k" : t.toString();
+  if (t >= 1000000) return (t / 1000000).toFixed(2) + "m";
+  if (t >= 1000) return (t / 1000).toFixed(1) + "k";
+  return t.toString();
 }
 
 function formatNumber(num) {
