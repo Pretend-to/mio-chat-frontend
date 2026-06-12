@@ -6,9 +6,7 @@
     :isLoading="isLoading"
     :isFailed="toolCallFail"
     :defaultExpanded="showExtraInfo"
-    :expandedMaxHeight="
-      toolCall.innerRender && toolCall.innerRender.length ? '800px' : '160px'
-    "
+    :expandedMaxHeight="innerItems.length ? '800px' : '160px'"
     @toggle="toggleExtraInfo"
   >
     <div class="detail-section">
@@ -30,11 +28,11 @@
 
     <!-- Extra Render UI section -->
     <div
-      v-if="toolCall.innerRender && toolCall.innerRender.length"
+      v-if="innerItems.length"
       class="extra-render-section"
     >
       <div
-        v-for="(item, idx) in toolCall.innerRender"
+        v-for="(item, idx) in innerItems"
         :key="idx"
         class="extra-render-item"
       >
@@ -144,6 +142,10 @@ export default {
         return "mio-icon-memory";
       }
       return "mio-icon-tool";
+    },
+    innerItems() {
+      const extra = this.toolCall.extraRender || [];
+      return extra.filter(r => r.placement !== 'outer');
     },
     toolTitle() {
       if (this.toolCall.displayName) {

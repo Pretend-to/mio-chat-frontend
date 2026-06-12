@@ -386,13 +386,10 @@ export const useContactorsStore = defineStore("contactors", () => {
         (elm) => elm.type === "tool_call" && elm.data?.id === tool_call.id,
       );
 
-      const rawExtra = tool_call.extraRender || [];
       const msgElm = {
         type: "tool_call",
         data: {
           ...tool_call,
-          innerRender: tool_call.innerRender || rawExtra.filter(r => r.placement !== 'outer'),
-          outerRender: tool_call.outerRender || rawExtra.filter(r => r.placement === 'outer'),
         },
       };
 
@@ -447,17 +444,12 @@ export const useContactorsStore = defineStore("contactors", () => {
 
   function mergeToolCall(previousElm, incomingToolCall) {
     const previousData = previousElm.data || {};
-    const rawExtra = incomingToolCall.extraRender || [];
-    const incomingInner = incomingToolCall.innerRender || (rawExtra.length > 0 ? rawExtra.filter(r => r.placement !== 'outer') : null);
-    const incomingOuter = incomingToolCall.outerRender || (rawExtra.length > 0 ? rawExtra.filter(r => r.placement === 'outer') : null);
 
     const merged = {
       ...previousElm,
       data: {
         ...previousData,
         ...incomingToolCall,
-        innerRender: incomingInner || previousData.innerRender || [],
-        outerRender: incomingOuter || previousData.outerRender || [],
       },
     };
     if (incomingToolCall.action === "pending") {
@@ -704,14 +696,11 @@ export const useContactorsStore = defineStore("contactors", () => {
             callStatus = "running";
           }
 
-          const rawExtra = chunk.content.extraRender || [];
           const toolCallData = {
             ...chunk.content,
             arguments:
               chunk.content.arguments || chunk.content.parameters || "",
             status: callStatus,
-            innerRender: chunk.content.innerRender || rawExtra.filter(r => r.placement !== 'outer'),
-            outerRender: chunk.content.outerRender || rawExtra.filter(r => r.placement === 'outer'),
           };
 
           // Special tool handlers (memory and toolsmanager)

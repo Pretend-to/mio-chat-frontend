@@ -262,11 +262,11 @@
                       :katex-plugin-list="katexPluginList"
                     />
                     <div
-                      v-if="element.data.outerRender && element.data.outerRender.length"
+                      v-if="outerItems(element.data).length"
                       class="message-level-outer-render"
                     >
                       <div
-                        v-for="(item, idx) in element.data.outerRender"
+                        v-for="(item, idx) in outerItems(element.data)"
                         :key="idx"
                         class="outer-render-item"
                       >
@@ -583,6 +583,11 @@ const toggleToolsManagerDetails = (elmIndex) => {
   const key = `${props.index}-${elmIndex}`;
   expandedToolsManagerEvents.value[key] = !expandedToolsManagerEvents.value[key];
 };
+
+function outerItems(data) {
+  const extra = data.extraRender || [];
+  return extra.filter(r => r.placement === 'outer');
+}
 </script>
 
 <style lang="sass" scoped>
