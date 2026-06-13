@@ -152,16 +152,16 @@ watch(
   margin-left: -8px
 
   &:hover
-    background-color: rgba(0, 0, 0, 0.04)
+    background-color: var(--mio-bg-hover)
     .block-title
-      color: #111
+      color: var(--mio-text-primary)
     .block-actions
-      color: #888
+      color: var(--mio-text-regular)
 
 .block-title
   font-size: 13px
   font-weight: 500
-  color: #666
+  color: var(--mio-text-regular)
   transition: color 0.2s
   white-space: nowrap
   overflow: hidden
@@ -171,7 +171,7 @@ watch(
 
 .block-status-text
   font-size: 12px
-  color: #999
+  color: var(--mio-text-secondary)
   flex-shrink: 0
   white-space: nowrap
   &.is-loading
@@ -182,13 +182,13 @@ watch(
   height: 5px
   border-radius: 50%
   &.failed
-    background: #ff4d4f
+    background: var(--mio-color-danger)
 
 .block-actions
   display: flex
   align-items: center
   flex-shrink: 0
-  color: #bbb
+  color: var(--mio-text-placeholder)
   transition: color 0.2s
   margin-left: 4px
 
@@ -227,9 +227,9 @@ watch(
 
   .details-inner
     padding: 8px 12px
-    border-left: 2px solid #efefef
+    border-left: 2px solid var(--mio-border-color-lighter)
     margin-left: 1px
-    background: rgba(0, 0, 0, 0.01)
+    background: var(--mio-bg-page)
     border-radius: 0 4px 4px 4px
 
 @keyframes dot-blink

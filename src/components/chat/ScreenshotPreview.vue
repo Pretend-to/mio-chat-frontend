@@ -8,30 +8,8 @@
     class="desktop-preview-dialog"
     @update:model-value="onClose"
   >
-    <div
-      style="
-        margin-bottom: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background-color: #f8fafc;
-        padding: 12px 16px;
-        border-radius: 8px;
-        border: 1px solid #e2e8f0;
-        flex-wrap: wrap;
-        gap: 8px;
-      "
-    >
-      <div
-        style="
-          font-size: 14px;
-          color: #475569;
-          font-weight: 500;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        "
-      >
+    <div class="preview-info-header">
+      <div class="size-toggle-option">
         <span>图片尺寸：</span>
         <el-radio-group
           :model-value="exportWidthMode"
@@ -42,39 +20,19 @@
           <el-radio-button value="wide">宽屏模式 (850px)</el-radio-button>
         </el-radio-group>
       </div>
-      <div style="font-size: 12px; color: #94a3b8; font-weight: 400">
+      <div class="size-toggle-hint">
         宽屏模式更适合包含长代码、表格或大图的聊天记录
       </div>
     </div>
     <div
       v-loading="generatingImage"
       class="preview-scroll-container"
-      style="
-        max-height: 55vh;
-        min-height: 200px;
-        width: 100%;
-        box-sizing: border-box;
-        overflow-y: auto;
-        text-align: center;
-        background: #f2f2f2;
-        padding: 20px;
-        border-radius: 8px;
-        position: relative;
-      "
     >
       <img
         v-if="previewImageUrl"
         :src="previewImageUrl"
         class="preview-image"
         alt="图片预览"
-        style="
-          max-width: 100%;
-          height: auto;
-          display: block;
-          margin: 0 auto;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-          border-radius: 12px;
-        "
       />
     </div>
     <template #footer>
@@ -105,46 +63,17 @@
     class="mobile-preview-drawer"
     @update:model-value="onClose"
   >
-    <div
-      style="
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        background: #f2f2f2;
-      "
-    >
-      <div
-        class="mobile-preview-header"
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 15px 20px;
-          background-color: #fff;
-          border-bottom: 1px solid #ebeef5;
-        "
-      >
-        <span
-          @click="onClose"
-          style="font-size: 16px; color: #606266; cursor: pointer"
-          ><i class="iconfont icon-return"></i> 返回</span
-        >
-        <span class="title" style="font-size: 16px; font-weight: 600"
-          >分享预览</span
-        >
+    <div class="mobile-preview-container">
+      <div class="mobile-preview-header">
+        <span class="mobile-back-btn" @click="onClose">
+          <i class="iconfont icon-return"></i> 返回
+        </span>
+        <span class="mobile-header-title">分享预览</span>
         <span style="width: 40px"></span>
       </div>
 
       <!-- Width Mode Toggle for Mobile -->
-      <div
-        style="
-          padding: 10px 20px;
-          background-color: #fff;
-          border-bottom: 1px solid #f1f5f9;
-          display: flex;
-          justify-content: center;
-        "
-      >
+      <div class="mobile-width-toggle">
         <el-radio-group
           :model-value="exportWidthMode"
           size="default"
@@ -157,38 +86,16 @@
 
       <div
         v-loading="generatingImage"
-        class="preview-scroll-container"
-        style="
-          flex: 1;
-          max-height: none;
-          padding: 20px;
-          box-sizing: border-box;
-          overflow-y: auto;
-          position: relative;
-        "
+        class="preview-scroll-container mobile-preview-scroll-container"
       >
         <img
           v-if="previewImageUrl"
           :src="previewImageUrl"
           class="preview-image"
           alt="分享预览图"
-          style="
-            width: 100%;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-          "
         />
       </div>
-      <div
-        class="mobile-preview-footer"
-        style="
-          padding: 20px;
-          background: transparent;
-          border: none;
-          display: flex;
-          gap: 12px;
-        "
-      >
+      <div class="mobile-preview-footer">
         <el-button
           @click="$emit('share-link')"
           size="large"
@@ -263,3 +170,114 @@ const onWidthModeChange = (val) => {
   emit("width-mode-change", val);
 };
 </script>
+
+<style scoped>
+.preview-info-header {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--mio-bg-page);
+  padding: 12px 16px;
+  border-radius: var(--mio-border-radius-base);
+  border: 1px solid var(--mio-border-color-light);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.size-toggle-option {
+  font-size: 14px;
+  color: var(--mio-text-regular);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.size-toggle-hint {
+  font-size: 12px;
+  color: var(--mio-text-secondary);
+  font-weight: 400;
+}
+
+.preview-scroll-container {
+  max-height: 55vh;
+  min-height: 200px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+  text-align: center;
+  background: var(--mio-bg-chat-window);
+  padding: 20px;
+  border-radius: var(--mio-border-radius-base);
+  position: relative;
+}
+
+.preview-image {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  box-shadow: var(--mio-shadow-light);
+  border-radius: 12px;
+}
+
+.mobile-preview-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--mio-bg-chat-window);
+}
+
+.mobile-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background-color: var(--mio-bg-card);
+  border-bottom: 1px solid var(--mio-border-color-light);
+}
+
+.mobile-back-btn {
+  font-size: 16px;
+  color: var(--mio-text-regular);
+  cursor: pointer;
+}
+
+.mobile-header-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--mio-text-primary);
+}
+
+.mobile-width-toggle {
+  padding: 10px 20px;
+  background-color: var(--mio-bg-card);
+  border-bottom: 1px solid var(--mio-border-color-lighter);
+  display: flex;
+  justify-content: center;
+}
+
+.mobile-preview-scroll-container {
+  flex: 1;
+  max-height: none;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  position: relative;
+}
+
+.mobile-preview-scroll-container .preview-image {
+  width: 100%;
+  border-radius: 12px;
+  box-shadow: var(--mio-shadow-light);
+}
+
+.mobile-preview-footer {
+  padding: 20px;
+  background: transparent;
+  border: none;
+  display: flex;
+  gap: 12px;
+}
+</style>

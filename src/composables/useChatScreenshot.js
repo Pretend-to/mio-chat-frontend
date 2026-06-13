@@ -63,7 +63,7 @@ export function useChatScreenshot({ chatWindowRef, selectedMessages }) {
       exportEl = document.createElement("div");
       exportEl.id = "chat-window";
       exportEl.className = "is-exporting";
-      exportEl.style.cssText = `position:absolute;left:0;top:0;z-index:-10000;pointer-events:none;width:${width};background-color:#f2f2f2;padding:0;box-sizing:border-box;overflow:visible;`;
+      exportEl.style.cssText = `position:absolute;left:0;top:0;z-index:-10000;pointer-events:none;width:${width};background-color:var(--mio-bg-chat-window);padding:0;box-sizing:border-box;overflow:visible;`;
 
       // Also support wide mode styling on the inner message items
       if (exportWidthMode.value === "wide") {
@@ -75,7 +75,7 @@ export function useChatScreenshot({ chatWindowRef, selectedMessages }) {
       // Header with Icon and Slogan
       const header = document.createElement("div");
       header.style.cssText =
-        "display:flex;align-items:center;justify-content:flex-start;padding:1.5rem 1.25rem 0rem;margin-bottom:0.5rem;background:linear-gradient(180deg, rgba(255,255,255,1) 0%, #f2f2f2 100%);border-bottom:1px solid rgba(0,0,0,0.04);";
+        "display:flex;align-items:center;justify-content:flex-start;padding:1.5rem 1.25rem 0rem;margin-bottom:0.5rem;background:linear-gradient(180deg, var(--mio-bg-card) 0%, var(--mio-bg-chat-window) 100%);border-bottom:1px solid var(--mio-border-color-light);";
 
       const headerIcon = document.createElement("img");
       headerIcon.crossOrigin = "anonymous";
@@ -83,13 +83,13 @@ export function useChatScreenshot({ chatWindowRef, selectedMessages }) {
         window.location.origin + "/static/icons/512x512.png",
       );
       headerIcon.style.cssText =
-        "width:64px;height:64px;margin-right:16px;border-radius:16px;box-shadow:0 3px 10px rgba(0,0,0,0.1);";
+        "width:64px;height:64px;margin-right:16px;border-radius:16px;box-shadow:var(--mio-shadow-light);";
 
       const headerTitle = document.createElement("div");
       headerTitle.style.cssText =
         "display:flex;flex-direction:column;justify-content:center;height:64px;overflow:hidden;";
       headerTitle.innerHTML =
-        '<div style="font-size:30px;font-weight:800;color:#2c3e50;letter-spacing:0.5px;line-height:1.2;white-space:nowrap;">Mio Chat</div><div style="font-size:16px;color:#7f8c8d;font-weight:500;line-height:1.2;margin-top:4px;white-space:nowrap;">A modern AI-powered companion</div>';
+        '<div style="font-size:30px;font-weight:800;color:var(--mio-text-primary);letter-spacing:0.5px;line-height:1.2;white-space:nowrap;">Mio Chat</div><div style="font-size:16px;color:var(--mio-text-secondary);font-weight:500;line-height:1.2;margin-top:4px;white-space:nowrap;">A modern AI-powered companion</div>';
 
       header.appendChild(headerIcon);
       header.appendChild(headerTitle);
@@ -132,16 +132,16 @@ export function useChatScreenshot({ chatWindowRef, selectedMessages }) {
       // Footer with QR code in a premium card style
       const footer = document.createElement("div");
       footer.style.cssText =
-        "margin:1rem 1.25rem 1.5rem;padding:1.25rem;background-color:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;";
+        "margin:1rem 1.25rem 1.5rem;padding:1.25rem;background-color:var(--mio-bg-card);border-radius:14px;box-shadow:var(--mio-shadow-light);display:flex;align-items:center;justify-content:space-between;";
 
       const textDiv = document.createElement("div");
       textDiv.innerHTML =
-        '<div style="font-weight:800;font-size:16px;color:#2c3e50;">扫码接续对话</div><div style="font-size:12px;color:#7f8c8d;margin-top:5px;line-height:1.4;">长按或扫描二维码<br>立即参与精彩聊天</div>';
+        '<div style="font-weight:800;font-size:16px;color:var(--mio-text-primary);">扫码接续对话</div><div style="font-size:12px;color:var(--mio-text-secondary);margin-top:5px;line-height:1.4;">长按或扫描二维码<br>立即参与精彩聊天</div>';
 
       const qrImg = document.createElement("img");
       qrImg.src = qrUrl.value;
       qrImg.style.cssText =
-        "width:68px;height:68px;flex-shrink:0;border:2px solid #f8f9fa;border-radius:8px;";
+        "width:68px;height:68px;flex-shrink:0;border:2px solid var(--mio-border-color-light);border-radius:8px;";
       qrImg.crossOrigin = "anonymous";
 
       footer.appendChild(textDiv);

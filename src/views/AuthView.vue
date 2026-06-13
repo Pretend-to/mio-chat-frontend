@@ -100,10 +100,10 @@ onMounted(() => {
 </script>
 
 <style lang="sass" scoped>
-$baseColor: #1d93ab
+$baseColor: var(--mio-color-primary)
 
 .auth-view
-    background-color: white
+    background-color: var(--mio-bg-page)
     flex-grow: 1
     display: grid
     place-items: center
@@ -140,7 +140,7 @@ $baseColor: #1d93ab
             white-space: nowrap
             font-size: 50px
             letter-spacing: 5px
-            color: black
+            color: var(--mio-text-primary)
             margin: 25px
 
         .hint
@@ -178,7 +178,7 @@ $baseColor: #1d93ab
                 border-radius: 8px
 
                 &:hover
-                    box-shadow: 0 0 2px black
+                    box-shadow: 0 0 2px var(--mio-text-primary)
 
             .later
                 background: transparent

@@ -1007,24 +1007,7 @@ onUnmounted(() => {
   overflow-y: auto;
   overflow-x: hidden;
 
-  // 自定义滚动条样式
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
 
-  &::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 3px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 3px;
-
-    &:hover {
-      background: #a8a8a8;
-    }
-  }
 
   .tools-section {
     margin-top: 24px;

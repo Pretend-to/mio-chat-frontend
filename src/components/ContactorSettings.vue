@@ -281,7 +281,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 24px;
-  background: #fff;
+  background: var(--mio-bg-card);
   border-radius: 16px;
   margin-bottom: 24px;
 }
@@ -297,8 +297,8 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   background-size: cover;
   background-position: center;
-  background-color: #f0f0f0;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background-color: var(--mio-bg-page);
+  border: 1px solid var(--mio-border-color-light);
 }
 
 .profile-info {
@@ -319,7 +319,7 @@ onBeforeUnmount(() => {
 
 .profile-id {
   font-size: 13px;
-  color: #999;
+  color: var(--mio-text-secondary);
   margin: 4px 0 8px;
   white-space: nowrap;
   overflow: hidden;
@@ -327,7 +327,7 @@ onBeforeUnmount(() => {
 }
 
 .status-text {
-  color: #000;
+  color: var(--mio-text-primary);
   font-size: 15px;
   display: flex;
   align-items: center;
@@ -335,12 +335,12 @@ onBeforeUnmount(() => {
 }
 
 .online-indicator {
-  color: #2ecc71;
+  color: var(--mio-color-success);
   font-size: 12px;
 }
 
 .online-indicator.offline {
-  color: #ccc;
+  color: var(--mio-text-placeholder);
 }
 
 /* Tabs */
@@ -361,7 +361,7 @@ onBeforeUnmount(() => {
 
 .segmented-tabs {
   display: flex;
-  background: #f0f2f5;
+  background: var(--mio-bg-page);
   padding: 3px;
   border-radius: 10px;
   width: fit-content;
@@ -374,16 +374,16 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
-  color: #666;
+  color: var(--mio-text-regular);
   cursor: pointer;
   transition: all 0.2s;
   user-select: none;
 }
 
 .tab-item.active {
-  background: #fff;
-  color: #000;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  background: var(--mio-bg-card);
+  color: var(--mio-text-primary);
+  box-shadow: var(--mio-shadow-light);
 }
 
 /* Content Area */
@@ -396,7 +396,7 @@ onBeforeUnmount(() => {
 
 .divider {
   height: 1px;
-  background: #f0f0f0;
+  background: var(--mio-border-color-lighter);
   margin: 24px 0;
   width: 100%;
 }
@@ -404,13 +404,13 @@ onBeforeUnmount(() => {
 /* Mobile Adaptation */
 @media (max-width: 768px) {
   .settings-container {
-    background: white;
+    background: var(--mio-bg-page);
     flex: 1;
     overflow: hidden;
   }
 
   .profile-header {
-    background: #fff;
+    background: var(--mio-bg-card);
     margin-bottom: 12px;
     padding: 24px 16px;
     border-radius: 16px;
@@ -426,7 +426,7 @@ onBeforeUnmount(() => {
   .segmented-tabs {
     margin: 0;
     padding: 4px;
-    background: #f5f6f8;
+    background: var(--mio-bg-page);
   }
 
   .tab-item {
@@ -436,7 +436,7 @@ onBeforeUnmount(() => {
 
   .settings-content {
     padding: 0;
-    background: #ffffff;
+    background: var(--mio-bg-page);
     flex: 1;
     overflow: hidden;
     /* Constrain this so child can scroll */
@@ -492,7 +492,7 @@ onBeforeUnmount(() => {
 .no-skills {
   padding: 40px;
   text-align: center;
-  color: #ccc;
+  color: var(--mio-text-placeholder);
   font-size: 13px;
 }
 </style>

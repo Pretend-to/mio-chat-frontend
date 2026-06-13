@@ -70,36 +70,15 @@
                     <span class="name">{{ message.data.name }}</span>
                   </div>
                   <div class="bubble-wrapper">
-                    <template
-                      v-for="(elm, elmIdx) of message.data.content"
-                      :key="elmIdx"
-                    >
-                      <MdRenderer
-                        v-if="elm.type === 'text'"
-                        :md="elm.data.text"
-                        :theme="'github'"
-                        :markdown-it-options="{ breaks: true }"
-                        :auto-cors="corsOption"
-                      />
-                      <MdRenderer
-                        v-else-if="elm.type === 'image'"
-                        :md="`![image](${elm.data.file})`"
-                        :key="elm.data.file"
-                        :custom-plugins="mioPlugins"
-                        :theme="'github'"
-                        :auto-cors="corsOption"
-                      />
-                      <ForwardMsg
-                        v-else-if="elm.type === 'nodes'"
-                        :contactor="contactor"
-                        :messages="elm.data.messages"
-                      />
-                      <MdRenderer
-                        v-else
-                        :md="`尚未支持的消息类型：${elm.type}`"
-                        :auto-cors="corsOption"
-                      />
-                    </template>
+                    <MessageContent
+                      :content="message.data.content"
+                      :contactor="contactor"
+                      :isStreaming="false"
+                      :messageIndex="index"
+                      :mioPlugins="mioPlugins"
+                      :katexPluginList="katexPluginList"
+                      :mdOptions="mdOptions"
+                    />
                   </div>
                 </div>
               </div>
@@ -112,17 +91,16 @@
 </template>
 
 <script>
-import MdRenderer from "mio-previewer";
 import { client } from "@/lib/runtime.js";
 import { imageViewerPlugin } from "mio-previewer/plugins/custom";
+import { katexPlugin } from "mio-previewer/plugins/markdown-it";
 import { getLastMessageSummary } from "@/stores/contactorsStore.js";
-
-
+import MessageContent from "@/components/chat/MessageContent.vue";
 
 export default {
   name: "ForwardMsg",
   components: {
-    MdRenderer,
+    MessageContent,
   },
   props: {
     messages: {
@@ -158,15 +136,22 @@ export default {
     }
   },
   data() {
-    const mioPlugins = [
-      {
-        plugin: imageViewerPlugin,
-      },
-    ];
     return {
       onPhone: false,
       showBox: false,
-      mioPlugins: mioPlugins,
+      mioPlugins: [
+        {
+          plugin: imageViewerPlugin,
+        },
+      ],
+      katexPluginList: [
+        {
+          plugin: katexPlugin,
+        },
+      ],
+      mdOptions: {
+        breaks: true,
+      },
     };
   },
   created() {
@@ -230,7 +215,7 @@ export default {
 #forward-msg-head {
   font-size: 0.8rem;
   font-weight: 600;
-  color: #333333;
+  color: var(--mio-text-primary);
   margin-bottom: 0.4rem;
 }
 
@@ -243,7 +228,7 @@ export default {
 
 #forward-msg-summary {
   font-size: 0.75rem;
-  color: #666666;
+  color: var(--mio-text-regular);
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
@@ -251,10 +236,10 @@ export default {
 
 #forward-msg-foot {
   margin-top: 0.5rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  border-top: 1px solid var(--mio-border-color-lighter);
   padding-top: 0.4rem;
   font-size: 0.7rem;
-  color: #0099ff;
+  color: var(--mio-color-primary);
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -281,9 +266,9 @@ export default {
   max-width: 92vw;
   height: 38rem;
   max-height: 82vh;
-  background: #ffffff;
+  background: var(--mio-bg-card);
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--mio-border-color-light);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
   display: flex;
   flex-direction: column;
@@ -305,21 +290,21 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  background: #fafafa;
+  border-bottom: 1px solid var(--mio-border-color-light);
+  background: var(--mio-bg-page);
 }
 
 .forward-msg-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #333333;
+  color: var(--mio-text-primary);
 }
 
 .forward-close-btn {
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: #999999;
+  color: var(--mio-text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -332,7 +317,7 @@ export default {
 }
 
 .forward-close-btn:hover {
-  color: #ef4444;
+  color: var(--mio-color-danger);
 }
 
 /* Mobile specific styling */
@@ -340,7 +325,7 @@ export default {
   background: none;
   border: none;
   font-size: 1.2rem;
-  color: #333333;
+  color: var(--mio-text-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -368,7 +353,7 @@ export default {
   flex: 1;
   overflow-y: auto;
   padding: 1.5rem;
-  background: #f8f9fa;
+  background: var(--mio-bg-chat-window);
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -417,8 +402,8 @@ export default {
 
 .wholename > .title {
   font-size: 0.65rem;
-  background: rgba(0, 153, 255, 0.08);
-  color: #0099ff;
+  background-color: var(--mio-bg-title-badge);
+  color: var(--mio-color-primary);
   padding: 0.1rem 0.3rem;
   border-radius: 4px;
   font-weight: 500;
@@ -426,14 +411,14 @@ export default {
 
 .wholename > .name {
   font-size: 0.75rem;
-  color: #666666;
+  color: var(--mio-text-regular);
   font-weight: 500;
 }
 
 /* Bubble Styling */
 .bubble-wrapper {
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: var(--mio-bg-card);
+  border: 1px solid var(--mio-border-color-light);
   border-radius: 4px 14px 14px 14px;
   padding: 0.6rem 0.8rem;
   max-width: 88%;
@@ -444,7 +429,7 @@ export default {
   gap: 0.4rem;
   font-size: 0.85rem;
   line-height: 1.4;
-  color: #333333;
+  color: var(--mio-text-primary);
 }
 
 .bubble-wrapper :deep(p) {

@@ -148,12 +148,12 @@ const highlight = (text, query) => {
   top: 4rem;
   left: 0.5rem;
   right: -2rem; /* Exceeds friendList by 2rem */
-  background-color: #ffffff;
+  background-color: var(--mio-bg-card);
   border-radius: 10px;
   box-shadow:
     0 4px 20px rgba(0, 0, 0, 0.15),
     0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--mio-border-color-light);
   max-height: calc(100vh - 6rem);
   overflow-y: auto;
   overflow-x: hidden !important;
@@ -169,7 +169,7 @@ const highlight = (text, query) => {
 
 .search-group-title {
   font-size: 0.75rem;
-  color: #8c8c8c;
+  color: var(--mio-text-secondary);
   text-align: left;
   padding: 0.4rem 0.8rem 0.2rem 0.8rem;
   font-weight: 500;
@@ -188,7 +188,7 @@ const highlight = (text, query) => {
 }
 
 .search-item:hover {
-  background-color: #f5f5f5;
+  background-color: var(--mio-bg-hover);
 }
 
 .search-item .avatar {
@@ -216,7 +216,7 @@ const highlight = (text, query) => {
 .search-item .name {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #333;
+  color: var(--mio-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -224,7 +224,7 @@ const highlight = (text, query) => {
 
 .search-item .title-text {
   font-size: 0.75rem;
-  color: #999;
+  color: var(--mio-text-secondary);
 }
 
 .search-msg-header {
@@ -239,7 +239,7 @@ const highlight = (text, query) => {
 .search-msg-header .name {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #333;
+  color: var(--mio-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -247,14 +247,14 @@ const highlight = (text, query) => {
 
 .search-msg-header .time {
   font-size: 0.7rem;
-  color: #999;
+  color: var(--mio-text-secondary);
   flex-shrink: 0;
   margin-left: 0.5rem;
 }
 
 .search-msg-preview {
   font-size: 0.8rem;
-  color: #666;
+  color: var(--mio-text-regular);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -268,14 +268,14 @@ const highlight = (text, query) => {
   align-items: center;
   justify-content: center;
   padding: 3rem 1rem;
-  color: #aaa;
+  color: var(--mio-text-placeholder);
   text-align: center;
 }
 
 .search-empty .empty-icon {
   font-size: 2rem;
   margin-bottom: 0.5rem;
-  color: #ddd;
+  color: var(--mio-border-color);
 }
 
 .search-empty .empty-text {
@@ -284,7 +284,7 @@ const highlight = (text, query) => {
 
 :deep(.search-highlight) {
   background-color: transparent !important;
-  color: rgb(0, 153, 255) !important;
+  color: var(--mio-color-primary) !important;
   font-weight: bold;
   padding: 0;
 }
@@ -298,12 +298,12 @@ const highlight = (text, query) => {
   transition: background-color 0.2s;
   gap: 0.6rem;
   font-size: 0.85rem;
-  color: #555;
+  color: var(--mio-text-regular);
   min-width: 0;
 }
 
 .search-history-item:hover {
-  background-color: #f5f5f5;
+  background-color: var(--mio-bg-hover);
 }
 
 .search-history-item .history-text {
@@ -314,7 +314,7 @@ const highlight = (text, query) => {
 }
 
 .search-history-item .delete-history-btn {
-  color: #ccc;
+  color: var(--mio-text-placeholder);
   cursor: pointer;
   padding: 2px 6px;
   font-size: 0.75rem;
@@ -326,7 +326,7 @@ const highlight = (text, query) => {
 }
 
 .search-history-item .delete-history-btn:hover {
-  color: #ff4d4f;
-  background-color: rgba(255, 77, 79, 0.08);
+  color: var(--mio-color-danger);
+  background-color: var(--mio-bg-hover);
 }
 </style>

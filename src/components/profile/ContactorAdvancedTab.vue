@@ -45,7 +45,7 @@
             content="开启后，LLM 执行 shell 命令（sh）时将跳过所有二次确认步骤。此模式极度危险，可能导致系统损坏或数据丢失！"
             placement="top"
           >
-            <span style="color: #e6a23c; margin-left: 4px; cursor: help"
+            <span style="color: var(--mio-color-warning); margin-left: 4px; cursor: help"
               >⚠️</span
             >
           </el-tooltip>
@@ -54,7 +54,7 @@
           <el-switch
             v-model="localYoloMode"
             @change="updateGeneralSettings"
-            active-color="#f56c6c"
+            active-color="var(--mio-color-danger)"
           />
         </div>
       </div>
@@ -193,7 +193,7 @@ watch(
 .no-skills {
   padding: 40px;
   text-align: center;
-  color: #ccc;
+  color: var(--mio-text-placeholder);
   font-size: 13px;
 }
 </style>

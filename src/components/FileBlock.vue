@@ -89,7 +89,7 @@ export default {
   align-items: center;
   padding: 8px;
   border-radius: 5px;
-  background-color: #f5f5f5;
+  background-color: var(--mio-bg-page);
   margin: 0.5rem 0;
   width: 12rem;
   position: relative;
@@ -141,7 +141,7 @@ export default {
 .file-name {
   font-weight: bold;
   font-size: 12px;
-  color: #333;
+  color: var(--mio-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -149,6 +149,6 @@ export default {
 
 .file-info {
   font-size: 10px;
-  color: #777;
+  color: var(--mio-text-secondary);
 }
 </style>

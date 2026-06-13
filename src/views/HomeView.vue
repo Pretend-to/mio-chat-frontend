@@ -76,7 +76,7 @@ export default {
 
 #main-mobile {
   width: 100%;
-  height: calc(100% - 3.2rem - env(safe-area-inset-bottom, 0px));
+  height: calc(100% - 4.2rem - env(safe-area-inset-bottom, 0px));
   flex-grow: 1;
   flex-shrink: 1;
   min-height: 0;

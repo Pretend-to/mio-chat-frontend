@@ -4,11 +4,10 @@
  * @lastEditTime 2024-04-25 06:25:30
  */
 
-import "./assets/global.sass";
+import "./assets/styles/main.scss";
 import "element-plus/dist/index.css";
+import "element-plus/theme-chalk/dark/css-vars.css";
 import "mio-previewer/style.css";
-import "./assets/mio.css";
-import "./assets/element-overrides.css"; // Import global overrides
 
 import { createApp } from "vue";
 import { createPinia } from "pinia";

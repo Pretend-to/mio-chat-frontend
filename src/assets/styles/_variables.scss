@@ -1,0 +1,100 @@
+// Design Tokens & CSS Variables
+
+:root {
+  // Brand Colors
+  --mio-color-primary: #0099ff;
+  --mio-color-primary-hover: #007acd;
+  --mio-color-success: #67c23a;
+  --mio-color-warning: #e6a23c;
+  --mio-color-danger: #f56c6c;
+  --mio-color-info: #909399;
+
+  // Background Colors
+  --mio-bg-page: #f2f2f2;
+  --mio-bg-sidebar: #f5f5f5;
+  --mio-bg-sidebar-mobile: rgba(241, 244, 254, 0.85);
+  --mio-bg-statusbar-friendlist: #f3f5fe;
+  --mio-bg-card: #ffffff;
+  --mio-bg-chat-window: #f2f2f2;
+  --mio-bg-hover: rgba(0, 0, 0, 0.05);
+  --mio-bg-active: rgba(0, 153, 255, 0.12);
+  --mio-bg-blur: rgba(255, 255, 255, 0.8);
+  --mio-bg-active-item: var(--mio-color-primary);
+  --mio-bg-user-bubble: var(--mio-color-primary);
+  --mio-bg-title-badge: rgba(0, 153, 255, 0.15);
+
+  // Text Colors
+  --mio-text-primary: #303133;
+  --mio-text-regular: #606266;
+  --mio-text-secondary: #909399;
+  --mio-text-placeholder: #c0c4cc;
+
+  // Border & Shadows
+  --mio-border-color: #dcdfe6;
+  --mio-border-color-light: #e4e7ed;
+  --mio-border-color-lighter: #ebeef5;
+  --mio-border-radius-base: 8px;
+  --mio-border-radius-large: 16px;
+  --mio-shadow-light: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+
+  // Transitions
+  --mio-transition-base: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --mio-transition-fast: all 0.2s ease;
+
+  // Scrollbar Tokens
+  --mio-scrollbar-thumb: rgba(0, 0, 0, 0.2);
+  --mio-scrollbar-thumb-hover: rgba(0, 0, 0, 0.35);
+
+  // Dynamic Tags
+  --mio-tag-lightness: 96%;
+
+  // Status Highlight Backgrounds (Light Theme)
+  --mio-bg-primary-light: #ecf5ff;
+  --mio-bg-success-light: #f0f9ff;
+  --mio-bg-warning-light: #fdf6ec;
+  --mio-bg-danger-light: #fef0f0;
+  --mio-bg-info-light: #f4f4f5;
+}
+
+// Dark Mode Support
+[data-theme="dark"] {
+  --mio-bg-page: #222222;
+  --mio-bg-sidebar: #222222;
+  --mio-bg-sidebar-mobile: rgba(34, 34, 34, 0.85);
+  --mio-bg-statusbar-friendlist: #242424;
+  --mio-bg-card: #2f2f2f;
+  --mio-bg-chat-window: #222222;
+  --mio-bg-hover: #2f2f2f;
+  --mio-bg-active: #3f3f3f;
+  --mio-bg-blur: rgba(34, 34, 34, 0.8);
+  --mio-bg-active-item: #3f3f3f;
+  --mio-bg-user-bubble: #173D63;
+  --mio-bg-title-badge: rgba(0, 153, 255, 0.25);
+
+  --mio-text-primary: #ffffff;
+  --mio-text-regular: #acacac;
+  --mio-text-secondary: #acacac;
+  --mio-text-placeholder: #7c7c7c;
+
+  --mio-border-color: #2f2f2f;
+  --mio-border-color-light: #2f2f2f;
+  --mio-border-color-lighter: #222222;
+
+  // Scrollbar Tokens
+  --mio-scrollbar-thumb: rgba(255, 255, 255, 0.25);
+  --mio-scrollbar-thumb-hover: rgba(255, 255, 255, 0.45);
+
+  // Dynamic Tags
+  --mio-tag-lightness: 25%;
+
+  // Status Highlight Backgrounds (Dark Theme)
+  --mio-bg-primary-light: rgba(0, 153, 255, 0.15);
+  --mio-bg-success-light: rgba(103, 194, 58, 0.15);
+  --mio-bg-warning-light: rgba(230, 162, 60, 0.15);
+  --mio-bg-danger-light: rgba(245, 108, 108, 0.15);
+  --mio-bg-info-light: rgba(144, 147, 153, 0.15);
+}
+
+// Sass Compile-time Variables
+$breakpoint-mobile: 768px;
+$breakpoint-tablet: 1024px;

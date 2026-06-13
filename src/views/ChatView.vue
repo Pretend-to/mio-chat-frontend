@@ -1376,7 +1376,7 @@ onMounted(() => {
   client.on("scroll_to_message", performScrollToMessage);
   window.addEventListener("beforeunload", handleBeforeUnload);
 
-  useStatusBarColor("#ffffff");
+  useStatusBarColor("var(--mio-bg-statusbar-friendlist)");
 });
 
 onBeforeUnmount(() => {
@@ -1609,7 +1609,6 @@ onBeforeUnmount(() => {
 
 <style lang="sass" scoped>
 $mobile: 768px
-$icon-hover: #09f
 
 .preview
     position: fixed
@@ -1625,16 +1624,13 @@ $icon-hover: #09f
     position: relative
     display: flex
     flex-grow: 1
-    background-color: #f2f2f2
+    background-color: var(--mio-bg-chat-window)
     flex-direction: column
-
-
-
 
 .multi-select-action-bar
     flex-shrink: 0
     flex-basis: 11rem
-    border-top: 0.0625rem solid rgba(128, 128, 128, 0.502)
+    border-top: 0.0625rem solid var(--mio-border-color-light)
     display: flex
     flex-direction: row
     align-items: center
@@ -1650,7 +1646,7 @@ $icon-hover: #09f
         position: fixed
         bottom: 0
         z-index: 1000
-        background-color: hsla(0, 0%, 100%, 0.8)
+        background-color: var(--mio-bg-blur)
         backdrop-filter: blur(0.5rem)
 
     .actions
@@ -1667,7 +1663,7 @@ $icon-hover: #09f
         align-items: center
         justify-content: center
         cursor: pointer
-        color: #333
+        color: var(--mio-text-primary)
         flex-shrink: 0
         gap: 0.4rem
         transition: opacity 0.2s
@@ -1683,7 +1679,7 @@ $icon-hover: #09f
             width: 2.8rem
             height: 2.8rem
             border-radius: 50%
-            background-color: #fff
+            background-color: var(--mio-bg-card)
             display: flex
             align-items: center
             justify-content: center
@@ -1691,14 +1687,14 @@ $icon-hover: #09f
 
             i
                 font-size: 1.25rem
-                color: #333
+                color: var(--mio-text-primary)
 
         &:hover .action-icon
-            background-color: #f2f2f2
+            background-color: var(--mio-bg-hover)
 
         .action-label
             font-size: 0.72rem
-            color: #555
+            color: var(--mio-text-regular)
             white-space: nowrap
 
             @media (max-width: $mobile)
@@ -1710,7 +1706,7 @@ $icon-hover: #09f
         top: 50%
         transform: translateY(-50%)
         font-size: 1.4rem
-        color: #999
+        color: var(--mio-text-secondary)
         cursor: pointer
         line-height: 1
         padding: 0.25rem 0.5rem
@@ -1722,11 +1718,8 @@ $icon-hover: #09f
         user-select: none
 
         &:hover
-            color: #333
-            background-color: #f2f2f2
-
-
-
+            color: var(--mio-text-primary)
+            background-color: var(--mio-bg-hover)
 
 .black-overlay
     position: fixed
@@ -1736,7 +1729,6 @@ $icon-hover: #09f
     height: 100%
     background-color: rgba(0, 0, 0, 0.4)
     z-index: 1001
-/* z-index 属性设置元素的堆叠顺序。*/
 
 #roll-buttom-button
     position: fixed
@@ -1744,7 +1736,7 @@ $icon-hover: #09f
     cursor: pointer
     display: flex
     z-index: 1000
-    background-color: #fff
+    background-color: var(--mio-bg-card)
     width: 4rem
     height: 1.5rem
     border-radius: 0.75rem
@@ -1753,11 +1745,11 @@ $icon-hover: #09f
     box-shadow: 0 0 0.25rem rgba(0, 0, 0, 0.2)
     transition: background-color 0.3s ease, transform 0.3s ease
     &:hover
-        background-color: #f0f0f0
+        background-color: var(--mio-bg-hover)
         transform: scale(1.1)
 
     &:hover
-        color: $icon-hover
+        color: var(--mio-color-primary)
     i
         font-size: 1rem
 
@@ -1774,7 +1766,6 @@ $icon-hover: #09f
     left: 50%
     transform: translate(-50%, -50%)
 
-
 .window-controls
     display: flex
     flex-basis: 100%
@@ -1789,16 +1780,14 @@ $icon-hover: #09f
         flex: 0 0 2rem
 
         &:hover
-            background-color: rgb(231, 231, 231)
+            background-color: var(--mio-bg-hover)
 
         &#close:hover
             background-color: rgb(255, 0, 0)
             color: white
 
-
 .button#close:hover svg path
     fill: #fff
-
 
 .voice-box
     display: flex
@@ -1808,7 +1797,7 @@ $icon-hover: #09f
 
     .icon
         flex-basis: 1.5rem
-        background-color: rgb(0, 0, 0)
+        background-color: var(--mio-bg-sidebar)
         display: flex
         justify-content: center
         align-items: center
@@ -1829,7 +1818,7 @@ $icon-hover: #09f
     padding: 0.25rem
     aspect-ratio: 1
     border-radius: 50%
-    background: rgb(0, 153, 255)
+    background: var(--mio-color-primary)
     --_m: conic-gradient(#0000 10%, #000), linear-gradient(#000 0 0) content-box
     -webkit-mask: var(--_m)
     mask: var(--_m)
@@ -1844,7 +1833,7 @@ $icon-hover: #09f
 
 @media (max-width: 600px)
     .delay-num
-        color: black
+        color: var(--mio-text-primary)
 
     .window-controls
         display: none
@@ -1878,7 +1867,7 @@ $icon-hover: #09f
 .drag-select-rect
     position: absolute
     background-color: rgba(9, 168, 255, 0.15)
-    border: 1.5px solid #00a8ff
+    border: 1.5px solid var(--mio-color-primary)
     border-radius: 4px
     z-index: 100
     pointer-events: none
@@ -1886,17 +1875,17 @@ $icon-hover: #09f
 .select-banner
     position: absolute
     left: 0.5rem
-    background: rgba(255, 255, 255, 0.95)
+    background: var(--mio-bg-blur)
     backdrop-filter: blur(8px)
     -webkit-backdrop-filter: blur(8px)
-    border: 1px solid rgba(0, 168, 255, 0.2)
+    border: 1px solid var(--mio-border-color-light)
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.02)
     border-radius: 20px
     padding: 6px 16px
     display: flex
     align-items: center
     gap: 6px
-    color: #00a8ff
+    color: var(--mio-color-primary)
     font-size: 0.85rem
     font-weight: 500
     z-index: 100
@@ -1905,7 +1894,7 @@ $icon-hover: #09f
     transform: translateY(0)
 
     &:hover
-        background: rgba(255, 255, 255, 1)
+        background: var(--mio-bg-card)
         box-shadow: 0 6px 16px rgba(0, 168, 255, 0.15)
         transform: scale(1.03)
 
@@ -2002,9 +1991,9 @@ $icon-hover: #09f
     0%
         background-color: transparent
     20%
-        background-color: rgba(0, 0, 0, 0.06)
+        background-color: var(--mio-bg-hover)
     80%
-        background-color: rgba(0, 0, 0, 0.06)
+        background-color: var(--mio-bg-hover)
     100%
         background-color: transparent
 </style>

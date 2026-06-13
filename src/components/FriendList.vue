@@ -420,7 +420,7 @@ const stopResize = () => {
   document.removeEventListener("mouseup", stopResize);
 };
 
-useStatusBarColor(() => showMobileSearch.value ? "#ffffff" : "#f1f4fe");
+useStatusBarColor(() => showMobileSearch.value ? "var(--mio-bg-page)" : "var(--mio-bg-statusbar-friendlist)");
 
 // Lifecycle
 onMounted(() => {
@@ -535,10 +535,10 @@ onBeforeUnmount(() => {
           </div>
           <div class="info">
             <div class="name">{{ item.name }}</div>
-            <div id="time" class="msginfo">
+            <div class="time msginfo">
               {{ getContactorLastTime(item.messageChain) }}
             </div>
-            <div id="msgctt" class="msginfo">
+            <div class="msgctt msginfo">
               <template v-if="item.draft">
                 <span v-if="!onPhone" class="mio-icon mio-icon-draft"></span>
                 <span v-else class="draft-text">[草稿] </span>
@@ -556,7 +556,11 @@ onBeforeUnmount(() => {
         <div
           v-if="onPhone"
           class="swipe-actions"
-          :style="swipedId === item.id ? { opacity: 1 } : { opacity: 0 }"
+          :style="
+            swipedId === item.id
+              ? { width: `${swipeOffset}px`, opacity: 1 }
+              : { width: '0px', opacity: 0 }
+          "
         >
           <div
             class="action-btn pin"
@@ -620,7 +624,8 @@ onBeforeUnmount(() => {
   flex-direction: column;
   position: relative;
   background-color: transparent;
-  border-right: 1px solid #ebebeb;
+  border-left: 1px solid var(--mio-border-color-light);
+  border-right: 1px solid var(--mio-border-color-light);
 }
 
 .resizer {
@@ -653,6 +658,7 @@ onBeforeUnmount(() => {
   height: 1.125rem;
   background-color: transparent;
   border: 0rem;
+  color: var(--mio-text-primary);
 }
 
 #main-search:focus {
@@ -672,7 +678,7 @@ button#searchButton {
   flex-grow: 1;
   flex-basis: 1rem;
   border-radius: 0.3125rem;
-  background-color: #ebebeb;
+  background-color: var(--mio-bg-hover);
   height: 2rem;
   display: flex;
   align-items: center;
@@ -698,13 +704,14 @@ button#addcont {
   width: 100%;
   height: 100%;
   border: none;
-  background-color: #ebebeb;
+  background-color: var(--mio-bg-hover);
   transition: background-color 0.2s ease;
   cursor: pointer;
+  color: var(--mio-text-primary);
 }
 
 button#addcont:hover {
-  background-color: #e0e0e0;
+  background-color: var(--mio-bg-active);
 }
 
 .lists {
@@ -716,27 +723,25 @@ button#addcont:hover {
   max-height: 3.75rem;
   min-height: 3.75rem;
   -webkit-touch-callout: none;
-  /* border: .0625rem solid pink; */
+  color: var(--mio-text-primary);
 }
 
 .lists-wrapper#important {
-  background-color: #ebebeb;
+  background-color: var(--mio-bg-hover);
 }
 
 @media (hover: hover) {
   .lists:hover {
-    background-color: rgb(240, 240, 240);
-    /* border: .0625rem solid pink; */
+    background-color: var(--mio-bg-hover);
   }
 
   .lists-wrapper#important:hover {
-    background-color: #e0e0e0;
-    /* border: .0625rem solid pink; */
+    background-color: var(--mio-bg-active);
   }
 }
 
 .lists-wrapper#active .lists {
-  background-color: rgb(0, 153, 255);
+  background-color: var(--mio-bg-active-item, var(--mio-color-primary));
 }
 
 .lists > .avatar {
@@ -745,7 +750,7 @@ button#addcont:hover {
   height: 2.65rem;
   border-radius: 50%;
   overflow: hidden;
-  background-color: white;
+  background-color: #f2f2f2;
 }
 
 .avatar > img {
@@ -761,7 +766,7 @@ button#addcont:hover {
   position: absolute;
   right: 0rem;
   bottom: 0.6rem;
-  background-color: #ff4d4f;
+  background-color: var(--mio-color-danger);
   color: white;
   font-size: 0.55rem;
   font-weight: bold;
@@ -782,12 +787,14 @@ button#addcont:hover {
 .info {
   height: 100%;
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   flex: 0 0 calc(100% - 2.65rem);
   max-width: calc(100% - 2.65rem);
   flex-wrap: wrap;
   position: relative;
+  padding: 0.3rem 0;
+  box-sizing: border-box;
 }
 
 .lists-wrapper#active .lists * {
@@ -797,28 +804,35 @@ button#addcont:hover {
 .lists .name {
   flex-basis: 4rem;
   flex-grow: 1;
-  margin-top: 0.75rem;
+  margin-top: 0;
   font-size: 0.875rem;
   margin-left: 0.5rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.2;
 }
 
-.info #time {
+.info .time {
   font-size: 0.625rem;
   flex-grow: 1;
   text-align: right;
+  color: var(--mio-text-secondary);
+  margin-top: 0.15rem;
+  line-height: 1.2;
 }
 
-.info #msgctt {
+.info .msgctt {
   flex-basis: 100%;
   padding-right: 1rem;
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   margin-left: 0.5rem;
+  margin-top: 0.25rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--mio-text-secondary);
+  line-height: 1.2;
 }
 
 .people {
@@ -831,14 +845,15 @@ button#addcont:hover {
     flex-direction: column;
     width: 100%;
     max-width: none;
-    background-color: #fff;
+    background-color: var(--mio-bg-card);
+    border-left: none;
     border-right: none;
   }
 
   .mobile-qq-header {
     position: relative;
     padding: 0.75rem 1rem 0.5rem 1rem;
-    background-color: #f1f4fe;
+    background-color: var(--mio-bg-sidebar-mobile);
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
@@ -862,7 +877,7 @@ button#addcont:hover {
     border-radius: 50%;
     overflow: hidden;
     position: relative;
-    background-color: #fff;
+    background-color: var(--mio-bg-card);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
 
@@ -882,13 +897,13 @@ button#addcont:hover {
   .user-name {
     font-size: 1.05rem;
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--mio-text-primary);
     line-height: 1.2;
   }
 
   .user-status {
     font-size: 0.75rem;
-    color: #8e8e8e;
+    color: var(--mio-text-secondary);
     display: flex;
     align-items: center;
     gap: 4px;
@@ -896,7 +911,7 @@ button#addcont:hover {
 
   .header-actions .add {
     font-size: 1.3rem;
-    color: #333;
+    color: var(--mio-text-regular);
     cursor: pointer;
   }
 
@@ -906,13 +921,13 @@ button#addcont:hover {
 
   .search-bar {
     height: 36px;
-    background-color: #fff;
+    background-color: var(--mio-bg-card);
     border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    color: #999;
+    color: var(--mio-text-placeholder);
     font-size: 0.95rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   }
@@ -922,7 +937,7 @@ button#addcont:hover {
   }
 
   .people {
-    background-color: #fff;
+    background-color: var(--mio-bg-card);
     /* 移除圆角和阴影，保持连贯性 */
     border-top-left-radius: 0;
     border-top-right-radius: 0;
@@ -936,7 +951,7 @@ button#addcont:hover {
     position: relative;
     width: 100%;
     overflow: hidden;
-    background-color: #fff;
+    background-color: var(--mio-bg-card);
   }
 
   .lists {
@@ -956,10 +971,16 @@ button#addcont:hover {
     right: 0;
     top: 0;
     height: 100%;
-    width: 140px;
+    width: 0;
+    overflow: hidden;
     display: flex;
     z-index: 1;
-    transition: opacity 0.2s;
+    transition: opacity 0.2s, width 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+  }
+
+  .lists-wrapper.swiping .swipe-actions {
+    transition: none;
+    /* 滑动时禁用过渡，确保手势跟手性 */
   }
 
   .action-btn {
@@ -970,18 +991,23 @@ button#addcont:hover {
     color: #fff;
     font-size: 0.9rem;
     font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
   }
 
   .action-btn.pin {
-    background-color: #0099ff;
+    background-color: var(--mio-color-primary);
   }
 
   .action-btn.delete {
-    background-color: #ff4d4f;
+    background-color: var(--mio-color-danger);
   }
 
   .lists-wrapper#important {
-    background-color: #f1f4fe;
+    background-color: transparent;
+  }
+  .lists-wrapper#important .lists {
+    background-color: var(--mio-bg-sidebar-mobile);
   }
 
   /* 明确禁用移动端联系人列表项 hover 态变色 */
@@ -989,10 +1015,13 @@ button#addcont:hover {
     background-color: transparent;
   }
   .lists-wrapper#important:hover {
-    background-color: #f1f4fe;
+    background-color: transparent;
+  }
+  .lists-wrapper#important:hover .lists {
+    background-color: var(--mio-bg-sidebar-mobile);
   }
   .lists-wrapper#active .lists:hover {
-    background-color: rgb(0, 153, 255);
+    background-color: var(--mio-color-primary);
   }
 }
 
@@ -1006,7 +1035,7 @@ button#addcont:hover {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background-color: #ccc;
+  background-color: var(--mio-text-placeholder);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1019,7 +1048,7 @@ button#addcont:hover {
   position: absolute;
   width: 6px;
   height: 1.2px;
-  background-color: #ffffff;
+  background-color: var(--mio-bg-card);
 }
 .clear-btn::before {
   transform: rotate(45deg);
@@ -1028,7 +1057,7 @@ button#addcont:hover {
   transform: rotate(-45deg);
 }
 .clear-btn:hover {
-  background-color: #999;
+  background-color: var(--mio-text-secondary);
 }
 
 /* Transition Animations */

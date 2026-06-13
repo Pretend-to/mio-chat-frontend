@@ -177,7 +177,7 @@ const handleJumpMessage = (contactId, messageId) => {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: #ffffff;
+  background-color: var(--mio-bg-page);
   z-index: 2000;
   display: flex;
   flex-direction: column;
@@ -188,18 +188,19 @@ const handleJumpMessage = (contactId, messageId) => {
 .search-header {
   height: 56px;
   min-height: 56px;
-  background-color: #ffffff;
+  background-color: var(--mio-bg-page);
   padding: 0 1rem;
   display: flex;
   align-items: center;
   gap: 12px;
   box-sizing: border-box;
+  border-bottom: 1px solid var(--mio-border-color-light);
 }
 
 .search-input-container {
   flex-grow: 1;
   height: 36px;
-  background-color: #f1f4fe;
+  background-color: var(--mio-bg-hover);
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -214,7 +215,7 @@ const handleJumpMessage = (contactId, messageId) => {
   border: none;
   background: transparent;
   font-size: 0.95rem;
-  color: #333;
+  color: var(--mio-text-primary);
   padding: 0;
   height: 100%;
   width: 100%;
@@ -225,7 +226,7 @@ const handleJumpMessage = (contactId, messageId) => {
 }
 
 .search-icon {
-  color: #999;
+  color: var(--mio-text-placeholder);
   font-size: 1rem;
   flex-shrink: 0;
 }
@@ -238,7 +239,7 @@ const handleJumpMessage = (contactId, messageId) => {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background-color: #ccc;
+  background-color: var(--mio-text-placeholder);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -252,7 +253,7 @@ const handleJumpMessage = (contactId, messageId) => {
   position: absolute;
   width: 8px;
   height: 1.5px;
-  background-color: #ffffff;
+  background-color: var(--mio-bg-card);
 }
 .clear-btn::before {
   transform: rotate(45deg);
@@ -263,7 +264,7 @@ const handleJumpMessage = (contactId, messageId) => {
 
 .cancel-btn {
   font-size: 0.95rem;
-  color: #0099ff;
+  color: var(--mio-color-primary);
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
@@ -275,7 +276,7 @@ const handleJumpMessage = (contactId, messageId) => {
 .search-content {
   flex-grow: 1;
   overflow-y: auto;
-  background-color: #ffffff;
+  background-color: var(--mio-bg-page);
   display: flex;
   flex-direction: column;
 }
@@ -286,11 +287,11 @@ const handleJumpMessage = (contactId, messageId) => {
 
 .search-group-title {
   font-size: 0.75rem;
-  color: #8c8c8c;
+  color: var(--mio-text-secondary);
   text-align: left;
   padding: 0.8rem 1rem 0.4rem 1rem;
   font-weight: 500;
-  background-color: #ffffff;
+  background-color: var(--mio-bg-page);
 }
 
 .search-item {
@@ -299,8 +300,13 @@ const handleJumpMessage = (contactId, messageId) => {
   align-items: center;
   cursor: pointer;
   gap: 0.75rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid var(--mio-border-color-light);
   box-sizing: border-box;
+  background-color: var(--mio-bg-card);
+}
+
+.search-item:active {
+  background-color: var(--mio-bg-hover);
 }
 
 .search-item .avatar {
@@ -332,16 +338,18 @@ const handleJumpMessage = (contactId, messageId) => {
 .search-item .name {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #333;
+  color: var(--mio-text-primary);
   margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: left;
 }
 
 .search-item .title-text {
   font-size: 0.8rem;
-  color: #8e8e8e;
+  color: var(--mio-text-secondary);
+  text-align: left;
 }
 
 .search-msg-header {
@@ -355,7 +363,7 @@ const handleJumpMessage = (contactId, messageId) => {
 .search-msg-header .name {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #333;
+  color: var(--mio-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -363,22 +371,23 @@ const handleJumpMessage = (contactId, messageId) => {
 
 .search-msg-header .time {
   font-size: 0.75rem;
-  color: #999;
+  color: var(--mio-text-secondary);
   flex-shrink: 0;
 }
 
 .search-msg-preview {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--mio-text-regular);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   width: 100%;
+  text-align: left;
 }
 
 :deep(.search-highlight) {
   background-color: transparent !important;
-  color: rgb(0, 153, 255) !important;
+  color: var(--mio-color-primary) !important;
   font-weight: bold;
   padding: 0;
 }
@@ -391,8 +400,13 @@ const handleJumpMessage = (contactId, messageId) => {
   cursor: pointer;
   gap: 0.6rem;
   font-size: 0.9rem;
-  color: #444;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+  color: var(--mio-text-regular);
+  border-bottom: 1px solid var(--mio-border-color-light);
+  background-color: transparent;
+}
+
+.search-history-item:active {
+  background-color: var(--mio-bg-hover);
 }
 
 .search-history-item .history-text {
@@ -400,10 +414,11 @@ const handleJumpMessage = (contactId, messageId) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: left;
 }
 
 .search-history-item .delete-history-btn {
-  color: #ccc;
+  color: var(--mio-text-placeholder);
   cursor: pointer;
   padding: 4px 8px;
   font-size: 0.8rem;
@@ -412,8 +427,8 @@ const handleJumpMessage = (contactId, messageId) => {
 }
 
 .search-history-item .delete-history-btn:active {
-  color: #ff4d4f;
-  background-color: rgba(255, 77, 79, 0.08);
+  color: var(--mio-color-danger);
+  background-color: var(--mio-bg-hover);
 }
 
 /* Empty State */
@@ -424,14 +439,14 @@ const handleJumpMessage = (contactId, messageId) => {
   justify-content: center;
   flex-grow: 1;
   padding: 4rem 2rem;
-  color: #aaa;
+  color: var(--mio-text-secondary);
   text-align: center;
 }
 
 .search-empty .empty-icon {
   font-size: 3rem;
   margin-bottom: 1rem;
-  color: #ddd;
+  color: var(--mio-border-color);
 }
 
 .search-empty .empty-text {

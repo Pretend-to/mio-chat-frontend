@@ -155,7 +155,6 @@ export default {
   flex-direction: column;
   background-color: transparent;
   -webkit-app-region: drag;
-  border-right: 1px solid #ebebeb;
 }
 .options {
   display: flex;
@@ -184,19 +183,19 @@ export default {
   border-radius: 0.6rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: #555;
+  color: var(--mio-text-regular);
   text-decoration: none;
 }
 
 .icon-back:hover,
 .side-icon:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-  color: #000;
+  background-color: var(--mio-bg-hover);
+  color: var(--mio-text-primary);
 }
 
 .icon-back.active {
-  background-color: rgba(0, 153, 247, 0.1);
-  color: #0099f7;
+  background-color: var(--mio-bg-active);
+  color: var(--mio-color-primary);
 }
 
 .icon-back svg,
@@ -229,13 +228,13 @@ export default {
   #sidebar {
     width: 100%;
     flex-direction: row;
-    height: calc(3.2rem + env(safe-area-inset-bottom, 0px)) !important;
-    max-height: calc(3.2rem + env(safe-area-inset-bottom, 0px)) !important;
-    flex-basis: calc(3.2rem + env(safe-area-inset-bottom, 0px)) !important;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    background-color: rgba(241, 244, 254, 0.85);
+    height: calc(4.2rem + env(safe-area-inset-bottom, 0px)) !important;
+    max-height: calc(4.2rem + env(safe-area-inset-bottom, 0px)) !important;
+    flex-basis: calc(4.2rem + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)) !important;
+    background-color: var(--mio-bg-sidebar-mobile);
     backdrop-filter: blur(15px);
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    border-top: 1px solid var(--mio-border-color-light);
     border-right: none;
     box-sizing: border-box; /* Crucial to prevent safe-area padding from adding to height */
   }

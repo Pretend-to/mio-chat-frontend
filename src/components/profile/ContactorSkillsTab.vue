@@ -124,28 +124,28 @@ onBeforeUnmount(() => {
 }
 
 .skill-item {
-  background: #fff;
+  background: var(--mio-bg-card);
   border-radius: 12px;
   padding: 16px;
   display: flex;
   align-items: center;
   gap: 16px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
-  border: 1px solid #f0f0f0;
+  box-shadow: var(--mio-shadow-light);
+  border: 1px solid var(--mio-border-color-lighter);
   transition: all 0.2s;
   min-width: 0;
 }
 
 .skill-item:hover {
-  border-color: #409eff50;
-  background: #f9fcff;
+  border-color: var(--mio-bg-active);
+  background: var(--mio-bg-hover);
 }
 
 .skill-icon {
   width: 44px;
   height: 44px;
-  background: #f0f4ff;
-  color: #409eff;
+  background: var(--mio-bg-active);
+  color: var(--mio-color-primary);
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -179,7 +179,7 @@ onBeforeUnmount(() => {
 
 .skill-description {
   font-size: 12px;
-  color: #999;
+  color: var(--mio-text-secondary);
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -192,7 +192,7 @@ onBeforeUnmount(() => {
   grid-column: 1 / -1;
   padding: 40px;
   text-align: center;
-  color: #ccc;
+  color: var(--mio-text-placeholder);
   font-size: 13px;
 }
 
@@ -214,10 +214,10 @@ onBeforeUnmount(() => {
   }
 
   .skills-grid .skill-item {
-    background: #fff;
+    background: var(--mio-bg-card);
     margin-bottom: 0;
     border: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--mio-shadow-light);
     min-width: 0;
   }
 }

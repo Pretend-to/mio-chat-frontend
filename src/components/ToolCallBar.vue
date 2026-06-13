@@ -297,7 +297,7 @@ export default {
 
 .section-label {
   font-size: 10px;
-  color: #aaa;
+  color: var(--mio-text-placeholder);
   text-transform: uppercase;
   font-weight: bold;
 }
@@ -305,7 +305,7 @@ export default {
 .copy-text-btn {
   background: transparent;
   border: none;
-  color: #aaa;
+  color: var(--mio-text-placeholder);
   /* 与标签一致的浅灰色 */
   cursor: pointer;
   padding: 0;
@@ -317,7 +317,7 @@ export default {
 }
 
 .copy-text-btn:hover {
-  color: #1890ff;
+  color: var(--mio-color-primary);
   /* 悬浮时变蓝 */
   opacity: 1;
 }
@@ -326,7 +326,7 @@ export default {
   font-family: "Fira Code", monospace;
   font-size: 11px;
   background: transparent;
-  color: #666;
+  color: var(--mio-text-regular);
   white-space: pre-wrap;
   word-break: break-all;
   margin: 0;
@@ -334,12 +334,12 @@ export default {
 }
 
 .error-text {
-  color: #cf1322;
+  color: var(--mio-color-danger);
 }
 
 .extra-render-section {
   margin-top: 10px;
-  border-top: 1px dashed #eee;
+  border-top: 1px dashed var(--mio-border-color-light);
   padding-top: 10px;
   display: flex;
   flex-direction: column;
@@ -355,9 +355,9 @@ export default {
   max-width: 100%;
   border-radius: 6px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e8e8e8;
-  background-color: #f9f9f9;
+  box-shadow: var(--mio-shadow-light);
+  border: 1px solid var(--mio-border-color-light);
+  background-color: var(--mio-bg-page);
 }
 
 .extra-render-image {
@@ -370,7 +370,7 @@ export default {
 
 .extra-render-text {
   font-size: 13px;
-  color: #333;
+  color: var(--mio-text-primary);
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-all;

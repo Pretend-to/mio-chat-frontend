@@ -934,11 +934,11 @@ onMounted(async () => {
   line-height: 1.4;
   white-space: pre-wrap;
   word-break: break-all;
-  color: #4c4f56;
+  color: var(--mio-text-regular);
 }
 .execution-expand-details {
   padding: 15px 24px;
-  background-color: #fafbfd;
+  background-color: var(--mio-bg-page);
   border-radius: 4px;
 }
 .empty-executions {

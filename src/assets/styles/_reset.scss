@@ -1,0 +1,101 @@
+/* Global reset stylesheet */
+
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  text-decoration: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  outline: none;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  height: 100dvh;
+  width: 100vw;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+}
+
+// Global scrollbar styling optimization (Option 1)
+* {
+  // Standard properties for modern browsers (Firefox, Safari 18.2+, Chrome 121+)
+  scrollbar-color: var(--mio-scrollbar-thumb) transparent;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: var(--mio-scrollbar-thumb);
+    border-radius: 2px;
+    
+    &:hover {
+      background: var(--mio-scrollbar-thumb-hover);
+    }
+  }
+  
+  &::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
+// Enable overlay scrolling for common scrollable containers to float scrollbar over content
+.people,
+.preview-scroll-container,
+.settings-content,
+.tab-pane,
+.forward-msg-body,
+.input-area,
+.skills-scroll-container,
+.presets-scroll,
+.search-results-container,
+.el-dialog__body,
+.dialog-content,
+.config-content,
+.debug-container,
+.cropper-container,
+.message-window,
+.plugin-detail,
+.presets-list,
+.adapters-list,
+.selector-scrollbar,
+.action-block-details,
+.virtual-message-list-container {
+  overflow-y: auto !important;
+  overflow-y: overlay !important;
+}
+
+// Text selection optimization
+* {
+  ::selection {
+    background: rgba(0, 153, 255, 0.2);
+  }
+}

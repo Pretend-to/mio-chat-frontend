@@ -243,7 +243,7 @@ watch(
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f8f9fb;
+  background: var(--mio-bg-page);
   padding: 8px 12px;
   border-radius: 8px;
   overflow: hidden;
@@ -259,7 +259,7 @@ watch(
 .tool-name {
   width: 100%;
   font-size: 13px;
-  color: #555;
+  color: var(--mio-text-regular);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -472,7 +472,7 @@ onMounted(async () => {
     forbidden.value = true;
   }
 
-  useStatusBarColor("#ffffff");
+  useStatusBarColor("var(--mio-bg-card)");
 });
 
 onUnmounted(() => {
@@ -502,12 +502,12 @@ onUnmounted(() => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #f2f3f5; // 更柔和的背景色
+  background-color: var(--mio-bg-page); // 更柔和的背景色
 
   &.mobile-layout {
     width: 100%;
     height: 100vh;
-    background-color: #f8f9fa;
+    background-color: var(--mio-bg-page);
   }
 }
 
@@ -516,8 +516,8 @@ onUnmounted(() => {
   position: sticky;
   top: 0;
   z-index: 100;
-  background-color: #fff;
-  border-bottom: 1px solid #e4e7ed;
+  background-color: var(--mio-bg-card);
+  border-bottom: 1px solid var(--mio-border-color-light);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
@@ -536,7 +536,7 @@ onUnmounted(() => {
   height: 40px;
   border: none;
   background: none;
-  color: #606266;
+  color: var(--mio-text-regular);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -545,14 +545,14 @@ onUnmounted(() => {
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: #f5f7fa;
+    background-color: var(--mio-bg-hover);
   }
 }
 
 .mobile-title {
   font-size: 18px;
   font-weight: 600;
-  color: #303133;
+  color: var(--mio-text-primary);
   margin: 0;
   flex: 1;
   text-align: center;
@@ -584,7 +584,7 @@ onUnmounted(() => {
   right: 0;
   width: 280px;
   height: 100%;
-  background-color: #fff;
+  background-color: var(--mio-bg-card);
   transform: translateX(100%);
   transition: transform 0.3s ease;
   display: flex;
@@ -600,13 +600,13 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--mio-border-color-light);
 
   h2 {
     margin: 0;
     font-size: 18px;
     font-weight: 600;
-    color: #303133;
+    color: var(--mio-text-primary);
   }
 }
 
@@ -615,7 +615,7 @@ onUnmounted(() => {
   height: 32px;
   border: none;
   background: none;
-  color: #909399;
+  color: var(--mio-text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -624,7 +624,7 @@ onUnmounted(() => {
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: #f5f7fa;
+    background-color: var(--mio-bg-hover);
   }
 }
 
@@ -640,15 +640,15 @@ onUnmounted(() => {
   padding: 16px 20px;
   cursor: pointer;
   transition: background-color 0.2s;
-  color: #606266;
+  color: var(--mio-text-regular);
 
   &:hover {
-    background-color: #f5f7fa;
+    background-color: var(--mio-bg-hover);
   }
 
   &.active {
-    background-color: #ecf5ff;
-    color: #409eff;
+    background-color: var(--mio-bg-active);
+    color: var(--mio-color-primary);
     font-weight: 500;
   }
 
@@ -664,7 +664,7 @@ onUnmounted(() => {
 }
 
 .mobile-quick-actions {
-  border-top: 1px solid #e4e7ed;
+  border-top: 1px solid var(--mio-border-color-light);
   padding: 8px 0;
   margin-top: 8px;
 }
@@ -675,11 +675,11 @@ onUnmounted(() => {
   padding: 12px 20px;
   cursor: pointer;
   transition: background-color 0.2s;
-  color: #909399;
+  color: var(--mio-text-secondary);
   font-size: 14px;
 
   &:hover {
-    background-color: #f5f7fa;
+    background-color: var(--mio-bg-hover);
   }
 }
 
@@ -687,7 +687,7 @@ onUnmounted(() => {
   margin: 0;
   border-radius: 0;
   border: none;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--mio-border-color-light);
 
   &.mobile {
     margin: 0;
@@ -742,17 +742,17 @@ onUnmounted(() => {
     line-height: 50px;
     margin-bottom: 4px;
     border-radius: 8px; // 菜单项圆角
-    color: #606266;
+    color: var(--mio-text-regular);
 
     &:hover {
-      background-color: rgba(0, 0, 0, 0.04);
+      background-color: var(--mio-bg-hover);
     }
 
     &.is-active {
-      background-color: #fff; // 选中项白色背景
-      color: #409eff;
+      background-color: var(--mio-bg-card); // 选中项白色背景
+      color: var(--mio-color-primary);
       font-weight: 600;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); // 选中项轻微投影
+      box-shadow: var(--mio-shadow-light); // 选中项轻微投影
     }
 
     .el-icon {
@@ -763,7 +763,7 @@ onUnmounted(() => {
 
 .quick-actions {
   padding: 12px 0;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  border-top: 1px solid var(--mio-border-color-light);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -775,14 +775,14 @@ onUnmounted(() => {
     justify-content: flex-start;
     padding-left: 20px;
     border: 1px solid transparent;
-    background: rgba(255, 255, 255, 0.6);
-    color: #303133;
+    background: var(--mio-bg-blur);
+    color: var(--mio-text-primary);
 
     &:hover {
-      background: #fff;
-      border-color: #e0e0e0;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-      color: #303133;
+      background: var(--mio-bg-card);
+      border-color: var(--mio-border-color-light);
+      box-shadow: var(--mio-shadow-light);
+      color: var(--mio-text-primary);
     }
   }
 }
@@ -790,16 +790,16 @@ onUnmounted(() => {
 .admin-panel-content {
   flex: 1;
   overflow-y: auto;
-  background-color: #fff; // 内容区白色背景
+  background-color: var(--mio-bg-card); // 内容区背景
   border-radius: 16px; // 内容区大圆角
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04); // 柔和投影
+  box-shadow: var(--mio-shadow-light); // 柔和投影
   position: relative;
   padding: 0; // 内容区内部padding由各页面自己控制，或者在这里统一加
 
   &.mobile {
     border-radius: 0;
     box-shadow: none;
-    background-color: #f8f9fa;
+    background-color: var(--mio-bg-page);
   }
 }
 
@@ -880,21 +880,21 @@ onUnmounted(() => {
     // 在子页面时的样式
     &.sub-page {
       .mobile-title {
-        color: #409eff;
+        color: var(--mio-color-primary);
       }
       .back-button {
-        color: #409eff;
+        color: var(--mio-color-primary);
         &:hover {
-          background-color: #ecf5ff;
+          background-color: var(--mio-bg-active);
         }
       }
     }
     // 在首页时的样式
     &.main-page {
       .back-button {
-        color: #909399;
+        color: var(--mio-text-secondary);
         &:hover {
-          background-color: #f5f7fa;
+          background-color: var(--mio-bg-hover);
         }
       }
     }
@@ -909,7 +909,7 @@ onUnmounted(() => {
       left: 0;
       right: 0;
       height: 2px;
-      background: linear-gradient(90deg, transparent 0%, #409eff 50%, transparent 100%);
+      background: linear-gradient(90deg, transparent 0%, var(--mio-color-primary) 50%, transparent 100%);
       opacity: 0;
       transition: opacity 0.3s;
     }

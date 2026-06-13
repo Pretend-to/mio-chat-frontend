@@ -111,7 +111,7 @@
                     <el-dropdown-item command="retry"
                       >重新发送</el-dropdown-item
                     >
-                    <el-dropdown-item command="delete" style="color: #f56c6c"
+                    <el-dropdown-item command="delete" style="color: var(--mio-color-danger)"
                       >删除消息</el-dropdown-item
                     >
                   </el-dropdown-menu>
@@ -158,181 +158,18 @@
                 </div>
               </template>
 
-              <div
-                v-for="(element, elmIndex) of item.content"
-                :key="elmIndex"
-                class="inner-content"
-              >
-                <MdRenderer
-                  v-if="element.type === 'text'"
-                  :md="element.data.text"
-                  :theme="'github'"
-                  :isStreaming="
-                    item.role === 'other' &&
-                    ['pending', 'retrying'].includes(item.status) &&
-                    item.content.length - 1 === elmIndex
-                  "
-                  :custom-plugins="mioPlugins"
-                  :markdown-it-plugins="katexPluginList"
-                  :markdown-it-options="mdOptions"
-                  :auto-cors="corsOption"
-                />
-                <MdRenderer
-                  v-if="element.type === 'image'"
-                  :md="`![image](${element.data.file})`"
-                  :custom-plugins="mioPlugins"
-                  :markdown-it-plugins="katexPluginList"
-                  :theme="'github'"
-                  :key="element.data.file"
-                  :auto-cors="corsOption"
-                />
-                <span v-else-if="element.type === 'reply'" />
-                <ForwardMsg
-                  v-else-if="element.type === 'nodes'"
-                  :contactor="activeContactor"
-                  :messages="element.data.messages"
-                />
-                <FileBlock
-                  v-else-if="element.type === 'file'"
-                  :file-url="element.data.file"
-                />
-                <span v-else-if="element.type === 'at'" />
-                <span v-else-if="element.type === 'prompt_hint'" />
-                <ReasonBlock
-                  v-else-if="element.type === 'reason'"
-                  :end-time="element.data.endTime"
-                  :start-time="element.data.startTime"
-                  :content="element.data.text"
-                  :duration="element.data.duration"
-                />
-                <div
-                  v-else-if="element.type === 'blank'"
-                  class="blank-message"
-                  style="width: 10rem; height: 28.8px; position: relative"
-                >
-                  <span class="blank-loader"></span>
-                </div>
-                <div v-else-if="element.type === 'tool_call'" class="tool-call-container-wrapper" style="width: 100%">
-                  <template v-if="getToolName(element.data) === 'toolsmanager'">
-                    <ActionBlock
-                      iconClass="mio-icon-tool"
-                      title="配置管理 (ToolsManager)"
-                      :statusText="getToolsManagerStatus(element.data)"
-                      :isLoading="element.data.action === 'running' || element.data.action === 'pending' || element.data.action === 'started'"
-                      :isFailed="element.data.status === 'failed' || (element.data.result && element.data.result.success === false)"
-                      :collapsible="!!element.data.result"
-                      :defaultExpanded="isToolsManagerExpanded(elmIndex)"
-                      @toggle="toggleToolsManagerDetails(elmIndex)"
-                    >
-                      <div class="toolsmanager-detail">
-                        <template v-if="element.data.result && element.data.result.groups">
-                          <!-- List action details -->
-                          <div v-for="(toolsList, groupName) in element.data.result.groups" :key="groupName" class="toolsmanager-group">
-                            <div class="toolsmanager-group-title">{{ groupName }}</div>
-                            <div class="tools-grid-mini">
-                              <div v-for="t in toolsList" :key="t.name" class="tool-state-item" :class="{ disabled: !t.enabled }">
-                                <span class="tool-state-dot" :class="{ enabled: t.enabled }"></span>
-                                <span class="tool-state-name">{{ t.name }}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </template>
-                        <template v-else-if="element.data.result && element.data.result.toggledTools">
-                          <!-- Toggle action details -->
-                          <div class="toggle-summary">
-                            {{ element.data.result.enabled ? '已启用' : '已禁用' }}以下工具：
-                          </div>
-                          <div class="tools-grid-mini">
-                            <div v-for="tName in element.data.result.toggledTools" :key="tName" class="tool-state-item" :class="{ disabled: !element.data.result.enabled }">
-                              <span class="tool-state-dot" :class="{ enabled: element.data.result.enabled }"></span>
-                              <span class="tool-state-name">{{ tName }}</span>
-                            </div>
-                          </div>
-                        </template>
-                        <template v-else-if="element.data.result">
-                          <pre class="raw-result-json">{{ JSON.stringify(element.data.result, null, 2) }}</pre>
-                        </template>
-                      </div>
-                    </ActionBlock>
-                  </template>
-                  <template v-else>
-                    <ToolCallBar
-                      :tool-call="element.data"
-                      :mio-plugins="mioPlugins"
-                      :katex-plugin-list="katexPluginList"
-                    />
-                    <div
-                      v-if="outerItems(element.data).length"
-                      class="message-level-outer-render"
-                    >
-                      <div
-                        v-for="(item, idx) in outerItems(element.data)"
-                        :key="idx"
-                        class="outer-render-item"
-                      >
-                        <template v-if="item.type === 'audio'">
-                          <div class="outer-render-audio-container">
-                            <audio :src="item.url" controls class="outer-audio"></audio>
-                          </div>
-                        </template>
-                        <template v-else-if="item.type === 'image'">
-                          <MdRenderer
-                            :md="`![image](${item.url})`"
-                            :custom-plugins="mioPlugins"
-                            :markdown-it-plugins="katexPluginList"
-                            :theme="'github'"
-                            :key="item.url"
-                            class="extra-render-image"
-                            :auto-cors="corsOption"
-                          />
-                        </template>
-                        <template v-else-if="item.type === 'text'">
-                          <div class="outer-render-text">{{ item.content }}</div>
-                        </template>
-                        <template v-else-if="item.type === 'alert'">
-                          <el-alert
-                            :title="item.title"
-                            :type="item.alertType || 'info'"
-                            :description="item.description"
-                            show-icon
-                            :closable="false"
-                            class="outer-render-alert"
-                          />
-                        </template>
-                        <template v-else-if="item.type === 'link'">
-                          <div class="outer-render-link-container">
-                            <el-link
-                              :href="item.url"
-                              target="_blank"
-                              type="primary"
-                              class="outer-render-link"
-                            >
-                              {{ item.text || "查看链接" }}
-                            </el-link>
-                          </div>
-                        </template>
-                      </div>
-                    </div>
-                  </template>
-                </div>
-                <ActionBlock
-                  v-else-if="element.type === 'crystallize_event'"
-                  iconClass="mio-icon-memory"
-                  title="整理记忆"
-                  :statusText="
-                    element.data.status === 'running' ? '整理中' : '完成'
-                  "
-                  :isLoading="element.data.status === 'running'"
-                  :collapsible="!!element.data.summary"
-                  :defaultExpanded="isCrystallizeExpanded(elmIndex)"
-                  @toggle="toggleCrystallizeDetails(elmIndex)"
-                >
-                  <div class="detail-section">
-                    <div class="section-label">整理后记忆结晶 (XML)</div>
-                    <pre class="xml-box">{{ element.data.summary }}</pre>
-                  </div>
-                </ActionBlock>
-              </div>
+              <MessageContent
+                :content="item.content"
+                :contactor="activeContactor"
+                :isStreaming="
+                  item.role === 'other' &&
+                  ['pending', 'retrying'].includes(item.status)
+                "
+                :messageIndex="index"
+                :mioPlugins="mioPlugins"
+                :katexPluginList="katexPluginList"
+                :mdOptions="mdOptions"
+              />
             </div>
           </div>
         </div>
@@ -355,12 +192,7 @@
 <script setup>
 import { ref, computed } from "vue";
 import { client } from "@/lib/runtime.js";
-import ForwardMsg from "@/components/ForwardMsg.vue";
-import FileBlock from "@/components/FileBlock.vue";
-import ToolCallBar from "@/components/ToolCallBar.vue";
-import ReasonBlock from "@/components/ReasonBlock.vue";
-import ActionBlock from "@/components/ActionBlock.vue";
-import MdRenderer from "mio-previewer";
+import MessageContent from "@/components/chat/MessageContent.vue";
 import { ElMessage } from "element-plus";
 
 import { Loading, Warning, CollectionTag } from "@element-plus/icons-vue";
@@ -535,66 +367,11 @@ const jumpToMessage = (id) => {
   client.emit("scroll_to_message", id);
 };
 
-const expandedCrystallizeEvents = ref({});
 
-const isCrystallizeExpanded = (elmIndex) => {
-  const key = `${props.index}-${elmIndex}`;
-  if (expandedCrystallizeEvents.value[key] === undefined) {
-    // 正在整理中且有数据时，默认自动展开，让用户能够直接看到酷炫的流式打字机效果
-    const element = props.item.content[elmIndex];
-    if (element && element.data?.status === "running" && element.data.summary) {
-      return true;
-    }
-    return false;
-  }
-  return expandedCrystallizeEvents.value[key] === true;
-};
-
-const toggleCrystallizeDetails = (elmIndex) => {
-  const key = `${props.index}-${elmIndex}`;
-  expandedCrystallizeEvents.value[key] = !expandedCrystallizeEvents.value[key];
-};
-
-const getToolName = (toolCall) => {
-  return (toolCall.name || "").split("_mid_")[0];
-};
-
-const getToolsManagerStatus = (toolCall) => {
-  if (toolCall.action === 'running' || toolCall.action === 'pending' || toolCall.action === 'started') {
-    return '运行中';
-  }
-  if (toolCall.status === 'failed' || (toolCall.result && toolCall.result.success === false)) {
-    return '失败';
-  }
-  return '完成';
-};
-
-const expandedToolsManagerEvents = ref({});
-
-const isToolsManagerExpanded = (elmIndex) => {
-  const key = `${props.index}-${elmIndex}`;
-  if (expandedToolsManagerEvents.value[key] === undefined) {
-    return false;
-  }
-  return expandedToolsManagerEvents.value[key] === true;
-};
-
-const toggleToolsManagerDetails = (elmIndex) => {
-  const key = `${props.index}-${elmIndex}`;
-  expandedToolsManagerEvents.value[key] = !expandedToolsManagerEvents.value[key];
-};
-
-function outerItems(data) {
-  const extra = data.extraRender || [];
-  return extra.filter(r => r.placement === 'outer');
-}
 </script>
 
 <style lang="sass" scoped>
 $mobile: 768px
-$icon-hover: #09f
-
-
 
 .message-flex-wrapper
     display: flex
@@ -616,13 +393,13 @@ $icon-hover: #09f
             transform: translateX(1.75rem)
 
         &:hover
-            background-color: rgba(0, 0, 0, 0.04)
+            background-color: var(--mio-bg-hover)
 
     &.is-selected
-        background-color: rgba(0, 0, 0, 0.06)
+        background-color: var(--mio-bg-active)
 
         &:hover
-            background-color: rgba(0, 0, 0, 0.08)
+            background-color: var(--mio-bg-active)
 
     .checkbox-fade-enter-active, .checkbox-fade-leave-active
         transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1)
@@ -646,8 +423,8 @@ $icon-hover: #09f
             width: 1rem
             height: 1rem
             border-radius: 50%
-            border: 2px solid #ccc
-            background-color: #fff
+            border: 2px solid var(--mio-border-color)
+            background-color: var(--mio-bg-card)
             display: flex
             align-items: center
             justify-content: center
@@ -661,22 +438,24 @@ $icon-hover: #09f
                 display: block
 
             &.checked
-                border-color: rgb(0, 153, 255)
-                background-color: rgb(0, 153, 255)
+                border-color: var(--mio-color-primary)
+                background-color: var(--mio-color-primary)
 
             &:hover:not(.checked)
-                border-color: rgb(0, 153, 255)
+                border-color: var(--mio-color-primary)
 
 .message-body > .avatar
   cursor: pointer
   flex-basis: 2.65rem
   min-width: 2.65rem
   height: 2.65rem
+  border-radius: 50%
+  overflow: hidden
+  background-color: #f2f2f2
 
 .avatar > img
   width: 100%
   height: 100%
-  border-radius: 50%
 
 .inner-content
   display: flex
@@ -696,7 +475,7 @@ $icon-hover: #09f
   width: 10%
   height: 200%
   position: absolute
-  background: linear-gradient(to right, rgb(255, 255, 255), rgb(0, 0, 0) 50%, transparent 50%, transparent)
+  background: linear-gradient(to right, var(--mio-bg-card), var(--mio-text-primary) 50%, transparent 50%, transparent)
   top: -50%
   transform: rotate(30deg)
   filter: blur(5px)
@@ -720,7 +499,7 @@ $icon-hover: #09f
 
 .loading-spinner
     font-size: 16px
-    color: #a8abb2
+    color: var(--mio-text-placeholder)
     animation: rotating 2s linear infinite
 
 .error-icon-trigger
@@ -731,7 +510,7 @@ $icon-hover: #09f
 
 .error-icon
     font-size: 18px
-    color: #f56c6c
+    color: var(--mio-color-danger)
     transition: transform 0.2s ease
     &:hover
         transform: scale(1.15)
@@ -760,7 +539,7 @@ $icon-hover: #09f
     right: -4px !important
     font-size: 8px !important
     font-weight: bold !important
-    color: rgb(0, 153, 255) !important
+    color: var(--mio-color-primary) !important
     line-height: 1 !important
 
 .detail-section
@@ -770,7 +549,7 @@ $icon-hover: #09f
 
 .section-label
   font-size: 10px
-  color: #aaa
+  color: var(--mio-text-secondary)
   text-transform: uppercase
   font-weight: bold
   margin-bottom: 4px
@@ -779,7 +558,7 @@ $icon-hover: #09f
   font-family: "Fira Code", monospace
   font-size: 11px
   background: transparent
-  color: #666
+  color: var(--mio-text-regular)
   white-space: pre-wrap
   word-break: break-all
   margin: 0
@@ -839,7 +618,7 @@ $icon-hover: #09f
     white-space: pre-wrap
 
 .reply-bubble-preview
-  background-color: rgba(0, 0, 0, 0.2)
+  background-color: var(--mio-bg-hover)
   border-radius: 6px
   padding: 6px 10px
   margin-bottom: 6px
@@ -894,11 +673,11 @@ $icon-hover: #09f
 
 #other
   .reply-bubble-preview
-    color: rgba(0, 0, 0, 0.85)
+    color: var(--mio-text-primary)
     .reply-sender-info
-      color: rgba(0, 0, 0, 0.55)
+      color: var(--mio-text-secondary)
     .reply-jump-arrow
-      color: rgba(0, 0, 0, 0.65)
+      color: var(--mio-text-secondary)
 
 .toolsmanager-detail
   display: flex
@@ -945,10 +724,10 @@ $icon-hover: #09f
   width: 6px
   height: 6px
   border-radius: 50%
-  background-color: #909399
+  background-color: var(--mio-text-secondary)
 
   &.enabled
-    background-color: #67c23a
+    background-color: var(--mio-color-success)
 
 .tool-state-name
   overflow: hidden
@@ -969,5 +748,4 @@ $icon-hover: #09f
   border-radius: 4px
   margin: 0
   overflow-x: auto
-
 </style>

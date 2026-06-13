@@ -754,28 +754,28 @@ onUnmounted(() => {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background-color: #f56c6c;
+    background-color: var(--mio-color-danger);
   }
 
   span {
     font-weight: 500;
-    color: #f56c6c;
+    color: var(--mio-color-danger);
   }
 
   &.connected {
     .status-dot {
-      background-color: #67c23a;
+      background-color: var(--mio-color-success);
     }
 
     span {
-      color: #67c23a;
+      color: var(--mio-color-success);
     }
   }
 }
 
 .connection-info {
   font-size: 14px;
-  color: #909399;
+  color: var(--mio-text-secondary);
 }
 
 .control-panel {
@@ -838,13 +838,13 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  border-bottom: 1px solid #e4e7ed;
-  background-color: #fafafa;
+  border-bottom: 1px solid var(--mio-border-color-light);
+  background-color: var(--mio-bg-page);
 }
 
 .logs-count {
   font-size: 14px;
-  color: #606266;
+  color: var(--mio-text-regular);
   font-weight: 500;
 }
 
@@ -857,42 +857,42 @@ onUnmounted(() => {
 .logs-list {
   flex: 1;
   overflow-y: auto;
-  background-color: #fff;
+  background-color: var(--mio-bg-card);
   min-height: 0; // 重要：允许 flex 子元素收缩
 }
 
 .log-item {
   padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--mio-border-color-lighter);
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: #fafafa;
+    background-color: var(--mio-bg-hover);
   }
 
   &.highlighted {
-    background-color: #fff7e6;
-    border-left: 3px solid #e6a23c;
+    background-color: rgba(230, 162, 60, 0.15);
+    border-left: 3px solid var(--mio-color-warning);
   }
 
   &.level-error {
-    border-left: 3px solid #f56c6c;
+    border-left: 3px solid var(--mio-color-danger);
   }
 
   &.level-warn {
-    border-left: 3px solid #e6a23c;
+    border-left: 3px solid var(--mio-color-warning);
   }
 
   &.level-info {
-    border-left: 3px solid #409eff;
+    border-left: 3px solid var(--mio-color-primary);
   }
 
   &.level-debug {
-    border-left: 3px solid #909399;
+    border-left: 3px solid var(--mio-color-info);
   }
 
   &.level-mark {
-    border-left: 3px solid #67c23a;
+    border-left: 3px solid var(--mio-color-success);
   }
 }
 
@@ -905,7 +905,7 @@ onUnmounted(() => {
 }
 
 .log-timestamp {
-  color: #909399;
+  color: var(--mio-text-secondary);
   font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
 }
 
@@ -916,34 +916,34 @@ onUnmounted(() => {
   font-size: 11px;
 
   &.level-error {
-    background-color: #fef0f0;
-    color: #f56c6c;
+    background-color: var(--mio-bg-danger-light);
+    color: var(--mio-color-danger);
   }
 
   &.level-warn {
-    background-color: #fdf6ec;
-    color: #e6a23c;
+    background-color: var(--mio-bg-warning-light);
+    color: var(--mio-color-warning);
   }
 
   &.level-info {
-    background-color: #ecf5ff;
-    color: #409eff;
+    background-color: var(--mio-bg-primary-light);
+    color: var(--mio-color-primary);
   }
 
   &.level-debug {
-    background-color: #f4f4f5;
-    color: #909399;
+    background-color: var(--mio-bg-info-light);
+    color: var(--mio-color-info);
   }
 
   &.level-mark {
-    background-color: #f0f9ff;
-    color: #67c23a;
+    background-color: var(--mio-bg-success-light);
+    color: var(--mio-color-success);
   }
 }
 
 .log-module {
-  background-color: #f0f0f0;
-  color: #606266;
+  background-color: var(--mio-bg-hover);
+  color: var(--mio-text-regular);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 11px;
@@ -951,20 +951,20 @@ onUnmounted(() => {
 }
 
 .log-caller {
-  color: #909399;
+  color: var(--mio-text-secondary);
   font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
 }
 
 .log-message {
-  color: #303133;
+  color: var(--mio-text-primary);
   line-height: 1.5;
   word-break: break-word;
   font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
   font-size: 13px;
 
   :deep(mark) {
-    background-color: #fff2cc;
-    color: #e6a23c;
+    background-color: var(--mio-bg-warning-light);
+    color: var(--mio-color-warning);
     padding: 1px 2px;
     border-radius: 2px;
   }
@@ -1061,8 +1061,8 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   padding: 16px;
-  border-bottom: 1px solid #e4e7ed;
-  background-color: #fafafa;
+  border-bottom: 1px solid var(--mio-border-color-light);
+  background-color: var(--mio-bg-page);
   font-size: 12px;
 }
 
@@ -1078,34 +1078,34 @@ onUnmounted(() => {
   font-size: 11px;
 
   &.level-error {
-    background-color: #fef0f0;
-    color: #f56c6c;
+    background-color: rgba(245, 108, 108, 0.12);
+    color: var(--mio-color-danger);
   }
 
   &.level-warn {
-    background-color: #fdf6ec;
-    color: #e6a23c;
+    background-color: rgba(230, 162, 60, 0.12);
+    color: var(--mio-color-warning);
   }
 
   &.level-info {
-    background-color: #ecf5ff;
-    color: #409eff;
+    background-color: rgba(0, 153, 255, 0.12);
+    color: var(--mio-color-primary);
   }
 
   &.level-debug {
-    background-color: #f4f4f5;
-    color: #909399;
+    background-color: rgba(144, 147, 153, 0.12);
+    color: var(--mio-color-info);
   }
 
   &.level-mark {
-    background-color: #f0f9ff;
-    color: #67c23a;
+    background-color: rgba(103, 194, 58, 0.12);
+    color: var(--mio-color-success);
   }
 }
 
 .json-module {
-  background-color: #f0f0f0;
-  color: #606266;
+  background-color: var(--mio-bg-hover);
+  color: var(--mio-text-regular);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 11px;
@@ -1123,11 +1123,11 @@ onUnmounted(() => {
   font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
   font-size: 13px;
   line-height: 1.5;
-  color: #303133;
-  background-color: #f8f9fa;
+  color: var(--mio-text-primary);
+  background-color: var(--mio-bg-page);
   padding: 16px;
   border-radius: 6px;
-  border: 1px solid #e4e7ed;
+  border: 1px solid var(--mio-border-color-light);
   white-space: pre-wrap;
   word-break: break-word;
 }

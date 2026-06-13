@@ -963,15 +963,15 @@ onUnmounted(() => {
 :deep(.el-table) {
   .el-table__header {
     th {
-      background-color: #fafafa;
-      color: #606266;
+      background-color: var(--mio-bg-page);
+      color: var(--mio-text-regular);
       font-weight: 600;
     }
   }
 
   .el-table__row {
     &:hover {
-      background-color: #f5f7fa;
+      background-color: var(--mio-bg-hover);
     }
   }
 

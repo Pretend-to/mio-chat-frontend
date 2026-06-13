@@ -29,7 +29,7 @@ export default {
 </script>
 <style lang="sass" scoped>
 .blank-view
-  background-color: #f2f2f2
+  background-color: var(--mio-bg-chat-window)
   flex-grow: 1
 
 .upside-bar

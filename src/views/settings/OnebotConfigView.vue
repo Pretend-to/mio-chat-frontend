@@ -680,9 +680,9 @@ onUnmounted(() => {
 
 // 禁用状态的输入框样式
 :deep(.el-input.is-disabled .el-input__wrapper) {
-  background-color: #f5f7fa;
-  border-color: #e4e7ed;
-  color: #c0c4cc;
+  background-color: var(--mio-bg-page);
+  border-color: var(--mio-border-color-light);
+  color: var(--mio-text-placeholder);
 }
 
 :deep(.el-input.is-disabled .el-input__inner) {
@@ -772,7 +772,7 @@ onUnmounted(() => {
 
 .category-card-body {
   padding: 16px 20px;
-  background-color: #fff;
+  background-color: var(--mio-bg-card);
 
   :deep(.el-table) {
     border-radius: 8px;

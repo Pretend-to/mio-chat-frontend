@@ -1,5 +1,5 @@
 <template>
-  <div class="profile-body" style="background-color: #f5f5f5">
+  <div class="profile-body">
     <!-- Mobile Header -->
     <div class="mobile-nav" v-if="isMobile">
       <div class="back-btn" @click="$router.push('/chat/' + $route.params.id)">
@@ -8,7 +8,7 @@
           height="24"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#333"
+          stroke="currentColor"
           stroke-width="2.5"
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -84,7 +84,7 @@ export default {
     ContactorSettings, // Register the new component
   },
   setup() {
-    useStatusBarColor("#ffffff");
+    useStatusBarColor("var(--mio-bg-card)");
   },
   data() {
     const currentId = parseInt(this.$route.params.id);
@@ -310,22 +310,22 @@ export default {
   flex: 1;
   min-height: 0;
   background: transparent;
-  color: #333;
+  color: var(--mio-text-primary);
 }
 
 .settings-card {
-  background: #fff;
+  background: var(--mio-bg-card);
   border-radius: 12px;
   padding: 8px 24px;
   margin-bottom: 24px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--mio-shadow-light);
 }
 
 .group-title {
   padding: 0 4px 12px;
   font-size: 15px;
   font-weight: 500;
-  color: #333;
+  color: var(--mio-text-primary);
   text-align: left;
 }
 
@@ -334,7 +334,7 @@ export default {
   justify-content: space-between;
   align-items: flex-start;
   padding: 8px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--mio-border-color-lighter);
 }
 
 .setting-field:last-child {
@@ -344,7 +344,7 @@ export default {
 .field-label {
   width: 14rem;
   font-size: 13px;
-  color: #999;
+  color: var(--mio-text-secondary);
   padding-top: 8px;
   flex-shrink: 0;
   text-align: left;
@@ -363,7 +363,7 @@ export default {
 .field-value .el-input__wrapper,
 .field-value .el-select__wrapper {
   box-shadow: none !important;
-  background: #f5f7fa !important;
+  background: var(--mio-bg-page) !important;
   border-radius: 8px;
   padding: 0 12px !important;
 }
@@ -394,12 +394,12 @@ export default {
 
   .setting-field {
     padding: 12px 0;
-    border-bottom: 1px solid #f9f9f9;
+    border-bottom: 1px solid var(--mio-border-color-lighter);
   }
 
   .field-label {
     font-size: 13px;
-    color: #999;
+    color: var(--mio-text-secondary);
     width: 100px;
     padding-top: 8px;
   }
@@ -460,7 +460,7 @@ export default {
 
 .action-bar {
   position: sticky;
-  background-color: #f5f5f5;
+  background-color: var(--mio-bg-page);
   bottom: 0px;
   left: 0px;
   display: flex;
@@ -479,7 +479,7 @@ export default {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background-color: #f5f5f5;
+  background-color: var(--mio-bg-page);
 }
 
 /* Mobile Nav */
@@ -488,7 +488,7 @@ export default {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: #fff;
+  background: var(--mio-bg-card);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -503,16 +503,18 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--mio-text-primary);
 }
 
 .nav-title {
   font-size: 17px;
   font-weight: 600;
+  color: var(--mio-text-primary);
 }
 
 @media (max-width: 768px) {
   .profile-body {
-    background-color: #f2f2f2 !important;
+    background-color: var(--mio-bg-page) !important;
   }
 
   .profile-container {
@@ -520,7 +522,7 @@ export default {
     max-width: none !important;
     margin: 0 !important;
     min-width: 0 !important;
-    background-color: #f2f2f2 !important;
+    background-color: var(--mio-bg-page) !important;
     padding-bottom: 0;
   }
 
@@ -542,7 +544,7 @@ export default {
   &:hover + .delay-num
     display: inline-block
   &.ultra
-    background-color: rgb(53, 233, 146)
+    background-color: var(--mio-color-success)
   &.offline
-    background-color: #ccc
+    background-color: var(--mio-text-placeholder)
 </style>

@@ -202,25 +202,25 @@ function clearSummary() {
   text-align: left
 
 .settings-card
-  background: #fff
+  background: var(--mio-bg-card)
   border-radius: 12px
   padding: 8px 24px
   margin-bottom: 12px
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03)
+  box-shadow: var(--mio-shadow-light)
 
 .setting-field
   display: flex
   justify-content: space-between
   align-items: center
   padding: 14px 0
-  border-bottom: 1px solid #f0f0f0
+  border-bottom: 1px solid var(--mio-border-color-lighter)
 
   &:last-child
     border-bottom: none
 
 .field-label
   font-size: 13px;
-  color: #333;
+  color: var(--mio-text-primary);
   font-weight: 500
 
 .field-value
@@ -245,7 +245,7 @@ function clearSummary() {
 
     .last-updated
       font-size: 12px
-      color: #999
+      color: var(--mio-text-secondary)
 
   .row-actions
     display: flex
@@ -266,16 +266,16 @@ function clearSummary() {
     font-family: 'JetBrains Mono', 'Fira Code', monospace
     font-size: 12px
     line-height: 1.6
-    background: #f8f9fa
-    color: #333
-    border: 1px solid #e4e7ed
+    background: var(--mio-bg-chat-window)
+    color: var(--mio-text-primary)
+    border: 1px solid var(--mio-border-color-light)
     border-radius: 8px
     padding: 12px
     box-shadow: none
 
     &:focus
-      border-color: rgb(0, 153, 255)
-      box-shadow: 0 0 0 2px rgba(0, 153, 255, 0.15)
+      border-color: var(--mio-color-primary)
+      box-shadow: 0 0 0 2px var(--mio-bg-active)
 
 .disabled-hint-card
   padding: 24px
@@ -292,7 +292,7 @@ function clearSummary() {
 
   .hint-text
     font-size: 12px
-    color: #999
+    color: var(--mio-text-secondary)
     max-width: 420px
     line-height: 1.6
 </style>

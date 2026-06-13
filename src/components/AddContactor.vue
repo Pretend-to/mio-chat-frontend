@@ -489,7 +489,7 @@ const getProviderTagType = (provider) => {
 };
 
 const getProviderColor = (provider) => {
-  if (!provider) return "#f5f5f5";
+  if (!provider) return "var(--mio-bg-page)";
   const name = provider.toLowerCase();
 
   // 根据名称哈希产生一个好看的、高饱和度的柔和淡色背景，彻底免除后续硬编码
@@ -498,7 +498,7 @@ const getProviderColor = (provider) => {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
   const h = Math.abs(hash % 360);
-  return `hsla(${h}, 70%, 96%, 0.5)`;
+  return `hsla(${h}, 70%, var(--mio-tag-lightness), 0.5)`;
 };
 
 const handleAddByShareCode = async () => {

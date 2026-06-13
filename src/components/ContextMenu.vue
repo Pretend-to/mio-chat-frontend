@@ -346,7 +346,7 @@ export default {
     display: flex
     flex-direction: column
     justify-content: center
-    background-color: hsla(0, 0%, 100%, .78)
+    background-color: var(--mio-bg-blur)
     backdrop-filter: blur(0.5rem)
     border-radius: 0.5rem
     padding: .5rem
@@ -361,7 +361,7 @@ export default {
         grid-template-columns: repeat(auto-fit, minmax(60px, 1fr))
         padding: 0.5rem
         max-width: 16rem
-        background-color: rgba(40, 44, 52, 0.85)
+        background-color: var(--mio-bg-sidebar-mobile)
         border-radius: 1rem
         left: 50%
         transform: translateX(-50%) scale(1)
@@ -399,11 +399,11 @@ export default {
             transition: background-color 0.2s ease
 
     & div:hover
-        background-color: hsla(0, 0%, 90%, .88)
+        background-color: var(--mio-bg-hover)
 
         // 移动端悬停效果
         @media (max-width: 768px)
-            background-color: rgba(255, 255, 255, 0.1)
+            background-color: var(--mio-bg-hover)
 
     & div:hover > i
         animation: pop-up 0.5s ease-in-out 1 forwards
@@ -430,18 +430,18 @@ export default {
             margin-top: 0
             top: auto
             left: auto
-            color: rgba(255, 255, 255, 0.9)
+            color: var(--mio-text-regular)
 
     & span
         font-size: 0.8rem
-        color: rgb(120, 124, 127)
+        color: var(--mio-text-regular)
         margin-left: 2.1rem
 
         // 移动端文字样式
         @media (max-width: 768px)
             margin-left: 0
             font-size: 0.7rem
-            color: rgba(255, 255, 255, 0.8)
+            color: var(--mio-text-secondary)
             line-height: 1.2
             word-break: break-all
 
@@ -459,7 +459,7 @@ export default {
           border-left: 6px solid transparent
           border-right: 6px solid transparent
           // 与移动端菜单主体保持一致的背景色
-          border-bottom: 6px solid rgba(40, 44, 52, 0.85)
+          border-bottom: 6px solid var(--mio-bg-card)
 
     &.expand-up
       @media (max-width: 768px)
@@ -475,7 +475,7 @@ export default {
           border-left: 6px solid transparent
           border-right: 6px solid transparent
           // 与移动端菜单主体保持一致的背景色
-          border-top: 6px solid rgba(40, 44, 52, 0.85)
+          border-top: 6px solid var(--mio-bg-card)
 
     // 动画 transition classes
     &.menu-enter-from, &.menu-leave-to

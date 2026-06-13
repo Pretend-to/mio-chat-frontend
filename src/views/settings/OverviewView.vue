@@ -959,12 +959,12 @@ onMounted(async () => {
     align-items: center;
     gap: 12px;
     padding: 12px;
-    background-color: #f5f7fa;
+    background-color: var(--mio-bg-page);
     border-radius: 6px;
     transition: background-color 0.2s;
 
     &:hover {
-      background-color: #ecf5ff;
+      background-color: var(--mio-bg-hover);
     }
 
     // 状态标签 - 固定宽度
@@ -977,7 +977,7 @@ onMounted(async () => {
     // 适配器名称 - 限制最大宽度
     .adapter-name {
       font-weight: 500;
-      color: #303133;
+      color: var(--mio-text-primary);
       flex: 1;
       min-width: 0; // 允许收缩
       max-width: 150px;
@@ -989,7 +989,7 @@ onMounted(async () => {
     // 默认模型 - 限制最大宽度
     .adapter-model {
       flex-grow: 1;
-      color: #909399;
+      color: var(--mio-text-secondary);
       font-size: 13px;
       flex-shrink: 0;
       overflow: hidden;

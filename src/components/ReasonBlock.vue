@@ -160,7 +160,7 @@ export default {
 .content-text {
   font-size: 12.5px;
   line-height: 1.6;
-  color: #666;
+  color: var(--mio-text-regular);
   white-space: pre-line;
   word-break: break-word;
   padding: 4px 0; /* 边框缩进交给 ActionBlock 的 details-inner */

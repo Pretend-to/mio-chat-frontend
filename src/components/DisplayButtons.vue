@@ -173,7 +173,7 @@ export default {
         border: none
         background-color: transparent
         cursor: pointer
-        color: #333
+        color: var(--mio-text-primary)
         font-size: 16px
         outline: none
         -webkit-app-region: no-drag
@@ -204,7 +204,7 @@ export default {
             top: -1px
 
         &:hover
-            background-color: rgba(0, 0, 0, 0.1)
+            background-color: var(--mio-bg-hover)
 
         &#close:hover
             background-color: #e81123

@@ -516,7 +516,7 @@ watch(
 }
 .no-tasks-tip {
   text-align: center;
-  color: #c0c4cc;
+  color: var(--mio-text-placeholder);
   font-size: 13px;
   padding: 24px 0;
 }
@@ -532,13 +532,13 @@ watch(
     padding: 8px 0;
   }
   .mobile-task-card {
-    background: #f8f9fb;
+    background: var(--mio-bg-page);
     border-radius: 10px;
     padding: 12px 14px;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    border: 1px solid #f0f2f5;
+    border: 1px solid var(--mio-border-color-lighter);
   }
   .task-card-header {
     display: flex;
@@ -548,7 +548,7 @@ watch(
   .task-card-title {
     font-size: 14px;
     font-weight: 600;
-    color: #303133;
+    color: var(--mio-text-primary);
   }
   .task-card-body {
     display: flex;
@@ -558,8 +558,8 @@ watch(
   }
   .task-card-cron {
     font-size: 12px;
-    color: #409eff;
-    background: #ecf5ff;
+    color: var(--mio-color-primary);
+    background: var(--mio-bg-active);
     padding: 2px 8px;
     border-radius: 4px;
     font-weight: 500;
@@ -571,8 +571,8 @@ watch(
 }
 
 .json-box {
-  background: #f5f7fa;
-  border: 1px solid #e4e7ed;
+  background: var(--mio-bg-chat-window);
+  border: 1px solid var(--mio-border-color-light);
   border-radius: 4px;
   padding: 8px 12px;
   max-height: 250px;
@@ -582,16 +582,16 @@ watch(
   line-height: 1.4;
   white-space: pre-wrap;
   word-break: break-all;
-  color: #4c4f56;
+  color: var(--mio-text-regular);
 }
 .execution-expand-details {
   padding: 15px 24px;
-  background-color: #fafbfd;
+  background-color: var(--mio-bg-page);
   border-radius: 4px;
 }
 .empty-executions {
   text-align: center;
-  color: #909399;
+  color: var(--mio-text-secondary);
   padding: 40px 0;
   font-size: 13px;
 }

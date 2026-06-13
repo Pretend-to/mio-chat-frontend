@@ -54,6 +54,16 @@ export default defineConfig(({ mode }) => {
         "@": fileURLToPath(new URL("./src", import.meta.url)),
       },
     },
+    css: {
+      preprocessorOptions: {
+        scss: {
+          additionalData: `
+            @use "@/assets/styles/variables" as *;
+            @use "@/assets/styles/mixins" as *;
+          `
+        }
+      }
+    },
     build: {
       target: "es2022",
       minify: "terser",
