@@ -333,7 +333,13 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["toButtom", "cleanHistory", "cleanScreen", "setModel", "stroge"]);
+const emit = defineEmits([
+  "toButtom",
+  "cleanHistory",
+  "cleanScreen",
+  "setModel",
+  "stroge",
+]);
 
 const activeContactor = computed(() => props.activeContactor);
 const textarea = ref(null);
@@ -373,12 +379,11 @@ const {
 loadSelected();
 
 // 3. Draft Logic
-const {
-  loadDraft,
-  saveDraft,
-  saveDraftTo,
-  clearDraft,
-} = useInputDraft({ textareaRef: textarea, activeContactor, adjustTextareaHeight });
+const { loadDraft, saveDraft, saveDraftTo, clearDraft } = useInputDraft({
+  textareaRef: textarea,
+  activeContactor,
+  adjustTextareaHeight,
+});
 
 // 4. File Upload & Emoji Logic
 const {
@@ -453,12 +458,7 @@ const {
 } = useInputInteractions({ activeContactor });
 
 // 7. Message Format and Sending Logic
-const {
-  hasInput,
-  isUploading,
-  presend,
-  send,
-} = useInputSend({
+const { hasInput, isUploading, presend, send } = useInputSend({
   textareaRef: textarea,
   activeContactor,
   pendingImageFiles,
@@ -473,7 +473,11 @@ const {
 });
 
 const handleKeyDown = (event) => {
-  const isHandled = baseHandleKeyDown(event, inputBarRef.value || textarea.value?.closest(".input-bar"), send);
+  const isHandled = baseHandleKeyDown(
+    event,
+    inputBarRef.value || textarea.value?.closest(".input-bar"),
+    send,
+  );
   if (isHandled) return;
 
   setTimeout(() => {
@@ -531,7 +535,10 @@ const insertReplyBadge = (message) => {
     badgeEl.setAttribute(scopeId.value, "");
   }
 
-  const senderName = message.role === "user" ? (client.name || "我") : (activeContactor.value?.name || "对方");
+  const senderName =
+    message.role === "user"
+      ? client.name || "我"
+      : activeContactor.value?.name || "对方";
   let summary = "";
   if (Array.isArray(message.content)) {
     message.content.forEach((elm) => {
@@ -613,7 +620,8 @@ const clickOutsideHandler = ref(null);
 const resizeHandler = ref(null);
 
 onMounted(() => {
-  textarea.value = textarea.value || document.querySelector("div[contenteditable]");
+  textarea.value =
+    textarea.value || document.querySelector("div[contenteditable]");
   loadDraft();
 
   resizeHandler.value = () => {
@@ -630,7 +638,9 @@ onMounted(() => {
 
   clickOutsideHandler.value = (e) => {
     if (showCommandPopup.value) {
-      const isClickInside = textarea.value?.closest(".input-bar")?.contains(e.target);
+      const isClickInside = textarea.value
+        ?.closest(".input-bar")
+        ?.contains(e.target);
       if (!isClickInside) {
         showCommandPopup.value = false;
       }

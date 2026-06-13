@@ -464,11 +464,15 @@ export const useContactorsStore = defineStore("contactors", () => {
     const contactor = contactors.value[contactorId];
     if (contactor) {
       if (!contactor.options) contactor.options = {};
-      if (!contactor.options.toolCallSettings) contactor.options.toolCallSettings = {};
+      if (!contactor.options.toolCallSettings)
+        contactor.options.toolCallSettings = {};
       contactor.options.toolCallSettings.tools = result.activeToolsList;
       updateContactorSummary(contactor);
       client.setLocalStorage();
-      console.log(`[Store] Contactor ${contactorId} tools updated persistently via toolsmanager toolcall result:`, result.activeToolsList);
+      console.log(
+        `[Store] Contactor ${contactorId} tools updated persistently via toolsmanager toolcall result:`,
+        result.activeToolsList,
+      );
     }
   }
 
@@ -661,7 +665,8 @@ export const useContactorsStore = defineStore("contactors", () => {
     });
 
     if (message) {
-      message.triggerType = metaData?.triggerType || (metaData?.isTask ? "task" : "chat");
+      message.triggerType =
+        metaData?.triggerType || (metaData?.isTask ? "task" : "chat");
       if (metaData?.timestamp) {
         message.time = metaData.timestamp;
       }
@@ -711,7 +716,10 @@ export const useContactorsStore = defineStore("contactors", () => {
               toolCallData.parameters || toolCallData.arguments,
               toolCallData.result,
             );
-          } else if (toolName === "toolsmanager" && toolCallData.result?.success) {
+          } else if (
+            toolName === "toolsmanager" &&
+            toolCallData.result?.success
+          ) {
             recordToolsUpdate(contactorId, toolCallData.result);
           }
 
@@ -733,8 +741,10 @@ export const useContactorsStore = defineStore("contactors", () => {
 
     // Safety length & status guard
     const isCompletedOrFailed = status === "completed" || status === "failed";
-    const isBlank = !message.content || message.content.length === 0 || 
-                    (message.content.length === 1 && message.content[0].type === "blank");
+    const isBlank =
+      !message.content ||
+      message.content.length === 0 ||
+      (message.content.length === 1 && message.content[0].type === "blank");
 
     const getLen = (content) => {
       if (!content || !Array.isArray(content)) return 0;
@@ -745,12 +755,17 @@ export const useContactorsStore = defineStore("contactors", () => {
           const args = item.data?.arguments || item.data?.parameters || "";
           return acc + args.length + 10;
         }
-        if (item.type === "crystallize_event") return acc + (item.data?.summary || "").length + 10;
+        if (item.type === "crystallize_event")
+          return acc + (item.data?.summary || "").length + 10;
         return acc;
       }, 0);
     };
 
-    if (isCompletedOrFailed || isBlank || getLen(newContent) >= getLen(message.content)) {
+    if (
+      isCompletedOrFailed ||
+      isBlank ||
+      getLen(newContent) >= getLen(message.content)
+    ) {
       message.content = newContent;
     }
 

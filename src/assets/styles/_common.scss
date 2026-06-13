@@ -4,7 +4,7 @@
 .mio-previewer {
   background-color: transparent !important;
   overflow-x: auto;
-  
+
   p {
     font-size: 14px;
     line-height: 1.6;
@@ -29,7 +29,12 @@
     color: var(--mio-color-primary);
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     color: var(--mio-text-primary);
     border-bottom-color: var(--mio-border-color-light);
   }
@@ -40,7 +45,8 @@
     background-color: transparent;
   }
 
-  code, tt {
+  code,
+  tt {
     background-color: var(--mio-bg-hover);
     border-radius: 3px;
   }
@@ -48,7 +54,7 @@
   pre {
     background-color: var(--mio-bg-page);
     border-color: var(--mio-border-color-light);
-    
+
     code {
       background-color: transparent;
     }
@@ -58,13 +64,14 @@
     tr {
       background-color: transparent;
       border-top-color: var(--mio-border-color-light);
-      
+
       &:nth-child(2n) {
         background-color: var(--mio-bg-hover);
       }
     }
-    
-    th, td {
+
+    th,
+    td {
       border-color: var(--mio-border-color-light);
       color: var(--mio-text-primary);
     }
@@ -78,7 +85,20 @@
 }
 
 .message-body#user .mio-previewer {
-  h1, h2, h3, h4, h5, h6, li, ul, p, span, a, code, pre, blockquote {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  li,
+  ul,
+  p,
+  span,
+  a,
+  code,
+  pre,
+  blockquote {
     color: #ffffff;
     background-color: transparent;
   }
@@ -115,7 +135,7 @@ figure {
 
 .code-block {
   font-size: 0.8rem;
-  
+
   @media (max-width: 768px) {
     font-size: 0.6rem;
   }
@@ -391,7 +411,8 @@ figure {
 }
 
 @keyframes dot-blink {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.35;
   }
   50% {
@@ -563,7 +584,7 @@ figure {
   .rail-tab-icon {
     width: 24px !important;
     height: 24px !important;
-    
+
     svg {
       width: 21px !important;
       height: 21px !important;
@@ -583,7 +604,8 @@ figure {
   }
 
   .rail-tab-messages.active .rail-tab-icon {
-    &::before, &::after {
+    &::before,
+    &::after {
       top: 10px !important;
       width: 3px !important;
       height: 3px !important;
@@ -831,7 +853,7 @@ figure {
   .el-dialog.debug-dialog {
     .el-dialog__body {
       padding: 0 !important;
-      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+      font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace !important;
     }
 
     .debug-container {
@@ -1027,7 +1049,7 @@ figure {
 
     .config-textarea {
       .el-textarea__inner {
-        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace !important;
         font-size: 13px !important;
         line-height: 1.4 !important;
       }

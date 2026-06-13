@@ -27,10 +27,7 @@
     </div>
 
     <!-- Extra Render UI section -->
-    <div
-      v-if="innerItems.length"
-      class="extra-render-section"
-    >
+    <div v-if="innerItems.length" class="extra-render-section">
       <div
         v-for="(item, idx) in innerItems"
         :key="idx"
@@ -115,7 +112,7 @@ export default {
     corsOption() {
       const domains = [];
       const storage = client.config?.baseConfig?.storage_config;
-      if (storage && storage.type === 's3') {
+      if (storage && storage.type === "s3") {
         if (storage.baseUrl) {
           try {
             domains.push(new URL(storage.baseUrl).hostname);
@@ -145,7 +142,7 @@ export default {
     },
     innerItems() {
       const extra = this.toolCall.extraRender || [];
-      return extra.filter(r => r.placement !== 'outer');
+      return extra.filter((r) => r.placement !== "outer");
     },
     toolTitle() {
       if (this.toolCall.displayName) {

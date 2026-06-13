@@ -128,10 +128,10 @@ export function useInputCommandPopup({
     nextTick(() => {
       const caretRect = getCaretCoordinates();
       if (!caretRect || !textareaRef.value) return;
-      
+
       const inputBar = textareaRef.value.closest(".input-bar");
       if (!inputBar) return;
-      
+
       const inputBarRect = inputBar.getBoundingClientRect();
 
       let left = caretRect.left - inputBarRect.left;
@@ -256,7 +256,8 @@ export function useInputCommandPopup({
         ElMessage.warning("指令不可重复，已自动清除先前的指令");
         badge.remove();
 
-        const text = textareaRef.value.innerText || textareaRef.value.textContent || "";
+        const text =
+          textareaRef.value.innerText || textareaRef.value.textContent || "";
         const newOccurrences = [];
         let newMatch;
         const newRegex = /(?:^|\s)[/#](?!\/)/g;
@@ -268,7 +269,9 @@ export function useInputCommandPopup({
 
         if (newOccurrences.length === 1) {
           showCommandPopup.value = true;
-          commandSearchQuery.value = text.substring(newOccurrences[0] + 1).trim();
+          commandSearchQuery.value = text
+            .substring(newOccurrences[0] + 1)
+            .trim();
           commandIndex.value = 0;
           popupDismissed.value = false;
         } else {
@@ -305,7 +308,9 @@ export function useInputCommandPopup({
 
         if (newOccurrences.length === 1) {
           showCommandPopup.value = true;
-          commandSearchQuery.value = newText.substring(newOccurrences[0] + 1).trim();
+          commandSearchQuery.value = newText
+            .substring(newOccurrences[0] + 1)
+            .trim();
           commandIndex.value = 0;
           popupDismissed.value = false;
         } else {
@@ -343,7 +348,8 @@ export function useInputCommandPopup({
         return true;
       } else if (event.key === "ArrowUp") {
         event.preventDefault();
-        commandIndex.value = (commandIndex.value - 1 + list.length) % list.length;
+        commandIndex.value =
+          (commandIndex.value - 1 + list.length) % list.length;
         scrollActiveCommandIntoView(inputBarEl);
         return true;
       } else if (event.key === "Enter" || event.key === "Tab") {

@@ -67,7 +67,11 @@ const handleJumpMessage = (contactId, messageId) => {
           @keydown.esc="handleCancel"
           @keydown.enter="triggerSearchEnter"
         />
-        <i v-if="searchQuery" class="clear-btn" @mousedown.prevent="clearSearch"></i>
+        <i
+          v-if="searchQuery"
+          class="clear-btn"
+          @mousedown.prevent="clearSearch"
+        ></i>
       </div>
       <span class="cancel-btn" @click="handleCancel">取消</span>
     </div>
@@ -133,7 +137,9 @@ const handleJumpMessage = (contactId, messageId) => {
             v-for="msgResult in searchResults.messages"
             :key="msgResult.message.id"
             class="search-item"
-            @mousedown.prevent="handleJumpMessage(msgResult.contactorId, msgResult.message.id)"
+            @mousedown.prevent="
+              handleJumpMessage(msgResult.contactorId, msgResult.message.id)
+            "
           >
             <div class="avatar">
               <img
@@ -144,7 +150,9 @@ const handleJumpMessage = (contactId, messageId) => {
             <div class="info">
               <div class="search-msg-header">
                 <span class="name">{{ msgResult.contactorName }}</span>
-                <span class="time">{{ formatTime(msgResult.message.time) }}</span>
+                <span class="time">{{
+                  formatTime(msgResult.message.time)
+                }}</span>
               </div>
               <div
                 class="search-msg-preview"

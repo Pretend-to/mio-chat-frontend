@@ -178,7 +178,6 @@
             @click="router.push('/dashboard')"
             style="width: 100%"
           >
-            <el-icon style="margin-right: 6px"><DataAnalysis /></el-icon>
             审计大盘
           </el-button>
         </div>
@@ -903,13 +902,18 @@ onUnmounted(() => {
   .mobile-header-content {
     position: relative;
     &::after {
-      content: '';
+      content: "";
       position: absolute;
       bottom: -1px;
       left: 0;
       right: 0;
       height: 2px;
-      background: linear-gradient(90deg, transparent 0%, var(--mio-color-primary) 50%, transparent 100%);
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--mio-color-primary) 50%,
+        transparent 100%
+      );
       opacity: 0;
       transition: opacity 0.3s;
     }

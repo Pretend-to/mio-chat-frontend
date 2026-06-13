@@ -1007,8 +1007,6 @@ onUnmounted(() => {
   overflow-y: auto;
   overflow-x: hidden;
 
-
-
   .tools-section {
     margin-top: 24px;
 

@@ -32,9 +32,11 @@ export default {
     // 自动适配系统/本地缓存的暗黑模式状态
     this.updateTheme = () => {
       const savedTheme = localStorage.getItem("theme");
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const prefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)",
+      ).matches;
       const isDark = savedTheme === "dark" || (!savedTheme && prefersDark);
-      
+
       if (isDark) {
         document.documentElement.setAttribute("data-theme", "dark");
         document.documentElement.classList.add("dark");
@@ -43,9 +45,9 @@ export default {
         document.documentElement.classList.remove("dark");
       }
     };
-    
+
     this.updateTheme();
-    
+
     // 监听系统主题偏好改变
     this.mediaQueryListener = window.matchMedia("(prefers-color-scheme: dark)");
     this.handleSystemThemeChange = (e) => {
@@ -59,7 +61,10 @@ export default {
         }
       }
     };
-    this.mediaQueryListener.addEventListener("change", this.handleSystemThemeChange);
+    this.mediaQueryListener.addEventListener(
+      "change",
+      this.handleSystemThemeChange,
+    );
 
     const displayConfig = config.getBaseConfig();
     if (Object.keys(displayConfig).length > 0) {
@@ -84,7 +89,10 @@ export default {
   beforeUnmount() {
     window.removeEventListener("resize", this.handleResize);
     if (this.mediaQueryListener && this.handleSystemThemeChange) {
-      this.mediaQueryListener.removeEventListener("change", this.handleSystemThemeChange);
+      this.mediaQueryListener.removeEventListener(
+        "change",
+        this.handleSystemThemeChange,
+      );
     }
   },
   methods: {

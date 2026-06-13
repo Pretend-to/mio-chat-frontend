@@ -509,7 +509,6 @@ class TaskAPI {
     return this.configAPI.request(endpoint);
   }
 
-
   /**
    * 获取单个任务详情（含完整上下文）
    * @param {string} id - 任务 ID
@@ -564,7 +563,6 @@ class TaskAPI {
     return this.configAPI.request(`/api/tasks/${id}/executions`);
   }
 }
-
 
 // 导出单例实例
 export const configAPI = new ConfigAPI();

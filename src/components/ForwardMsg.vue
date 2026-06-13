@@ -59,7 +59,11 @@
                   <img
                     :src="getAvatarUrl(message.data.uin)"
                     :alt="message.data.name"
-                    :crossorigin="isExternal(getAvatarUrl(message.data.uin)) ? 'anonymous' : undefined"
+                    :crossorigin="
+                      isExternal(getAvatarUrl(message.data.uin))
+                        ? 'anonymous'
+                        : undefined
+                    "
                   />
                 </div>
                 <div class="msg-details">
@@ -116,7 +120,7 @@ export default {
     corsOption() {
       const domains = [];
       const storage = client.config?.baseConfig?.storage_config;
-      if (storage && storage.type === 's3') {
+      if (storage && storage.type === "s3") {
         if (storage.baseUrl) {
           try {
             domains.push(new URL(storage.baseUrl).hostname);
@@ -133,7 +137,7 @@ export default {
         }
       }
       return domains.length > 0 ? domains : false;
-    }
+    },
   },
   data() {
     return {
@@ -172,12 +176,16 @@ export default {
   methods: {
     isExternal(url) {
       if (!url) return false;
-      const isOuter = (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("//")) && !url.includes(window.location.host);
+      const isOuter =
+        (url.startsWith("http://") ||
+          url.startsWith("https://") ||
+          url.startsWith("//")) &&
+        !url.includes(window.location.host);
       if (!isOuter) return false;
 
       const option = this.corsOption;
       if (Array.isArray(option)) {
-        return option.some(domain => url.includes(domain));
+        return option.some((domain) => url.includes(domain));
       }
       return option === true;
     },

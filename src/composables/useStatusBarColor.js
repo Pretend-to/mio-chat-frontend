@@ -4,22 +4,30 @@ export function useStatusBarColor(colorSource, onPhoneOnly = true) {
   let observer = null;
 
   const updateColor = () => {
-    const isMobile = onPhoneOnly ? (window.innerWidth < 768) : true;
+    const isMobile = onPhoneOnly ? window.innerWidth < 768 : true;
     if (isMobile) {
-      const color = typeof colorSource === "function" ? colorSource() : (colorSource?.value || colorSource);
-      
+      const color =
+        typeof colorSource === "function"
+          ? colorSource()
+          : colorSource?.value || colorSource;
+
       let finalColor = color || "";
       if (finalColor.startsWith("var(")) {
         const varName = finalColor.slice(4, -1).trim();
         // Resolve the actual color value from computed styles of documentElement
-        finalColor = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+        finalColor = getComputedStyle(document.documentElement)
+          .getPropertyValue(varName)
+          .trim();
       }
 
       // Convert rgba(...) to solid rgb(...) to avoid browser status bar blending issues
       if (finalColor && finalColor.includes("rgba")) {
-        finalColor = finalColor.replace(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*[\d.]+)?\)/, "rgb($1, $2, $3)");
+        finalColor = finalColor.replace(
+          /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*[\d.]+)?\)/,
+          "rgb($1, $2, $3)",
+        );
       }
-      
+
       // 1. Set background-color directly
       document.documentElement.style.backgroundColor = finalColor || "";
       document.body.style.backgroundColor = finalColor || "";
@@ -52,7 +60,8 @@ export function useStatusBarColor(colorSource, onPhoneOnly = true) {
         for (const mutation of mutations) {
           if (
             mutation.type === "attributes" &&
-            (mutation.attributeName === "data-theme" || mutation.attributeName === "class")
+            (mutation.attributeName === "data-theme" ||
+              mutation.attributeName === "class")
           ) {
             updateColor();
             break;
@@ -84,9 +93,13 @@ export function useStatusBarColor(colorSource, onPhoneOnly = true) {
     watch(colorSource, () => {
       updateColor();
     });
-  } 
+  }
   // If colorSource is a ref
-  else if (typeof colorSource === "object" && colorSource !== null && "value" in colorSource) {
+  else if (
+    typeof colorSource === "object" &&
+    colorSource !== null &&
+    "value" in colorSource
+  ) {
     watch(colorSource, () => {
       updateColor();
     });

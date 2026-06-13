@@ -5,27 +5,27 @@ import UploadWorker from "../worker/fileUpload.js?worker";
 // 浏览器指纹生成
 const getBrowserFingerprint = () => {
   try {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    ctx.textBaseline = 'top';
-    ctx.font = '14px Arial';
-    ctx.fillText('MioChat', 2, 15);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    ctx.textBaseline = "top";
+    ctx.font = "14px Arial";
+    ctx.fillText("MioChat", 2, 15);
     const canvasData = canvas.toDataURL();
     const info = [
       navigator.userAgent,
       navigator.language,
-      screen.width + 'x' + screen.height,
+      screen.width + "x" + screen.height,
       new Date().getTimezoneOffset(),
       canvasData.substring(30, 80),
-    ].join('|');
+    ].join("|");
     let hash = 0;
     for (let i = 0; i < info.length; i++) {
       hash = (hash << 5) - hash + info.charCodeAt(i);
       hash |= 0;
     }
-    return 'F-' + Math.abs(hash).toString(16);
+    return "F-" + Math.abs(hash).toString(16);
   } catch (e) {
-    return 'F-fallback';
+    return "F-fallback";
   }
 };
 
@@ -760,8 +760,6 @@ export default class Client extends EventEmitter {
           return;
         }
 
-
-
         console.log("System message received:", e);
       } catch (err) {
         console.error("Error handling system_message:", err, e);
@@ -846,7 +844,10 @@ export default class Client extends EventEmitter {
         try {
           const response = await fetch("/api/upload/finalize", {
             method: "POST",
-            headers: { "Content-Type": "application/json", "x-browser-fingerprint": fingerprint },
+            headers: {
+              "Content-Type": "application/json",
+              "x-browser-fingerprint": fingerprint,
+            },
             body: JSON.stringify({
               totalChunks,
               md5: md5Hash,
@@ -875,7 +876,8 @@ export default class Client extends EventEmitter {
           formData.append("filename", file.name);
 
           const xhr = new XMLHttpRequest();
-          xhr.open("POST", "/api/upload/chunk", true); xhr.setRequestHeader("x-browser-fingerprint", fingerprint);
+          xhr.open("POST", "/api/upload/chunk", true);
+          xhr.setRequestHeader("x-browser-fingerprint", fingerprint);
 
           // Track progress if callback provided
           if (onProgress) {
@@ -917,7 +919,10 @@ export default class Client extends EventEmitter {
           console.log("尝试秒传校验...");
           const response = await fetch("/api/upload/finalize", {
             method: "POST",
-            headers: { "Content-Type": "application/json", "x-browser-fingerprint": fingerprint },
+            headers: {
+              "Content-Type": "application/json",
+              "x-browser-fingerprint": fingerprint,
+            },
             body: JSON.stringify({
               totalChunks: 1,
               md5: md5Hash,
@@ -994,7 +999,8 @@ export default class Client extends EventEmitter {
     const { onProgress = null } = options;
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open("POST", "/api/upload/image", true); xhr.setRequestHeader("x-browser-fingerprint", fingerprint);
+      xhr.open("POST", "/api/upload/image", true);
+      xhr.setRequestHeader("x-browser-fingerprint", fingerprint);
 
       if (onProgress) {
         xhr.upload.onprogress = (event) => {

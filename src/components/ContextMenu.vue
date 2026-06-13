@@ -109,7 +109,8 @@ export default {
     currentSpeakingMessageId: {
       type: [String, Number],
       default: null,
-    },    canRetry: {
+    },
+    canRetry: {
       type: Boolean,
       default: true,
     },
@@ -117,7 +118,7 @@ export default {
   computed: {
     onPhone() {
       return window.innerWidth < 768;
-    }
+    },
   },
   data() {
     return {

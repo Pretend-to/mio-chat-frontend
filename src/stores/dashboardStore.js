@@ -45,7 +45,7 @@ export const useDashboardStore = defineStore("dashboard", () => {
   const failures = ref([]);
 
   // Currency setting
-  const currency = ref('USD')
+  const currency = ref("USD");
 
   // Cost calculations settings
   const costCalc = ref({

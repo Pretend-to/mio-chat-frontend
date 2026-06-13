@@ -609,7 +609,8 @@ export const gateway = {
     });
     if (message) {
       if (!message.triggerType) {
-        message.triggerType = metaData?.triggerType || (metaData?.isTask ? "task" : "chat");
+        message.triggerType =
+          metaData?.triggerType || (metaData?.isTask ? "task" : "chat");
       }
       if (metaData?.timestamp) {
         message.time = metaData.timestamp;
@@ -797,7 +798,7 @@ export const gateway = {
     for (const [, buffer] of streamBuffers.entries()) {
       buffer.flush();
     }
-  }
+  },
 };
 /**
  * 转换 Onebot 消息格式为 UI 消息链格式

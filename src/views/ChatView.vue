@@ -74,8 +74,8 @@ const currentSpeakingMessageId = ref(null);
 const getSpeechText = (message) => {
   if (!message || !message.content) return "";
   return message.content
-    .filter(elm => elm.type === "text")
-    .map(elm => elm.data?.text || "")
+    .filter((elm) => elm.type === "text")
+    .map((elm) => elm.data?.text || "")
     .join("\n")
     .trim();
 };
@@ -102,10 +102,12 @@ const speakMessage = (message) => {
   currentSpeakingMessageId.value = message.id;
 
   const utterance = new SpeechSynthesisUtterance(text);
-  
+
   // Find a good Chinese voice
   const voices = window.speechSynthesis.getVoices();
-  const cnVoice = voices.find(v => v.lang.includes("zh-CN") || v.lang.includes("zh-"));
+  const cnVoice = voices.find(
+    (v) => v.lang.includes("zh-CN") || v.lang.includes("zh-"),
+  );
   if (cnVoice) {
     utterance.voice = cnVoice;
   }
@@ -349,7 +351,8 @@ const wraperPresets = ref({});
 const selectedOption = ref(null);
 
 const seletedText = ref("");
-const seletedImage = ref("");const canRetry = ref(true);
+const seletedImage = ref("");
+const canRetry = ref(true);
 const retryList = ref([]);
 const showMenu = ref(false);
 const menuTop = ref(0);
@@ -394,14 +397,20 @@ const mdOptions = computed(() => {
 const renderedCount = ref(20);
 
 watch(
-  () => [activeContactor.value?.id, activeContactor.value?.messageChain?.length],
+  () => [
+    activeContactor.value?.id,
+    activeContactor.value?.messageChain?.length,
+  ],
   ([newId, newLength], [oldId, oldLength]) => {
     if (newId !== oldId) {
       renderedCount.value = 20;
     } else if (newLength !== undefined && oldLength !== undefined) {
-      renderedCount.value = Math.max(20, renderedCount.value + (newLength - oldLength));
+      renderedCount.value = Math.max(
+        20,
+        renderedCount.value + (newLength - oldLength),
+      );
     }
-  }
+  },
 );
 
 const activeMessageChain = computed(() => {
@@ -586,7 +595,7 @@ watch(
     if (autoScroll.value) {
       toButtom();
     }
-  }
+  },
 );
 
 watch(showImagePreview, (val) => {
@@ -648,11 +657,14 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
   autoScroll.value = false;
 
   const chain = activeContactor.value?.messageChain || [];
-  const msgIndex = chain.findIndex(m => m.id === messageId);
+  const msgIndex = chain.findIndex((m) => m.id === messageId);
   if (msgIndex !== -1) {
     const currentRenderedStartIndex = chain.length - renderedCount.value;
     if (msgIndex < currentRenderedStartIndex) {
-      renderedCount.value = Math.min(chain.length, chain.length - msgIndex + 10);
+      renderedCount.value = Math.min(
+        chain.length,
+        chain.length - msgIndex + 10,
+      );
     }
   }
 
@@ -676,8 +688,8 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
         return top;
       };
       const offsetTop = getElementOffsetTop(element, elm);
-      const targetScrollTop = offsetTop - (elm.clientHeight * 0.3);
-      
+      const targetScrollTop = offsetTop - elm.clientHeight * 0.3;
+
       const behavior = behaviorOverride || (shouldFlash ? "smooth" : "instant");
       elm.scrollTo({
         top: Math.max(0, targetScrollTop),
@@ -704,7 +716,8 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
 
     // 用 ResizeObserver 监听滚动容器 scrollHeight 变化
     // （Markdown/LaTeX 渲染会使任意消息高度变化，进而改变 target 在容器中的位置）
-    const scrollContainer = chatWindow.value || document.getElementById("main-messages-window");
+    const scrollContainer =
+      chatWindow.value || document.getElementById("main-messages-window");
     if (scrollContainer) {
       let stabilizeTimer = null;
       let fallbackTimer = null;
@@ -723,10 +736,20 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
           clearTimeout(fallbackTimer);
           fallbackTimer = null;
         }
-        scrollContainer.removeEventListener("wheel", handleUserInteraction, { passive: true });
-        scrollContainer.removeEventListener("touchstart", handleUserInteraction, { passive: true });
-        scrollContainer.removeEventListener("mousedown", handleUserInteraction, { passive: true });
-        
+        scrollContainer.removeEventListener("wheel", handleUserInteraction, {
+          passive: true,
+        });
+        scrollContainer.removeEventListener(
+          "touchstart",
+          handleUserInteraction,
+          { passive: true },
+        );
+        scrollContainer.removeEventListener(
+          "mousedown",
+          handleUserInteraction,
+          { passive: true },
+        );
+
         if (currentScrollTargetId.value === messageId) {
           currentScrollTargetId.value = null;
         }
@@ -753,9 +776,15 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
       observer.observe(scrollContainer);
 
       // 监听用户交互事件以取消自动定位，避免覆盖用户手动操作
-      scrollContainer.addEventListener("wheel", handleUserInteraction, { passive: true });
-      scrollContainer.addEventListener("touchstart", handleUserInteraction, { passive: true });
-      scrollContainer.addEventListener("mousedown", handleUserInteraction, { passive: true });
+      scrollContainer.addEventListener("wheel", handleUserInteraction, {
+        passive: true,
+      });
+      scrollContainer.addEventListener("touchstart", handleUserInteraction, {
+        passive: true,
+      });
+      scrollContainer.addEventListener("mousedown", handleUserInteraction, {
+        passive: true,
+      });
 
       // 安全兜底：最多等 5s
       fallbackTimer = setTimeout(() => {
@@ -779,7 +808,7 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
           element.classList.remove("highlight-flash");
         }
       }, 1200);
-      
+
       // Keep scroll target id active for 5s to adjust to late image loading
       setTimeout(() => {
         if (currentScrollTargetId.value === messageId) {
@@ -821,9 +850,10 @@ const cleanHistory = () => {
 const delSystemMessage = (index) => {
   const chain = activeContactor.value?.messageChain || [];
   const renderedCountVal = renderedCount.value;
-  const realIndex = chain.length > renderedCountVal 
-    ? (chain.length - renderedCountVal + index) 
-    : index;
+  const realIndex =
+    chain.length > renderedCountVal
+      ? chain.length - renderedCountVal + index
+      : index;
 
   const message = chain[realIndex];
   if (!message) return;
@@ -993,21 +1023,23 @@ const getRetryTargetIndex = (chain, index) => {
   const clickedMsg = chain[index];
   if (!clickedMsg) return -1;
 
-  if (clickedMsg.role === 'other') {
+  if (clickedMsg.role === "other") {
     // Assistant message: must be chat source
-    if (clickedMsg.triggerType === 'task') return -1;
+    if (clickedMsg.triggerType === "task") return -1;
     return index;
   }
 
-  if (clickedMsg.role === 'user') {
+  if (clickedMsg.role === "user") {
     // User message: skip tasks until we find a chat message or end of chain
     let targetIdx = index + 1;
-    while (targetIdx < chain.length && chain[targetIdx].triggerType === 'task') {
+    while (
+      targetIdx < chain.length &&
+      chain[targetIdx].triggerType === "task"
+    ) {
       targetIdx++;
     }
     return targetIdx;
   }
-
 };
 const showMessageMenu = (event, messageIndex) => {
   if (
@@ -1018,12 +1050,13 @@ const showMessageMenu = (event, messageIndex) => {
     const imgElement = event.target;
     seletedImage.value = imgElement.src;
   }
-  
+
   const chain = activeContactor.value?.messageChain || [];
   const renderedCountVal = renderedCount.value;
-  const realIndex = chain.length > renderedCountVal 
-    ? (chain.length - renderedCountVal + messageIndex) 
-    : messageIndex;
+  const realIndex =
+    chain.length > renderedCountVal
+      ? chain.length - renderedCountVal + messageIndex
+      : messageIndex;
 
   validMessageIndex.value = realIndex;
   canRetry.value = getRetryTargetIndex(chain, realIndex) !== -1;
@@ -1075,7 +1108,7 @@ const handleRetryMessage = async (item) => {
   const contactor = activeContactor.value;
   if (!contactor) return;
 
-  if (item.triggerType === 'task') {
+  if (item.triggerType === "task") {
     ElMessage.warning("非聊天来源的消息不支持重试");
     return;
   }
@@ -1105,10 +1138,10 @@ const handleRetryMessage = async (item) => {
         role: "other",
         time: Date.now(),
         content: [{ type: "blank", data: {} }],
-            id: numberString(16),
- status: "pending",
-            triggerType: "chat",
-          };
+        id: numberString(16),
+        status: "pending",
+        triggerType: "chat",
+      };
       contactor.messageChain.splice(targetIndex, 0, assistantMsg);
     } else {
       assistantMsg.content = [{ type: "blank", data: {} }];
@@ -1212,7 +1245,10 @@ const handleMessageOption = async (option) => {
         ElMessage.success("消息已重新发送");
       } else {
         const contactor = contactorsStore.activeContactor;
-        const targetIndex = getRetryTargetIndex(contactor.messageChain, validMessageIndex.value);
+        const targetIndex = getRetryTargetIndex(
+          contactor.messageChain,
+          validMessageIndex.value,
+        );
 
         if (targetIndex === -1) {
           ElMessage.warning("非聊天来源的消息不支持重试");

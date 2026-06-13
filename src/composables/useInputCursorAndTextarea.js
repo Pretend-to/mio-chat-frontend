@@ -56,9 +56,7 @@ export function useInputCursorAndTextarea({ textareaRef }) {
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
 
-    return escaped
-      .replace(/  /g, "&nbsp;&nbsp;")
-      .replace(/\n/g, "<br>");
+    return escaped.replace(/  /g, "&nbsp;&nbsp;").replace(/\n/g, "<br>");
   };
 
   const setCursorToEnd = (element) => {

@@ -136,7 +136,9 @@ export function useSearch() {
     if (!content) return "";
     if (typeof content === "string") return content;
     if (Array.isArray(content)) {
-      return content.map((item) => extractTextFromContent(item, msgId, role)).join(" ");
+      return content
+        .map((item) => extractTextFromContent(item, msgId, role))
+        .join(" ");
     }
     if (typeof content === "object") {
       let result = "";
@@ -144,7 +146,8 @@ export function useSearch() {
         result = content.data?.name || "";
       } else if (content.data) {
         if (typeof content.data === "string") result = content.data;
-        else if (typeof content.data.text === "string") result = content.data.text;
+        else if (typeof content.data.text === "string")
+          result = content.data.text;
       } else if (typeof content.text === "string") {
         result = content.text;
       } else if (typeof content.content === "string") {
@@ -170,14 +173,19 @@ export function useSearch() {
       keys: ["name"],
       threshold: 0.4,
     });
-    const contactMatches = contactFuse.search(query)
+    const contactMatches = contactFuse
+      .search(query)
       .map((res) => res.item)
       // 确保完整关键词存在于结果中，避免模糊匹配将中文逐字拆分命中（如搜索"测试"不会匹配仅含"测"或"试"的结果）
-      .filter(c => c.name.toLowerCase().includes(query.toLowerCase()))
+      .filter((c) => c.name.toLowerCase().includes(query.toLowerCase()))
       // 最新联系排在前面（根据最后一条消息时间或创建时间）
       .sort((a, b) => {
-        const aTime = a.messageChain?.length ? a.messageChain[a.messageChain.length - 1].time : a.createTime;
-        const bTime = b.messageChain?.length ? b.messageChain[b.messageChain.length - 1].time : b.createTime;
+        const aTime = a.messageChain?.length
+          ? a.messageChain[a.messageChain.length - 1].time
+          : a.createTime;
+        const bTime = b.messageChain?.length
+          ? b.messageChain[b.messageChain.length - 1].time
+          : b.createTime;
         return (bTime || 0) - (aTime || 0);
       });
 
@@ -185,7 +193,11 @@ export function useSearch() {
     const allMessages = [];
     contactList.forEach((c) => {
       c.messageChain.forEach((msg) => {
-        const textContent = extractTextFromContent(msg.content, msg.id, msg.role);
+        const textContent = extractTextFromContent(
+          msg.content,
+          msg.id,
+          msg.role,
+        );
         if (textContent.trim()) {
           allMessages.push({
             contactorId: c.id,
@@ -206,84 +218,87 @@ export function useSearch() {
       includeMatches: true,
     });
 
-    const messageMatches = messageFuse.search(query)
+    const messageMatches = messageFuse
+      .search(query)
       // 先过滤：确保完整关键词完整存在于文本中，避免中文逐字拆分命中
-      .filter(res => res.item.textContent.toLowerCase().includes(query.toLowerCase()))
+      .filter((res) =>
+        res.item.textContent.toLowerCase().includes(query.toLowerCase()),
+      )
       .map((res) => {
-      const matches = res.matches?.[0];
-      const text = res.item.textContent;
+        const matches = res.matches?.[0];
+        const text = res.item.textContent;
 
-      let matchStart = -1;
-      let matchEnd = -1;
+        let matchStart = -1;
+        let matchEnd = -1;
 
-      if (matches && matches.indices && matches.indices.length > 0) {
-        matchStart = matches.indices[0][0];
-        matchEnd = matches.indices[0][1];
-      } else {
-        const idx = text.toLowerCase().indexOf(query.toLowerCase());
-        if (idx !== -1) {
-          matchStart = idx;
-          matchEnd = idx + query.length - 1;
-        }
-      }
-
-      // Position match center around 6th char of preview.
-      let start = 0;
-      if (matchStart !== -1 && matchEnd !== -1) {
-        if (matchStart > 5) {
-          start = matchStart - 2;
+        if (matches && matches.indices && matches.indices.length > 0) {
+          matchStart = matches.indices[0][0];
+          matchEnd = matches.indices[0][1];
         } else {
-          start = 0;
+          const idx = text.toLowerCase().indexOf(query.toLowerCase());
+          if (idx !== -1) {
+            matchStart = idx;
+            matchEnd = idx + query.length - 1;
+          }
         }
-      }
 
-      // Suffix limit to 100 characters
-      let end = text.length;
-      if (matchStart !== -1) {
-        end = Math.min(text.length, matchStart + 100);
-      }
-
-      const croppedText = text.substring(start, end);
-      let highlightedText = croppedText;
-
-      if (matches && matches.indices && matches.indices.length > 0) {
-        const shiftedIndices = matches.indices
-          .map(([s, e]) => [s - start, e - start])
-          .filter(([s, e]) => s >= 0 && e < croppedText.length);
-
-        const sortedIndices = [...shiftedIndices].sort((a, b) => b[0] - a[0]);
-        let html = croppedText;
-        sortedIndices.forEach(([s, e]) => {
-          html =
-            html.substring(0, s) +
-            `<mark class="search-highlight">${html.substring(s, e + 1)}</mark>` +
-            html.substring(e + 1);
-        });
-        highlightedText = html;
-      } else {
-        const idx = croppedText.toLowerCase().indexOf(query.toLowerCase());
-        if (idx !== -1) {
-          highlightedText =
-            croppedText.substring(0, idx) +
-            `<mark class="search-highlight">${croppedText.substring(idx, idx + query.length)}</mark>` +
-            croppedText.substring(idx + query.length);
+        // Position match center around 6th char of preview.
+        let start = 0;
+        if (matchStart !== -1 && matchEnd !== -1) {
+          if (matchStart > 5) {
+            start = matchStart - 2;
+          } else {
+            start = 0;
+          }
         }
-      }
 
-      if (start > 0) {
-        highlightedText = "..." + highlightedText;
-      }
-      if (end < text.length) {
-        highlightedText = highlightedText + "...";
-      }
+        // Suffix limit to 100 characters
+        let end = text.length;
+        if (matchStart !== -1) {
+          end = Math.min(text.length, matchStart + 100);
+        }
 
-      return {
-        ...res.item,
-        highlightedText,
-      };
-    })
-    // 最新消息排在前面
-    .sort((a, b) => (b.msgTime || 0) - (a.msgTime || 0));
+        const croppedText = text.substring(start, end);
+        let highlightedText = croppedText;
+
+        if (matches && matches.indices && matches.indices.length > 0) {
+          const shiftedIndices = matches.indices
+            .map(([s, e]) => [s - start, e - start])
+            .filter(([s, e]) => s >= 0 && e < croppedText.length);
+
+          const sortedIndices = [...shiftedIndices].sort((a, b) => b[0] - a[0]);
+          let html = croppedText;
+          sortedIndices.forEach(([s, e]) => {
+            html =
+              html.substring(0, s) +
+              `<mark class="search-highlight">${html.substring(s, e + 1)}</mark>` +
+              html.substring(e + 1);
+          });
+          highlightedText = html;
+        } else {
+          const idx = croppedText.toLowerCase().indexOf(query.toLowerCase());
+          if (idx !== -1) {
+            highlightedText =
+              croppedText.substring(0, idx) +
+              `<mark class="search-highlight">${croppedText.substring(idx, idx + query.length)}</mark>` +
+              croppedText.substring(idx + query.length);
+          }
+        }
+
+        if (start > 0) {
+          highlightedText = "..." + highlightedText;
+        }
+        if (end < text.length) {
+          highlightedText = highlightedText + "...";
+        }
+
+        return {
+          ...res.item,
+          highlightedText,
+        };
+      })
+      // 最新消息排在前面
+      .sort((a, b) => (b.msgTime || 0) - (a.msgTime || 0));
 
     return {
       contacts: contactMatches,

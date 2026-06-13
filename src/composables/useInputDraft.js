@@ -1,6 +1,10 @@
 import { client } from "@/lib/runtime.js";
 
-export function useInputDraft({ textareaRef, activeContactor, adjustTextareaHeight }) {
+export function useInputDraft({
+  textareaRef,
+  activeContactor,
+  adjustTextareaHeight,
+}) {
   const loadDraft = () => {
     const contactor = activeContactor.value;
     if (!contactor || !textareaRef.value) return;

@@ -53,7 +53,9 @@
             v-if="item.role === 'other'"
             :src="activeContactor.avatar"
             :alt="activeContactor.name"
-            :crossorigin="isExternal(activeContactor.avatar) ? 'anonymous' : undefined"
+            :crossorigin="
+              isExternal(activeContactor.avatar) ? 'anonymous' : undefined
+            "
             @click="$emit('to-profile')"
           />
           <img
@@ -75,10 +77,9 @@
             </div>
             <div class="name">
               {{ item.role === "other" ? activeContactor.name : client.name }}
-              <span
-                v-if="item.triggerType === 'task'"
-                class="task-name-tag"
-              >计划</span>
+              <span v-if="item.triggerType === 'task'" class="task-name-tag"
+                >计划</span
+              >
             </div>
           </div>
           <div
@@ -111,7 +112,9 @@
                     <el-dropdown-item command="retry"
                       >重新发送</el-dropdown-item
                     >
-                    <el-dropdown-item command="delete" style="color: var(--mio-color-danger)"
+                    <el-dropdown-item
+                      command="delete"
+                      style="color: var(--mio-color-danger)"
                       >删除消息</el-dropdown-item
                     >
                   </el-dropdown-menu>
@@ -135,7 +138,10 @@
               </div>
 
               <!-- 引用预览块 -->
-              <template v-for="(element, elmIndex) of item.content" :key="'reply-' + elmIndex">
+              <template
+                v-for="(element, elmIndex) of item.content"
+                :key="'reply-' + elmIndex"
+              >
                 <div
                   v-if="element.type === 'reply'"
                   class="reply-bubble-preview"
@@ -143,10 +149,20 @@
                 >
                   <div class="reply-preview-header">
                     <span class="reply-sender-info">
-                      {{ getRepliedMsgInfo(element.data.id).senderName }} &nbsp;{{ getRepliedMsgInfo(element.data.id).timeText }}
+                      {{ getRepliedMsgInfo(element.data.id).senderName }}
+                      &nbsp;{{ getRepliedMsgInfo(element.data.id).timeText }}
                     </span>
                     <span class="reply-jump-arrow">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="arrow-icon">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="arrow-icon"
+                      >
                         <line x1="12" y1="19" x2="12" y2="5"></line>
                         <polyline points="5 12 12 5 19 12"></polyline>
                       </svg>
@@ -200,7 +216,7 @@ import { Loading, Warning, CollectionTag } from "@element-plus/icons-vue";
 const corsOption = computed(() => {
   const domains = [];
   const storage = client.config?.baseConfig?.storage_config;
-  if (storage && storage.type === 's3') {
+  if (storage && storage.type === "s3") {
     if (storage.baseUrl) {
       try {
         domains.push(new URL(storage.baseUrl).hostname);
@@ -221,12 +237,16 @@ const corsOption = computed(() => {
 
 const isExternal = (url) => {
   if (!url) return false;
-  const isOuter = (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("//")) && !url.includes(window.location.host);
+  const isOuter =
+    (url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("//")) &&
+    !url.includes(window.location.host);
   if (!isOuter) return false;
 
   const option = corsOption.value;
   if (Array.isArray(option)) {
-    return option.some(domain => url.includes(domain));
+    return option.some((domain) => url.includes(domain));
   }
   return option === true;
 };
@@ -330,13 +350,14 @@ const getRepliedMsgInfo = (id) => {
     };
   }
 
-  const senderName = repliedMsg.role === "user" ? client.name : props.activeContactor.name;
+  const senderName =
+    repliedMsg.role === "user" ? client.name : props.activeContactor.name;
 
   let timeText = "";
   if (repliedMsg.time) {
     const d = new Date(repliedMsg.time);
-    const hrs = String(d.getHours()).padStart(2, '0');
-    const mins = String(d.getMinutes()).padStart(2, '0');
+    const hrs = String(d.getHours()).padStart(2, "0");
+    const mins = String(d.getMinutes()).padStart(2, "0");
     timeText = `${hrs}:${mins}`;
   }
 
@@ -366,8 +387,6 @@ const getRepliedMsgInfo = (id) => {
 const jumpToMessage = (id) => {
   client.emit("scroll_to_message", id);
 };
-
-
 </script>
 
 <style lang="sass" scoped>

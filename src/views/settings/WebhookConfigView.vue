@@ -18,10 +18,11 @@
       class="info-banner"
     >
       <template #default>
-        配置 SMTP 邮箱信息后，当 GitHub Webhook 触发部署时，系统会自动发送部署结果通知邮件。
-        接收通知的邮箱可配置多个（用逗号分隔）。
-        仅监听 <code>allowed_branches</code> 中指定的分支推送事件。
-        可选配 Webhook Secret 校验请求签名，防止恶意触发。
+        配置 SMTP 邮箱信息后，当 GitHub Webhook
+        触发部署时，系统会自动发送部署结果通知邮件。
+        接收通知的邮箱可配置多个（用逗号分隔）。 仅监听
+        <code>allowed_branches</code> 中指定的分支推送事件。 可选配 Webhook
+        Secret 校验请求签名，防止恶意触发。
       </template>
     </el-alert>
 
@@ -99,7 +100,9 @@
             </template>
           </el-input>
           <template #extra>
-            <span class="form-item-tip">SMTP 授权码（如 QQ 邮箱需使用独立授权码）</span>
+            <span class="form-item-tip"
+              >SMTP 授权码（如 QQ 邮箱需使用独立授权码）</span
+            >
           </template>
         </el-form-item>
 
@@ -152,7 +155,8 @@
           />
           <template #extra>
             <span class="form-item-tip">
-              在 GitHub 仓库 Settings → Webhooks 中配置相同的 Secret，用于校验请求来源，防止恶意触发
+              在 GitHub 仓库 Settings → Webhooks 中配置相同的
+              Secret，用于校验请求来源，防止恶意触发
             </span>
           </template>
         </el-form-item>
@@ -193,15 +197,9 @@
 
       <div class="webhook-url-section">
         <el-form-item label="Webhook URL">
-          <el-input
-            :model-value="webhookUrl"
-            readonly
-            style="width: 500px"
-          >
+          <el-input :model-value="webhookUrl" readonly style="width: 500px">
             <template #append>
-              <el-button @click="copyWebhookUrl">
-                复制
-              </el-button>
+              <el-button @click="copyWebhookUrl"> 复制 </el-button>
             </template>
           </el-input>
         </el-form-item>
@@ -210,12 +208,7 @@
           <code>application/json</code>，事件选择
           <code>Just the push event</code> 即可。
         </p>
-        <el-button
-          type="success"
-          plain
-          :loading="testing"
-          @click="handleTest"
-        >
+        <el-button type="success" plain :loading="testing" @click="handleTest">
           发送测试邮件
         </el-button>
       </div>
@@ -324,7 +317,10 @@ const loadConfig = async () => {
       email_from_name: webhookConfig.email_from_name || "MioChat 部署",
       email_to: webhookConfig.email_to || "",
       secret: webhookConfig.secret || "",
-      allowed_branches: webhookConfig.allowed_branches || ["master", "production"],
+      allowed_branches: webhookConfig.allowed_branches || [
+        "master",
+        "production",
+      ],
     });
 
     // 保存原始数据用于重置
@@ -373,11 +369,14 @@ const handleReset = () => {
 
 // 复制 Webhook URL
 const copyWebhookUrl = () => {
-  navigator.clipboard.writeText(webhookUrl.value).then(() => {
-    ElMessage.success("Webhook URL 已复制到剪贴板");
-  }).catch(() => {
-    ElMessage.error("复制失败，请手动复制");
-  });
+  navigator.clipboard
+    .writeText(webhookUrl.value)
+    .then(() => {
+      ElMessage.success("Webhook URL 已复制到剪贴板");
+    })
+    .catch(() => {
+      ElMessage.error("复制失败，请手动复制");
+    });
 };
 
 // 发送测试邮件

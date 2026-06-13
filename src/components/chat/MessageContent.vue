@@ -49,14 +49,25 @@
     >
       <span class="blank-loader"></span>
     </div>
-    <div v-else-if="element.type === 'tool_call'" class="tool-call-container-wrapper" style="width: 100%">
+    <div
+      v-else-if="element.type === 'tool_call'"
+      class="tool-call-container-wrapper"
+      style="width: 100%"
+    >
       <template v-if="getToolName(element.data) === 'toolsmanager'">
         <ActionBlock
           iconClass="mio-icon-tool"
           title="配置管理 (ToolsManager)"
           :statusText="getToolsManagerStatus(element.data)"
-          :isLoading="element.data.action === 'running' || element.data.action === 'pending' || element.data.action === 'started'"
-          :isFailed="element.data.status === 'failed' || (element.data.result && element.data.result.success === false)"
+          :isLoading="
+            element.data.action === 'running' ||
+            element.data.action === 'pending' ||
+            element.data.action === 'started'
+          "
+          :isFailed="
+            element.data.status === 'failed' ||
+            (element.data.result && element.data.result.success === false)
+          "
           :collapsible="!!element.data.result"
           :defaultExpanded="isToolsManagerExpanded(elmIndex)"
           @toggle="toggleToolsManagerDetails(elmIndex)"
@@ -64,30 +75,58 @@
           <div class="toolsmanager-detail">
             <template v-if="element.data.result && element.data.result.groups">
               <!-- List action details -->
-              <div v-for="(toolsList, groupName) in element.data.result.groups" :key="groupName" class="toolsmanager-group">
+              <div
+                v-for="(toolsList, groupName) in element.data.result.groups"
+                :key="groupName"
+                class="toolsmanager-group"
+              >
                 <div class="toolsmanager-group-title">{{ groupName }}</div>
                 <div class="tools-grid-mini">
-                  <div v-for="t in toolsList" :key="t.name" class="tool-state-item" :class="{ disabled: !t.enabled }">
-                    <span class="tool-state-dot" :class="{ enabled: t.enabled }"></span>
+                  <div
+                    v-for="t in toolsList"
+                    :key="t.name"
+                    class="tool-state-item"
+                    :class="{ disabled: !t.enabled }"
+                  >
+                    <span
+                      class="tool-state-dot"
+                      :class="{ enabled: t.enabled }"
+                    ></span>
                     <span class="tool-state-name">{{ t.name }}</span>
                   </div>
                 </div>
               </div>
             </template>
-            <template v-else-if="element.data.result && element.data.result.toggledTools">
+            <template
+              v-else-if="
+                element.data.result && element.data.result.toggledTools
+              "
+            >
               <!-- Toggle action details -->
               <div class="toggle-summary">
-                {{ element.data.result.enabled ? '已启用' : '已禁用' }}以下工具：
+                {{
+                  element.data.result.enabled ? "已启用" : "已禁用"
+                }}以下工具：
               </div>
               <div class="tools-grid-mini">
-                <div v-for="tName in element.data.result.toggledTools" :key="tName" class="tool-state-item" :class="{ disabled: !element.data.result.enabled }">
-                  <span class="tool-state-dot" :class="{ enabled: element.data.result.enabled }"></span>
+                <div
+                  v-for="tName in element.data.result.toggledTools"
+                  :key="tName"
+                  class="tool-state-item"
+                  :class="{ disabled: !element.data.result.enabled }"
+                >
+                  <span
+                    class="tool-state-dot"
+                    :class="{ enabled: element.data.result.enabled }"
+                  ></span>
                   <span class="tool-state-name">{{ tName }}</span>
                 </div>
               </div>
             </template>
             <template v-else-if="element.data.result">
-              <pre class="raw-result-json">{{ JSON.stringify(element.data.result, null, 2) }}</pre>
+              <pre class="raw-result-json">{{
+                JSON.stringify(element.data.result, null, 2)
+              }}</pre>
             </template>
           </div>
         </ActionBlock>
@@ -156,9 +195,7 @@
       v-else-if="element.type === 'crystallize_event'"
       iconClass="mio-icon-memory"
       title="整理记忆"
-      :statusText="
-        element.data.status === 'running' ? '整理中' : '完成'
-      "
+      :statusText="element.data.status === 'running' ? '整理中' : '完成'"
       :isLoading="element.data.status === 'running'"
       :collapsible="!!element.data.summary"
       :defaultExpanded="isCrystallizeExpanded(elmIndex)"
@@ -182,7 +219,9 @@ import FileBlock from "@/components/FileBlock.vue";
 import MdRenderer from "mio-previewer";
 
 // Resolve circular dependency by dynamically importing ForwardMsg
-const ForwardMsg = defineAsyncComponent(() => import("@/components/ForwardMsg.vue"));
+const ForwardMsg = defineAsyncComponent(
+  () => import("@/components/ForwardMsg.vue"),
+);
 
 const props = defineProps({
   content: {
@@ -218,7 +257,7 @@ const props = defineProps({
 const corsOption = computed(() => {
   const domains = [];
   const storage = client.config?.baseConfig?.storage_config;
-  if (storage && storage.type === 's3') {
+  if (storage && storage.type === "s3") {
     if (storage.baseUrl) {
       try {
         domains.push(new URL(storage.baseUrl).hostname);
@@ -242,13 +281,20 @@ const getToolName = (toolCall) => {
 };
 
 const getToolsManagerStatus = (toolCall) => {
-  if (toolCall.action === 'running' || toolCall.action === 'pending' || toolCall.action === 'started') {
-    return '运行中';
+  if (
+    toolCall.action === "running" ||
+    toolCall.action === "pending" ||
+    toolCall.action === "started"
+  ) {
+    return "运行中";
   }
-  if (toolCall.status === 'failed' || (toolCall.result && toolCall.result.success === false)) {
-    return '失败';
+  if (
+    toolCall.status === "failed" ||
+    (toolCall.result && toolCall.result.success === false)
+  ) {
+    return "失败";
   }
-  return '完成';
+  return "完成";
 };
 
 const expandedToolsManagerEvents = ref({});
@@ -263,7 +309,8 @@ const isToolsManagerExpanded = (elmIndex) => {
 
 const toggleToolsManagerDetails = (elmIndex) => {
   const key = `${props.messageIndex}-${elmIndex}`;
-  expandedToolsManagerEvents.value[key] = !expandedToolsManagerEvents.value[key];
+  expandedToolsManagerEvents.value[key] =
+    !expandedToolsManagerEvents.value[key];
 };
 
 const expandedCrystallizeEvents = ref({});
@@ -287,7 +334,7 @@ const toggleCrystallizeDetails = (elmIndex) => {
 
 function outerItems(data) {
   const extra = data.extraRender || [];
-  return extra.filter(r => r.placement === 'outer');
+  return extra.filter((r) => r.placement === "outer");
 }
 </script>
 

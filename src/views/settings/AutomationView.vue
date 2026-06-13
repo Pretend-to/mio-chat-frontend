@@ -74,20 +74,26 @@
         <el-checkbox
           v-model="showDeletedTasks"
           @change="fetchTasks"
-          style="margin-left: auto; margin-right: 15px; font-weight: normal; margin-bottom: 0;"
+          style="
+            margin-left: auto;
+            margin-right: 15px;
+            font-weight: normal;
+            margin-bottom: 0;
+          "
         >
           显示已删除的任务
         </el-checkbox>
-        <el-button
-          type="primary"
-          size="small"
-          @click="handleAddTask"
-        >
+        <el-button type="primary" size="small" @click="handleAddTask">
           新建任务
         </el-button>
       </div>
 
-      <el-table :data="tasks" style="width: 100%" v-loading="loadingTasks" :row-class-name="tableRowClassName">
+      <el-table
+        :data="tasks"
+        style="width: 100%"
+        v-loading="loadingTasks"
+        :row-class-name="tableRowClassName"
+      >
         <el-table-column prop="name" label="任务名称" min-width="120" />
 
         <el-table-column prop="cron" label="Cron 表达式" width="150">
@@ -98,7 +104,13 @@
         <el-table-column prop="preset" label="执行 Agent" width="150" />
         <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
-            <el-tag v-if="row.status === 'deleted'" type="danger" size="small" effect="plain">已删除</el-tag>
+            <el-tag
+              v-if="row.status === 'deleted'"
+              type="danger"
+              size="small"
+              effect="plain"
+              >已删除</el-tag
+            >
             <el-switch
               v-else
               v-model="row.isActive"
@@ -117,10 +129,10 @@
         </el-table-column>
         <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
-            <el-button 
-              size="small" 
-              link 
-              type="primary" 
+            <el-button
+              size="small"
+              link
+              type="primary"
               :disabled="row.status === 'deleted'"
               @click="handleEditTask(row)"
               >编辑</el-button
@@ -137,12 +149,10 @@
               link
               type="danger"
               @click="handleDeleteTask(row)"
-              >{{ row.status === 'deleted' ? '彻底删除' : '删除' }}</el-button
+              >{{ row.status === "deleted" ? "彻底删除" : "删除" }}</el-button
             >
           </template>
         </el-table-column>
-
-
       </el-table>
     </el-card>
 
@@ -284,14 +294,23 @@
       top="8vh"
       append-to-body
     >
-      <div v-loading="loadingExecutions" style="min-height: 200px;">
-        <el-table :data="executionsList" style="width: 100%" size="small" border>
+      <div v-loading="loadingExecutions" style="min-height: 200px">
+        <el-table
+          :data="executionsList"
+          style="width: 100%"
+          size="small"
+          border
+        >
           <!-- 展开显示详细 Input/Output -->
           <el-table-column type="expand">
             <template #default="{ row }">
               <div class="execution-expand-details">
                 <el-form label-position="top" size="small">
-                  <el-form-item v-slot:label v-if="row.triggerPrompt" label="唤醒指令 (Trigger Prompt)">
+                  <el-form-item
+                    v-slot:label
+                    v-if="row.triggerPrompt"
+                    label="唤醒指令 (Trigger Prompt)"
+                  >
                     <span>唤醒指令 (Trigger Prompt)</span>
                   </el-form-item>
                   <el-input
@@ -302,8 +321,12 @@
                     :model-value="row.triggerPrompt"
                     style="margin-bottom: 12px"
                   />
-                  
-                  <el-form-item v-slot:label v-if="row.errorMessage" label="错误信息 (Error Message)">
+
+                  <el-form-item
+                    v-slot:label
+                    v-if="row.errorMessage"
+                    label="错误信息 (Error Message)"
+                  >
                     <span>错误信息 (Error Message)</span>
                   </el-form-item>
                   <el-alert
@@ -317,7 +340,10 @@
 
                   <el-row :gutter="20">
                     <el-col :span="12">
-                      <el-form-item v-slot:label label="输入消息历史 (Input Messages)">
+                      <el-form-item
+                        v-slot:label
+                        label="输入消息历史 (Input Messages)"
+                      >
                         <span>输入消息历史 (Input Messages)</span>
                       </el-form-item>
                       <div class="json-box">
@@ -325,12 +351,22 @@
                       </div>
                     </el-col>
                     <el-col :span="12">
-                      <el-form-item v-slot:label label="最终回复/流块 (Output Assistant Message / Chunks)">
-                        <span>最终回复/流块 (Output Assistant Message / Chunks)</span>
+                      <el-form-item
+                        v-slot:label
+                        label="最终回复/流块 (Output Assistant Message / Chunks)"
+                      >
+                        <span
+                          >最终回复/流块 (Output Assistant Message /
+                          Chunks)</span
+                        >
                       </el-form-item>
                       <div class="json-box">
-                        <pre v-if="row.finalAssistantMsg">{{ formatJson(row.finalAssistantMsg) }}</pre>
-                        <pre v-else-if="row.outputChunks">{{ formatJson(row.outputChunks) }}</pre>
+                        <pre v-if="row.finalAssistantMsg">{{
+                          formatJson(row.finalAssistantMsg)
+                        }}</pre>
+                        <pre v-else-if="row.outputChunks">{{
+                          formatJson(row.outputChunks)
+                        }}</pre>
                         <span v-else class="text-secondary">无输出</span>
                       </div>
                     </el-col>
@@ -340,8 +376,13 @@
             </template>
           </el-table-column>
 
-          <el-table-column prop="round" label="轮次" width="60" align="center" />
-          
+          <el-table-column
+            prop="round"
+            label="轮次"
+            width="60"
+            align="center"
+          />
+
           <el-table-column prop="status" label="状态" width="90" align="center">
             <template #default="{ row }">
               <el-tag :type="getStatusType(row.status)" size="small">
@@ -352,13 +393,19 @@
 
           <el-table-column prop="provider" label="渠道" width="130">
             <template #default="{ row }">
-              <el-tag v-if="row.provider" size="small" type="info">{{ row.provider }}</el-tag>
+              <el-tag v-if="row.provider" size="small" type="info">{{
+                row.provider
+              }}</el-tag>
               <span v-else>-</span>
             </template>
           </el-table-column>
-          
-          <el-table-column prop="model" label="模型" min-width="140" show-overflow-tooltip />
 
+          <el-table-column
+            prop="model"
+            label="模型"
+            min-width="140"
+            show-overflow-tooltip
+          />
 
           <el-table-column prop="startedAt" label="执行时间" width="170">
             <template #default="{ row }">
@@ -428,15 +475,14 @@ const executionsList = ref([]);
 const currentTaskName = ref("");
 
 const tableRowClassName = ({ row }) => {
-  if (row.status === 'deleted') {
-    return 'deleted-row';
+  if (row.status === "deleted") {
+    return "deleted-row";
   }
-  return '';
+  return "";
 };
 
 const formatDuration = (row) => {
-
-  if (!row.startedAt) return '-';
+  if (!row.startedAt) return "-";
   const start = new Date(row.startedAt).getTime();
   const end = row.finishedAt ? new Date(row.finishedAt).getTime() : Date.now();
   const diff = end - start;
@@ -446,25 +492,33 @@ const formatDuration = (row) => {
 
 const getStatusType = (status) => {
   switch (status) {
-    case 'completed': return 'success';
-    case 'failed': return 'danger';
-    case 'running': return 'warning';
-    default: return 'info';
+    case "completed":
+      return "success";
+    case "failed":
+      return "danger";
+    case "running":
+      return "warning";
+    default:
+      return "info";
   }
 };
 
 const getStatusLabel = (status) => {
   switch (status) {
-    case 'completed': return '成功';
-    case 'failed': return '失败';
-    case 'running': return '运行中';
-    default: return status;
+    case "completed":
+      return "成功";
+    case "failed":
+      return "失败";
+    case "running":
+      return "运行中";
+    default:
+      return status;
   }
 };
 
 const formatJson = (val) => {
-  if (!val) return '';
-  if (typeof val === 'string') {
+  if (!val) return "";
+  if (typeof val === "string") {
     try {
       return JSON.stringify(JSON.parse(val), null, 2);
     } catch {
@@ -488,7 +542,6 @@ const handleShowExecutions = async (row) => {
     loadingExecutions.value = false;
   }
 };
-
 
 // 获取所有适配器列表
 const allAdapters = computed(() => {
@@ -523,7 +576,6 @@ const fetchTasks = async () => {
       ...t,
       isActive: t.status === "active",
     }));
-
   } finally {
     loadingTasks.value = false;
   }
@@ -648,7 +700,7 @@ const saveTask = async () => {
 };
 
 const handleDeleteTask = async (row) => {
-  const isDeleted = row.status === 'deleted';
+  const isDeleted = row.status === "deleted";
   try {
     const message = isDeleted
       ? `此操作将永久删除任务 "${row.name}" 及其所有运行记录，且不可恢复！确认彻底删除吗？`
@@ -660,7 +712,8 @@ const handleDeleteTask = async (row) => {
     ElMessage.success(isDeleted ? "彻底删除成功" : "已删除");
     await fetchTasks();
   } catch (e) {
-    if (e !== "cancel") ElMessage.error(isDeleted ? "彻底删除失败" : "删除失败");
+    if (e !== "cancel")
+      ElMessage.error(isDeleted ? "彻底删除失败" : "删除失败");
   }
 };
 
@@ -953,5 +1006,3 @@ onMounted(async () => {
   color: #a8abb2;
 }
 </style>
-
-

@@ -24,10 +24,7 @@
         宽屏模式更适合包含长代码、表格或大图的聊天记录
       </div>
     </div>
-    <div
-      v-loading="generatingImage"
-      class="preview-scroll-container"
-    >
+    <div v-loading="generatingImage" class="preview-scroll-container">
       <img
         v-if="previewImageUrl"
         :src="previewImageUrl"

@@ -3,19 +3,38 @@ import { useInteraction } from "@/composables/useInteraction.js";
 
 export function useInputInteractions({ activeContactor }) {
   const contactorId = computed(() => activeContactor.value?.id);
-  const { activeInteraction, hasActiveInteraction, submitResponse } = useInteraction(contactorId);
+  const { activeInteraction, hasActiveInteraction, submitResponse } =
+    useInteraction(contactorId);
   const rejectReasonText = ref("");
 
   const isHighRiskCommand = (command) => {
     if (!command) return true;
     const trimmed = command.trim();
-    const stripQuotesRegex =
-      /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'|`([^`\\]|\\.)*`/g;
+    const stripQuotesRegex = /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'|`([^`\\]|\\.)*`/g;
     const commandWithoutQuotes = trimmed.replace(stripQuotesRegex, " ");
     const subCommands = commandWithoutQuotes.split(/&&|\|\||\||;/);
     const highRiskExecutables = [
-      "rm", "rmdir", "node", "python", "python3", "pip", "pip3", "npm", "yarn", "pnpm",
-      "sh", "bash", "zsh", "sudo", "curl", "wget", "docker", "mv", "chmod", "chown", "unlink",
+      "rm",
+      "rmdir",
+      "node",
+      "python",
+      "python3",
+      "pip",
+      "pip3",
+      "npm",
+      "yarn",
+      "pnpm",
+      "sh",
+      "bash",
+      "zsh",
+      "sudo",
+      "curl",
+      "wget",
+      "docker",
+      "mv",
+      "chmod",
+      "chown",
+      "unlink",
     ];
     for (let subCmd of subCommands) {
       subCmd = subCmd.trim();
@@ -53,18 +72,22 @@ export function useInputInteractions({ activeContactor }) {
     if (!command) return;
     if (isHighRiskCommand(command)) return;
     try {
-      const listStr = localStorage.getItem("mio_auto_approved_commands") || "[]";
+      const listStr =
+        localStorage.getItem("mio_auto_approved_commands") || "[]";
       const list = JSON.parse(listStr);
       if (Array.isArray(list) && list.includes(command)) {
         console.log(`[Auto Approval] 自动批准具体命令: ${command}`);
         submitResponse({ approved: true });
         return;
       }
-      const prefixListStr = localStorage.getItem("mio_auto_approved_command_prefixes") || "[]";
+      const prefixListStr =
+        localStorage.getItem("mio_auto_approved_command_prefixes") || "[]";
       const prefixList = JSON.parse(prefixListStr);
       const prefix = getCommandPrefix(command);
       if (prefix && Array.isArray(prefixList) && prefixList.includes(prefix)) {
-        console.log(`[Auto Approval] 根据前缀 "${prefix}" 自动批准命令: ${command}`);
+        console.log(
+          `[Auto Approval] 根据前缀 "${prefix}" 自动批准命令: ${command}`,
+        );
         submitResponse({ approved: true });
       }
     } catch (err) {
@@ -78,11 +101,15 @@ export function useInputInteractions({ activeContactor }) {
     const command = interaction.meta?.command;
     if (command && !isHighRiskCommand(command)) {
       try {
-        const listStr = localStorage.getItem("mio_auto_approved_commands") || "[]";
+        const listStr =
+          localStorage.getItem("mio_auto_approved_commands") || "[]";
         const list = JSON.parse(listStr);
         if (Array.isArray(list) && !list.includes(command)) {
           list.push(command);
-          localStorage.setItem("mio_auto_approved_commands", JSON.stringify(list));
+          localStorage.setItem(
+            "mio_auto_approved_commands",
+            JSON.stringify(list),
+          );
         }
       } catch (err) {
         console.error("Failed to save auto-approved command:", err);
@@ -98,11 +125,15 @@ export function useInputInteractions({ activeContactor }) {
     const prefix = getCommandPrefix(command);
     if (prefix && !isHighRiskCommand(command)) {
       try {
-        const prefixListStr = localStorage.getItem("mio_auto_approved_command_prefixes") || "[]";
+        const prefixListStr =
+          localStorage.getItem("mio_auto_approved_command_prefixes") || "[]";
         const prefixList = JSON.parse(prefixListStr);
         if (Array.isArray(prefixList) && !prefixList.includes(prefix)) {
           prefixList.push(prefix);
-          localStorage.setItem("mio_auto_approved_command_prefixes", JSON.stringify(prefixList));
+          localStorage.setItem(
+            "mio_auto_approved_command_prefixes",
+            JSON.stringify(prefixList),
+          );
         }
       } catch (err) {
         console.error("Failed to save auto-approved command prefix:", err);

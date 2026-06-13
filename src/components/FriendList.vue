@@ -63,7 +63,7 @@ const handleOpenMobileSearch = () => {
       void placeholder.offsetHeight; // Force layout/reflow to guarantee height transition triggers
     }
     placeholderHeight.value = 0;
-    
+
     // Cleanup the animation helper flag after the height transition completes (0.3s)
     setTimeout(() => {
       isAnimatingCollapse.value = false;
@@ -420,7 +420,11 @@ const stopResize = () => {
   document.removeEventListener("mouseup", stopResize);
 };
 
-useStatusBarColor(() => showMobileSearch.value ? "var(--mio-bg-page)" : "var(--mio-bg-statusbar-friendlist)");
+useStatusBarColor(() =>
+  showMobileSearch.value
+    ? "var(--mio-bg-page)"
+    : "var(--mio-bg-statusbar-friendlist)",
+);
 
 // Lifecycle
 onMounted(() => {
@@ -448,7 +452,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div id="friendlists" ref="friendlists" :class="{ 'search-overlay-active': showMobileSearch }">
+  <div
+    id="friendlists"
+    ref="friendlists"
+    :class="{ 'search-overlay-active': showMobileSearch }"
+  >
     <div v-if="onPhone" class="mobile-qq-header">
       <div
         v-if="isAnimatingCollapse"
@@ -607,10 +615,7 @@ onBeforeUnmount(() => {
       @close="showMenu = false"
     />
     <Transition name="fade">
-      <MobileSearch
-        v-if="showMobileSearch"
-        @close="handleCloseMobileSearch"
-      />
+      <MobileSearch v-if="showMobileSearch" @close="handleCloseMobileSearch" />
     </Transition>
   </div>
 </template>
@@ -975,7 +980,9 @@ button#addcont:hover {
     overflow: hidden;
     display: flex;
     z-index: 1;
-    transition: opacity 0.2s, width 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    transition:
+      opacity 0.2s,
+      width 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
   }
 
   .lists-wrapper.swiping .swipe-actions {

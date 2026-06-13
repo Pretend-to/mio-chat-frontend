@@ -17,15 +17,20 @@ export function useInputSend({
   const hasInput = () => {
     if (!textareaRef.value) return false;
     const clone = textareaRef.value.cloneNode(true);
-    clone.querySelectorAll(".command-badge, .reply-badge").forEach((b) => b.remove());
+    clone
+      .querySelectorAll(".command-badge, .reply-badge")
+      .forEach((b) => b.remove());
     const hasText = clone.innerText.trim().length > 0;
     const hasImage = textareaRef.value.querySelector("img") !== null;
-    const hasCommand = textareaRef.value.querySelector(".command-badge") !== null;
+    const hasCommand =
+      textareaRef.value.querySelector(".command-badge") !== null;
     return hasText || hasImage || hasCommand;
   };
 
   const isUploading = computed(() => {
-    return activeContactor.value?.messageChain.some((m) => m.status === "uploading");
+    return activeContactor.value?.messageChain.some(
+      (m) => m.status === "uploading",
+    );
   });
 
   const presend = () => {
@@ -45,7 +50,9 @@ export function useInputSend({
     }
 
     const clone = textareaRef.value.cloneNode(true);
-    clone.querySelectorAll(".command-badge, .reply-badge").forEach((b) => b.remove());
+    clone
+      .querySelectorAll(".command-badge, .reply-badge")
+      .forEach((b) => b.remove());
     const remainingText = getSafeText(clone.innerText).trim();
 
     const badges = textareaRef.value.querySelectorAll(".command-badge");
@@ -71,9 +78,17 @@ export function useInputSend({
               activeContactor.value.options = {};
             if (!activeContactor.value.options.toolCallSettings)
               activeContactor.value.options.toolCallSettings = {};
-            if (!Array.isArray(activeContactor.value.options.toolCallSettings.tools))
+            if (
+              !Array.isArray(
+                activeContactor.value.options.toolCallSettings.tools,
+              )
+            )
               activeContactor.value.options.toolCallSettings.tools = [];
-            if (!activeContactor.value.options.toolCallSettings.tools.includes(preset)) {
+            if (
+              !activeContactor.value.options.toolCallSettings.tools.includes(
+                preset,
+              )
+            ) {
               activeContactor.value.options.toolCallSettings.tools.push(preset);
               hasConfigChanged = true;
             }
@@ -88,13 +103,19 @@ export function useInputSend({
           } else if (type === "skill") {
             let skillToolFullNames = [];
             let terminalToolFullNames = [];
-            if (typeof config.llmTools === "object" && config.llmTools !== null) {
+            if (
+              typeof config.llmTools === "object" &&
+              config.llmTools !== null
+            ) {
               Object.keys(config.llmTools).forEach((pName) => {
                 const pTools = config.llmTools[pName];
                 if (pTools && typeof pTools === "object") {
                   const isTerminal = pName.toLowerCase().includes("terminal");
                   Object.keys(pTools).forEach((tName) => {
-                    if (tName.toLowerCase() === "skill" || tName.toLowerCase().startsWith("skill_mid_")) {
+                    if (
+                      tName.toLowerCase() === "skill" ||
+                      tName.toLowerCase().startsWith("skill_mid_")
+                    ) {
                       skillToolFullNames.push(tName);
                     }
                     if (isTerminal) {
@@ -109,20 +130,36 @@ export function useInputSend({
               activeContactor.value.options = {};
             if (!activeContactor.value.options.toolCallSettings)
               activeContactor.value.options.toolCallSettings = {};
-            if (!Array.isArray(activeContactor.value.options.toolCallSettings.tools))
+            if (
+              !Array.isArray(
+                activeContactor.value.options.toolCallSettings.tools,
+              )
+            )
               activeContactor.value.options.toolCallSettings.tools = [];
 
             skillToolFullNames.forEach((stName) => {
-              if (!activeContactor.value.options.toolCallSettings.tools.includes(stName)) {
-                activeContactor.value.options.toolCallSettings.tools.push(stName);
+              if (
+                !activeContactor.value.options.toolCallSettings.tools.includes(
+                  stName,
+                )
+              ) {
+                activeContactor.value.options.toolCallSettings.tools.push(
+                  stName,
+                );
                 hasConfigChanged = true;
               }
             });
 
             if (skillToolFullNames.length > 0) {
               terminalToolFullNames.forEach((ttName) => {
-                if (!activeContactor.value.options.toolCallSettings.tools.includes(ttName)) {
-                  activeContactor.value.options.toolCallSettings.tools.push(ttName);
+                if (
+                  !activeContactor.value.options.toolCallSettings.tools.includes(
+                    ttName,
+                  )
+                ) {
+                  activeContactor.value.options.toolCallSettings.tools.push(
+                    ttName,
+                  );
                   hasConfigChanged = true;
                 }
               });
@@ -143,11 +180,21 @@ export function useInputSend({
               activeContactor.value.options = {};
             if (!activeContactor.value.options.toolCallSettings)
               activeContactor.value.options.toolCallSettings = {};
-            if (!Array.isArray(activeContactor.value.options.toolCallSettings.tools))
+            if (
+              !Array.isArray(
+                activeContactor.value.options.toolCallSettings.tools,
+              )
+            )
               activeContactor.value.options.toolCallSettings.tools = [];
             toolNames.forEach((tName) => {
-              if (!activeContactor.value.options.toolCallSettings.tools.includes(tName)) {
-                activeContactor.value.options.toolCallSettings.tools.push(tName);
+              if (
+                !activeContactor.value.options.toolCallSettings.tools.includes(
+                  tName,
+                )
+              ) {
+                activeContactor.value.options.toolCallSettings.tools.push(
+                  tName,
+                );
                 hasConfigChanged = true;
               }
             });
@@ -212,7 +259,9 @@ export function useInputSend({
       });
     });
     if (repliedIdFromBadge) {
-      const targetId = isNaN(Number(repliedIdFromBadge)) ? repliedIdFromBadge : Number(repliedIdFromBadge);
+      const targetId = isNaN(Number(repliedIdFromBadge))
+        ? repliedIdFromBadge
+        : Number(repliedIdFromBadge);
       container.content.push({
         type: "reply",
         data: { id: targetId },

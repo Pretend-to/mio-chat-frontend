@@ -159,7 +159,10 @@
             <div class="action-item" @click="navigateTo('llm-adapters')">
               <div
                 class="action-icon"
-                style="background: #ecf5ff; color: #409eff"
+                style="
+                  background: var(--mio-bg-primary-light);
+                  color: var(--mio-color-primary);
+                "
               >
                 <el-icon><Connection /></el-icon>
               </div>
@@ -173,7 +176,10 @@
             <div class="action-item" @click="navigateTo('server')">
               <div
                 class="action-icon"
-                style="background: #f0f9eb; color: #67c23a"
+                style="
+                  background: var(--mio-bg-success-light);
+                  color: var(--mio-color-success);
+                "
               >
                 <el-icon><Monitor /></el-icon>
               </div>
@@ -187,7 +193,10 @@
             <div class="action-item" @click="navigateTo('web')">
               <div
                 class="action-icon"
-                style="background: #fdf6ec; color: #e6a23c"
+                style="
+                  background: var(--mio-bg-warning-light);
+                  color: var(--mio-color-warning);
+                "
               >
                 <el-icon><ChromeFilled /></el-icon>
               </div>
@@ -201,7 +210,10 @@
             <div class="action-item" @click="navigateTo('onebot')">
               <div
                 class="action-icon"
-                style="background: #f4f4f5; color: #909399"
+                style="
+                  background: var(--mio-bg-info-light);
+                  color: var(--mio-color-info);
+                "
               >
                 <el-icon><ChatDotRound /></el-icon>
               </div>
@@ -215,7 +227,10 @@
             <div class="action-item" @click="navigateTo('presets')">
               <div
                 class="action-icon"
-                style="background: #fef0f0; color: #f56c6c"
+                style="
+                  background: var(--mio-bg-danger-light);
+                  color: var(--mio-color-danger);
+                "
               >
                 <el-icon><Document /></el-icon>
               </div>
@@ -229,7 +244,10 @@
             <div class="action-item" @click="navigateTo('logs')">
               <div
                 class="action-icon"
-                style="background: #f4f4f5; color: #909399"
+                style="
+                  background: var(--mio-bg-info-light);
+                  color: var(--mio-color-info);
+                "
               >
                 <el-icon><Document /></el-icon>
               </div>
@@ -243,7 +261,10 @@
             <div class="action-item" @click="navigateTo('plugins')">
               <div
                 class="action-icon"
-                style="background: #f0f9ff; color: #409eff"
+                style="
+                  background: var(--mio-bg-primary-light);
+                  color: var(--mio-color-primary);
+                "
               >
                 <el-icon><Grid /></el-icon>
               </div>
@@ -257,7 +278,10 @@
             <div class="action-item" @click="navigateToChat">
               <div
                 class="action-icon"
-                style="background: #f0f9eb; color: #67c23a"
+                style="
+                  background: var(--mio-bg-success-light);
+                  color: var(--mio-color-success);
+                "
               >
                 <el-icon><ChatDotRound /></el-icon>
               </div>
@@ -727,12 +751,12 @@ onMounted(async () => {
       margin: 0;
       font-size: 24px;
       font-weight: 600;
-      color: #303133;
+      color: var(--mio-text-primary);
     }
 
     .subtitle {
       font-size: 14px;
-      color: #909399;
+      color: var(--mio-text-secondary);
       margin-top: 4px;
       display: block;
     }
@@ -747,13 +771,13 @@ onMounted(async () => {
       border: none;
       background: transparent;
       font-size: 18px;
-      color: #606266;
+      color: var(--mio-text-regular);
       width: 40px;
       height: 40px;
 
       &:hover {
-        background: rgba(0, 0, 0, 0.05);
-        color: #409eff;
+        background: var(--mio-bg-hover);
+        color: var(--mio-color-primary);
       }
     }
   }
@@ -798,14 +822,14 @@ onMounted(async () => {
   .stat-value {
     font-size: 28px;
     font-weight: 600;
-    color: #303133;
+    color: var(--mio-text-primary);
     line-height: 1.2;
     margin-bottom: 4px;
   }
 
   .stat-label {
     font-size: 14px;
-    color: #909399;
+    color: var(--mio-text-secondary);
   }
 }
 
@@ -819,7 +843,7 @@ onMounted(async () => {
       margin: 0;
       font-size: 18px;
       font-weight: 600;
-      color: #303133;
+      color: var(--mio-text-primary);
     }
   }
 }
@@ -834,16 +858,16 @@ onMounted(async () => {
     align-items: center;
     gap: 16px;
     padding: 20px;
-    background: #f8f9fa;
+    background: var(--mio-bg-page);
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.3s ease;
-    border: 1px solid transparent;
+    border: 1px solid var(--mio-border-color-lighter);
 
     &:hover {
-      background: #fff;
+      background: var(--mio-bg-card);
       transform: translateY(-2px);
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+      box-shadow: var(--mio-shadow-light);
       border-color: var(--el-color-primary-light-8);
 
       .action-arrow {
@@ -868,19 +892,19 @@ onMounted(async () => {
       .action-title {
         font-size: 16px;
         font-weight: 600;
-        color: #303133;
+        color: var(--mio-text-primary);
         margin-bottom: 4px;
       }
 
       .action-desc {
         font-size: 12px;
-        color: #909399;
+        color: var(--mio-text-secondary);
       }
     }
 
     .action-arrow {
       font-size: 16px;
-      color: #c0c4cc;
+      color: var(--mio-text-placeholder);
       opacity: 0;
       transform: translateX(-10px);
       transition: all 0.3s ease;
@@ -928,7 +952,7 @@ onMounted(async () => {
     align-items: center;
     margin-bottom: 12px;
     padding-bottom: 8px;
-    border-bottom: 1px solid #e4e7ed;
+    border-bottom: 1px solid var(--mio-border-color-light);
     flex-shrink: 0;
     min-height: 32px; // 确保统一高度
 
@@ -936,7 +960,7 @@ onMounted(async () => {
       margin: 0;
       font-size: 16px;
       font-weight: 600;
-      color: #303133;
+      color: var(--mio-text-primary);
       line-height: 1.5;
     }
   }
@@ -944,7 +968,7 @@ onMounted(async () => {
   .empty-state {
     text-align: center;
     padding: 32px;
-    color: #909399;
+    color: var(--mio-text-secondary);
     font-size: 14px;
   }
 

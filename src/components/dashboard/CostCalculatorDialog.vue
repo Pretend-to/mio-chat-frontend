@@ -78,9 +78,13 @@
 
     <div class="cost-estimate-card">
       <div class="estimate-title">
-        基于 {{ timeRangeLabel }} 用量预估总成本（{{ store.costCalc.provider || "-" }}）
+        基于 {{ timeRangeLabel }} 用量预估总成本（{{
+          store.costCalc.provider || "-"
+        }}）
       </div>
-      <div class="estimate-value">{{ currencySymbol }}{{ store.calculatedCost.toFixed(4) }}</div>
+      <div class="estimate-value">
+        {{ currencySymbol }}{{ store.calculatedCost.toFixed(4) }}
+      </div>
       <div class="estimate-sub">
         基于已统计到的输入、输出与缓存命中 Token 量测算。
       </div>

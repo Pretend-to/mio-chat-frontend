@@ -3,11 +3,17 @@
 // Responsive breakpoints helper
 @mixin respond-to($breakpoint) {
   @if $breakpoint == "mobile" {
-    @media (max-width: 768px) { @content; }
+    @media (max-width: 768px) {
+      @content;
+    }
   } @else if $breakpoint == "tablet" {
-    @media (max-width: 1024px) { @content; }
+    @media (max-width: 1024px) {
+      @content;
+    }
   } @else {
-    @media (max-width: $breakpoint) { @content; }
+    @media (max-width: $breakpoint) {
+      @content;
+    }
   }
 }
 
@@ -19,7 +25,11 @@
 }
 
 // Custom scrollbars
-@mixin custom-scrollbar($width: 6px, $thumb-color: #c1c1c1, $track-color: transparent) {
+@mixin custom-scrollbar(
+  $width: 6px,
+  $thumb-color: #c1c1c1,
+  $track-color: transparent
+) {
   &::-webkit-scrollbar {
     width: $width;
     height: $width;
@@ -31,7 +41,7 @@
   &::-webkit-scrollbar-thumb {
     background: $thumb-color;
     border-radius: 4px;
-    
+
     &:hover {
       background: darken($thumb-color, 10%);
     }
