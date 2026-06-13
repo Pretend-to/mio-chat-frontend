@@ -158,7 +158,8 @@ $mobile: 768px
             padding-bottom: 0
             .contactor-name
                 color: var(--mio-text-primary)
-                font-size: 1.2rem
+                font-size: 1rem
+                font-weight: 600
                 max-width: 12rem
 
         .options

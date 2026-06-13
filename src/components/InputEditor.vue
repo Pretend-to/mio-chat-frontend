@@ -863,8 +863,9 @@ i, .input-icon-btn
 .popup-fade-enter-from, .popup-fade-leave-to
   opacity: 0
   @media (max-width: 768px)
-    transform: translateY(100%)
-    opacity: 1
+    transform: scaleY(0)
+    transform-origin: bottom
+    opacity: 0
 
 .desktop-command-popup
   position: absolute
@@ -889,7 +890,7 @@ i, .input-icon-btn
   bottom: 100%
   left: 0
   width: 100vw
-  height: 12rem
+  max-height: 12rem
   background-color: var(--mio-bg-card)
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08)
   z-index: 5
@@ -899,6 +900,7 @@ i, .input-icon-btn
   border-top-right-radius: 12px
   overflow: hidden
   margin-left: 0rem
+  transform-origin: bottom center
 
 .popup-header
   display: flex
