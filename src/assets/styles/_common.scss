@@ -82,6 +82,17 @@
     height: 1px;
     border: none;
   }
+
+  // Dark mode: ensure table borders are visible
+  @media (prefers-color-scheme: dark) {
+    table th,
+    table td {
+      border-color: var(--mio-text-regular);
+    }
+    table tr {
+      border-top-color: transparent;
+    }
+  }
 }
 
 .message-body#user .mio-previewer {
