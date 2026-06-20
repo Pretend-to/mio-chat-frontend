@@ -43,9 +43,10 @@
   border-radius: var(--mio-border-radius-large) !important;
 }
 
-// Remove padding from mobile preview drawer
+// Remove padding and overflow from mobile preview drawer
 .el-drawer.mobile-preview-drawer {
   .el-drawer__body {
     padding: 0 !important;
+    overflow: hidden !important;
   }
 }

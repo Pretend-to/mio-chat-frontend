@@ -272,6 +272,7 @@ const onWidthModeChange = (val) => {
 
 .mobile-preview-footer {
   padding: 20px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   background: transparent;
   border: none;
   display: flex;

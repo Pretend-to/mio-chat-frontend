@@ -40,9 +40,11 @@ export default {
       if (isDark) {
         document.documentElement.setAttribute("data-theme", "dark");
         document.documentElement.classList.add("dark");
+        document.documentElement.classList.remove("light");
       } else {
-        document.documentElement.removeAttribute("data-theme");
+        document.documentElement.setAttribute("data-theme", "light");
         document.documentElement.classList.remove("dark");
+        document.documentElement.classList.add("light");
       }
     };
 
@@ -55,9 +57,11 @@ export default {
         if (e.matches) {
           document.documentElement.setAttribute("data-theme", "dark");
           document.documentElement.classList.add("dark");
+          document.documentElement.classList.remove("light");
         } else {
-          document.documentElement.removeAttribute("data-theme");
+          document.documentElement.setAttribute("data-theme", "light");
           document.documentElement.classList.remove("dark");
+          document.documentElement.classList.add("light");
         }
       }
     };

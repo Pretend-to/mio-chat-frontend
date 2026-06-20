@@ -411,9 +411,14 @@ onBeforeUnmount(() => {
 
   .profile-header {
     background: var(--mio-bg-card);
-    margin-bottom: 12px;
-    padding: 24px 16px;
-    border-radius: 16px;
+    margin: 12px 12px 12px;
+    padding: 16px;
+    border-radius: 12px;
+    gap: 16px;
+  }
+
+  .profile-name {
+    font-size: 18px;
   }
 
   .tabs-container {
