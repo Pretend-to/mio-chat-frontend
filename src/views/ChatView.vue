@@ -1213,21 +1213,120 @@ const scrollHandler = () => {
     const chain = activeContactor.value?.messageChain || [];
     if (renderedCount.value < chain.length) {
       isLoadingHistory.value = true;
-      setTimeout(() => {
-        const currentElm = chatWindow.value;
-        if (!currentElm) {
-          isLoadingHistory.value = false;
-          return;
-        }
-        const prevScrollPosFromBottom =
-          currentElm.scrollHeight - currentElm.scrollTop;
-        renderedCount.value = Math.min(chain.length, renderedCount.value + 20);
+
+      const currentElm = chatWindow.value;
+      if (!currentElm) {
         isLoadingHistory.value = false;
-        nextTick(() => {
-          currentElm.scrollTop =
-            currentElm.scrollHeight - prevScrollPosFromBottom;
+        return;
+      }
+
+      // Calculate how many and which messages will be loaded
+      const nextCount = Math.min(chain.length, renderedCount.value + 20);
+      const numToLoad = nextCount - renderedCount.value;
+      const startIndex = chain.length - nextCount;
+      const endIndex = chain.length - renderedCount.value;
+      const messagesToLoad = chain.slice(startIndex, endIndex);
+
+      // Extract all image URLs (Markdown, HTML tag, and Tool extra renders)
+      const imageUrls = [];
+      const mdImageRegex = /!\[.*?\]\((.*?)\)/g;
+      const htmlImgRegex = /<img[^>]+src=["']([^"']+)["']/g;
+
+      for (const msg of messagesToLoad) {
+        if (!msg || !msg.content) continue;
+        for (const element of msg.content) {
+          if (element.type === "image" && element.data && element.data.file) {
+            imageUrls.push(element.data.file);
+          } else if (
+            element.type === "text" &&
+            element.data &&
+            element.data.text
+          ) {
+            let match;
+            while ((match = mdImageRegex.exec(element.data.text)) !== null) {
+              imageUrls.push(match[1]);
+            }
+            let htmlMatch;
+            while (
+              (htmlMatch = htmlImgRegex.exec(element.data.text)) !== null
+            ) {
+              imageUrls.push(htmlMatch[1]);
+            }
+          } else if (
+            element.type === "tool_call" &&
+            element.data &&
+            element.data.extraRender
+          ) {
+            const extra = element.data.extraRender || [];
+            for (const r of extra) {
+              if (r.placement === "outer" && r.type === "image" && r.url) {
+                imageUrls.push(r.url);
+              }
+            }
+          }
+        }
+      }
+
+      // Preload images function in javascript memory
+      const preloadImages = (urls) => {
+        const promises = urls.map((url) => {
+          return new Promise((resolve) => {
+            const img = new Image();
+            img.src = url;
+            const timer = setTimeout(() => {
+              resolve({ url, success: false, timeout: true });
+            }, 6000); // 6 seconds timeout limit per image load
+            img.onload = () => {
+              clearTimeout(timer);
+              resolve({ url, success: true });
+            };
+            img.onerror = () => {
+              clearTimeout(timer);
+              resolve({ url, success: false });
+            };
+          });
         });
-      }, 500);
+        return Promise.all(promises);
+      };
+
+      // Combine image preload with a minimum spinner delay of 500ms for smooth UX
+      const delayPromise = new Promise((resolve) => setTimeout(resolve, 500));
+
+      Promise.all([preloadImages(imageUrls), delayPromise])
+        .then(() => {
+          const currentElmAfterLoad = chatWindow.value;
+          if (!currentElmAfterLoad) {
+            isLoadingHistory.value = false;
+            return;
+          }
+
+          // Save height difference base before rendering new messages
+          const prevScrollPosFromBottom =
+            currentElmAfterLoad.scrollHeight - currentElmAfterLoad.scrollTop;
+
+          renderedCount.value = nextCount;
+          isLoadingHistory.value = false;
+
+          nextTick(() => {
+            currentElmAfterLoad.scrollTop =
+              currentElmAfterLoad.scrollHeight - prevScrollPosFromBottom;
+          });
+        })
+        .catch((err) => {
+          console.error("History image preload error:", err);
+          // Fallback update in case of failure
+          const currentElmFallback = chatWindow.value;
+          if (currentElmFallback) {
+            const prevScrollPosFromBottom =
+              currentElmFallback.scrollHeight - currentElmFallback.scrollTop;
+            renderedCount.value = nextCount;
+            nextTick(() => {
+              currentElmFallback.scrollTop =
+                currentElmFallback.scrollHeight - prevScrollPosFromBottom;
+            });
+          }
+          isLoadingHistory.value = false;
+        });
     }
   }
 

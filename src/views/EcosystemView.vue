@@ -1,6 +1,11 @@
 <script>
+import { useStatusBarColor } from "@/composables/useStatusBarColor";
+
 export default {
   name: "EcosystemView",
+  setup() {
+    useStatusBarColor("var(--mio-bg-page)");
+  },
   data() {
     return {
       onPhone: window.innerWidth < 768,

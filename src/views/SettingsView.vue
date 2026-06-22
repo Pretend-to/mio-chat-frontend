@@ -563,7 +563,9 @@ onMounted(async () => {
     forbidden.value = true;
   }
 
-  useStatusBarColor("var(--mio-bg-card)");
+  useStatusBarColor(() =>
+    isInSubPage() ? "var(--mio-bg-card)" : "var(--mio-bg-page)",
+  );
 });
 
 onUnmounted(() => {
