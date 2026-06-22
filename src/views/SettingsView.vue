@@ -273,7 +273,13 @@
           <!-- 通用页面头部占位 -->
           <div class="content-header-spacer"></div>
 
-          <template v-if="forbidden">
+          <template v-if="validating">
+            <!-- 正在验证访问码时显示加载骨架屏 -->
+            <div style="padding: 24px;">
+              <el-skeleton :rows="10" animated />
+            </div>
+          </template>
+          <template v-else-if="forbidden">
             <div class="forbidden-container" :class="{ mobile: isMobile }">
               <el-result
                 icon="error"
@@ -338,7 +344,8 @@ const route = useRoute();
 const router = useRouter();
 const configStore = useConfigStore();
 const logStore = useLogStore();
-const forbidden = ref(false);
+const forbidden = ref(!configStore.isAuthenticated);
+const validating = ref(configStore.isAuthenticated);
 
 // 移动端相关状态
 const isMobile = ref(false);
@@ -420,8 +427,13 @@ const activeMenu = computed(() => {
 // 检查是否在设置子页面
 const isInSubPage = () => {
   const currentPath = route.path;
-  return currentPath !== "/settings" && currentPath.startsWith("/settings/");
+  return currentPath !== "/settings" && currentPath !== "/settings/" && currentPath.startsWith("/settings/");
 };
+
+useStatusBarColor(() =>
+  isInSubPage() ? "var(--mio-bg-card)" : "var(--mio-bg-page)",
+);
+
 
 // 获取返回按钮的提示文本
 const getBackButtonTitle = () => {
@@ -552,20 +564,17 @@ onMounted(async () => {
   if (configStore.isAuthenticated) {
     try {
       await configStore.fetchConfig();
-      // 验证通过，继续渲染
+      forbidden.value = false;
     } catch (error) {
-      // 认证失败或无权限，展示禁止访问
       forbidden.value = true;
       console.warn("当前访问码无权限或已失效", error);
+    } finally {
+      validating.value = false;
     }
   } else {
-    // 未登录不跳转，直接展示禁止访问（保留侧边栏可用）
     forbidden.value = true;
+    validating.value = false;
   }
-
-  useStatusBarColor(() =>
-    isInSubPage() ? "var(--mio-bg-card)" : "var(--mio-bg-page)",
-  );
 });
 
 onUnmounted(() => {
