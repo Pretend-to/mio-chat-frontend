@@ -234,7 +234,6 @@ const handleExport = () => {
   &:hover {
     border-color: #409eff;
     box-shadow: 0 4px 16px rgba(64, 158, 255, 0.12);
-    transform: translateY(-2px);
   }
 
   &.selected {

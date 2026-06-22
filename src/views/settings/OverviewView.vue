@@ -777,10 +777,6 @@ onMounted(async () => {
   border: none;
   transition: all 0.3s ease;
 
-  &:hover {
-    transform: translateY(-4px);
-  }
-
   :deep(.el-card__body) {
     display: flex;
     align-items: center;
@@ -885,7 +881,6 @@ onMounted(async () => {
 
     &:hover {
       background: var(--mio-bg-card);
-      transform: translateY(-2px);
       box-shadow: var(--mio-shadow-light);
       border-color: var(--el-color-primary-light-8);
 

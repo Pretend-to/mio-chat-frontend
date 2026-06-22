@@ -222,7 +222,6 @@ const handleSelect = (value) => {
   }
 
   &:hover {
-    transform: translateY(-4px);
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
     z-index: 1;
   }
