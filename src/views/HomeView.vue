@@ -76,9 +76,6 @@ export default {
   background-color: transparent;
 }
 
-.mio-main-layout > .profile-body {
-  margin-top: 4rem;
-}
 
 .mio-main-layout--mobile {
   width: 100%;
