@@ -72,37 +72,64 @@ export default {
 
       // Simulator states for OS Bridge (Terminal mockup)
       terminalLogs: [],
-      terminalStep: 0,
-      terminalTimer: null,
 
       // Simulator states for Compressor mockup
       compressionRatio: 100,
-      compressionTimer: null,
     };
+  },
+  watch: {
+    activeHighlight: {
+      handler(newVal) {
+        if (newVal === 0) {
+          this.clearTerminalTimers();
+          this.startCompressionSimulation();
+        } else if (newVal === 1) {
+          this.clearCompressorTimers();
+          this.startTerminalSimulation();
+        } else {
+          this.clearTerminalTimers();
+          this.clearCompressorTimers();
+        }
+      },
+      immediate: true,
+    },
   },
   mounted() {
     this.resizeHandler = () => {
       this.onPhone = window.innerWidth < 768;
     };
     window.addEventListener("resize", this.resizeHandler);
-
-    // Start simulations
-    this.startTerminalSimulation();
-    this.startCompressionSimulation();
   },
   beforeUnmount() {
     if (this.resizeHandler) {
       window.removeEventListener("resize", this.resizeHandler);
     }
-    this.stopTerminalSimulation();
-    this.stopCompressionSimulation();
+    this.clearTerminalTimers();
+    this.clearCompressorTimers();
   },
   methods: {
     selectHighlight(index) {
       this.activeHighlight = index;
     },
+    clearTerminalTimers() {
+      if (this.terminalTimeoutId) {
+        clearTimeout(this.terminalTimeoutId);
+        this.terminalTimeoutId = null;
+      }
+      if (this.terminalIntervalId) {
+        clearInterval(this.terminalIntervalId);
+        this.terminalIntervalId = null;
+      }
+    },
+    clearCompressorTimers() {
+      if (this.compressorTimeoutId) {
+        clearTimeout(this.compressorTimeoutId);
+        this.compressorTimeoutId = null;
+      }
+    },
     // OS Bridge Mock Terminal Simulation
     startTerminalSimulation() {
+      this.clearTerminalTimers();
       const script = [
         { type: "input", text: 'opencli run "npm run dev"' },
         { type: "log", text: "› [System] Initializing OS bridge loop..." },
@@ -119,22 +146,20 @@ export default {
       ];
 
       this.terminalLogs = [];
-      this.terminalStep = 0;
+      let step = 0;
 
       const runStep = () => {
-        if (this.terminalStep < script.length) {
-          const item = script[this.terminalStep];
+        if (step < script.length) {
+          const item = script[step];
           if (item.type === "input") {
-            // Typewrite simulation
             let typedText = "";
             let charIndex = 0;
             const textToType = item.text;
 
-            // Add initial empty input line
             this.terminalLogs.push({ type: "input", text: "$ " });
             const logIndex = this.terminalLogs.length - 1;
 
-            const typeInterval = setInterval(() => {
+            this.terminalIntervalId = setInterval(() => {
               if (charIndex < textToType.length) {
                 typedText += textToType[charIndex];
                 if (this.terminalLogs[logIndex]) {
@@ -142,23 +167,21 @@ export default {
                 }
                 charIndex++;
               } else {
-                clearInterval(typeInterval);
-                this.terminalStep++;
-                // Wait briefly before output logs
-                this.terminalTimer = setTimeout(runStep, 400);
+                clearInterval(this.terminalIntervalId);
+                this.terminalIntervalId = null;
+                step++;
+                this.terminalTimeoutId = setTimeout(runStep, 400);
               }
             }, 50);
           } else {
-            // Instant log print
             this.terminalLogs.push({ type: item.type, text: item.text });
-            this.terminalStep++;
-            this.terminalTimer = setTimeout(runStep, 800);
+            step++;
+            this.terminalTimeoutId = setTimeout(runStep, 800);
           }
         } else {
-          // Finished. Wait and reset.
-          this.terminalTimer = setTimeout(() => {
+          this.terminalTimeoutId = setTimeout(() => {
             this.terminalLogs = [];
-            this.terminalStep = 0;
+            step = 0;
             runStep();
           }, 3500);
         }
@@ -166,37 +189,30 @@ export default {
 
       runStep();
     },
-    stopTerminalSimulation() {
-      if (this.terminalTimer) clearTimeout(this.terminalTimer);
-    },
     // Context Compressor Simulation
     startCompressionSimulation() {
+      this.clearCompressorTimers();
       let compressing = true;
       const animate = () => {
         if (compressing) {
-          // Shrink from 100% to 20%
           if (this.compressionRatio > 20) {
             this.compressionRatio -= 2;
-            this.compressionTimer = setTimeout(animate, 40);
+            this.compressorTimeoutId = setTimeout(animate, 40);
           } else {
             compressing = false;
-            this.compressionTimer = setTimeout(animate, 3000); // Pause at 20%
+            this.compressorTimeoutId = setTimeout(animate, 3000);
           }
         } else {
-          // Expand back to 100%
           if (this.compressionRatio < 100) {
             this.compressionRatio += 4;
-            this.compressionTimer = setTimeout(animate, 20);
+            this.compressorTimeoutId = setTimeout(animate, 20);
           } else {
             compressing = true;
-            this.compressionTimer = setTimeout(animate, 1500); // Pause at 100%
+            this.compressorTimeoutId = setTimeout(animate, 1500);
           }
         }
       };
       animate();
-    },
-    stopCompressionSimulation() {
-      if (this.compressionTimer) clearTimeout(this.compressionTimer);
     },
   },
 };
@@ -1082,8 +1098,10 @@ export default {
 .highlight-explanation {
   background-color: var(--mio-bg-page);
   border: 1px solid var(--mio-border-color-light);
-  padding: 1.25rem 1.5rem;
+  padding: 0.85rem 1.25rem;
   box-sizing: border-box;
+  height: 5.5rem;
+  overflow-y: auto;
 }
 
 .explanation-text {
@@ -1249,6 +1267,10 @@ export default {
 
   .visualizer-content {
     height: 18rem;
+  }
+
+  .highlight-explanation {
+    height: 8.5rem;
   }
 
   .compressor-blocks {
