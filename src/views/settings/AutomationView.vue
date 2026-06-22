@@ -36,9 +36,14 @@
               :value="adapter.id"
             >
               <span style="float: left">{{ adapter.name }}</span>
-              <span style="float: right; color: #8492a6; font-size: 13px">{{
-                adapter.type
-              }}</span>
+              <span
+                style="
+                  float: right;
+                  color: var(--mio-text-secondary);
+                  font-size: 13px;
+                "
+                >{{ adapter.type }}</span
+              >
             </el-option>
           </el-select>
           <template #extra>
@@ -777,7 +782,7 @@ onMounted(async () => {
     margin: 0;
     font-size: 24px;
     font-weight: 600;
-    color: #303133;
+    color: var(--mio-text-primary);
   }
 }
 
@@ -789,10 +794,10 @@ onMounted(async () => {
   .section-title {
     font-size: 18px;
     font-weight: 600;
-    color: #303133;
+    color: var(--mio-text-primary);
     margin-bottom: 20px;
     padding-bottom: 12px;
-    border-bottom: 1px solid #ebeef5;
+    border-bottom: 1px solid var(--mio-border-color-light);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -808,13 +813,13 @@ onMounted(async () => {
 }
 
 .form-item-tip {
-  color: #909399;
+  color: var(--mio-text-secondary);
   font-size: 12px;
   line-height: 1.5;
 }
 
 .text-secondary {
-  color: #909399;
+  color: var(--mio-text-secondary);
 }
 
 :deep(.el-form-item) {
@@ -840,10 +845,10 @@ onMounted(async () => {
   h4 {
     font-size: 14px;
     font-weight: 600;
-    color: #303133;
+    color: var(--mio-text-primary);
     margin-bottom: 10px;
     padding-bottom: 6px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--mio-border-color-light);
   }
 
   .kv-grid {
@@ -856,12 +861,12 @@ onMounted(async () => {
     display: flex;
     flex-direction: column;
     padding: 8px 12px;
-    background: #f8f9fc;
+    background: var(--mio-bg-hover);
     border-radius: 6px;
 
     .k {
       font-size: 11px;
-      color: #909399;
+      color: var(--mio-text-secondary);
       text-transform: uppercase;
       letter-spacing: 0.3px;
     }
@@ -875,7 +880,7 @@ onMounted(async () => {
   }
 
   .code-block {
-    background: #f5f7fa;
+    background: var(--mio-bg-hover);
     border-radius: 8px;
     padding: 12px 16px;
     font-size: 13px;
@@ -892,7 +897,7 @@ onMounted(async () => {
 
 .history-entry {
   padding: 10px 0;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid var(--mio-border-color-light);
 
   &:last-child {
     border-bottom: none;
@@ -933,19 +938,19 @@ onMounted(async () => {
 
 .history-time {
   font-size: 11px;
-  color: #909399;
+  color: var(--mio-text-secondary);
 }
 
 .history-index {
   font-size: 11px;
-  color: #c0c4cc;
+  color: var(--mio-text-placeholder);
   margin-left: auto;
 }
 
 .history-text {
   font-size: 13px;
   line-height: 1.5;
-  color: #606266;
+  color: var(--mio-text-regular);
   white-space: pre-wrap;
   word-break: break-all;
   margin-left: 4px;
@@ -961,7 +966,7 @@ onMounted(async () => {
       position: absolute;
       bottom: 0;
       right: 0;
-      background: linear-gradient(to left, #fff, transparent);
+      background: linear-gradient(to left, var(--mio-bg-card), transparent);
       padding-left: 20px;
       color: #409eff;
       font-size: 12px;
@@ -970,14 +975,14 @@ onMounted(async () => {
 }
 
 .empty-history {
-  color: #909399;
+  color: var(--mio-text-secondary);
   font-size: 13px;
   padding: 8px 0;
 }
 
 .json-box {
-  background: #f5f7fa;
-  border: 1px solid #e4e7ed;
+  background: var(--mio-bg-hover);
+  border: 1px solid var(--mio-border-color-light);
   border-radius: 4px;
   padding: 8px 12px;
   max-height: 250px;
@@ -996,13 +1001,34 @@ onMounted(async () => {
 }
 .empty-executions {
   text-align: center;
-  color: #909399;
+  color: var(--mio-text-secondary);
   padding: 40px 0;
   font-size: 13px;
 }
 
 :deep(.el-table .deleted-row) {
   opacity: 0.65;
-  color: #a8abb2;
+  color: var(--mio-text-placeholder);
+}
+
+:global(html[data-theme="dark"]) {
+  .role-badge {
+    &.role-system {
+      background: rgba(74, 108, 247, 0.2);
+      color: #8da4ff;
+    }
+    &.role-user {
+      background: rgba(39, 174, 96, 0.2);
+      color: #58d68d;
+    }
+    &.role-assistant {
+      background: rgba(230, 126, 34, 0.2);
+      color: #f5b041;
+    }
+    &.role-developer {
+      background: rgba(99, 102, 241, 0.2);
+      color: #a5a6f6;
+    }
+  }
 }
 </style>

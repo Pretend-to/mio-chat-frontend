@@ -18,7 +18,7 @@
             <h2>概览</h2>
             <span class="subtitle">系统运行状态与快捷入口</span>
           </div>
-          <div class="header-actions">
+          <!-- <div class="header-actions">
             <el-tooltip content="刷新模型列表" placement="bottom">
               <el-button
                 circle
@@ -47,14 +47,14 @@
                 @click="showCompare = true"
               />
             </el-tooltip>
-          </div>
+          </div> -->
         </div>
 
         <!-- 统计信息卡片 -->
         <div class="stats-grid">
           <el-card class="stat-card">
-            <div class="stat-icon" style="background-color: #409eff20">
-              <el-icon :size="32" color="#409eff"><Connection /></el-icon>
+            <div class="stat-icon stat-icon--primary">
+              <el-icon :size="32"><Connection /></el-icon>
             </div>
             <div class="stat-content">
               <div class="stat-value">{{ configStore.totalAdapters }}</div>
@@ -63,8 +63,8 @@
           </el-card>
 
           <el-card class="stat-card">
-            <div class="stat-icon" style="background-color: #67c23a20">
-              <el-icon :size="32" color="#67c23a"><CircleCheck /></el-icon>
+            <div class="stat-icon stat-icon--success">
+              <el-icon :size="32"><CircleCheck /></el-icon>
             </div>
             <div class="stat-content">
               <div class="stat-value">
@@ -75,8 +75,8 @@
           </el-card>
 
           <el-card class="stat-card">
-            <div class="stat-icon" style="background-color: #e6a23c20">
-              <el-icon :size="32" color="#e6a23c"><Grid /></el-icon>
+            <div class="stat-icon stat-icon--warning">
+              <el-icon :size="32"><Grid /></el-icon>
             </div>
             <div class="stat-content">
               <div class="stat-value">{{ configStore.totalModelsCount }}</div>
@@ -85,8 +85,8 @@
           </el-card>
 
           <el-card class="stat-card">
-            <div class="stat-icon" style="background-color: #f56c6c20">
-              <el-icon :size="32" color="#f56c6c"><Document /></el-icon>
+            <div class="stat-icon stat-icon--danger">
+              <el-icon :size="32"><Document /></el-icon>
             </div>
             <div class="stat-content">
               <div class="stat-value">{{ presetsStore.totalCount }}</div>
@@ -97,15 +97,13 @@
           <el-card class="stat-card">
             <div
               class="stat-icon"
-              :style="{
-                backgroundColor:
-                  systemStatus === 'normal' ? '#67c23a20' : '#f5672020',
-              }"
+              :class="
+                systemStatus === 'normal'
+                  ? 'stat-icon--success'
+                  : 'stat-icon--warning'
+              "
             >
-              <el-icon
-                :size="32"
-                :color="systemStatus === 'normal' ? '#67c23a' : '#f56720'"
-              >
+              <el-icon :size="32">
                 <component
                   :is="
                     systemStatus === 'normal' ? SuccessFilled : WarningFilled
@@ -120,8 +118,8 @@
           </el-card>
 
           <el-card class="stat-card">
-            <div class="stat-icon" style="background-color: #67c23a20">
-              <el-icon :size="32" color="#67c23a"><Document /></el-icon>
+            <div class="stat-icon stat-icon--success">
+              <el-icon :size="32"><Document /></el-icon>
             </div>
             <div class="stat-content">
               <div class="stat-value">{{ logStore.totalLogsCount }}</div>
@@ -130,8 +128,8 @@
           </el-card>
 
           <el-card class="stat-card">
-            <div class="stat-icon" style="background-color: #e6a23c20">
-              <el-icon :size="32" color="#e6a23c"><Grid /></el-icon>
+            <div class="stat-icon stat-icon--warning">
+              <el-icon :size="32"><Grid /></el-icon>
             </div>
             <div class="stat-content">
               <div class="stat-value">{{ configStore.totalPluginsCount }}</div>
@@ -140,8 +138,8 @@
           </el-card>
 
           <el-card class="stat-card">
-            <div class="stat-icon" style="background-color: #409eff20">
-              <el-icon :size="32" color="#409eff"><Grid /></el-icon>
+            <div class="stat-icon stat-icon--primary">
+              <el-icon :size="32"><Grid /></el-icon>
             </div>
             <div class="stat-content">
               <div class="stat-value">{{ configStore.totalToolsCount }}</div>
@@ -421,18 +419,15 @@ const showCompare = ref(false);
 
 // 系统状态
 const systemStatus = computed(() => {
-  if (configStore.needRestart) return "warning";
-
   // 检查是否有禁用的适配器
-  const hasDisabled = Object.values(configStore.adapters).some((instances) =>
-    instances.some((adapter) => !adapter.enable),
+  const hasDisabled = Object.values(configStore.adapters || {}).some(
+    (instances) => instances.some((adapter) => !adapter.enable),
   );
 
   return hasDisabled ? "warning" : "normal";
 });
 
 const systemStatusText = computed(() => {
-  if (configStore.needRestart) return "需要重启";
   return systemStatus.value === "normal" ? "正常" : "有警告";
 });
 
@@ -472,19 +467,7 @@ const getAdapterInstances = (type) => {
 const pendingItems = computed(() => {
   const items = [];
 
-  // 1. 需要重启服务
-  if (configStore.needRestart) {
-    items.push({
-      type: "warning",
-      title: "配置已更改，需要重启服务才能生效",
-      action: {
-        text: "去重启",
-        handler: () => router.push("/settings"),
-      },
-    });
-  }
-
-  // 2. 检查是否有模型列表为空的适配器
+  // 1. 检查是否有模型列表为空的适配器
   Object.entries(configStore.adapters).forEach(([type, instances]) => {
     instances.forEach((adapter, index) => {
       if (adapter.enable) {
@@ -505,7 +488,7 @@ const pendingItems = computed(() => {
     });
   });
 
-  // 3. 检查是否有禁用的适配器
+  // 2. 检查是否有禁用的适配器
   const disabledCount = Object.values(configStore.adapters)
     .flat()
     .filter((adapter) => !adapter.enable).length;
@@ -521,9 +504,9 @@ const pendingItems = computed(() => {
     });
   }
 
-  // 4. （已由 AuthView 负责）不再在管理页面重复提示管理员访问码
+  // 3. （已由 AuthView 负责）不再在管理页面重复提示管理员访问码
 
-  // 5. 检查 OneBot 配置
+  // 4. 检查 OneBot 配置
   if (configStore.config?.onebot?.enable) {
     const onebotConfig = configStore.config.onebot;
     if (!onebotConfig.reverse_ws_url || !onebotConfig.bot_qq) {
@@ -631,7 +614,7 @@ const handleImportConfig = async (file) => {
 
     // 更新配置
     await configStore.updateConfig(configData);
-    ElMessage.success("配置导入成功，请重启服务使配置生效");
+    ElMessage.success("配置导入成功");
 
     // 重新加载配置
     await configStore.fetchConfig();
@@ -813,6 +796,42 @@ onMounted(async () => {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+
+    &--primary {
+      background-color: var(--mio-bg-primary-light);
+      color: var(--mio-color-primary);
+      .el-icon {
+        color: var(--mio-color-primary) !important;
+      }
+    }
+    &--success {
+      background-color: var(--mio-bg-success-light);
+      color: var(--mio-color-success);
+      .el-icon {
+        color: var(--mio-color-success) !important;
+      }
+    }
+    &--warning {
+      background-color: var(--mio-bg-warning-light);
+      color: var(--mio-color-warning);
+      .el-icon {
+        color: var(--mio-color-warning) !important;
+      }
+    }
+    &--danger {
+      background-color: var(--mio-bg-danger-light);
+      color: var(--mio-color-danger);
+      .el-icon {
+        color: var(--mio-color-danger) !important;
+      }
+    }
+    &--info {
+      background-color: var(--mio-bg-info-light);
+      color: var(--mio-color-info);
+      .el-icon {
+        color: var(--mio-color-info) !important;
+      }
+    }
   }
 
   .stat-content {

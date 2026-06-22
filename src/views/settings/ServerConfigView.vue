@@ -67,7 +67,9 @@
             controls-position="right"
             style="width: 200px"
           />
-          <span style="margin-left: 12px; color: #909399">次/分钟</span>
+          <span style="margin-left: 12px; color: var(--mio-text-secondary)"
+            >次/分钟</span
+          >
           <template #extra>
             <span class="form-item-tip">
               每个客户端每分钟允许的最大请求次数，用于限流保护
@@ -257,7 +259,7 @@ onMounted(async () => {
     margin: 0;
     font-size: 24px;
     font-weight: 600;
-    color: #303133;
+    color: var(--mio-text-primary);
   }
 
   .header-actions {
@@ -267,7 +269,7 @@ onMounted(async () => {
 }
 
 .form-item-tip {
-  color: #909399;
+  color: var(--mio-text-secondary);
   font-size: 12px;
   line-height: 1.5;
 }

@@ -707,7 +707,7 @@ onUnmounted(() => {
       width: 200px;
       height: 32px;
       border-radius: 4px;
-      background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 50%, #f2f2f2 75%);
+      background: var(--mio-skeleton-bg);
       background-size: 200% 100%;
       animation: skeleton-loading 1.5s ease-in-out infinite;
     }
@@ -720,12 +720,7 @@ onUnmounted(() => {
         width: 120px;
         height: 32px;
         border-radius: 4px;
-        background: linear-gradient(
-          90deg,
-          #f2f2f2 25%,
-          #e6e6e6 50%,
-          #f2f2f2 75%
-        );
+        background: var(--mio-skeleton-bg);
         background-size: 200% 100%;
         animation: skeleton-loading 1.5s ease-in-out infinite;
       }
@@ -735,12 +730,12 @@ onUnmounted(() => {
   .skeleton-table {
     border-radius: 8px;
     overflow: hidden;
-    border: 1px solid #ebeef5;
+    border: 1px solid var(--mio-border-color-light);
 
     .skeleton-row {
       display: flex;
       height: 120px;
-      border-bottom: 1px solid #ebeef5;
+      border-bottom: 1px solid var(--mio-border-color-light);
 
       &:last-child {
         border-bottom: none;
@@ -750,25 +745,11 @@ onUnmounted(() => {
         flex: 1;
         margin: 12px;
         border-radius: 4px;
-        background: linear-gradient(
-          90deg,
-          #f2f2f2 25%,
-          #e6e6e6 50%,
-          #f2f2f2 75%
-        );
+        background: var(--mio-skeleton-bg);
         background-size: 200% 100%;
         animation: skeleton-loading 1.5s ease-in-out infinite;
       }
     }
-  }
-}
-
-@keyframes skeleton-loading {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
   }
 }
 
@@ -786,7 +767,7 @@ onUnmounted(() => {
     margin: 0;
     font-size: 24px;
     font-weight: 600;
-    color: #303133;
+    color: var(--mio-text-primary);
   }
 
   .header-actions {
@@ -800,10 +781,10 @@ onUnmounted(() => {
   flex-wrap: wrap;
   gap: 20px;
   padding: 16px 20px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: var(--mio-bg-hover);
   border-radius: 12px;
   margin-bottom: 24px;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--mio-border-color-light);
 
   .stat-item {
     display: flex;
@@ -811,24 +792,24 @@ onUnmounted(() => {
     gap: 6px;
     padding: 4px 8px;
     border-radius: 6px;
-    background: rgba(255, 255, 255, 0.7);
+    background: var(--mio-bg-card);
     transition: all 0.2s ease;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.9);
+      background: var(--mio-bg-active);
       transform: translateY(-1px);
     }
 
     .stat-label {
       font-size: 13px;
-      color: #606266;
+      color: var(--mio-text-regular);
       font-weight: 500;
     }
 
     .stat-value {
       font-size: 13px;
       font-weight: 700;
-      color: #303133;
+      color: var(--mio-text-primary);
     }
   }
 
@@ -963,23 +944,14 @@ onUnmounted(() => {
   margin: 32px 0;
 
   .no-more-text {
-    color: #909399;
+    color: var(--mio-text-secondary);
     font-size: 14px;
     padding: 0 16px;
-    background: #f5f7fa;
+    background: var(--mio-bg-page);
   }
 
   :deep(.el-divider__text) {
-    background: #f5f7fa;
-  }
-}
-
-@keyframes skeleton-loading {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
+    background: var(--mio-bg-page);
   }
 }
 </style>

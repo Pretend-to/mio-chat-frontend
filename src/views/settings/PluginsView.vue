@@ -70,8 +70,13 @@
           </el-card>
 
           <el-card class="stat-card">
-            <div class="stat-icon" style="background-color: #90939920">
-              <el-icon :size="24" color="#909399"><Box /></el-icon>
+            <div
+              class="stat-icon"
+              style="background-color: var(--mio-bg-hover)"
+            >
+              <el-icon :size="24" color="var(--mio-text-secondary)"
+                ><Box
+              /></el-icon>
             </div>
             <div class="stat-content">
               <div class="stat-value">{{ customPluginsCount }}</div>
@@ -830,9 +835,9 @@ onUnmounted(() => {
   .skeleton-title {
     width: 200px;
     height: 32px;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: var(--mio-skeleton-bg);
     background-size: 200% 100%;
-    animation: loading 1.5s ease-in-out infinite;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
     border-radius: 4px;
   }
 
@@ -843,9 +848,9 @@ onUnmounted(() => {
     .skeleton-button {
       width: 100px;
       height: 32px;
-      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background: var(--mio-skeleton-bg);
       background-size: 200% 100%;
-      animation: loading 1.5s ease-in-out infinite;
+      animation: skeleton-loading 1.5s ease-in-out infinite;
       border-radius: 4px;
     }
   }
@@ -872,7 +877,7 @@ onUnmounted(() => {
     margin: 0;
     font-size: 24px;
     font-weight: 600;
-    color: #303133;
+    color: var(--mio-text-primary);
   }
 
   .header-actions {
@@ -912,14 +917,14 @@ onUnmounted(() => {
       .stat-value {
         font-size: 28px;
         font-weight: 600;
-        color: #303133;
+        color: var(--mio-text-primary);
         line-height: 1;
         margin-bottom: 8px;
       }
 
       .stat-label {
         font-size: 14px;
-        color: #909399;
+        color: var(--mio-text-secondary);
       }
     }
   }
@@ -963,7 +968,7 @@ onUnmounted(() => {
             margin: 0;
             font-size: 18px;
             font-weight: 600;
-            color: #303133;
+            color: var(--mio-text-primary);
             display: flex;
             align-items: center;
           }
@@ -972,7 +977,7 @@ onUnmounted(() => {
         .plugin-description {
           margin: 0 0 12px 0;
           font-size: 14px;
-          color: #606266;
+          color: var(--mio-text-regular);
           line-height: 1.6;
         }
 
@@ -987,7 +992,7 @@ onUnmounted(() => {
             align-items: center;
             gap: 4px;
             font-size: 13px;
-            color: #909399;
+            color: var(--mio-text-secondary);
           }
         }
       }
@@ -997,7 +1002,7 @@ onUnmounted(() => {
       display: flex;
       gap: 8px;
       padding-top: 16px;
-      border-top: 1px solid #ebeef5;
+      border-top: 1px solid var(--mio-border-color-light);
     }
   }
 }
@@ -1014,12 +1019,12 @@ onUnmounted(() => {
       margin: 0 0 16px 0;
       font-size: 16px;
       font-weight: 600;
-      color: #303133;
+      color: var(--mio-text-primary);
     }
 
     .tool-item {
       padding: 12px;
-      border-bottom: 1px solid #ebeef5;
+      border-bottom: 1px solid var(--mio-border-color-light);
 
       &:last-child {
         border-bottom: none;
@@ -1035,14 +1040,14 @@ onUnmounted(() => {
           margin: 0;
           font-size: 14px;
           font-weight: 600;
-          color: #303133;
+          color: var(--mio-text-primary);
         }
       }
 
       .tool-description {
         margin: 0 0 8px 0;
         font-size: 13px;
-        color: #606266;
+        color: var(--mio-text-regular);
       }
     }
   }
@@ -1099,7 +1104,7 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   font-weight: 600;
-  color: #303133;
+  color: var(--mio-text-primary);
 }
 
 .tool-info {
@@ -1116,11 +1121,11 @@ onUnmounted(() => {
     label {
       min-width: 80px;
       font-weight: 600;
-      color: #606266;
+      color: var(--mio-text-regular);
     }
 
     span {
-      color: #303133;
+      color: var(--mio-text-primary);
     }
   }
 }

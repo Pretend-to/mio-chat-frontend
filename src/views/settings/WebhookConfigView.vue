@@ -420,7 +420,7 @@ onMounted(async () => {
     margin: 0;
     font-size: 24px;
     font-weight: 600;
-    color: #303133;
+    color: var(--mio-text-primary);
   }
 
   .header-actions {
@@ -433,7 +433,7 @@ onMounted(async () => {
   margin-bottom: 16px;
 
   code {
-    background: rgba(0, 0, 0, 0.06);
+    background: var(--mio-bg-hover);
     padding: 1px 6px;
     border-radius: 4px;
     font-size: 13px;
@@ -443,11 +443,11 @@ onMounted(async () => {
 
 .card-header {
   font-weight: 600;
-  color: #303133;
+  color: var(--mio-text-primary);
 }
 
 .form-item-tip {
-  color: #909399;
+  color: var(--mio-text-secondary);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -466,18 +466,18 @@ onMounted(async () => {
 
 :deep(.el-divider__text) {
   font-weight: 600;
-  color: #606266;
+  color: var(--mio-text-regular);
 }
 
 .webhook-url-section {
   .webhook-hint {
     margin: 8px 0 16px 0;
-    color: #909399;
+    color: var(--mio-text-secondary);
     font-size: 13px;
     line-height: 1.6;
 
     code {
-      background: rgba(0, 0, 0, 0.06);
+      background: var(--mio-bg-hover);
       padding: 1px 6px;
       border-radius: 4px;
       color: #409eff;

@@ -746,7 +746,7 @@ onUnmounted(() => {
       width: 200px;
       height: 32px;
       border-radius: 4px;
-      background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 50%, #f2f2f2 75%);
+      background: var(--mio-skeleton-bg);
       background-size: 200% 100%;
       animation: skeleton-loading 1.5s ease-in-out infinite;
     }
@@ -759,12 +759,7 @@ onUnmounted(() => {
         width: 120px;
         height: 32px;
         border-radius: 4px;
-        background: linear-gradient(
-          90deg,
-          #f2f2f2 25%,
-          #e6e6e6 50%,
-          #f2f2f2 75%
-        );
+        background: var(--mio-skeleton-bg);
         background-size: 200% 100%;
         animation: skeleton-loading 1.5s ease-in-out infinite;
       }
@@ -774,12 +769,12 @@ onUnmounted(() => {
   .skeleton-table {
     border-radius: 8px;
     overflow: hidden;
-    border: 1px solid #ebeef5;
+    border: 1px solid var(--mio-border-color-light);
 
     .skeleton-row {
       display: flex;
       height: 60px;
-      border-bottom: 1px solid #ebeef5;
+      border-bottom: 1px solid var(--mio-border-color-light);
 
       &:last-child {
         border-bottom: none;
@@ -789,12 +784,7 @@ onUnmounted(() => {
         flex: 1;
         margin: 12px;
         border-radius: 4px;
-        background: linear-gradient(
-          90deg,
-          #f2f2f2 25%,
-          #e6e6e6 50%,
-          #f2f2f2 75%
-        );
+        background: var(--mio-skeleton-bg);
         background-size: 200% 100%;
         animation: skeleton-loading 1.5s ease-in-out infinite;
 
@@ -854,7 +844,7 @@ onUnmounted(() => {
     margin: 0;
     font-size: 24px;
     font-weight: 600;
-    color: #303133;
+    color: var(--mio-text-primary);
   }
 
   .header-actions {
@@ -874,10 +864,10 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: #ecf5ff;
+  background: rgba(64, 158, 255, 0.15);
   border-radius: 8px;
   margin-bottom: 16px;
-  border: 1px solid #b3d8ff;
+  border: 1px solid rgba(64, 158, 255, 0.3);
 
   .batch-info {
     font-size: 14px;
@@ -895,7 +885,7 @@ onUnmounted(() => {
   display: flex;
   gap: 24px;
   padding: 16px 20px;
-  background: #f8f9fa;
+  background: var(--mio-bg-hover);
   border-radius: 8px;
   margin-bottom: 20px;
 
@@ -913,26 +903,26 @@ onUnmounted(() => {
 
     .stat-label {
       font-size: 14px;
-      color: #606266;
+      color: var(--mio-text-regular);
     }
 
     .stat-value {
       font-size: 14px;
       font-weight: 600;
-      color: #303133;
+      color: var(--mio-text-primary);
     }
   }
 }
 
 .adapters-list {
-  background: white;
+  background: var(--mio-bg-card);
   border-radius: 8px;
   overflow-y: auto;
   max-height: calc(100vh - 260px);
 
   .empty-state {
     padding: 48px 0;
-    background: #f9fafc;
+    background: var(--mio-bg-hover);
   }
 
   .adapter-name {
@@ -942,14 +932,14 @@ onUnmounted(() => {
 
     .name {
       font-weight: 500;
-      color: #303133;
+      color: var(--mio-text-primary);
     }
   }
 
   .model-name {
     font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
     font-size: 13px;
-    color: #606266;
+    color: var(--mio-text-regular);
   }
 
   .action-buttons {
@@ -1082,12 +1072,12 @@ onUnmounted(() => {
   :deep(.el-dialog__header) {
     margin-right: 0;
     padding: 20px 24px 10px;
-    border-bottom: 1px solid rgba(235, 238, 245, 0.6);
+    border-bottom: 1px solid var(--mio-border-color-light);
 
     .el-dialog__title {
       font-weight: 600;
       font-size: 18px;
-      color: #303133;
+      color: var(--mio-text-primary);
     }
   }
 
@@ -1107,7 +1097,7 @@ onUnmounted(() => {
     :deep(.el-input__wrapper) {
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-      border: 1px solid #dcdfe6;
+      border: 1px solid var(--mio-border-color-light);
       transition: all 0.3s;
 
       &:hover,
@@ -1127,7 +1117,7 @@ onUnmounted(() => {
   :deep(.el-tabs__item) {
     font-size: 14px;
     font-weight: 500;
-    color: #606266;
+    color: var(--mio-text-regular);
     padding: 0 20px;
     height: 40px;
     line-height: 40px;
@@ -1163,8 +1153,8 @@ onUnmounted(() => {
   gap: 14px;
   padding: 16px;
   border-radius: 12px;
-  background: #ffffff;
-  border: 1px solid rgba(235, 238, 245, 0.8);
+  background: var(--mio-bg-card);
+  border: 1px solid var(--mio-border-color-light);
   cursor: pointer;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -1192,8 +1182,8 @@ onUnmounted(() => {
     width: 44px;
     height: 44px;
     border-radius: 10px;
-    background: #ffffff;
-    border: 1px solid rgba(235, 238, 245, 0.8);
+    background: var(--mio-bg-hover);
+    border: 1px solid var(--mio-border-color-light);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
     transition: all 0.3s;
 
@@ -1216,13 +1206,13 @@ onUnmounted(() => {
     .card-title {
       font-size: 15px;
       font-weight: 600;
-      color: #303133;
+      color: var(--mio-text-primary);
       transition: color 0.3s;
     }
 
     .card-desc {
       font-size: 12px;
-      color: #909399;
+      color: var(--mio-text-secondary);
       line-height: 1.4;
       display: -webkit-box;
       -webkit-line-clamp: 2;
@@ -1240,8 +1230,8 @@ onUnmounted(() => {
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background: #f4f4f5;
-    color: #909399;
+    background: var(--mio-bg-hover);
+    color: var(--mio-text-secondary);
     font-size: 12px;
     opacity: 0;
     transform: translateX(10px);

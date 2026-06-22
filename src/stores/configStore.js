@@ -225,9 +225,6 @@ export const useConfigStore = defineStore("config", () => {
     try {
       const response = await configAPI.updateConfig(data);
 
-      // 标记需要重启（非 LLM 适配器配置）
-      needRestart.value = true;
-
       // 重新获取配置
       await fetchConfig();
 
@@ -248,19 +245,6 @@ export const useConfigStore = defineStore("config", () => {
       // 更新本地状态
       if (config.value) {
         config.value[section] = data;
-      }
-
-      // 非 LLM 适配器、OneBot、Storage、Web、System、Debug 和 Server 配置不需要手动重启（前两者支持热更新和自动重启）
-      if (
-        section !== "llm_adapters" &&
-        section !== "onebot" &&
-        section !== "storage" &&
-        section !== "web" &&
-        section !== "system" &&
-        section !== "debug" &&
-        section !== "server"
-      ) {
-        needRestart.value = true;
       }
 
       return response.data;
@@ -460,7 +444,6 @@ export const useConfigStore = defineStore("config", () => {
   async function resetConfig() {
     try {
       const response = await configAPI.resetConfig();
-      needRestart.value = true;
       await fetchConfig();
       return response.data;
     } catch (error) {

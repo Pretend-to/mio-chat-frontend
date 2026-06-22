@@ -28,7 +28,11 @@
       <!-- 调试信息 -->
       <div
         class="debug-info"
-        style="margin-top: 12px; font-size: 12px; color: #909399"
+        style="
+          margin-top: 12px;
+          font-size: 12px;
+          color: var(--mio-text-secondary);
+        "
       >
         <div>连接状态: {{ isConnected ? "✅ 已连接" : "❌ 未连接" }}</div>
         <div>日志数量: {{ logs.length }} 条</div>
@@ -721,12 +725,12 @@ onUnmounted(() => {
     margin: 0 0 8px 0;
     font-size: 24px;
     font-weight: 600;
-    color: #303133;
+    color: var(--mio-text-primary);
   }
 
   .logs-description {
     margin: 0;
-    color: #606266;
+    color: var(--mio-text-regular);
     font-size: 14px;
   }
 }
@@ -1067,7 +1071,7 @@ onUnmounted(() => {
 }
 
 .json-timestamp {
-  color: #909399;
+  color: var(--mio-text-secondary);
   font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
 }
 

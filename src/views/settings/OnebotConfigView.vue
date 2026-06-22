@@ -641,7 +641,7 @@ onUnmounted(() => {
     margin: 0;
     font-size: 24px;
     font-weight: 600;
-    color: #303133;
+    color: var(--mio-text-primary);
   }
 
   .header-actions {
@@ -652,11 +652,11 @@ onUnmounted(() => {
 
 .card-header {
   font-weight: 600;
-  color: #303133;
+  color: var(--mio-text-primary);
 }
 
 .form-item-tip {
-  color: #909399;
+  color: var(--mio-text-secondary);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -675,7 +675,7 @@ onUnmounted(() => {
 
 :deep(.el-divider__text) {
   font-weight: 600;
-  color: #606266;
+  color: var(--mio-text-regular);
 }
 
 // 禁用状态的输入框样式
@@ -686,7 +686,7 @@ onUnmounted(() => {
 }
 
 :deep(.el-input.is-disabled .el-input__inner) {
-  color: #c0c4cc;
+  color: var(--mio-text-placeholder);
   cursor: not-allowed;
 }
 
@@ -702,7 +702,7 @@ onUnmounted(() => {
 
     .question-icon {
       font-size: 16px;
-      color: #909399;
+      color: var(--mio-text-secondary);
       cursor: pointer;
       transition: color 0.2s ease;
       display: flex;
@@ -726,8 +726,8 @@ onUnmounted(() => {
 }
 
 .category-card {
-  background: #fff;
-  border: 1px solid #e4e7ed;
+  background: var(--mio-bg-card);
+  border: 1px solid var(--mio-border-color-light);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -741,12 +741,12 @@ onUnmounted(() => {
 }
 
 .category-card-header {
-  background: linear-gradient(90deg, #f8f9fa 0%, #f1f3f5 100%);
+  background: var(--mio-bg-hover);
   padding: 12px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--mio-border-color-light);
 
   .header-inputs {
     display: flex;
@@ -756,7 +756,7 @@ onUnmounted(() => {
     .cat-label-tag {
       font-size: 13px;
       font-weight: 600;
-      color: #606266;
+      color: var(--mio-text-regular);
     }
 
     .val-tag {
@@ -783,7 +783,7 @@ onUnmounted(() => {
 // 实时连接状态卡片样式
 .status-card {
   border-radius: 12px;
-  border: 1px solid #e4e7ed;
+  border: 1px solid var(--mio-border-color-light);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   overflow: hidden;
@@ -798,6 +798,7 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 16px;
 
   .header-left {
     display: flex;
@@ -806,7 +807,7 @@ onUnmounted(() => {
 
     span {
       font-weight: 600;
-      color: #303133;
+      color: var(--mio-text-primary);
     }
   }
 }
@@ -847,11 +848,11 @@ onUnmounted(() => {
 
   &.disabled {
     background: rgba(144, 147, 153, 0.1);
-    color: #909399;
+    color: var(--mio-text-secondary);
     border: 1px solid rgba(144, 147, 153, 0.2);
 
     .pulse-dot {
-      background-color: #909399;
+      background-color: var(--mio-text-secondary);
     }
   }
 
@@ -894,11 +895,7 @@ onUnmounted(() => {
 }
 
 .status-content {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.6) 0%,
-    rgba(255, 255, 255, 0.9) 100%
-  );
+  background: var(--mio-bg-card);
   backdrop-filter: blur(10px);
 }
 
@@ -912,15 +909,15 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    background: #fafafa;
+    background: var(--mio-bg-hover);
     padding: 12px 16px;
     border-radius: 8px;
-    border: 1px solid #f0f0f0;
+    border: 1px solid var(--mio-border-color-light);
     transition: all 0.2s ease;
 
     &:hover {
-      background: #fdfdfd;
-      border-color: #e6e6e6;
+      background: var(--mio-bg-active);
+      border-color: var(--mio-border-color);
     }
 
     &.full-width {
@@ -929,18 +926,18 @@ onUnmounted(() => {
 
     .status-item-label {
       font-size: 12px;
-      color: #909399;
+      color: var(--mio-text-secondary);
       font-weight: 500;
     }
 
     .status-item-value {
       font-size: 14px;
-      color: #303133;
+      color: var(--mio-text-primary);
       font-weight: 600;
 
       &.ws-url-value {
         font-family: monospace;
-        background: #f4f4f5;
+        background: var(--mio-bg-hover);
         padding: 4px 8px;
         border-radius: 4px;
         font-size: 13px;
@@ -949,13 +946,13 @@ onUnmounted(() => {
       }
 
       &.bot-qq-value {
-        color: #303133;
+        color: var(--mio-text-primary);
         font-family: monospace;
         font-size: 15px;
       }
 
       &.check-time-value {
-        color: #606266;
+        color: var(--mio-text-regular);
         font-weight: normal;
       }
     }
