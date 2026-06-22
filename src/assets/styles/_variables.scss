@@ -15,6 +15,11 @@
   --mio-bg-sidebar-mobile: rgba(241, 244, 254, 0.85);
   --mio-bg-statusbar-friendlist: #f3f5fe;
   --mio-bg-card: #ffffff;
+
+  // Mobile Specific UI Colors (Light Mode Default)
+  --mio-mobile-bg-main: var(--mio-bg-statusbar-friendlist);
+  --mio-mobile-bg-list: var(--mio-bg-card);
+  --mio-mobile-bg-navbar: var(--mio-bg-sidebar-mobile);
   --mio-bg-chat-window: #f2f2f2;
   --mio-bg-hover: rgba(0, 0, 0, 0.05);
   --mio-bg-active: rgba(0, 153, 255, 0.12);
@@ -60,9 +65,14 @@
 [data-theme="dark"] {
   --mio-bg-page: #222222;
   --mio-bg-sidebar: #222222;
-  --mio-bg-sidebar-mobile: rgba(34, 34, 34, 0.85);
-  --mio-bg-statusbar-friendlist: #242424;
+  --mio-bg-sidebar-mobile: #2D2E2F;
+  --mio-bg-statusbar-friendlist: #202325;
   --mio-bg-card: #2f2f2f;
+
+  // Mobile Specific UI Colors (Dark Mode Override)
+  --mio-mobile-bg-main: #202325;
+  --mio-mobile-bg-list: #191C1E;
+  --mio-mobile-bg-navbar: #2D2E2F;
   --mio-bg-chat-window: #222222;
   --mio-bg-hover: #2f2f2f;
   --mio-bg-active: #3f3f3f;

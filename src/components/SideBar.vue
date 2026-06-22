@@ -295,7 +295,7 @@ export default {
     max-height: calc(4.2rem + env(safe-area-inset-bottom, 0px)) !important;
     flex-basis: calc(4.2rem + env(safe-area-inset-bottom, 0px)) !important;
     padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)) !important;
-    background-color: var(--mio-bg-sidebar-mobile);
+    background-color: var(--mio-mobile-bg-navbar);
     backdrop-filter: blur(15px);
     border-top: 1px solid var(--mio-border-color-light);
     border-right: none;

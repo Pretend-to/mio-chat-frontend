@@ -362,7 +362,7 @@ export default {
         grid-template-columns: repeat(auto-fit, minmax(60px, 1fr))
         padding: 0.5rem
         max-width: 16rem
-        background-color: var(--mio-bg-sidebar-mobile)
+        background-color: var(--mio-mobile-bg-navbar)
         border-radius: 1rem
         left: 50%
         transform: translateX(-50%) scale(1)
@@ -460,7 +460,7 @@ export default {
           border-left: 6px solid transparent
           border-right: 6px solid transparent
           // 与移动端菜单主体保持一致的背景色
-          border-bottom: 6px solid var(--mio-bg-card)
+          border-bottom: 6px solid var(--mio-mobile-bg-navbar)
 
     &.expand-up
       @media (max-width: 768px)
@@ -476,7 +476,7 @@ export default {
           border-left: 6px solid transparent
           border-right: 6px solid transparent
           // 与移动端菜单主体保持一致的背景色
-          border-top: 6px solid var(--mio-bg-card)
+          border-top: 6px solid var(--mio-mobile-bg-navbar)
 
     // 动画 transition classes
     &.menu-enter-from, &.menu-leave-to

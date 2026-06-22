@@ -6,6 +6,7 @@
     title="分享预览"
     :width="exportWidthMode === 'wide' ? '890px' : '540px'"
     class="desktop-preview-dialog"
+    append-to-body
     @update:model-value="onClose"
   >
     <div class="preview-info-header">
@@ -19,6 +20,11 @@
           <el-radio-button value="narrow">竖屏窄图 (500px)</el-radio-button>
           <el-radio-button value="wide">宽屏模式 (850px)</el-radio-button>
         </el-radio-group>
+        <el-checkbox
+          :model-value="showQRCode"
+          style="margin-left: 20px;"
+          @change="onQRCodeChange"
+        >显示分享二维码</el-checkbox>
       </div>
       <div class="size-toggle-hint">
         宽屏模式更适合包含长代码、表格或大图的聊天记录
@@ -58,27 +64,39 @@
     size="100%"
     :with-header="false"
     class="mobile-preview-drawer"
+    append-to-body
     @update:model-value="onClose"
   >
     <div class="mobile-preview-container">
-      <div class="mobile-preview-header">
-        <span class="mobile-back-btn" @click="onClose">
-          <i class="iconfont icon-return"></i> 返回
-        </span>
-        <span class="mobile-header-title">分享预览</span>
-        <span style="width: 40px"></span>
-      </div>
+      <!-- Unified Premium Mobile Header -->
+      <div class="mobile-preview-header-wrap">
+        <div class="mobile-preview-header">
+          <span class="mobile-back-btn" @click="onClose">
+            <i class="iconfont icon-return"></i> 返回
+          </span>
+          <span class="mobile-header-title">分享预览</span>
+          <span style="width: 40px"></span>
+        </div>
 
-      <!-- Width Mode Toggle for Mobile -->
-      <div class="mobile-width-toggle">
-        <el-radio-group
-          :model-value="exportWidthMode"
-          size="default"
-          @change="onWidthModeChange"
-        >
-          <el-radio-button value="narrow">竖屏窄图</el-radio-button>
-          <el-radio-button value="wide">宽屏模式</el-radio-button>
-        </el-radio-group>
+        <div class="mobile-controls-row">
+          <el-radio-group
+            :model-value="exportWidthMode"
+            size="small"
+            @change="onWidthModeChange"
+            class="mobile-width-radio-group"
+          >
+            <el-radio-button value="narrow">竖屏窄图</el-radio-button>
+            <el-radio-button value="wide">宽屏模式</el-radio-button>
+          </el-radio-group>
+          
+          <div class="mobile-qr-checkbox-wrapper">
+            <el-checkbox
+              :model-value="showQRCode"
+              size="small"
+              @change="onQRCodeChange"
+            >显示二维码</el-checkbox>
+          </div>
+        </div>
       </div>
 
       <div
@@ -138,6 +156,10 @@ const props = defineProps({
     type: String,
     default: "narrow",
   },
+  showQRCode: {
+    type: Boolean,
+    default: true,
+  },
   isMobileDevice: {
     type: Boolean,
     default: false,
@@ -147,7 +169,9 @@ const props = defineProps({
 const emit = defineEmits([
   "update:modelValue",
   "update:exportWidthMode",
+  "update:showQRCode",
   "width-mode-change",
+  "qr-code-change",
   "copy",
   "download",
   "share-link",
@@ -165,6 +189,11 @@ const onClose = (val) => {
 const onWidthModeChange = (val) => {
   emit("update:exportWidthMode", val);
   emit("width-mode-change", val);
+};
+
+const onQRCodeChange = (val) => {
+  emit("update:showQRCode", val);
+  emit("qr-code-change", val);
 };
 </script>
 
@@ -226,33 +255,77 @@ const onWidthModeChange = (val) => {
   background: var(--mio-bg-chat-window);
 }
 
+.mobile-preview-header-wrap {
+  background: var(--mio-bg-card);
+  border-bottom: 1px solid var(--mio-border-color-light);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+}
+
 .mobile-preview-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 20px;
-  background-color: var(--mio-bg-card);
-  border-bottom: 1px solid var(--mio-border-color-light);
+  padding: 14px 20px 8px 20px;
 }
 
 .mobile-back-btn {
-  font-size: 16px;
+  font-size: 15px;
+  font-weight: 500;
   color: var(--mio-text-regular);
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: opacity 0.2s;
+}
+
+.mobile-back-btn:active {
+  opacity: 0.6;
 }
 
 .mobile-header-title {
   font-size: 16px;
   font-weight: 600;
   color: var(--mio-text-primary);
+  letter-spacing: 0.5px;
 }
 
-.mobile-width-toggle {
-  padding: 10px 20px;
-  background-color: var(--mio-bg-card);
-  border-bottom: 1px solid var(--mio-border-color-lighter);
+.mobile-controls-row {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 20px 12px 20px;
+  gap: 16px;
+}
+
+.mobile-width-radio-group {
+  flex: 1;
+  display: flex;
+}
+
+.mobile-width-radio-group :deep(.el-radio-button) {
+  flex: 1;
+}
+
+.mobile-width-radio-group :deep(.el-radio-button__inner) {
+  width: 100%;
+  text-align: center;
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+.mobile-qr-checkbox-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.mobile-qr-checkbox-wrapper :deep(.el-checkbox__label) {
+  font-size: 12px;
+  padding-left: 6px;
 }
 
 .mobile-preview-scroll-container {
@@ -271,11 +344,24 @@ const onWidthModeChange = (val) => {
 }
 
 .mobile-preview-footer {
-  padding: 20px;
-  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-  background: transparent;
-  border: none;
+  padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px));
+  background: var(--mio-bg-card);
+  border-top: 1px solid var(--mio-border-color-light);
   display: flex;
   gap: 12px;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
+}
+
+:global(.mobile-preview-drawer) {
+  height: 100vh !important;
+  height: 100dvh !important;
+  top: 0 !important;
+  bottom: auto !important;
+}
+
+:global(.mobile-preview-drawer .el-drawer__body) {
+  padding: 0 !important;
+  overflow: hidden !important;
+  height: 100% !important;
 }
 </style>

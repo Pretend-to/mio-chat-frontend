@@ -395,6 +395,7 @@ const mdOptions = computed(() => {
 });
 
 const renderedCount = ref(20);
+const isLoadingHistory = ref(false);
 
 watch(
   () => [
@@ -516,6 +517,7 @@ const {
   generatingImage,
   exportWidthMode,
   qrUrl,
+  showQRCode,
   handleMultiShareImage,
   onExportWidthModeChange,
   generateScreenshot,
@@ -526,6 +528,10 @@ const {
   chatWindowRef: chatWindow,
   selectedMessages,
 });
+
+const onQRCodeChange = async () => {
+  await generateScreenshot();
+};
 
 // Watchers
 watch(
@@ -1203,14 +1209,23 @@ const scrollHandler = () => {
     }
   }
 
-  if (currentScrollTop === 0) {
+  if (currentScrollTop === 0 && !isLoadingHistory.value) {
     const chain = activeContactor.value?.messageChain || [];
     if (renderedCount.value < chain.length) {
-      const prevScrollHeight = elm.scrollHeight;
-      renderedCount.value = Math.min(chain.length, renderedCount.value + 20);
-      nextTick(() => {
-        elm.scrollTop = elm.scrollHeight - prevScrollHeight;
-      });
+      isLoadingHistory.value = true;
+      setTimeout(() => {
+        const currentElm = chatWindow.value;
+        if (!currentElm) {
+          isLoadingHistory.value = false;
+          return;
+        }
+        const prevScrollPosFromBottom = currentElm.scrollHeight - currentElm.scrollTop;
+        renderedCount.value = Math.min(chain.length, renderedCount.value + 20);
+        isLoadingHistory.value = false;
+        nextTick(() => {
+          currentElm.scrollTop = currentElm.scrollHeight - prevScrollPosFromBottom;
+        });
+      }, 500);
     }
   }
 
@@ -1513,6 +1528,22 @@ onBeforeUnmount(() => {
         @close="showMenu = false"
       />
 
+      <!-- History Loading Indicator -->
+      <div
+        v-if="renderedCount < (activeContactor?.messageChain?.length || 0)"
+        class="history-loading-container"
+        :class="{ 'is-loading': isLoadingHistory }"
+      >
+        <div class="loading-content">
+          <div class="spinner-dots">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
+          <span class="loading-text">{{ isLoadingHistory ? '正在加载历史消息...' : '继续向上滚动加载历史消息' }}</span>
+        </div>
+      </div>
+
       <!-- Opening Message -->
       <MessageItem
         v-if="openingMessage"
@@ -1629,6 +1660,7 @@ onBeforeUnmount(() => {
     <ScreenshotPreview
       v-model="showImagePreview"
       v-model:exportWidthMode="exportWidthMode"
+      v-model:showQRCode="showQRCode"
       :generatingImage="generatingImage"
       :previewImageUrl="previewImageUrl"
       :qrUrl="qrUrl"
@@ -1639,6 +1671,7 @@ onBeforeUnmount(() => {
       @download="downloadPreviewImage"
       @share-link="shareMobilePreviewLink"
       @width-mode-change="onExportWidthModeChange"
+      @qr-code-change="onQRCodeChange"
     />
   </div>
 </template>
@@ -2032,4 +2065,61 @@ $mobile: 768px
         background-color: var(--mio-bg-hover)
     100%
         background-color: transparent
+
+.history-loading-container
+    display: flex
+    align-items: center
+    justify-content: center
+    padding: 1.5rem 0 1rem 0
+    width: 100%
+    transition: all 0.3s ease
+    opacity: 0.8
+
+    &:hover
+        opacity: 1
+
+    &.is-loading
+        opacity: 1
+
+    .loading-content
+        display: flex
+        flex-direction: column
+        align-items: center
+        gap: 0.5rem
+
+    .spinner-dots
+        display: flex
+        gap: 6px
+        align-items: center
+        justify-content: center
+        height: 12px
+
+        .dot
+            width: 6px
+            height: 6px
+            background-color: var(--mio-text-secondary)
+            border-radius: 50%
+            display: inline-block
+            animation: dot-jump 1.4s infinite ease-in-out both
+
+            &:nth-child(1)
+                animation-delay: -0.32s
+
+            &:nth-child(2)
+                animation-delay: -0.16s
+
+    .loading-text
+        font-size: 0.8rem
+        color: var(--mio-text-secondary)
+        font-weight: 500
+        letter-spacing: 0.5px
+        transition: color 0.3s ease
+
+@keyframes dot-jump
+    0%, 80%, 100%
+        transform: translateY(0)
+        opacity: 0.35
+    40%
+        transform: translateY(-6px)
+        opacity: 0.85
 </style>

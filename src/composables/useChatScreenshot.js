@@ -19,6 +19,7 @@ export function useChatScreenshot({ chatWindowRef, selectedMessages }) {
   const generatingImage = ref(false);
   const exportWidthMode = ref("narrow");
   const qrUrl = ref("");
+  const showQRCode = ref(true);
 
   const handleMultiShareImage = async (activeContactor) => {
     if (selectedMessages.value.length === 0) return;
@@ -63,7 +64,7 @@ export function useChatScreenshot({ chatWindowRef, selectedMessages }) {
       exportEl = document.createElement("div");
       exportEl.id = "chat-window";
       exportEl.className = "is-exporting";
-      exportEl.style.cssText = `position:absolute;left:0;top:0;z-index:-10000;pointer-events:none;width:${width};background-color:var(--mio-bg-chat-window);padding:0;box-sizing:border-box;overflow:visible;`;
+      exportEl.style.cssText = `position:absolute;left:0;top:0;z-index:-10000;pointer-events:none;width:${width};background-color:var(--mio-bg-chat-window);padding:1.25rem 0 0 0;box-sizing:border-box;overflow:visible;`;
 
       // Also support wide mode styling on the inner message items
       if (exportWidthMode.value === "wide") {
@@ -71,29 +72,6 @@ export function useChatScreenshot({ chatWindowRef, selectedMessages }) {
       }
 
       document.body.appendChild(exportEl);
-
-      // Header with Icon and Slogan
-      const header = document.createElement("div");
-      header.style.cssText =
-        "display:flex;align-items:center;justify-content:flex-start;padding:1.5rem 1.25rem 0rem;margin-bottom:0.5rem;background:linear-gradient(180deg, var(--mio-bg-card) 0%, var(--mio-bg-chat-window) 100%);border-bottom:1px solid var(--mio-border-color-light);";
-
-      const headerIcon = document.createElement("img");
-      headerIcon.crossOrigin = "anonymous";
-      headerIcon.src = addTimestamp(
-        window.location.origin + "/static/icons/512x512.png",
-      );
-      headerIcon.style.cssText =
-        "width:64px;height:64px;margin-right:16px;border-radius:16px;box-shadow:var(--mio-shadow-light);";
-
-      const headerTitle = document.createElement("div");
-      headerTitle.style.cssText =
-        "display:flex;flex-direction:column;justify-content:center;height:64px;overflow:hidden;";
-      headerTitle.innerHTML =
-        '<div style="font-size:30px;font-weight:800;color:var(--mio-text-primary);letter-spacing:0.5px;line-height:1.2;white-space:nowrap;">Mio Chat</div><div style="font-size:16px;color:var(--mio-text-secondary);font-weight:500;line-height:1.2;margin-top:4px;white-space:nowrap;">A modern AI-powered companion</div>';
-
-      header.appendChild(headerIcon);
-      header.appendChild(headerTitle);
-      exportEl.appendChild(header);
 
       // Wrapper to maintain CSS selector hierarchy
       const messageWindow = document.createElement("div");
@@ -130,23 +108,32 @@ export function useChatScreenshot({ chatWindowRef, selectedMessages }) {
       }
 
       // Footer with QR code in a premium card style
-      const footer = document.createElement("div");
-      footer.style.cssText =
-        "margin:1rem 1.25rem 1.5rem;padding:1.25rem;background-color:var(--mio-bg-card);border-radius:14px;box-shadow:var(--mio-shadow-light);display:flex;align-items:center;justify-content:space-between;";
+      if (showQRCode.value) {
+        const footer = document.createElement("div");
+        footer.style.cssText =
+          "margin:1rem 1.25rem 0.5rem;padding:1.25rem 1.5rem;background-color:var(--mio-bg-card);border:1px solid var(--mio-border-color-light);border-radius:16px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(0,0,0,0.03);";
 
-      const textDiv = document.createElement("div");
-      textDiv.innerHTML =
-        '<div style="font-weight:800;font-size:16px;color:var(--mio-text-primary);">扫码接续对话</div><div style="font-size:12px;color:var(--mio-text-secondary);margin-top:5px;line-height:1.4;">长按或扫描二维码<br>立即参与精彩聊天</div>';
+        const textDiv = document.createElement("div");
+        textDiv.innerHTML =
+          '<div style="font-weight:700;font-size:15px;color:var(--mio-text-primary);letter-spacing:0.5px;">扫码接续对话</div><div style="font-size:12px;color:var(--mio-text-secondary);margin-top:6px;line-height:1.5;">在手机上扫码，即可随时接续本次精彩对话</div>';
 
-      const qrImg = document.createElement("img");
-      qrImg.src = qrUrl.value;
-      qrImg.style.cssText =
-        "width:68px;height:68px;flex-shrink:0;border:2px solid var(--mio-border-color-light);border-radius:8px;";
-      qrImg.crossOrigin = "anonymous";
+        const qrImg = document.createElement("img");
+        qrImg.src = qrUrl.value;
+        qrImg.style.cssText =
+          "width:72px;height:72px;flex-shrink:0;border:1px solid var(--mio-border-color-light);border-radius:10px;padding:3px;background:#ffffff;box-shadow:0 2px 8px rgba(0,0,0,0.04);";
+        qrImg.crossOrigin = "anonymous";
 
-      footer.appendChild(textDiv);
-      footer.appendChild(qrImg);
-      exportEl.appendChild(footer);
+        footer.appendChild(textDiv);
+        footer.appendChild(qrImg);
+        exportEl.appendChild(footer);
+      }
+
+      // Signature line at the very bottom
+      const signature = document.createElement("div");
+      signature.style.cssText =
+        "text-align:center;padding:1rem 0 1.5rem;font-size:12px;color:var(--mio-text-secondary);opacity:0.6;letter-spacing:1px;font-weight:500;";
+      signature.innerHTML = "Powered by MioChat & snapdom";
+      exportEl.appendChild(signature);
 
       // Wait for images to load
       const allImgs = Array.from(exportEl.querySelectorAll("img"));
@@ -250,6 +237,7 @@ export function useChatScreenshot({ chatWindowRef, selectedMessages }) {
     generatingImage,
     exportWidthMode,
     qrUrl,
+    showQRCode,
     handleMultiShareImage,
     onExportWidthModeChange,
     generateScreenshot,

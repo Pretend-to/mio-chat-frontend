@@ -850,7 +850,7 @@ button#addcont:hover {
     flex-direction: column;
     width: 100%;
     max-width: none;
-    background-color: var(--mio-bg-card);
+    background-color: var(--mio-mobile-bg-list);
     border-left: none;
     border-right: none;
   }
@@ -858,7 +858,7 @@ button#addcont:hover {
   .mobile-qq-header {
     position: relative;
     padding: 0.75rem 1rem 0.5rem 1rem;
-    background-color: var(--mio-bg-sidebar-mobile);
+    background-color: var(--mio-mobile-bg-main);
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
@@ -942,7 +942,6 @@ button#addcont:hover {
   }
 
   .people {
-    background-color: var(--mio-bg-card);
     /* 移除圆角和阴影，保持连贯性 */
     border-top-left-radius: 0;
     border-top-right-radius: 0;
@@ -956,7 +955,7 @@ button#addcont:hover {
     position: relative;
     width: 100%;
     overflow: hidden;
-    background-color: var(--mio-bg-card);
+    background-color: transparent;
   }
 
   .lists {
@@ -1014,7 +1013,7 @@ button#addcont:hover {
     background-color: transparent;
   }
   .lists-wrapper#important .lists {
-    background-color: var(--mio-bg-sidebar-mobile);
+    background-color: var(--mio-mobile-bg-main);
   }
 
   /* 明确禁用移动端联系人列表项 hover 态变色 */
@@ -1025,7 +1024,7 @@ button#addcont:hover {
     background-color: transparent;
   }
   .lists-wrapper#important:hover .lists {
-    background-color: var(--mio-bg-sidebar-mobile);
+    background-color: var(--mio-mobile-bg-main);
   }
   .lists-wrapper#active .lists:hover {
     background-color: var(--mio-color-primary);
@@ -1110,3 +1109,4 @@ button#addcont:hover {
   pointer-events: none;
 }
 </style>
+

@@ -189,6 +189,7 @@ figure {
   flex-grow: 3;
   overflow: auto;
   overflow-x: hidden;
+  overflow-anchor: auto;
   background-color: var(--mio-bg-chat-window);
 
   @media (max-width: 768px) {
