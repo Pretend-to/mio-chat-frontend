@@ -219,8 +219,8 @@ const handleExport = () => {
 
 <style scoped lang="scss">
 .preset-card {
-  background: white;
-  border: 1px solid #e4e7ed;
+  background: var(--mio-bg-card);
+  border: 1px solid var(--mio-border-color-light);
   border-radius: 12px;
   padding: 20px;
   transition: all 0.3s ease;
@@ -239,7 +239,7 @@ const handleExport = () => {
 
   &.selected {
     border-color: #409eff;
-    background: #f0f9ff;
+    background: var(--mio-bg-active);
     box-shadow: 0 4px 16px rgba(64, 158, 255, 0.2);
 
     &::before {
@@ -286,12 +286,12 @@ const handleExport = () => {
 
     .preset-avatar {
       flex-shrink: 0;
-      border: 2px solid #f0f0f0;
+      border: 2px solid var(--mio-border-color-light);
       transition: border-color 0.3s ease;
 
       &.default-avatar {
-        background-color: #f5f7fa;
-        color: #909399;
+        background-color: var(--mio-bg-hover);
+        color: var(--mio-text-secondary);
       }
     }
 
@@ -303,7 +303,7 @@ const handleExport = () => {
         margin: 0;
         font-size: 16px;
         font-weight: 600;
-        color: #303133;
+        color: var(--mio-text-primary);
         line-height: 1.4;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -318,7 +318,7 @@ const handleExport = () => {
     p {
       margin: 0;
       font-size: 14px;
-      color: #606266;
+      color: var(--mio-text-regular);
       line-height: 1.5;
       display: -webkit-box;
       -webkit-line-clamp: 2;
@@ -343,7 +343,7 @@ const handleExport = () => {
       }
 
       .history-content {
-        color: #606266;
+        color: var(--mio-text-regular);
         line-height: 1.4;
         flex: 1;
         word-break: break-word;
@@ -359,7 +359,7 @@ const handleExport = () => {
   .preset-tools {
     .tools-label {
       font-size: 13px;
-      color: #909399;
+      color: var(--mio-text-secondary);
       margin-bottom: 6px;
     }
 
@@ -376,6 +376,6 @@ const handleExport = () => {
   justify-content: flex-end;
   gap: 8px;
   padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--mio-border-color-light);
 }
 </style>

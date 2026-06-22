@@ -60,18 +60,9 @@ defineProps({
 </script>
 
 <style scoped lang="scss">
-@keyframes skeleton-loading {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
 .loading-skeleton {
   &.card {
-    background-color: #fff;
+    background-color: var(--mio-skeleton-card-bg);
     border-radius: 8px;
     padding: 20px;
     box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
@@ -90,7 +81,7 @@ defineProps({
     width: 16px;
     height: 16px;
     border-radius: 4px;
-    background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 50%, #f2f2f2 75%);
+    background: var(--mio-skeleton-bg);
     background-size: 200% 100%;
     animation: skeleton-loading 1.5s ease-in-out infinite;
   }
@@ -99,7 +90,7 @@ defineProps({
     width: 120px;
     height: 20px;
     border-radius: 4px;
-    background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 50%, #f2f2f2 75%);
+    background: var(--mio-skeleton-bg);
     background-size: 200% 100%;
     animation: skeleton-loading 1.5s ease-in-out infinite;
   }
@@ -109,7 +100,7 @@ defineProps({
     height: 24px;
     border-radius: 12px;
     margin-left: auto;
-    background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 50%, #f2f2f2 75%);
+    background: var(--mio-skeleton-bg);
     background-size: 200% 100%;
     animation: skeleton-loading 1.5s ease-in-out infinite;
   }
@@ -127,7 +118,7 @@ defineProps({
     width: 80px;
     height: 32px;
     border-radius: 4px;
-    background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 50%, #f2f2f2 75%);
+    background: var(--mio-skeleton-bg);
     background-size: 200% 100%;
     animation: skeleton-loading 1.5s ease-in-out infinite;
   }
@@ -142,7 +133,7 @@ defineProps({
     width: 56px;
     height: 56px;
     border-radius: 12px;
-    background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 50%, #f2f2f2 75%);
+    background: var(--mio-skeleton-bg);
     background-size: 200% 100%;
     animation: skeleton-loading 1.5s ease-in-out infinite;
   }
@@ -156,7 +147,7 @@ defineProps({
     height: 32px;
     border-radius: 4px;
     margin-bottom: 8px;
-    background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 50%, #f2f2f2 75%);
+    background: var(--mio-skeleton-bg);
     background-size: 200% 100%;
     animation: skeleton-loading 1.5s ease-in-out infinite;
   }
@@ -165,7 +156,7 @@ defineProps({
     width: 80px;
     height: 16px;
     border-radius: 4px;
-    background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 50%, #f2f2f2 75%);
+    background: var(--mio-skeleton-bg);
     background-size: 200% 100%;
     animation: skeleton-loading 1.5s ease-in-out infinite;
   }
@@ -174,7 +165,7 @@ defineProps({
 .skeleton-list {
   .skeleton-list-item {
     padding: 12px 0;
-    border-bottom: 1px solid #f2f2f2;
+    border-bottom: 1px solid var(--mio-skeleton-line);
 
     &:last-child {
       border-bottom: none;
@@ -186,7 +177,7 @@ defineProps({
   height: 16px;
   margin-bottom: 12px;
   border-radius: 4px;
-  background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 50%, #f2f2f2 75%);
+  background: var(--mio-skeleton-bg);
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s ease-in-out infinite;
 

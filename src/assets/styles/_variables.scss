@@ -59,20 +59,30 @@
   --mio-bg-warning-light: #fdf6ec;
   --mio-bg-danger-light: #fef0f0;
   --mio-bg-info-light: #f4f4f5;
+
+  // Skeleton Colors
+  --mio-skeleton-bg: linear-gradient(
+    90deg,
+    #f2f2f2 25%,
+    #e6e6e6 50%,
+    #f2f2f2 75%
+  );
+  --mio-skeleton-card-bg: var(--mio-bg-card);
+  --mio-skeleton-line: #f2f2f2;
 }
 
 // Dark Mode Support
 [data-theme="dark"] {
   --mio-bg-page: #222222;
   --mio-bg-sidebar: #222222;
-  --mio-bg-sidebar-mobile: #2D2E2F;
+  --mio-bg-sidebar-mobile: #2d2e2f;
   --mio-bg-statusbar-friendlist: #202325;
   --mio-bg-card: #2f2f2f;
 
   // Mobile Specific UI Colors (Dark Mode Override)
   --mio-mobile-bg-main: #202325;
-  --mio-mobile-bg-list: #191C1E;
-  --mio-mobile-bg-navbar: #2D2E2F;
+  --mio-mobile-bg-list: #191c1e;
+  --mio-mobile-bg-navbar: #2d2e2f;
   --mio-bg-chat-window: #222222;
   --mio-bg-hover: #2f2f2f;
   --mio-bg-active: #3f3f3f;
@@ -103,6 +113,16 @@
   --mio-bg-warning-light: rgba(230, 162, 60, 0.15);
   --mio-bg-danger-light: rgba(245, 108, 108, 0.15);
   --mio-bg-info-light: rgba(144, 147, 153, 0.15);
+
+  // Skeleton Colors (Dark Theme)
+  --mio-skeleton-bg: linear-gradient(
+    90deg,
+    #2a2a2e 25%,
+    #333338 50%,
+    #2a2a2e 75%
+  );
+  --mio-skeleton-card-bg: var(--mio-bg-card);
+  --mio-skeleton-line: var(--mio-border-color-light);
 }
 
 // Sass Compile-time Variables

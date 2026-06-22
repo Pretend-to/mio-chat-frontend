@@ -1,12 +1,8 @@
 <template>
   <div id="settings-view" :class="{ 'mobile-layout': isMobile }">
     <!-- 移动端顶部导航栏 -->
-    <div
-      v-if="isMobile"
-      class="mobile-header"
-      :class="{ 'sub-page': isInSubPage(), 'main-page': !isInSubPage() }"
-    >
-      <div class="mobile-header-content" :class="{ 'sub-page': isInSubPage() }">
+    <div v-if="isMobile && isInSubPage()" class="mobile-header sub-page">
+      <div class="mobile-header-content sub-page">
         <button
           class="back-button"
           @click="handleBackToHome"
@@ -55,31 +51,6 @@
         </button>
       </div>
     </div>
-
-    <!-- 重启服务提示横幅 -->
-    <el-alert
-      v-if="configStore.needRestart"
-      type="warning"
-      :closable="false"
-      show-icon
-      class="restart-banner"
-      :class="{ mobile: isMobile }"
-    >
-      <template #title>
-        <div class="restart-banner-content">
-          <span>{{
-            isMobile ? "需要重启服务" : "配置已更改，需要重启服务才能生效"
-          }}</span>
-          <el-button
-            type="warning"
-            :size="isMobile ? 'small' : 'small'"
-            @click="handleRestartService"
-          >
-            重启服务
-          </el-button>
-        </div>
-      </template>
-    </el-alert>
 
     <!-- 移动端菜单抽屉 -->
     <div
@@ -142,81 +113,196 @@
 
     <!-- 桌面端布局 -->
     <div class="admin-panel-container" :class="{ mobile: isMobile }">
-      <!-- 侧边导航 - 仅桌面端显示 -->
-      <aside v-if="!isMobile" class="admin-panel-sidebar">
-        <el-menu
-          :default-active="activeMenu"
-          class="admin-panel-menu"
-          @select="handleMenuSelect"
-        >
-          <el-menu-item
-            v-for="item in menuItems"
-            :key="item.index"
-            :index="item.index"
-          >
-            <el-icon><component :is="item.icon" /></el-icon>
-            <span>{{ item.label }}</span>
-          </el-menu-item>
-        </el-menu>
-
-        <!-- 快捷操作 -->
-        <div class="quick-actions">
-          <el-button type="info" plain @click="handleReset" style="width: 100%">
-            重置全部
-          </el-button>
-          <el-button
-            type="info"
-            plain
-            @click="handleResetCache"
-            style="width: 100%"
-          >
-            清理缓存
-          </el-button>
-          <el-button
-            type="primary"
-            plain
-            @click="router.push('/dashboard')"
-            style="width: 100%"
-          >
-            审计大盘
-          </el-button>
-        </div>
-      </aside>
-
-      <!-- 内容区域 -->
-      <main class="admin-panel-content" :class="{ mobile: isMobile }">
-        <!-- 通用页面头部占位 -->
-        <div class="content-header-spacer"></div>
-
-        <template v-if="forbidden">
-          <div class="forbidden-container" :class="{ mobile: isMobile }">
-            <el-result
-              icon="error"
-              title="禁止访问"
-              sub-title="当前访问码无权限或已失效，您无法访问配置管理页面。"
-            >
-              <template #extra>
-                <el-button type="primary" @click="handleSwitchAccount"
-                  >切换账号</el-button
-                >
-                <el-button @click="handleReturnHome">返回首页</el-button>
-              </template>
-            </el-result>
+      <!-- 移动端设置主菜单列表 (在移动端且正是设置首页时渲染) -->
+      <div
+        v-if="isMobile && route.path === '/settings'"
+        class="mobile-settings-list"
+      >
+        <!-- 头部 branding -->
+        <div class="mobile-settings-hero">
+          <h2 class="mobile-settings-title">系统设置</h2>
+          <div class="mobile-settings-status" :class="systemStatus">
+            <span class="status-dot"></span>
+            <span>系统状态: {{ systemStatusText }}</span>
           </div>
-        </template>
-        <template v-else>
-          <ErrorBoundary
-            fallback-title="页面加载失败"
-            fallback-message="配置页面加载时发生错误，请刷新页面重试"
+        </div>
+
+        <!-- 菜单分组 -->
+        <div v-if="!forbidden" class="mobile-settings-group">
+          <div class="group-title">系统配置 (管理员权限)</div>
+          <div class="group-content">
+            <!-- 概览 -->
+            <div class="menu-item" @click="handleMobileMenuSelect('overview')">
+              <div class="menu-item-left">
+                <el-icon class="menu-icon"><Menu /></el-icon>
+                <span>配置概览</span>
+              </div>
+              <div class="menu-item-right">
+                <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+              </div>
+            </div>
+            <!-- 其他菜单项 -->
+            <div
+              v-for="item in menuItems.slice(1)"
+              :key="item.index"
+              class="menu-item"
+              @click="handleMobileMenuSelect(item.index)"
+            >
+              <div class="menu-item-left">
+                <el-icon class="menu-icon"
+                  ><component :is="item.icon"
+                /></el-icon>
+                <span>{{ item.label }}</span>
+              </div>
+              <div class="menu-item-right">
+                <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+              </div>
+            </div>
+            <!-- 审计大盘 -->
+            <div class="menu-item" @click="router.push('/dashboard')">
+              <div class="menu-item-left">
+                <el-icon class="menu-icon"><DataAnalysis /></el-icon>
+                <span>数据审计大盘</span>
+              </div>
+              <div class="menu-item-right">
+                <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mobile-settings-group">
+          <div class="group-title">系统维护</div>
+          <div class="group-content">
+            <div class="menu-item" @click="handleResetCache">
+              <div class="menu-item-left">
+                <el-icon class="menu-icon warning"><Delete /></el-icon>
+                <span>清理缓存</span>
+              </div>
+              <div class="menu-item-right">
+                <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+              </div>
+            </div>
+            <div class="menu-item" @click="handleReset">
+              <div class="menu-item-left">
+                <el-icon class="menu-icon danger"><RefreshLeft /></el-icon>
+                <span>重置全部</span>
+              </div>
+              <div class="menu-item-right">
+                <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mobile-settings-group">
+          <div class="group-title">账号与系统</div>
+          <div class="group-content">
+            <div class="menu-item" @click="handleSwitchAccount">
+              <div class="menu-item-left">
+                <el-icon class="menu-icon primary"><SwitchButton /></el-icon>
+                <span>{{ forbidden ? "管理员验证" : "切换账号" }}</span>
+              </div>
+              <div class="menu-item-right">
+                <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+              </div>
+            </div>
+            <div class="menu-item" @click="handleReturnHome">
+              <div class="menu-item-left">
+                <el-icon class="menu-icon regular"><HomeFilled /></el-icon>
+                <span>返回聊天首页</span>
+              </div>
+              <div class="menu-item-right">
+                <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 桌面端与移动端子页面内容区 -->
+      <template v-else>
+        <!-- 侧边导航 - 仅桌面端显示 -->
+        <aside v-if="!isMobile" class="admin-panel-sidebar">
+          <el-menu
+            :default-active="activeMenu"
+            class="admin-panel-menu"
+            @select="handleMenuSelect"
           >
-            <router-view v-slot="{ Component }">
-              <transition name="page-fade" mode="out-in">
-                <component :is="Component" />
-              </transition>
-            </router-view>
-          </ErrorBoundary>
-        </template>
-      </main>
+            <el-menu-item
+              v-for="item in menuItems"
+              :key="item.index"
+              :index="item.index"
+            >
+              <el-icon><component :is="item.icon" /></el-icon>
+              <span>{{ item.label }}</span>
+            </el-menu-item>
+          </el-menu>
+
+          <!-- 快捷操作 -->
+          <div class="quick-actions">
+            <el-button
+              type="info"
+              plain
+              @click="handleReset"
+              style="width: 100%"
+            >
+              重置全部
+            </el-button>
+            <el-button
+              type="info"
+              plain
+              @click="handleResetCache"
+              style="width: 100%"
+            >
+              清理缓存
+            </el-button>
+            <el-button
+              type="primary"
+              plain
+              @click="router.push('/dashboard')"
+              style="width: 100%"
+            >
+              审计大盘
+            </el-button>
+          </div>
+        </aside>
+
+        <!-- 内容区域 -->
+        <main class="admin-panel-content" :class="{ mobile: isMobile }">
+          <!-- 通用页面头部占位 -->
+          <div class="content-header-spacer"></div>
+
+          <template v-if="forbidden">
+            <div class="forbidden-container" :class="{ mobile: isMobile }">
+              <el-result
+                icon="error"
+                title="禁止访问"
+                sub-title="当前访问码无权限或已失效，您无法访问配置管理页面。"
+              >
+                <template #extra>
+                  <el-button type="primary" @click="handleSwitchAccount"
+                    >切换账号</el-button
+                  >
+                  <el-button @click="handleReturnHome">返回首页</el-button>
+                </template>
+              </el-result>
+            </div>
+          </template>
+          <template v-else>
+            <ErrorBoundary
+              fallback-title="页面加载失败"
+              fallback-message="配置页面加载时发生错误，请刷新页面重试"
+            >
+              <router-view v-slot="{ Component }">
+                <transition name="page-fade" mode="out-in">
+                  <component :is="Component" />
+                </transition>
+              </router-view>
+            </ErrorBoundary>
+          </template>
+        </main>
+      </template>
     </div>
   </div>
 </template>
@@ -237,6 +323,12 @@ import {
   Menu,
   Monitor,
   Box,
+  Lock,
+  Delete,
+  RefreshLeft,
+  SwitchButton,
+  HomeFilled,
+  ArrowRight,
 } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
@@ -256,6 +348,23 @@ const mobileMenuVisible = ref(false);
 const showMobileMenu = computed(() => {
   // 只在设置首页显示菜单按钮
   return route.path === "/settings";
+});
+
+// 系统状态
+const systemStatus = computed(() => {
+  if (configStore.needRestart) return "warning";
+
+  // 检查是否有禁用的适配器
+  const hasDisabled = Object.values(configStore.adapters || {}).some(
+    (instances) => instances.some((adapter) => !adapter.enable),
+  );
+
+  return hasDisabled ? "warning" : "normal";
+});
+
+const systemStatusText = computed(() => {
+  if (configStore.needRestart) return "需要重启";
+  return systemStatus.value === "normal" ? "正常" : "有警告";
 });
 
 // 菜单项配置
@@ -343,7 +452,11 @@ const closeMobileMenu = () => {
 };
 
 const handleMobileMenuSelect = (index) => {
-  handleMenuSelect(index);
+  if (index === "overview") {
+    router.push("/settings/overview");
+  } else {
+    router.push(`/settings/${index}`);
+  }
   closeMobileMenu();
 };
 
@@ -366,27 +479,6 @@ const handleMenuSelect = (index) => {
     router.push("/settings");
   } else {
     router.push(`/settings/${index}`);
-  }
-};
-
-// 重启服务
-const handleRestartService = async () => {
-  try {
-    await ElMessageBox.confirm(
-      "重启服务将断开所有连接，是否继续？",
-      "确认重启",
-      {
-        confirmButtonText: "确认",
-        cancelButtonText: "取消",
-        type: "warning",
-      },
-    );
-
-    ElMessage.info("重启服务功能需要后端支持，暂未实现");
-    // TODO: 调用后端重启 API
-    // await configAPI.restartService();
-  } catch (error) {
-    // 用户取消
   }
 };
 
@@ -505,7 +597,7 @@ onUnmounted(() => {
 
   &.mobile-layout {
     width: 100%;
-    height: 100vh;
+    height: calc(100% - 4.2rem - env(safe-area-inset-bottom, 0px));
     background-color: var(--mio-bg-page);
   }
 }
@@ -919,6 +1011,161 @@ onUnmounted(() => {
     }
     &.sub-page::after {
       opacity: 1;
+    }
+  }
+
+  // 移动端设置首页菜单列表样式
+  .mobile-settings-list {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding: 16px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background-color: var(--mio-bg-page);
+  }
+
+  .mobile-settings-hero {
+    padding: 12px 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .mobile-settings-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--mio-text-primary);
+    margin: 0;
+  }
+
+  .mobile-settings-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    align-self: flex-start;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background-color: var(--mio-bg-hover);
+    color: var(--mio-text-regular);
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--mio-color-primary);
+    }
+
+    &.warning {
+      color: var(--mio-color-warning);
+      .status-dot {
+        background-color: var(--mio-color-warning);
+      }
+    }
+
+    &.normal {
+      color: var(--mio-color-success);
+      .status-dot {
+        background-color: var(--mio-color-success);
+      }
+    }
+  }
+
+  .mobile-settings-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .group-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mio-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-left: 4px;
+  }
+
+  .group-content {
+    background-color: var(--mio-bg-card);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--mio-border-color-light);
+    box-shadow: var(--mio-shadow-light);
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    cursor: pointer;
+    background-color: var(--mio-bg-card);
+    transition: background-color 0.2s;
+    border-bottom: 1px solid var(--mio-border-color-light);
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:active {
+      background-color: var(--mio-bg-hover);
+    }
+  }
+
+  .menu-item-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 15px;
+    color: var(--mio-text-primary);
+    font-weight: 500;
+
+    .menu-icon {
+      font-size: 18px;
+      color: var(--mio-text-regular);
+      display: flex;
+      align-items: center;
+
+      &.primary {
+        color: var(--mio-color-primary);
+      }
+      &.success {
+        color: var(--mio-color-success);
+      }
+      &.warning {
+        color: var(--mio-color-warning);
+      }
+      &.danger {
+        color: var(--mio-color-danger);
+      }
+      &.regular {
+        color: var(--mio-text-regular);
+      }
+    }
+  }
+
+  .menu-item-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    .lock-icon {
+      font-size: 14px;
+      color: var(--mio-text-secondary);
+      opacity: 0.6;
+      display: flex;
+      align-items: center;
+    }
+
+    .arrow-icon {
+      font-size: 14px;
+      color: var(--mio-text-secondary);
+      display: flex;
+      align-items: center;
     }
   }
 }
