@@ -694,6 +694,9 @@ onUnmounted(() => {
   padding: 24px;
   max-width: 1400px;
   margin: 0 auto;
+  background-color: var(--mio-bg-page);
+  min-height: 100%;
+  box-sizing: border-box;
 }
 
 .loading-container {
