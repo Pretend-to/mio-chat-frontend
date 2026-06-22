@@ -7,6 +7,7 @@ const HomeView = () => import("../views/HomeView.vue");
 const ProfileView = () => import("../views/ProfileView.vue");
 const SettingsView = () => import("../views/SettingsView.vue");
 const AuthView = () => import("../views/AuthView.vue");
+const EcosystemView = () => import("../views/EcosystemView.vue");
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -83,6 +84,16 @@ const router = createRouter({
       },
     },
     {
+      path: "/ecosystem",
+      name: "ecosystem",
+      component: EcosystemView,
+      meta: { title: "生态圈" },
+    },
+    {
+      path: "/open-source",
+      redirect: "/ecosystem",
+    },
+    {
       path: "/settings",
       name: "settings",
       component: SettingsView,
@@ -92,6 +103,7 @@ const router = createRouter({
         {
           path: "",
           name: "settings_overview",
+          alias: "overview",
           component: () => import("../views/settings/OverviewView.vue"),
           meta: { title: "设置概览" },
         },
