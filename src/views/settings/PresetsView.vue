@@ -694,9 +694,6 @@ onUnmounted(() => {
   padding: 24px;
   max-width: 1400px;
   margin: 0 auto;
-  background-color: var(--mio-bg-page);
-  min-height: 100%;
-  box-sizing: border-box;
 }
 
 .loading-container {
@@ -797,6 +794,10 @@ onUnmounted(() => {
     border-radius: 6px;
     background: var(--mio-bg-card);
     transition: all 0.2s ease;
+
+    @media (min-width: 769px) {
+      background: var(--mio-bg-page);
+    }
 
     &:hover {
       background: var(--mio-bg-active);
@@ -950,11 +951,29 @@ onUnmounted(() => {
     color: var(--mio-text-secondary);
     font-size: 14px;
     padding: 0 16px;
-    background: var(--mio-bg-page);
+    background: var(--mio-bg-card);
+
+    @media (max-width: 768px) {
+      background: var(--mio-bg-page);
+    }
   }
 
   :deep(.el-divider__text) {
-    background: var(--mio-bg-page);
+    background: var(--mio-bg-card);
+
+    @media (max-width: 768px) {
+      background: var(--mio-bg-page);
+    }
+  }
+}
+
+@media (min-width: 769px) {
+  :deep(.preset-card) {
+    background-color: var(--mio-bg-page);
+
+    &:hover {
+      background-color: var(--mio-bg-hover);
+    }
   }
 }
 </style>
