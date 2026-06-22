@@ -363,10 +363,16 @@ const inputEditor = ref(null);
 const autoScroll = ref(false);
 const fullScreen = ref(false);
 const chatWindow = ref(null);
+const messagesInner = ref(null);
 const prevScrollTop = ref(0);
 const showRollDown = ref(false);
 const inputBarTop = ref(0);
 const clearMessageTip = "以上的对话记录已清除";
+
+let resizeObserver = null;
+let isObservingResize = false;
+let oldInnerHeight = 0;
+let observeTimer = null;
 const loadingIcon = "<span id='message-loading-icon'></span>";
 const katexPluginList = [{ plugin: katexPlugin }];
 
@@ -1310,6 +1316,15 @@ const scrollHandler = () => {
           nextTick(() => {
             currentElmAfterLoad.scrollTop =
               currentElmAfterLoad.scrollHeight - prevScrollPosFromBottom;
+
+            if (messagesInner.value) {
+              oldInnerHeight = messagesInner.value.offsetHeight;
+              isObservingResize = true;
+              if (observeTimer) clearTimeout(observeTimer);
+              observeTimer = setTimeout(() => {
+                isObservingResize = false;
+              }, 4000);
+            }
           });
         })
         .catch((err) => {
@@ -1323,6 +1338,15 @@ const scrollHandler = () => {
             nextTick(() => {
               currentElmFallback.scrollTop =
                 currentElmFallback.scrollHeight - prevScrollPosFromBottom;
+
+              if (messagesInner.value) {
+                oldInnerHeight = messagesInner.value.offsetHeight;
+                isObservingResize = true;
+                if (observeTimer) clearTimeout(observeTimer);
+                observeTimer = setTimeout(() => {
+                  isObservingResize = false;
+                }, 4000);
+              }
             });
           }
           isLoadingHistory.value = false;
@@ -1480,6 +1504,24 @@ onMounted(() => {
     chatWindow.value.addEventListener("load", handleImageLoad, true);
   }
 
+  if (window.ResizeObserver && messagesInner.value) {
+    resizeObserver = new ResizeObserver((entries) => {
+      if (!isObservingResize || !chatWindow.value || autoScroll.value) return;
+      for (const entry of entries) {
+        if (entry.target === messagesInner.value) {
+          const newHeight = messagesInner.value.offsetHeight;
+          const diff = newHeight - oldInnerHeight;
+          if (diff > 0) {
+            chatWindow.value.scrollTop += diff;
+            prevScrollTop.value = chatWindow.value.scrollTop;
+          }
+          oldInnerHeight = newHeight;
+        }
+      }
+    });
+    resizeObserver.observe(messagesInner.value);
+  }
+
   autoScroll.value = false;
   if (!preview.value && scroll.value) {
     nextTick(() => {
@@ -1559,6 +1601,14 @@ onBeforeUnmount(() => {
     chatWindow.value.removeEventListener("load", handleImageLoad, true);
   }
 
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
+  if (observeTimer) {
+    clearTimeout(observeTimer);
+  }
+
   window.removeEventListener("resize", resizeHandler.value);
   window.removeEventListener("blur", focusHandler.value);
 });
@@ -1631,62 +1681,68 @@ onBeforeUnmount(() => {
         @close="showMenu = false"
       />
 
-      <!-- History Loading Indicator -->
       <div
-        v-if="renderedCount < (activeContactor?.messageChain?.length || 0)"
-        class="history-loading-container"
-        :class="{ 'is-loading': isLoadingHistory }"
+        ref="messagesInner"
+        class="messages-inner-wrapper"
+        style="width: 100%; display: flex; flex-direction: column"
       >
-        <div class="loading-content">
-          <div class="spinner-dots">
-            <span class="dot"></span>
-            <span class="dot"></span>
-            <span class="dot"></span>
+        <!-- History Loading Indicator -->
+        <div
+          v-if="renderedCount < (activeContactor?.messageChain?.length || 0)"
+          class="history-loading-container"
+          :class="{ 'is-loading': isLoadingHistory }"
+        >
+          <div class="loading-content">
+            <div class="spinner-dots">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </div>
+            <span class="loading-text">{{
+              isLoadingHistory
+                ? "正在加载历史消息..."
+                : "继续向上滚动加载历史消息"
+            }}</span>
           </div>
-          <span class="loading-text">{{
-            isLoadingHistory
-              ? "正在加载历史消息..."
-              : "继续向上滚动加载历史消息"
-          }}</span>
         </div>
+
+        <!-- Opening Message -->
+        <MessageItem
+          v-if="openingMessage"
+          :item="openingMessage"
+          :index="-1"
+          :activeContactor="activeContactor"
+          :isOpening="true"
+          :mioPlugins="mioPlugins"
+          :katexPluginList="katexPluginList"
+          :mdOptions="mdOptions"
+          @to-profile="toProfile"
+        />
+
+        <MessageItem
+          v-for="(item, index) of activeMessageChain"
+          :key="`${activeContactor.id}-${item.id}`"
+          :item="item"
+          :index="index"
+          :updateTrigger="0"
+          :activeContactor="activeContactor"
+          :isMultiSelect="isMultiSelect"
+          :isSelected="selectedMessages.includes(item.id)"
+          :showTimeInfo="showTime(index)"
+          :mioPlugins="mioPlugins"
+          :katexPluginList="katexPluginList"
+          :mdOptions="mdOptions"
+          @click-message="handleMessageClick"
+          @toggle-checkbox="toggleSelect"
+          @to-profile="toProfile"
+          @mouseup-content="handleMouseUp"
+          @contextmenu-content="showMessageMenu"
+          @touchstart-content="handleTouchStart"
+          @delete-system="delSystemMessage"
+          @retry-message="handleRetryMessage"
+          @delete-message="handleDeleteMessage"
+        />
       </div>
-
-      <!-- Opening Message -->
-      <MessageItem
-        v-if="openingMessage"
-        :item="openingMessage"
-        :index="-1"
-        :activeContactor="activeContactor"
-        :isOpening="true"
-        :mioPlugins="mioPlugins"
-        :katexPluginList="katexPluginList"
-        :mdOptions="mdOptions"
-        @to-profile="toProfile"
-      />
-
-      <MessageItem
-        v-for="(item, index) of activeMessageChain"
-        :key="`${activeContactor.id}-${item.id}`"
-        :item="item"
-        :index="index"
-        :updateTrigger="0"
-        :activeContactor="activeContactor"
-        :isMultiSelect="isMultiSelect"
-        :isSelected="selectedMessages.includes(item.id)"
-        :showTimeInfo="showTime(index)"
-        :mioPlugins="mioPlugins"
-        :katexPluginList="katexPluginList"
-        :mdOptions="mdOptions"
-        @click-message="handleMessageClick"
-        @toggle-checkbox="toggleSelect"
-        @to-profile="toProfile"
-        @mouseup-content="handleMouseUp"
-        @contextmenu-content="showMessageMenu"
-        @touchstart-content="handleTouchStart"
-        @delete-system="delSystemMessage"
-        @retry-message="handleRetryMessage"
-        @delete-message="handleDeleteMessage"
-      />
 
       <!-- Selection Rectangle for Desktop Drag-Select -->
       <div
