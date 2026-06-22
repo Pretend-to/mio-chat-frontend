@@ -368,6 +368,7 @@ const prevScrollTop = ref(0);
 const showRollDown = ref(false);
 const inputBarTop = ref(0);
 const clearMessageTip = "以上的对话记录已清除";
+const isLocatingMessage = ref(false);
 
 let resizeObserver = null;
 let isObservingResize = false;
@@ -667,17 +668,18 @@ const currentScrollTargetId = ref(null);
 const performScrollToMessage = (messageId, shouldFlash = true) => {
   if (!messageId) return;
   autoScroll.value = false;
+  isLocatingMessage.value = true;
 
   const chain = activeContactor.value?.messageChain || [];
   const msgIndex = chain.findIndex((m) => m.id === messageId);
-  if (msgIndex !== -1) {
-    const currentRenderedStartIndex = chain.length - renderedCount.value;
-    if (msgIndex < currentRenderedStartIndex) {
-      renderedCount.value = Math.min(
-        chain.length,
-        chain.length - msgIndex + 10,
-      );
-    }
+  if (msgIndex === -1) {
+    isLocatingMessage.value = false;
+    return;
+  }
+
+  const currentRenderedStartIndex = chain.length - renderedCount.value;
+  if (msgIndex < currentRenderedStartIndex) {
+    renderedCount.value = Math.min(chain.length, chain.length - msgIndex + 10);
   }
 
   if (shouldFlash) {
@@ -765,6 +767,7 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
         if (currentScrollTargetId.value === messageId) {
           currentScrollTargetId.value = null;
         }
+        isLocatingMessage.value = false;
       };
 
       const handleUserInteraction = () => {
@@ -803,6 +806,8 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
         scrollAction("instant");
         cleanup();
       }, 5000);
+    } else {
+      isLocatingMessage.value = false;
     }
 
     if (shouldFlash) {
@@ -1215,7 +1220,11 @@ const scrollHandler = () => {
     }
   }
 
-  if (currentScrollTop === 0 && !isLoadingHistory.value) {
+  if (
+    currentScrollTop === 0 &&
+    !isLoadingHistory.value &&
+    !isLocatingMessage.value
+  ) {
     const chain = activeContactor.value?.messageChain || [];
     if (renderedCount.value < chain.length) {
       isLoadingHistory.value = true;
