@@ -12,6 +12,7 @@ const PageStatus = {
   CHAT: "chat",
   PROFILE: "profile",
   SETTINGS: "settings",
+  ECOSYSTEM: "ecosystem",
   NONE: "none",
 };
 export default {
@@ -31,6 +32,12 @@ export default {
     },
     isProfileActive() {
       return this.activePage === PageStatus.PROFILE;
+    },
+    isEcosystemActive() {
+      return this.activePage === PageStatus.ECOSYSTEM;
+    },
+    isSettingsActive() {
+      return this.activePage === PageStatus.SETTINGS;
     },
   },
   watch: {
@@ -70,6 +77,10 @@ export default {
       this.activePage = PageStatus.SETTINGS;
       this.$router.push({ name: "settings" });
     },
+    async toEcosystem() {
+      this.activePage = PageStatus.ECOSYSTEM;
+      this.$router.push({ name: "ecosystem" });
+    },
     async loadAvatar(adminId) {
       const adminAvatar = getAdminAvatarUrl(adminId);
       try {
@@ -92,6 +103,8 @@ export default {
         return PageStatus.PROFILE;
       } else if (route.path.startsWith("/settings")) {
         return PageStatus.SETTINGS;
+      } else if (route.path === "/ecosystem" || route.path === "/open-source") {
+        return PageStatus.ECOSYSTEM;
       }
       return PageStatus.NONE;
     },
@@ -157,10 +170,10 @@ export default {
         </div>
       </div>
       <div class="down-half">
-        <a
-          href="https://github.com/Pretend-to/mio-chat-backend"
-          target="_blank"
+        <div
           class="side-icon"
+          :class="{ active: isEcosystemActive }"
+          @click="toEcosystem"
         >
           <span class="rail-tab-icon">
             <svg
@@ -182,8 +195,12 @@ export default {
             </svg>
           </span>
           <span class="tab-label">开源</span>
-        </a>
-        <div class="side-icon" @click="toConfig">
+        </div>
+        <div
+          class="side-icon"
+          :class="{ active: isSettingsActive }"
+          @click="toConfig"
+        >
           <span class="rail-tab-icon">
             <svg
               class="lucide lucide-settings"
@@ -256,7 +273,8 @@ export default {
   color: var(--mio-text-primary);
 }
 
-.icon-back.active {
+.icon-back.active,
+.side-icon.active {
   background-color: var(--mio-bg-active);
   color: var(--mio-color-primary);
 }

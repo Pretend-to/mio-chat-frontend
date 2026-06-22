@@ -1219,11 +1219,13 @@ const scrollHandler = () => {
           isLoadingHistory.value = false;
           return;
         }
-        const prevScrollPosFromBottom = currentElm.scrollHeight - currentElm.scrollTop;
+        const prevScrollPosFromBottom =
+          currentElm.scrollHeight - currentElm.scrollTop;
         renderedCount.value = Math.min(chain.length, renderedCount.value + 20);
         isLoadingHistory.value = false;
         nextTick(() => {
-          currentElm.scrollTop = currentElm.scrollHeight - prevScrollPosFromBottom;
+          currentElm.scrollTop =
+            currentElm.scrollHeight - prevScrollPosFromBottom;
         });
       }, 500);
     }
@@ -1464,7 +1466,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div id="chat-window" v-if="activeContactor">
+  <div class="mio-chat-window" v-if="activeContactor">
     <ChatHeader
       :active-contactor="activeContactor"
       @back="tolist"
@@ -1501,6 +1503,7 @@ onBeforeUnmount(() => {
       id="main-messages-window"
       ref="chatWindow"
       :class="{
+        'mio-chat-window__messages': true,
         'message-window': true,
         preview: preview,
         'is-dragging': dragSelect.active,
@@ -1508,6 +1511,7 @@ onBeforeUnmount(() => {
     >
       <div
         v-if="showRollDown"
+        class="mio-chat-window__scroll-down-btn"
         id="roll-buttom-button"
         :style="{ bottom: inputBarTop + 24 + 'px' }"
         @click="toButtom(true)"
@@ -1540,7 +1544,11 @@ onBeforeUnmount(() => {
             <span class="dot"></span>
             <span class="dot"></span>
           </div>
-          <span class="loading-text">{{ isLoadingHistory ? '正在加载历史消息...' : '继续向上滚动加载历史消息' }}</span>
+          <span class="loading-text">{{
+            isLoadingHistory
+              ? "正在加载历史消息..."
+              : "继续向上滚动加载历史消息"
+          }}</span>
         </div>
       </div>
 
@@ -1687,7 +1695,7 @@ $mobile: 768px
     height: 100vh
     z-index: 10000
 
-#chat-window
+.mio-chat-window
     z-index: 1
     min-width: 0.0625rem
     position: relative
@@ -1799,7 +1807,7 @@ $mobile: 768px
     background-color: rgba(0, 0, 0, 0.4)
     z-index: 1001
 
-#roll-buttom-button
+.mio-chat-window__scroll-down-btn
     position: fixed
     right: 0.5rem
     cursor: pointer

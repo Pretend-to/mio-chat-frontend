@@ -111,7 +111,7 @@ export default {
     <router-view></router-view>
   </div>
   <template v-else>
-    <div id="mio-chat">
+    <div class="mio-app-root">
       <div v-if="onPhone" class="app-mobile">
         <router-view></router-view>
         <sideBar v-if="!onPrivate"></sideBar>
@@ -123,7 +123,7 @@ export default {
     </div>
     <a
       v-if="beian"
-      id="beian"
+      class="mio-app-root__beian-link"
       href="https://beian.miit.gov.cn/"
       target="_blank"
       >{{ beian }}</a
@@ -138,7 +138,7 @@ export default {
   background: var(--mio-bg-page);
 }
 
-#mio-chat {
+.mio-app-root {
   width: 100%;
   height: 100%;
   position: relative;
@@ -166,7 +166,7 @@ export default {
   overflow: hidden;
   background-color: var(--mio-bg-card);
 }
-a#beian {
+.mio-app-root__beian-link {
   position: fixed;
   bottom: 1rem;
   right: 50%;

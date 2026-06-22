@@ -22,9 +22,10 @@
         </el-radio-group>
         <el-checkbox
           :model-value="showQRCode"
-          style="margin-left: 20px;"
+          style="margin-left: 20px"
           @change="onQRCodeChange"
-        >显示分享二维码</el-checkbox>
+          >显示分享二维码</el-checkbox
+        >
       </div>
       <div class="size-toggle-hint">
         宽屏模式更适合包含长代码、表格或大图的聊天记录
@@ -88,13 +89,14 @@
             <el-radio-button value="narrow">竖屏窄图</el-radio-button>
             <el-radio-button value="wide">宽屏模式</el-radio-button>
           </el-radio-group>
-          
+
           <div class="mobile-qr-checkbox-wrapper">
             <el-checkbox
               :model-value="showQRCode"
               size="small"
               @change="onQRCodeChange"
-            >显示二维码</el-checkbox>
+              >显示二维码</el-checkbox
+            >
           </div>
         </div>
       </div>

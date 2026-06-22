@@ -1,14 +1,20 @@
 <template>
-  <div v-if="!onPhone" id="main">
+  <div v-if="!onPhone" class="mio-main-layout">
     <friendlist></friendlist>
     <router-view v-if="loaded"></router-view>
     <blankView v-else></blankView>
   </div>
-  <div v-else-if="pagePath === '/'" id="main-mobile">
+  <div
+    v-else-if="pagePath === '/'"
+    class="mio-main-layout mio-main-layout--mobile"
+  >
     <friendlist v-if="loaded"></friendlist>
     <blankView v-else></blankView>
   </div>
-  <div v-else id="main-mobile" class="mobile-chat">
+  <div
+    v-else
+    class="mio-main-layout mio-main-layout--mobile mio-main-layout--mobile-chat"
+  >
     <router-view v-if="loaded"></router-view>
     <blankView v-else></blankView>
   </div>
@@ -63,18 +69,18 @@ export default {
 </script>
 
 <style>
-#main {
+.mio-main-layout {
   flex-grow: 1;
   display: flex;
   width: calc(100% - 4.5rem);
   background-color: transparent;
 }
 
-#main > .profile-body {
+.mio-main-layout > .profile-body {
   margin-top: 4rem;
 }
 
-#main-mobile {
+.mio-main-layout--mobile {
   width: 100%;
   height: calc(100% - 4.2rem - env(safe-area-inset-bottom, 0px));
   flex-grow: 1;
@@ -83,7 +89,7 @@ export default {
   display: flex;
 }
 
-.mobile-chat#main-mobile {
+.mio-main-layout--mobile.mio-main-layout--mobile-chat {
   height: 100%;
 }
 </style>

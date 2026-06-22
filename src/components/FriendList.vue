@@ -453,6 +453,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div
+    class="mio-friend-list"
     id="friendlists"
     ref="friendlists"
     :class="{ 'search-overlay-active': showMobileSearch }"
@@ -489,10 +490,11 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </div>
-    <div v-else id="friends" class="upsidebar">
+    <div v-else class="mio-friend-list__header-desktop upsidebar">
       <div class="search">
         <i class="iconfont sousuo listicon"></i>
         <input
+          class="mio-friend-list__search-input"
           id="main-search"
           v-model="searchQuery"
           type="text"
@@ -504,8 +506,13 @@ onBeforeUnmount(() => {
         />
         <i v-if="searchQuery" class="clear-btn" @click="clearSearch"></i>
       </div>
-      <div class="bu-add">
-        <button id="addcont" title="Add Bot" @click="openAddWindow">
+      <div class="mio-friend-list__add-btn-container bu-add">
+        <button
+          class="mio-friend-list__add-btn"
+          id="addcont"
+          title="Add Bot"
+          @click="openAddWindow"
+        >
           <i class="iconfont add"></i>
         </button>
       </div>
@@ -515,13 +522,18 @@ onBeforeUnmount(() => {
     <div class="people" @scroll="closeSwipe">
       <div
         v-for="(item, index) of sortedList"
-        :id="getId(item)"
         :key="index"
-        class="lists-wrapper"
-        :class="{ swiping: swipedId === item.id }"
+        :class="[
+          'mio-contact-item',
+          {
+            'mio-contact-item--active': route.params.id === item.id,
+            'mio-contact-item--pinned': item.priority === 0,
+            swiping: swipedId === item.id,
+          },
+        ]"
       >
         <div
-          class="lists"
+          class="mio-contact-item__inner"
           @click="swipedId === item.id ? closeSwipe() : showChat(item.id)"
           @contextmenu.prevent="
             onPhone ? null : showFriendContextMenu($event, item)
@@ -536,17 +548,17 @@ onBeforeUnmount(() => {
           "
         >
           <div
-            class="avatar"
+            class="mio-contact-item__avatar"
             :class="item.avatarPolicy == 1 ? 'custom' : 'model'"
           >
             <img :src="item.avatar" :alt="item.name" />
           </div>
-          <div class="info">
-            <div class="name">{{ item.name }}</div>
-            <div class="time msginfo">
+          <div class="mio-contact-item__info">
+            <div class="mio-contact-item__name">{{ item.name }}</div>
+            <div class="mio-contact-item__time">
               {{ getContactorLastTime(item.messageChain) }}
             </div>
-            <div class="msgctt msginfo">
+            <div class="mio-contact-item__message-summary">
               <template v-if="item.draft">
                 <span v-if="!onPhone" class="mio-icon mio-icon-draft"></span>
                 <span v-else class="draft-text">[草稿] </span>
@@ -621,7 +633,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-#friendlists {
+.mio-friend-list {
   height: 100%;
   display: flex;
   min-width: 14rem;
@@ -656,7 +668,7 @@ onBeforeUnmount(() => {
   padding: 0rem 0.5rem;
 }
 
-#main-search {
+.mio-friend-list__search-input {
   width: calc(100% - 1.125rem);
   margin-top: 0.1875rem;
   padding-left: 0.3125rem;
@@ -666,7 +678,7 @@ onBeforeUnmount(() => {
   color: var(--mio-text-primary);
 }
 
-#main-search:focus {
+.mio-friend-list__search-input:focus {
   outline: none;
   border: 0rem;
 }
@@ -690,7 +702,7 @@ button#searchButton {
   padding-left: 0.5rem;
 }
 
-.bu-add {
+.mio-friend-list__add-btn-container {
   flex-basis: 2rem;
   font-size: 1rem;
   margin-left: 0.5rem;
@@ -704,7 +716,7 @@ button#searchButton {
   height: 1rem;
 }
 
-button#addcont {
+.mio-friend-list__add-btn {
   border-radius: 0.3125rem;
   width: 100%;
   height: 100%;
@@ -715,11 +727,11 @@ button#addcont {
   color: var(--mio-text-primary);
 }
 
-button#addcont:hover {
+.mio-friend-list__add-btn:hover {
   background-color: var(--mio-bg-active);
 }
 
-.lists {
+.mio-contact-item__inner {
   align-items: center;
   min-width: 10rem;
   display: flex;
@@ -731,39 +743,40 @@ button#addcont:hover {
   color: var(--mio-text-primary);
 }
 
-.lists-wrapper#important {
+.mio-contact-item--pinned {
   background-color: var(--mio-bg-hover);
 }
 
 @media (hover: hover) {
-  .lists:hover {
+  .mio-contact-item__inner:hover {
     background-color: var(--mio-bg-hover);
   }
 
-  .lists-wrapper#important:hover {
+  .mio-contact-item--pinned:hover {
     background-color: var(--mio-bg-active);
   }
 }
 
-.lists-wrapper#active .lists {
+.mio-contact-item--active .mio-contact-item__inner {
   background-color: var(--mio-bg-active-item, var(--mio-color-primary));
 }
 
-.lists > .avatar {
+.mio-contact-item__avatar {
   flex-basis: 2.65rem;
   min-width: 2.65rem;
   height: 2.65rem;
   border-radius: 50%;
   overflow: hidden;
   background-color: #f2f2f2;
+  position: relative;
 }
 
-.avatar > img {
+.mio-contact-item__avatar > img {
   width: 100%;
   height: 100%;
 }
 
-.avatar.model > img {
+.mio-contact-item__avatar.model > img {
   scale: 0.9;
 }
 
@@ -785,11 +798,7 @@ button#addcont:hover {
   z-index: 10;
 }
 
-.avatar {
-  position: relative;
-}
-
-.info {
+.mio-contact-item__info {
   height: 100%;
   display: flex;
   align-items: flex-start;
@@ -802,11 +811,11 @@ button#addcont:hover {
   box-sizing: border-box;
 }
 
-.lists-wrapper#active .lists * {
+.mio-contact-item--active .mio-contact-item__inner * {
   color: #f0f8ff;
 }
 
-.lists .name {
+.mio-contact-item__name {
   flex-basis: 4rem;
   flex-grow: 1;
   margin-top: 0;
@@ -818,7 +827,7 @@ button#addcont:hover {
   line-height: 1.2;
 }
 
-.info .time {
+.mio-contact-item__time {
   font-size: 0.625rem;
   flex-grow: 1;
   text-align: right;
@@ -827,7 +836,7 @@ button#addcont:hover {
   line-height: 1.2;
 }
 
-.info .msgctt {
+.mio-contact-item__message-summary {
   flex-basis: 100%;
   padding-right: 1rem;
   font-size: 0.75rem;
@@ -845,7 +854,7 @@ button#addcont:hover {
 }
 
 @media screen and (max-width: 768px) {
-  #friendlists {
+  .mio-friend-list {
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -877,18 +886,21 @@ button#addcont:hover {
   }
 
   .user-avatar {
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     overflow: hidden;
     position: relative;
-    background-color: var(--mio-bg-card);
+    background-color: #ffffff;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .user-avatar img {
-    width: 100%;
-    height: 100%;
+    width: 35px;
+    height: 35px;
     border-radius: 50%;
     object-fit: cover;
   }
@@ -951,21 +963,21 @@ button#addcont:hover {
     overflow-x: hidden;
   }
 
-  .lists-wrapper {
+  .mio-contact-item {
     position: relative;
     width: 100%;
     overflow: hidden;
     background-color: transparent;
   }
 
-  .lists {
+  .mio-contact-item__inner {
     position: relative;
     z-index: 2;
     background-color: inherit;
     transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
   }
 
-  .lists-wrapper.swiping .lists {
+  .mio-contact-item.swiping .mio-contact-item__inner {
     transition: none;
     /* 滑动时禁用过渡 */
   }
@@ -984,7 +996,7 @@ button#addcont:hover {
       width 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
   }
 
-  .lists-wrapper.swiping .swipe-actions {
+  .mio-contact-item.swiping .swipe-actions {
     transition: none;
     /* 滑动时禁用过渡，确保手势跟手性 */
   }
@@ -1009,24 +1021,24 @@ button#addcont:hover {
     background-color: var(--mio-color-danger);
   }
 
-  .lists-wrapper#important {
+  .mio-contact-item--pinned {
     background-color: transparent;
   }
-  .lists-wrapper#important .lists {
+  .mio-contact-item--pinned .mio-contact-item__inner {
     background-color: var(--mio-mobile-bg-main);
   }
 
   /* 明确禁用移动端联系人列表项 hover 态变色 */
-  .lists:hover {
+  .mio-contact-item__inner:hover {
     background-color: transparent;
   }
-  .lists-wrapper#important:hover {
+  .mio-contact-item--pinned:hover {
     background-color: transparent;
   }
-  .lists-wrapper#important:hover .lists {
+  .mio-contact-item--pinned:hover .mio-contact-item__inner {
     background-color: var(--mio-mobile-bg-main);
   }
-  .lists-wrapper#active .lists:hover {
+  .mio-contact-item--active .mio-contact-item__inner:hover {
     background-color: var(--mio-color-primary);
   }
 }
@@ -1094,7 +1106,7 @@ button#addcont:hover {
 }
 
 /* Active search transition states */
-#friendlists.search-overlay-active .header-top {
+.mio-friend-list.search-overlay-active .header-top {
   position: absolute;
   top: 0.75rem;
   left: 1rem;
@@ -1103,10 +1115,9 @@ button#addcont:hover {
   pointer-events: none;
 }
 
-#friendlists.search-overlay-active .people,
-#friendlists.search-overlay-active .header-search {
+.mio-friend-list.search-overlay-active .people,
+.mio-friend-list.search-overlay-active .header-search {
   opacity: 0;
   pointer-events: none;
 }
 </style>
-
