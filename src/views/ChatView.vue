@@ -1527,9 +1527,9 @@ onMounted(() => {
   client.on("plugins_updated", handlePluginsUpdated);
   client.on("scroll_to_message", performScrollToMessage);
   window.addEventListener("beforeunload", handleBeforeUnload);
-
-  useStatusBarColor("var(--mio-bg-statusbar-friendlist)");
 });
+
+useStatusBarColor("var(--mio-bg-statusbar-friendlist)");
 
 onBeforeUnmount(() => {
   if (window.speechSynthesis) {
