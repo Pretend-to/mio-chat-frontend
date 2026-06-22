@@ -7,9 +7,13 @@
 </template>
 <script>
 import { client } from "@/lib/runtime.js";
+import { useStatusBarColor } from "@/composables/useStatusBarColor";
 
 export default {
   name: "BlankView",
+  setup() {
+    useStatusBarColor("var(--mio-bg-page)");
+  },
   data() {
     return {
       fullScreen: false,
