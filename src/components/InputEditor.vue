@@ -578,6 +578,7 @@ const insertReplyBadge = (message) => {
 
 defineExpose({
   insertReplyBadge,
+  saveDraft,
 });
 
 const currentChange = (data, event) => {
@@ -675,15 +676,17 @@ const fetchSkills = async () => {
 };
 
 watch(
-  () => activeContactor.value,
-  (newVal, oldVal) => {
-    if (oldVal) {
-      saveDraftTo(oldVal);
+  () => activeContactor.value?.id,
+  (newId, oldId) => {
+    if (oldId) {
+      // 直接通过 store/client 拿旧联系人对象，避免 Proxy target 已切换导致 oldVal 污染
+      const oldContactor = client.getContactor(oldId);
+      if (oldContactor) saveDraftTo(oldContactor);
     }
     if (textarea.value) textarea.value.innerHTML = "";
     loadSelected();
     loadDraft();
-    if (newVal?.platform === "openai" && availableSkills.value.length === 0) {
+    if (activeContactor.value?.platform === "openai" && availableSkills.value.length === 0) {
       fetchSkills();
     }
   },

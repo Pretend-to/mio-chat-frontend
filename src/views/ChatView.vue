@@ -412,6 +412,8 @@ watch(
   ([newId, newLength], [oldId, oldLength]) => {
     if (newId !== oldId) {
       renderedCount.value = 20;
+      isLoadingHistory.value = false;
+      isLocatingMessage.value = false;
     } else if (newLength !== undefined && oldLength !== undefined) {
       renderedCount.value = Math.max(
         20,
@@ -686,147 +688,130 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
     currentScrollTargetId.value = messageId;
   }
 
-  const scrollAction = (behaviorOverride = null) => {
-    const elm =
-      chatWindow.value || document.getElementById("main-messages-window");
+  const scrollContainer =
+    chatWindow.value || document.getElementById("main-messages-window");
+
+  const scrollToElement = (behavior = "smooth") => {
+    const elm = scrollContainer;
     if (!elm) return false;
     const element = elm.querySelector(`[data-id="${messageId}"]`);
-    if (element) {
-      const getElementOffsetTop = (el, container) => {
-        let top = 0;
-        let curr = el;
-        while (curr && curr !== container) {
-          top += curr.offsetTop;
-          curr = curr.offsetParent;
-        }
-        return top;
-      };
-      const offsetTop = getElementOffsetTop(element, elm);
-      const targetScrollTop = offsetTop - elm.clientHeight * 0.3;
+    if (!element) return false;
 
-      const behavior = behaviorOverride || (shouldFlash ? "smooth" : "instant");
-      elm.scrollTo({
-        top: Math.max(0, targetScrollTop),
-        behavior: behavior,
-      });
-      if (shouldFlash) {
-        element.classList.add("highlight-flash");
+    const getElementOffsetTop = (el, container) => {
+      let top = 0;
+      let curr = el;
+      while (curr && curr !== container) {
+        top += curr.offsetTop;
+        curr = curr.offsetParent;
       }
-      return true;
+      return top;
+    };
+    const offsetTop = getElementOffsetTop(element, elm);
+    elm.scrollTo({
+      top: Math.max(0, offsetTop - elm.clientHeight * 0.3),
+      behavior,
+    });
+    if (shouldFlash) {
+      element.classList.add("highlight-flash");
     }
-    return false;
+    return true;
   };
 
-  // Try scrolling immediately first
-  const scrolledImmediately = scrollAction();
+  let mutationObs = null;
+  let resizeObs = null;
+  let fallbackTimer = null;
+  let stabilizeTimer = null;
+
+  const cleanup = () => {
+    mutationObs?.disconnect();
+    mutationObs = null;
+    resizeObs?.disconnect();
+    resizeObs = null;
+    if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
+    if (stabilizeTimer) { clearTimeout(stabilizeTimer); stabilizeTimer = null; }
+    scrollContainer?.removeEventListener("wheel", onUserInteract, { passive: true });
+    scrollContainer?.removeEventListener("touchstart", onUserInteract, { passive: true });
+    scrollContainer?.removeEventListener("mousedown", onUserInteract, { passive: true });
+    if (currentScrollTargetId.value === messageId) {
+      currentScrollTargetId.value = null;
+    }
+    isLocatingMessage.value = false;
+  };
+
+  const onUserInteract = () => cleanup();
+
+  // 阶段1: 等待目标元素出现在 DOM（renderedCount 扩展后 Vue 重渲染需要时间）
+  // 用 MutationObserver 监听消息列表容器子树，目标元素一出现立刻滚
+  const waitForElementAndScroll = () => {
+    // 先尝试直接滚（如果已经在屏幕里）
+    if (scrollToElement("smooth")) {
+      startResizeTracking();
+      return;
+    }
+
+    // 目标元素还没渲染，用 MutationObserver 等它出现
+    const innerContainer = messagesInner.value || scrollContainer;
+    if (!innerContainer) {
+      // 没有内容容器，直接 fallback
+      startResizeTracking();
+      return;
+    }
+
+    mutationObs = new MutationObserver(() => {
+      if (scrollToElement("instant")) {
+        mutationObs?.disconnect();
+        mutationObs = null;
+        startResizeTracking();
+      }
+    });
+    mutationObs.observe(innerContainer, { childList: true, subtree: true });
+  };
+
+  // 阶段2: 目标元素已在 DOM，用 ResizeObserver 监听内容容器高度变化
+  // 补偿 Markdown/LaTeX 渲染完成后的位置漂移
+  const startResizeTracking = () => {
+    if (!scrollContainer) { cleanup(); return; }
+
+    const innerContainer = messagesInner.value || scrollContainer;
+    resizeObs = new ResizeObserver(() => {
+      scrollToElement("instant");
+      if (stabilizeTimer) clearTimeout(stabilizeTimer);
+      // 连续 400ms 无高度变化 → 渲染稳定，结束追踪
+      stabilizeTimer = setTimeout(() => {
+        scrollToElement("instant");
+        cleanup();
+      }, 400);
+    });
+    resizeObs.observe(innerContainer);
+
+    // 监听用户主动交互，取消自动定位
+    scrollContainer.addEventListener("wheel", onUserInteract, { passive: true });
+    scrollContainer.addEventListener("touchstart", onUserInteract, { passive: true });
+    scrollContainer.addEventListener("mousedown", onUserInteract, { passive: true });
+
+    // 安全兜底：5s 后强制结束
+    fallbackTimer = setTimeout(() => {
+      scrollToElement("instant");
+      cleanup();
+    }, 5000);
+  };
 
   nextTick(() => {
-    if (!scrolledImmediately) {
-      const scrolledInNextTick = scrollAction();
-      if (!scrolledInNextTick) {
-        setTimeout(scrollAction, 50);
-      }
-    }
-
-    // 用 ResizeObserver 监听滚动容器 scrollHeight 变化
-    // （Markdown/LaTeX 渲染会使任意消息高度变化，进而改变 target 在容器中的位置）
-    const scrollContainer =
-      chatWindow.value || document.getElementById("main-messages-window");
-    if (scrollContainer) {
-      let stabilizeTimer = null;
-      let fallbackTimer = null;
-      let observer = null;
-
-      const cleanup = () => {
-        if (observer) {
-          observer.disconnect();
-          observer = null;
-        }
-        if (stabilizeTimer) {
-          clearTimeout(stabilizeTimer);
-          stabilizeTimer = null;
-        }
-        if (fallbackTimer) {
-          clearTimeout(fallbackTimer);
-          fallbackTimer = null;
-        }
-        scrollContainer.removeEventListener("wheel", handleUserInteraction, {
-          passive: true,
-        });
-        scrollContainer.removeEventListener(
-          "touchstart",
-          handleUserInteraction,
-          { passive: true },
-        );
-        scrollContainer.removeEventListener(
-          "mousedown",
-          handleUserInteraction,
-          { passive: true },
-        );
-
-        if (currentScrollTargetId.value === messageId) {
-          currentScrollTargetId.value = null;
-        }
-        isLocatingMessage.value = false;
-      };
-
-      const handleUserInteraction = () => {
-        // 用户手动滚动、点击或触控了，立即停止自动定位
-        cleanup();
-      };
-
-      const prevScrollHeight = scrollContainer.scrollHeight;
-      observer = new ResizeObserver(() => {
-        // 只有 scrollHeight 变了才说明有内容渲染完成
-        if (scrollContainer.scrollHeight === prevScrollHeight) return;
-        scrollAction("instant");
-        if (stabilizeTimer) clearTimeout(stabilizeTimer);
-        // 连续 400ms 无变化 → 认为渲染稳定
-        stabilizeTimer = setTimeout(() => {
-          scrollAction("instant");
-          cleanup();
-        }, 400);
-      });
-
-      observer.observe(scrollContainer);
-
-      // 监听用户交互事件以取消自动定位，避免覆盖用户手动操作
-      scrollContainer.addEventListener("wheel", handleUserInteraction, {
-        passive: true,
-      });
-      scrollContainer.addEventListener("touchstart", handleUserInteraction, {
-        passive: true,
-      });
-      scrollContainer.addEventListener("mousedown", handleUserInteraction, {
-        passive: true,
-      });
-
-      // 安全兜底：最多等 5s
-      fallbackTimer = setTimeout(() => {
-        scrollAction("instant");
-        cleanup();
-      }, 5000);
-    } else {
-      isLocatingMessage.value = false;
-    }
+    waitForElementAndScroll();
 
     if (shouldFlash) {
-      // Consumed parameters: clear from URL query
+      // 清理 URL query 参数
       router.replace({
         query: { ...route.query, scrollTo: undefined, t: undefined },
       });
 
-      // Release target lock and remove flash highlight after animation completes
+      // 1.2s 后移除高亮动画
       setTimeout(() => {
-        const elm =
-          chatWindow.value || document.getElementById("main-messages-window");
-        const element = elm?.querySelector(`[data-id="${messageId}"]`);
-        if (element) {
-          element.classList.remove("highlight-flash");
-        }
+        const elm = scrollContainer;
+        elm?.querySelector(`[data-id="${messageId}"]`)?.classList.remove("highlight-flash");
       }, 1200);
 
-      // Keep scroll target id active for 5s to adjust to late image loading
+      // 5s 后释放 scroll target 锁
       setTimeout(() => {
         if (currentScrollTargetId.value === messageId) {
           currentScrollTargetId.value = null;
@@ -1483,9 +1468,20 @@ const handleImageLoad = (e) => {
     const elm = chatWindow.value;
     if (!elm) return;
 
-    // Recalculate and re-adjust scroll position when any image finishes loading
+    // 图片加载完后位置可能漂移，轻量重新定位（不重新注册 observer/timer）
     if (currentScrollTargetId.value) {
-      performScrollToMessage(currentScrollTargetId.value, false);
+      const targetEl = elm.querySelector(`[data-id="${currentScrollTargetId.value}"]`);
+      if (targetEl) {
+        const getOffsetTop = (el, container) => {
+          let top = 0, curr = el;
+          while (curr && curr !== container) { top += curr.offsetTop; curr = curr.offsetParent; }
+          return top;
+        };
+        elm.scrollTo({
+       top: Math.max(0, getOffsetTop(targetEl, elm) - elm.clientHeight * 0.3),
+          behavior: "instant",
+        });
+      }
     }
 
     const isNearBottom =
@@ -1583,6 +1579,9 @@ onMounted(() => {
 useStatusBarColor("var(--mio-bg-statusbar-friendlist)");
 
 onBeforeUnmount(() => {
+  // 在 saveNow 之前先把输入框草稿刷入 contactor，避免 InputEditor.onUnmounted
+  // 里的 saveDraft 比 ChatView.saveNow 晚执行导致草稿丢失
+  inputEditor.value?.saveDraft();
   if (window.speechSynthesis) {
     window.speechSynthesis.cancel();
   }
