@@ -579,6 +579,7 @@ const insertReplyBadge = (message) => {
 defineExpose({
   insertReplyBadge,
   saveDraft,
+  compressAndUploadImage,
 });
 
 const currentChange = (data, event) => {

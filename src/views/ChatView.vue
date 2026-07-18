@@ -166,9 +166,6 @@ const sendMessage = async (msg, toServer = true) => {
       return messageId;
     } catch (e) {
       ElMessage.error(e.message || "发送失败");
-      if (msgInChain) {
-        msgInChain.status = "failed";
-      }
       store.failedMessage(contactor.id, msg.id, e.message || "发送失败");
       throw e;
     }
@@ -214,15 +211,12 @@ const sendMessage = async (msg, toServer = true) => {
       return msg.id;
     } catch (e) {
       ElMessage.error(e.message || "请求失败");
-      if (msgInChain) {
-        msgInChain.status = "failed";
-      }
       store.failedMessage(contactor.id, msg.id, e.message || "请求失败");
-      store.failedMessage(
-        contactor.id,
-        assistantMsgId,
-        e.message || "请求失败",
-      );
+      // 请求未发出，删除无意义的 assistant 占位消息
+      const asstIdx = contactor.messageChain.findIndex((m) => m.id === assistantMsgId);
+      if (asstIdx !== -1) {
+        contactor.messageChain.splice(asstIdx, 1);
+      }
       throw e;
     }
   }
@@ -1106,6 +1100,43 @@ const toProfile = () => {
   });
 };
 
+/**
+ * 重试前检查消息中是否有 blob:/data: 本地图片 URL，
+ * 若有则从浏览器缓存取回 Blob 后重新上传为远程 URL。
+ * 上传失败则移除该图片元素并提示用户。
+ */
+const reuploadBlobImages = async (message) => {
+  if (!message || !Array.isArray(message.content)) return;
+  const uploadFn = inputEditor.value?.compressAndUploadImage;
+  if (!uploadFn) return;
+
+  for (const elm of message.content) {
+    if (elm.type !== "image") continue;
+    const url = elm.data?.file || "";
+    if (!url.startsWith("blob:") && !url.startsWith("data:")) continue;
+
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const file = new File([blob], "retry-image." + (blob.type.split("/")[1] || "png"), {
+        type: blob.type,
+      });
+      elm.data.file = await uploadFn(file);
+    } catch (e) {
+      console.error("重试时重新上传图片失败:", e);
+      // 上传失败则移除该图片元素，并告知用户
+      elm._remove = true;
+    }
+  }
+
+  // 清理标记为移除的元素
+  const before = message.content.length;
+  message.content = message.content.filter((elm) => !elm._remove);
+  if (message.content.length < before) {
+    ElMessage.warning("部分图片无法重新上传，已从消息中移除");
+  }
+};
+
 const handleRetryMessage = async (item) => {
   const contactor = activeContactor.value;
   if (!contactor) return;
@@ -1154,6 +1185,9 @@ const handleRetryMessage = async (item) => {
     client.setLocalStorage();
     autoScroll.value = false;
     toButtom();
+
+    // 重试前重新上传本地图片（blob: / data: URL）
+    await reuploadBlobImages(item);
 
     try {
       await gateway.send(
@@ -1412,6 +1446,15 @@ const handleMessageOption = async (option) => {
         }
         validMessage.status = "retrying";
         retryList.value.push(validMessage.id);
+
+        // 重试前重新上传用户消息中残留的本地图片
+        const userMsg = message.role === "user"
+          ? message
+          : contactor.messageChain[validMessageIndex.value - 1];
+        if (userMsg?.role === "user") {
+          await reuploadBlobImages(userMsg);
+        }
+
         try {
           await gateway.send(
             contactor.platform,

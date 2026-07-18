@@ -797,7 +797,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     client.setLocalStorage();
   }
 
-  function failedMessage(contactorId, messageId, error) {
+  function failedMessage(contactorId, messageId, _error) {
     const contactor = contactors.value[contactorId];
     if (!contactor) return;
 
@@ -805,19 +805,6 @@ export const useContactorsStore = defineStore("contactors", () => {
     message.status = "failed";
     closeReasoningBlocks(message.content, true);
 
-    const errorJson = JSON.stringify(
-      typeof error === "string" ? { message: error } : error,
-      null,
-      2,
-    );
-    const errorText = `Error : LLM 响应失败！\n\`\`\`json\n${errorJson}\n\`\`\``;
-
-    replaceBlankOrAppend(message.content, {
-      type: "text",
-      data: { text: errorText },
-    });
-
-    message.status = "completed";
     contactor.lastUpdate = Date.now();
     updateContactorSummary(contactor);
     client.setLocalStorage();
