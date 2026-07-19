@@ -366,17 +366,20 @@ class StreamBuffer {
     this.pendingReason = "";
     this.reasonMetadata = null;
     this.lastFlushTime = 0;
+    this.lastUpdateTime = Date.now();
     this.timer = null;
-    this.flushInterval = 30; // ms
+    this.flushInterval = 80; // ms, 80ms 刷新节流防止高频重绘在 Safari 造成 OOM 崩溃
   }
 
   addContent(chunk) {
     this.pendingContent += chunk;
+    this.lastUpdateTime = Date.now();
     this.scheduleFlush();
   }
 
   addReason(text, metadata) {
     this.pendingReason += text;
+    this.lastUpdateTime = Date.now();
     if (metadata) {
       this.reasonMetadata = {
         startTime: metadata.startTime,
@@ -443,11 +446,21 @@ class StreamBuffer {
 const streamBuffers = new Map();
 
 function getOrCreateBuffer(contactorId, messageId, store) {
+  // TTL 垃圾回收：自动清理超过 20 秒无更新的挂死流，释放其对 store 的引用，解决重连/失效流内存泄露
+  const now = Date.now();
+  for (const [id, buf] of streamBuffers.entries()) {
+    if (now - buf.lastUpdateTime > 20000) {
+      buf.flush();
+      streamBuffers.delete(id);
+    }
+  }
+
   let buffer = streamBuffers.get(messageId);
   if (!buffer) {
     buffer = new StreamBuffer(contactorId, messageId, store);
     streamBuffers.set(messageId, buffer);
   }
+  buffer.lastUpdateTime = now;
   return buffer;
 }
 
