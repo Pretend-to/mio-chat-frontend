@@ -131,6 +131,51 @@ export function getLastMessageSummary(messageChain, message = null) {
     : "[未知消息]";
 }
 
+function formatErrorMessage(error) {
+  if (!error) return "未知错误";
+
+  let errorMsg = "";
+  let isJson = false;
+
+  if (typeof error === "object") {
+    if (error instanceof Error) {
+      errorMsg = error.stack || error.message;
+    } else {
+      try {
+        errorMsg = JSON.stringify(error, null, 2);
+        isJson = true;
+        if (errorMsg === "{}") {
+          if (error.message) {
+            errorMsg = error.message;
+            isJson = false;
+          } else if (error.toString && error.toString() !== "[object Object]") {
+            errorMsg = error.toString();
+            isJson = false;
+          }
+        }
+      } catch {
+        errorMsg = String(error);
+      }
+    }
+  } else {
+    const trimmed = String(error).trim();
+    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        errorMsg = JSON.stringify(parsed, null, 2);
+        isJson = true;
+      } catch {
+        errorMsg = trimmed;
+}
+    } else {
+      errorMsg = trimmed;
+    }
+  }
+
+  const lang = isJson ? "json" : "";
+  return `\n\`\`\`${lang}\n${errorMsg}\n\`\`\``;
+}
+
 export const useContactorsStore = defineStore("contactors", () => {
   // State
   const contactors = ref({});
@@ -659,7 +704,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     const contactor = contactors.value[contactorId];
     if (!contactor) return;
 
-    const { chunks, status, messageId, metaData } = e;
+    const { chunks, status, messageId, metaData, error } = e;
     const message = getOrCreateMessage(contactorId, messageId, {
       time: metaData?.timestamp,
     });
@@ -775,6 +820,19 @@ export const useContactorsStore = defineStore("contactors", () => {
     } else if (status === "failed") {
       message.status = "failed";
       closeReasoningBlocks(message.content, true);
+
+      // 过滤掉 type === "blank" 占位节点，防止界面显示思考中的转圈
+      message.content = message.content.filter((elm) => elm.type !== "blank");
+
+      // 格式化具体的错误信息并作为代码块塞进 message 的 content 中，避免重复塞入
+      const errorText = formatErrorMessage(error);
+      const lastElm = message.content[message.content.length - 1];
+      if (!lastElm || lastElm.type !== "text" || lastElm.data?.text !== errorText) {
+        message.content.push({
+          type: "text",
+          data: { text: errorText },
+        });
+      }
     }
 
     contactor.lastUpdate = Date.now();
@@ -804,6 +862,19 @@ export const useContactorsStore = defineStore("contactors", () => {
     const message = getOrCreateMessage(contactorId, messageId);
     message.status = "failed";
     closeReasoningBlocks(message.content, true);
+
+    // 过滤掉 type === "blank" 占位节点，防止界面显示思考中的转圈
+    message.content = message.content.filter((elm) => elm.type !== "blank");
+
+    // 格式化具体的错误信息并作为代码块塞进 message 的 content 中，避免重复塞入
+    const errorText = formatErrorMessage(_error);
+    const lastElm = message.content[message.content.length - 1];
+    if (!lastElm || lastElm.type !== "text" || lastElm.data?.text !== errorText) {
+      message.content.push({
+        type: "text",
+        data: { text: errorText },
+      });
+    }
 
     contactor.lastUpdate = Date.now();
     updateContactorSummary(contactor);

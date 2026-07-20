@@ -642,8 +642,15 @@ export const gateway = {
           status: data.status,
           messageId,
           metaData,
+          error: data.error,
         });
 
+        // 如果同步回来的是已完成/已失败的终态消息，也给后端发 ACK 清除流缓存
+        if (["completed", "failed"].includes(data.status)) {
+          if (client.socket && typeof client.socket.ackMessage === "function") {
+            client.socket.ackMessage(contactorId, messageId);
+          }
+        }
         // 断线同步恢复：若消息未完成/未失败，且同步的 chunks 中含有挂起待处理的 action，则还原至 interactionStore
         if (
           data.status !== "completed" &&
@@ -735,6 +742,9 @@ export const gateway = {
         contactorStore.completeMessage(contactorId, messageId);
       } else if (e.message === "failed") {
         contactorStore.failedMessage(contactorId, messageId, e.data);
+      }
+      if (client.socket && typeof client.socket.ackMessage === "function") {
+        client.socket.ackMessage(contactorId, messageId);
       }
     }
   },
