@@ -96,6 +96,11 @@ export function useInputFileUpload({
   };
 
   const compressAndUploadImage = (file) => {
+    // iOS Safari + iCloud: 图片文件尚未同步到本地
+    if (file.size === 0) {
+      ElMessage.info('该图片正在从 iCloud 同步，请稍后重新选择');
+      return Promise.reject(new Error('iCloud 文件尚未同步'));
+    }
     return new Promise((resolve, reject) => {
       const maxSizeMB = 5;
       const maxSizeByte = maxSizeMB * 1024 * 1024;
@@ -171,13 +176,22 @@ export function useInputFileUpload({
       };
     });
   };
-
   const handleFileUpload = (file) => {
     if (file.size > 50 * 1024 * 1024) {
-      ElMessage.error("文件大小超过50MB，无法上传");
+      ElMessage.error('文件大小超过50MB，无法上传');
       return;
     }
-    if (file.type.startsWith("image/")) {
+    // iOS Safari + iCloud: 文件尚未下载到本地时 size 为 0
+    if (file.size === 0) {
+      if (file.type.startsWith('image/')) {
+        // 图片：iCloud 可能在后台同步，第二次选大概率就好了
+        ElMessage.info('该图片正在从 iCloud 同步，请稍后重新选择');
+      } else {
+        ElMessage.warning('该文件（iCloud）尚未同步到本地，请先在"文件"App 中打开并等待下载完成后再试');
+      }
+      return;
+    }
+    if (file.type.startsWith('image/')) {
       handleLocalImageInsert(file);
       adjustTextareaHeight();
     } else {
