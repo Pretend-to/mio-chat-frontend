@@ -372,6 +372,7 @@ import { ElMessage } from "element-plus";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { getAvatarByModel } from "@/stores/contactorsStore.js";
+import { getLocalPresets } from "@/lib/clientSettings.js";
 
 // Props
 const props = defineProps({
@@ -566,14 +567,17 @@ const strogeAddHistory = (preset) => {
   localStorage.setItem("recent-presets", JSON.stringify(recentPresets.value));
 };
 
-const getAddHistory = () => {
+const getAddHistory = async () => {
   const recent = localStorage.getItem("recent-presets");
   if (recent) {
     recentPresets.value = JSON.parse(recent);
   }
-  const local = localStorage.getItem("local-presets");
-  if (local) {
-    localPresets.value = JSON.parse(local);
+  // 改用 localforage 读取（与 clientSettings.js 统一存储层）
+  try {
+    localPresets.value = await getLocalPresets();
+  } catch (e) {
+    console.warn("加载本地预设失败:", e);
+    localPresets.value = [];
   }
 };
 

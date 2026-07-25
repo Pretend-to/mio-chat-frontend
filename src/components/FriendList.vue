@@ -21,6 +21,7 @@ import {
   processAvatarWithStatusHole,
   getAdminAvatarUrl,
 } from "@/utils/avatar.js";
+import { getLocalPresetById } from "@/lib/clientSettings.js";
 import StatusDot from "@/components/StatusDot.vue";
 import { useConnectionStore } from "@/stores/connectionStore";
 import { useSearch } from "@/composables/useSearch.js";
@@ -283,6 +284,22 @@ const addPresetContactor = async (preset) => {
 };
 
 const genBotByProvider = async (provider) => {
+  // 默认 Agent 联动：优先从用户设定的默认预设克隆
+  const cs = client._clientSettings || {};
+  const defaultPresetId = cs.agentDefault?.presetId;
+  if (defaultPresetId) {
+    try {
+      const preset = await getLocalPresetById(defaultPresetId);
+      if (preset) {
+        await addPresetContactor(preset);
+        return;
+      }
+    } catch (e) {
+      console.warn("[genBotByProvider] 加载默认预设失败，回退到空白配置:", e);
+    }
+  }
+
+  // 回退：空白配置
   const options = config.getLLMDefaultConfig(provider);
   const blankConfig = {
     id: genFakeId(),

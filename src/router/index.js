@@ -167,6 +167,12 @@ const router = createRouter({
           component: () => import("../views/settings/LogsView.vue"),
           meta: { title: "系统日志" },
         },
+        {
+          path: "client",
+          name: "settings_client",
+          component: () => import("../views/ClientSettingsView.vue"),
+          meta: { title: "客户端设置" },
+        },
       ],
     },
   ],
@@ -174,6 +180,12 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const everLogin = client.everLogin();
+
+  // 客户端设置允许游客直接访问（纯本地设置，无需后端鉴权）
+  if (to.path === "/settings/client") {
+    return;
+  }
+
   if (
     // 检查用户是否已登录
     !everLogin &&

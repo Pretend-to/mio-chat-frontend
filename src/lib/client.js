@@ -35,6 +35,7 @@ import Socket from "./websocket.js";
 import { getActivePinia } from "pinia";
 import { useContactorsStore } from "@/stores/contactorsStore.js";
 import { gateway } from "@/lib/gateway.js";
+import { getClientSettings, getLocalPresetById } from "@/lib/clientSettings.js";
 
 // Safe accessor: returns null if called before app.use(pinia)
 function getStore() {
@@ -99,11 +100,14 @@ export default class Client extends EventEmitter {
       this.loadLocalStorage(localStorage);
     }
 
+    // 加载客户端本地设置，覆盖硬编码的 name / title / avatar
+    await this.loadClientSettings();
+
     this.inited = true;
     this.emit("loaded");
   }
 
-  genDefaultConctor(info) {
+  async genDefaultConctor(info) {
     if (info.onebot_enabled) {
       // Create default OneBot contactor
       const onebotConfig = {
@@ -176,7 +180,40 @@ export default class Client extends EventEmitter {
         this.addConcator("openai", contactorConfig);
       });
     } else {
-      // 后备方案：如果没传预设，则创建一个默认的 MioBot
+      // 后备方案：检查用户是否设置了默认本地预设
+      const defaultPresetId = this._clientSettings?.agentDefault?.presetId;
+      if (defaultPresetId) {
+        try {
+          const preset = await getLocalPresetById(defaultPresetId);
+          if (preset) {
+            // 将 preset 转为 contactor 格式（复用 FriendList 的 mergeOptions 逻辑简化版）
+            const options = this.config.getLLMDefaultConfig();
+            if (preset.model) options.base.model = preset.model;
+            if (preset.tools?.length) {
+              options.toolCallSettings.tools = preset.tools;
+            }
+            if (preset.history) options.presetSettings.history = preset.history;
+            if (preset.opening) options.presetSettings.opening = preset.opening;
+
+            this.addConcator("openai", {
+              id: this.genFakeId(),
+              name: preset.name,
+              avatar: preset.avatar || "/static/icons/512x512.png",
+              namePolicy: 1,
+              avatarPolicy: preset.avatar ? 1 : 0,
+              title: "chat",
+              priority: 1,
+              lastUpdate: -Infinity,
+              options,
+            });
+            return;
+          }
+        } catch (e) {
+          console.warn("[initOpenaiContactors] 加载默认预设失败:", e);
+        }
+      }
+
+      // 最终后备：硬编码 MioBot
       const options = this.config.getLLMDefaultConfig();
       const LLMDefaultConfig = {
         id: this.genFakeId(),
@@ -538,6 +575,27 @@ export default class Client extends EventEmitter {
       store.loadContactors([]);
     }
   }
+  /**
+   * 加载客户端本地设置，覆盖 name / title / avatar
+   */
+  async loadClientSettings() {
+    try {
+      const settings = await getClientSettings();
+      // 缓存完整设置供所有 composable 读取（carryTimestamp、desktopEnterSend 等）
+      this._clientSettings = settings || {};
+      if (settings?.profile) {
+        const { name, title, avatar } = settings.profile;
+        if (name) this.name = name;
+        if (title) this.title = title;
+        if (avatar) this.avatar = avatar;
+      }
+    } catch (e) {
+      // 加载失败不影响主流程，保持硬编码默认值
+      console.warn("[Client] 加载客户端设置失败:", e);
+      this._clientSettings = {};
+    }
+  }
+
 
   /**
    * Replay cached contactors into the store once Pinia is active.

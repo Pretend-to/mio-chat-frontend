@@ -1,5 +1,5 @@
 import { ref, computed, nextTick } from "vue";
-import { config } from "@/lib/runtime.js";
+import { client, config } from "@/lib/runtime.js";
 
 export function useInputCommandPopup({
   textareaRef,
@@ -368,14 +368,34 @@ export function useInputCommandPopup({
     }
 
     if (event.key === "Enter") {
-      if (event.ctrlKey) {
-        event.preventDefault();
-        sendCallback();
-        return true;
+      // 桌面端 Enter 发送模式：Enter=发送, Shift+Enter=换行
+      // 默认模式：Enter=换行, Ctrl+Enter=发送
+      const desktopEnterSend =
+        client._clientSettings?.chat?.desktopEnterSend ?? false;
+
+      if (desktopEnterSend) {
+        if (event.shiftKey) {
+          // Shift+Enter → 换行
+          document.execCommand("insertHTML", false, "\n");
+          event.preventDefault();
+          return true;
+        } else {
+          // Enter → 发送
+          event.preventDefault();
+          sendCallback();
+          return true;
+        }
       } else {
-        document.execCommand("insertHTML", false, "\n");
-        event.preventDefault();
-        return true;
+        // 默认行为：Enter=换行, Ctrl+Enter=发送
+        if (event.ctrlKey) {
+          event.preventDefault();
+          sendCallback();
+          return true;
+        } else {
+          document.execCommand("insertHTML", false, "\n");
+          event.preventDefault();
+          return true;
+        }
       }
     }
     return false;

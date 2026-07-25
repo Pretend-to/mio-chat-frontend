@@ -50,6 +50,9 @@
       <el-button plain @click="$router.push(`/chat/${activeContactor.id}`)">
         发送消息
       </el-button>
+      <el-button type="primary" plain @click="saveAsPreset">
+        保存到本地预设
+      </el-button>
       <el-button type="danger" plain @click="centerDialogVisible = true">
         删除好友
       </el-button>
@@ -78,6 +81,7 @@ import { client, config } from "@/lib/runtime.js";
 import { useConnectionStore } from "@/stores/connectionStore";
 import { mapState } from "pinia";
 import { useStatusBarColor } from "@/composables/useStatusBarColor";
+import { saveLocalPreset } from "@/lib/clientSettings.js";
 
 export default {
   components: {
@@ -271,6 +275,33 @@ export default {
         });
       }
     },
+    async saveAsPreset() {
+      const c = this.activeContactor;
+      if (!c) return;
+
+      const preset = {
+        id: String(c.id),
+        name: c.name || "未命名",
+        title: c.title || "",
+        avatar: c.avatar || "",
+        model: c.options?.base?.model || "",
+        tools: c.options?.toolCallSettings?.tools || [],
+        history: c.options?.presetSettings?.history || [],
+        opening: c.options?.presetSettings?.opening || "",
+      };
+
+      try {
+        const result = await saveLocalPreset(preset);
+        if (result.action === "updated") {
+          this.$message.success("预设已更新");
+        } else {
+          this.$message.success("已保存到本地预设");
+        }
+      } catch (e) {
+        this.$message.error("保存失败: " + e.message);
+      }
+    },
+
     async delContactor() {
       if (!this.activeContactor) return;
       this.centerDialogVisible = false;

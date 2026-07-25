@@ -195,6 +195,22 @@
           </div>
         </div>
 
+        <!-- 游客模式下单独显示客户端设置入口 -->
+        <div v-if="forbidden" class="mobile-settings-group">
+          <div class="group-title">本地设置</div>
+          <div class="group-content">
+            <div class="menu-item" @click="handleMobileMenuSelect('client')">
+              <div class="menu-item-left">
+                <el-icon class="menu-icon regular"><Setting /></el-icon>
+                <span>客户端设置</span>
+              </div>
+              <div class="menu-item-right">
+                <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="mobile-settings-group">
           <div class="group-title">账号与系统</div>
           <div class="group-content">
@@ -279,7 +295,7 @@
               <el-skeleton :rows="10" animated />
             </div>
           </template>
-          <template v-else-if="forbidden">
+          <template v-else-if="forbidden && activeMenu !== 'client'">
             <div class="forbidden-container" :class="{ mobile: isMobile }">
               <el-result
                 icon="error"
@@ -335,6 +351,8 @@ import {
   SwitchButton,
   HomeFilled,
   ArrowRight,
+  User,
+  Setting,
 } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
@@ -374,8 +392,8 @@ const systemStatusText = computed(() => {
   return systemStatus.value === "normal" ? "正常" : "有警告";
 });
 
-// 菜单项配置
-const menuItems = [
+// 全部菜单项（管理员可见全部，游客仅见「客户端设置」）
+const allMenuItems = [
   { index: "overview", label: "概览", icon: Menu },
   { index: "llm-adapters", label: "LLM 适配器", icon: Connection },
   { index: "automation", label: "系统任务", icon: Connection },
@@ -387,7 +405,14 @@ const menuItems = [
   { index: "storage", label: "存储配置", icon: Box },
   { index: "webhook", label: "Webhook 配置", icon: ChatDotRound },
   { index: "logs", label: "日志管理", icon: Document },
+  { index: "client", label: "客户端设置", icon: Setting },
 ];
+
+// 游客无权限的 tab 直接隐藏（不展示"无权限"占位）
+const menuItems = computed(() => {
+  if (configStore.isAuthenticated) return allMenuItems;
+  return allMenuItems.filter((item) => item.index === "client");
+});
 
 // 操作：切换账号（清除 admin_code 并跳转到 /auth）
 const handleSwitchAccount = () => {
@@ -421,6 +446,7 @@ const activeMenu = computed(() => {
   if (path.includes("presets")) return "presets";
   if (path.includes("storage")) return "storage";
   if (path.includes("logs")) return "logs";
+  if (path.includes("client")) return "client";
   return "overview";
 });
 
@@ -450,7 +476,7 @@ const getMobileTitle = () => {
   }
 
   // 如果在设置子页面，显示对应的页面名称
-  const currentItem = menuItems.find((item) => item.index === activeMenu.value);
+  const currentItem = menuItems.value.find((item) => item.index === activeMenu.value);
   return currentItem ? currentItem.label : "设置";
 };
 
@@ -546,6 +572,21 @@ const handleResetCache = async () => {
   }
 };
 
+
+// 游客进入非客户端设置页时，自动跳转到客户端设置
+watch(
+  [forbidden, validating, () => route.path],
+  ([isForbidden, isValidating, path]) => {
+    if (
+      isForbidden &&
+      !isValidating &&
+      path !== "/settings/client" &&
+      path.startsWith("/settings")
+    ) {
+      router.replace("/settings/client");
+    }
+  },
+);
 // 初始化
 onMounted(async () => {
   // 检测移动端

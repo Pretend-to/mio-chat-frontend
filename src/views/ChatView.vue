@@ -33,6 +33,7 @@ import { client } from "@/lib/runtime.js";
 import { shareOrCopy } from "@/utils/tools.js";
 import { gateway } from "@/lib/gateway.js";
 import { numberString } from "@/utils/generate.js";
+import { getClientSettings, buildUserProfileXml } from "@/lib/clientSettings.js";
 
 // Markdown plugins
 import {
@@ -70,6 +71,9 @@ const scroll = ref(scrollVal);
 
 // Speech Synthesis State & Functions
 const currentSpeakingMessageId = ref(null);
+
+// carryProfile：跟踪每个会话是否已注入过 <user_profile>
+const _profileInjectedIds = new Set();
 
 const getSpeechText = (message) => {
   if (!message || !message.content) return "";
@@ -138,6 +142,26 @@ const sendMessage = async (msg, toServer = true) => {
 
   const exists = contactor.messageChain.some((m) => m.id === msg.id);
   if (!exists) {
+    // carryProfile: 首次发送时插入 <user_profile> 到会话头部
+    if (
+      toServer &&
+      contactor.platform === "openai" &&
+      !_profileInjectedIds.has(contactor.id)
+    ) {
+      const cs = client._clientSettings || {};
+      if (cs.chat?.carryProfile) {
+        const profile = cs.profile || {};
+        const profileXml = buildUserProfileXml(profile);
+        contactor.messageChain.push({
+          role: "mio_system",
+          time: Date.now(),
+          content: [{ type: "text", data: { text: profileXml } }],
+          id: numberString(16),
+          status: "completed",
+        });
+      }
+      _profileInjectedIds.add(contactor.id);
+    }
     contactor.messageChain.push(msg);
   }
 
@@ -623,6 +647,29 @@ watch(isMultiSelect, (val) => {
     hasSelectedBelow.value = false;
   }
 });
+
+// autoReadAloud：AI 回复完成后自动朗读（避免重复触发）
+const _autoReadCompletedIds = new Set();
+watch(
+  () => {
+    const c = contactorsStore.activeContactor;
+    if (!c?.messageChain?.length) return null;
+    return c.messageChain[c.messageChain.length - 1];
+  },
+  (newMsg) => {
+    if (!newMsg || newMsg.role !== "other") return;
+    if (newMsg.status !== "completed") return;
+    if (_autoReadCompletedIds.has(newMsg.id)) return;
+
+    const cs = client._clientSettings || {};
+    if (!cs.chat?.autoReadAloud) return;
+
+    _autoReadCompletedIds.add(newMsg.id);
+    // 延迟一帧确保 DOM 更新完毕
+    nextTick(() => speakMessage(newMsg));
+  },
+  { deep: true },
+);
 
 // Methods
 const handlePluginsUpdated = () => {
