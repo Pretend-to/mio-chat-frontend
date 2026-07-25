@@ -34,12 +34,14 @@ import EventEmitter from "./event.js";
 import Socket from "./websocket.js";
 import { getActivePinia } from "pinia";
 import { useContactorsStore } from "@/stores/contactorsStore.js";
+import { useConfigStore } from "@/stores/configStore.js";
 import { gateway } from "@/lib/gateway.js";
 import { getClientSettings, getLocalPresetById } from "@/lib/clientSettings.js";
 
 // Safe accessor: returns null if called before app.use(pinia)
-function getStore() {
+function getStore(storeName = "contactors") {
   if (!getActivePinia()) return null;
+  if (storeName === "config") return useConfigStore();
   return useContactorsStore();
 }
 
@@ -47,6 +49,8 @@ function getStore() {
 localforage.config({
   name: "mio-chat",
 });
+
+import { ref } from "vue";
 
 export default class Client extends EventEmitter {
   constructor(config) {
@@ -58,14 +62,59 @@ export default class Client extends EventEmitter {
     this.socket = null; // Dynamic
     this.qq = null; // Web
     this.bot_qq = null; // Web
-    this.avatar = null; // Web
     this.onPhone = null; // Dynamic
-    this.title = "Mio"; // Fixed
-    this.name = "user"; // Fixed
     this.config = config; // Parameter
+
+    // 同步从 localStorage 读取预缓存的 profile，保证首屏渲染 0 延迟防闪烁
+    let initialAvatar = null;
+    let initialName = "user";
+    let initialTitle = "Mio";
+    try {
+      const cached = localStorage.getItem("client_settings_profile");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.avatar !== undefined) initialAvatar = parsed.avatar;
+        if (parsed.name) initialName = parsed.name;
+        if (parsed.title) initialTitle = parsed.title;
+      }
+    } catch (e) {}
+
+    this._avatarRef = ref(initialAvatar);
+    this._nameRef = ref(initialName);
+    this._titleRef = ref(initialTitle);
 
     this.saveNow = this._setLocalStorage.bind(this); // 立即持久化，用于关键节点
     this.setLocalStorage = debounce(this.saveNow, 500); // 防抖版本，用于高频更新
+  }
+
+  get avatar() {
+    const store = getStore("config");
+    return store ? store.userProfile.avatar : this._avatarRef.value;
+  }
+  set avatar(val) {
+    this._avatarRef.value = val;
+    const store = getStore("config");
+    if (store) store.updateUserProfile({ avatar: val });
+  }
+
+  get name() {
+    const store = getStore("config");
+    return store ? store.userProfile.name : this._nameRef.value;
+  }
+  set name(val) {
+    this._nameRef.value = val;
+    const store = getStore("config");
+    if (store) store.updateUserProfile({ name: val });
+  }
+
+  get title() {
+    const store = getStore("config");
+    return store ? store.userProfile.title : this._titleRef.value;
+  }
+  set title(val) {
+    this._titleRef.value = val;
+    const store = getStore("config");
+    if (store) store.updateUserProfile({ title: val });
   }
 
   get contactList() {
@@ -579,20 +628,24 @@ export default class Client extends EventEmitter {
    * 加载客户端本地设置，覆盖 name / title / avatar
    */
   async loadClientSettings() {
-    try {
-      const settings = await getClientSettings();
-      // 缓存完整设置供所有 composable 读取（carryTimestamp、desktopEnterSend 等）
+    const store = getStore("config");
+    if (store) {
+      const settings = await store.loadClientSettings();
       this._clientSettings = settings || {};
-      if (settings?.profile) {
-        const { name, title, avatar } = settings.profile;
-        if (name) this.name = name;
-        if (title) this.title = title;
-        if (avatar) this.avatar = avatar;
+    } else {
+      try {
+        const settings = await getClientSettings();
+        this._clientSettings = settings || {};
+        if (settings?.profile) {
+          const { name, title, avatar } = settings.profile;
+          if (name) this.name = name;
+          if (title) this.title = title;
+          if (avatar !== undefined) this.avatar = avatar;
+        }
+      } catch (e) {
+        console.warn("[Client] 加载客户端设置失败:", e);
+        this._clientSettings = {};
       }
-    } catch (e) {
-      // 加载失败不影响主流程，保持硬编码默认值
-      console.warn("[Client] 加载客户端设置失败:", e);
-      this._clientSettings = {};
     }
   }
 
@@ -852,13 +905,20 @@ export default class Client extends EventEmitter {
     this.admin_qq = data.admin_qq;
     this.bot_qq = data.bot_qq;
 
-    if (
-      typeof this.admin_qq === "string" &&
-      (this.admin_qq.startsWith("http") || this.admin_qq.startsWith("/"))
-    ) {
-      this.avatar = this.admin_qq;
-    } else {
-      this.avatar = `/p/qava?q=${this.admin_qq}`;
+    // 本地已有头像（无论是系统默认、QQ、URL 还是上传）优先级最高，严禁被服务端 base_info 覆写！
+    // 只有在当前完全未设置 avatar 且不存在本地缓存设置时，才以服务端 admin_qq 作为后备 fallback
+    const currentAvatar = this.avatar;
+    const hasLocalSettings = !!localStorage.getItem("client_settings_profile");
+
+    if (!currentAvatar && !hasLocalSettings) {
+      if (
+        typeof this.admin_qq === "string" &&
+        (this.admin_qq.startsWith("http") || this.admin_qq.startsWith("/"))
+      ) {
+        this.avatar = this.admin_qq;
+      } else if (this.admin_qq) {
+        this.avatar = `/p/qava?q=${this.admin_qq}`;
+      }
     }
 
     const onebotContactor = this.getContactor(null, 10000);

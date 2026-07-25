@@ -29,6 +29,7 @@ import { useChatScreenshot } from "@/composables/useChatScreenshot.js";
 import { useConnectionStore } from "@/stores/connectionStore";
 import { useStatusBarColor } from "@/composables/useStatusBarColor";
 import { useContactorsStore, getShownTime } from "@/stores/contactorsStore.js";
+import { useConfigStore } from "@/stores/configStore.js";
 import { client } from "@/lib/runtime.js";
 import { shareOrCopy } from "@/utils/tools.js";
 import { gateway } from "@/lib/gateway.js";
@@ -84,6 +85,79 @@ const getSpeechText = (message) => {
     .trim();
 };
 
+const applyVoiceToUtterance = (utterance) => {
+  if (!window.speechSynthesis) return;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices || !voices.length) return;
+
+  const cs = client._clientSettings || {};
+  const selectedVoiceUri = cs.chat?.readAloudVoice || "auto";
+
+  if (selectedVoiceUri && selectedVoiceUri !== "auto") {
+    const matchedVoice = voices.find(
+      (v) => v.voiceURI === selectedVoiceUri || v.name === selectedVoiceUri,
+    );
+    if (matchedVoice) {
+      utterance.voice = matchedVoice;
+      return;
+    }
+  }
+
+  // 默认查找中文音色
+  const cnVoice = voices.find(
+    (v) => v.lang.includes("zh-CN") || v.lang.includes("zh-"),
+  );
+  if (cnVoice) {
+    utterance.voice = cnVoice;
+  }
+};
+
+let _activeSpeechChunksCount = 0;
+let _streamingReadMsgId = null;
+let _spokenCharIndex = 0;
+
+const cancelSpeech = () => {
+  if (typeof window !== "undefined" && window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+  _activeSpeechChunksCount = 0;
+  _streamingReadMsgId = null;
+  _spokenCharIndex = 0;
+  currentSpeakingMessageId.value = null;
+};
+
+const speakTextChunk = (text, messageId) => {
+  if (!window.speechSynthesis || !text) return;
+
+  currentSpeakingMessageId.value = messageId;
+  _activeSpeechChunksCount++;
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  applyVoiceToUtterance(utterance);
+
+  const cleanupChunk = () => {
+    _activeSpeechChunksCount = Math.max(0, _activeSpeechChunksCount - 1);
+    if (
+      _activeSpeechChunksCount === 0 &&
+      currentSpeakingMessageId.value === messageId
+    ) {
+      const activeMsg = contactorsStore.activeContactor?.messageChain?.find(
+        (m) => m.id === messageId,
+      );
+      if (!activeMsg || activeMsg.status !== "pending") {
+        currentSpeakingMessageId.value = null;
+        _streamingReadMsgId = null;
+        _spokenCharIndex = 0;
+      }
+    }
+  };
+
+  utterance.onend = cleanupChunk;
+  utterance.onerror = cleanupChunk;
+
+  window.speechSynthesis.speak(utterance);
+};
+
 const speakMessage = (message) => {
   if (!window.speechSynthesis) {
     ElMessage.warning("当前浏览器不支持语音合成");
@@ -91,12 +165,12 @@ const speakMessage = (message) => {
   }
 
   if (currentSpeakingMessageId.value === message.id) {
-    window.speechSynthesis.cancel();
-    currentSpeakingMessageId.value = null;
+    cancelSpeech();
     return;
   }
 
-  window.speechSynthesis.cancel();
+  cancelSpeech();
+
   const text = getSpeechText(message);
   if (!text) {
     ElMessage.info("没有可朗读的文本内容");
@@ -105,30 +179,22 @@ const speakMessage = (message) => {
 
   currentSpeakingMessageId.value = message.id;
 
-  const utterance = new SpeechSynthesisUtterance(text);
+  const punctuationRegex = /[^。！？\n!?]+[。！？\n!?]+/g;
+  let match;
+  let processedLength = 0;
 
-  // Find a good Chinese voice
-  const voices = window.speechSynthesis.getVoices();
-  const cnVoice = voices.find(
-    (v) => v.lang.includes("zh-CN") || v.lang.includes("zh-"),
-  );
-  if (cnVoice) {
-    utterance.voice = cnVoice;
+  while ((match = punctuationRegex.exec(text)) !== null) {
+    const sentence = match[0].trim();
+    processedLength += match[0].length;
+    if (sentence) {
+      speakTextChunk(sentence, message.id);
+    }
   }
 
-  utterance.onend = () => {
-    if (currentSpeakingMessageId.value === message.id) {
-      currentSpeakingMessageId.value = null;
-    }
-  };
-
-  utterance.onerror = () => {
-    if (currentSpeakingMessageId.value === message.id) {
-      currentSpeakingMessageId.value = null;
-    }
-  };
-
-  window.speechSynthesis.speak(utterance);
+  const remaining = text.slice(processedLength).trim();
+  if (remaining) {
+    speakTextChunk(remaining, message.id);
+  }
 };
 
 // Sending message logic
@@ -142,27 +208,49 @@ const sendMessage = async (msg, toServer = true) => {
 
   const exists = contactor.messageChain.some((m) => m.id === msg.id);
   if (!exists) {
-    // carryProfile: 首次发送时插入 <user_profile> 到会话头部
-    if (
-      toServer &&
-      contactor.platform === "openai" &&
-      !_profileInjectedIds.has(contactor.id)
-    ) {
-      const cs = client._clientSettings || {};
-      if (cs.chat?.carryProfile) {
-        const profile = cs.profile || {};
-        const profileXml = buildUserProfileXml(profile);
-        contactor.messageChain.push({
+    contactor.messageChain.push(msg);
+  }
+
+  // carryProfile: 首次发送时插入 <user_profile> 到会话头部
+  if (
+    toServer &&
+    contactor.platform === "openai" &&
+    !_profileInjectedIds.has(contactor.id)
+  ) {
+    const cs = client._clientSettings || {};
+    if (cs.chat?.carryProfile) {
+      const hasProfileInChain = contactor.messageChain.some(
+        (m) =>
+          m.role === "mio_system" &&
+          Array.isArray(m.content) &&
+          m.content.some(
+            (c) =>
+              c.data?.text &&
+              (c.data.text.includes("已注入相关元信息") ||
+                c.data.text.includes("<user_profile>")),
+          ),
+      );
+
+      if (!hasProfileInChain) {
+        const userMsgIndex = contactor.messageChain.findIndex(
+          (m) => m.role === "user",
+        );
+        const systemMsg = {
           role: "mio_system",
           time: Date.now(),
-          content: [{ type: "text", data: { text: profileXml } }],
+          content: [{ type: "text", data: { text: "已注入相关元信息" } }],
           id: numberString(16),
           status: "completed",
-        });
+        };
+
+        if (userMsgIndex !== -1) {
+          contactor.messageChain.splice(userMsgIndex, 0, systemMsg);
+        } else {
+          contactor.messageChain.unshift(systemMsg);
+        }
       }
-      _profileInjectedIds.add(contactor.id);
     }
-    contactor.messageChain.push(msg);
+    _profileInjectedIds.add(contactor.id);
   }
 
   const msgInChain = contactor.messageChain.find((m) => m.id === msg.id);
@@ -575,10 +663,7 @@ watch(
   (newVal, oldVal) => {
     if (!newVal) return;
 
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-      currentSpeakingMessageId.value = null;
-    }
+    cancelSpeech();
 
     // 清空上一个会话中残留的待处理交互浮层，防止跨会话串屏
     import("@/stores/interactionStore.js").then(({ useInteractionStore }) => {
@@ -648,8 +733,7 @@ watch(isMultiSelect, (val) => {
   }
 });
 
-// autoReadAloud：AI 回复完成后自动朗读（避免重复触发）
-const _autoReadCompletedIds = new Set();
+// autoReadAloud：流式按句实时朗读（匹配流式文本输出）
 watch(
   () => {
     const c = contactorsStore.activeContactor;
@@ -658,15 +742,46 @@ watch(
   },
   (newMsg) => {
     if (!newMsg || newMsg.role !== "other") return;
-    if (newMsg.status !== "completed") return;
-    if (_autoReadCompletedIds.has(newMsg.id)) return;
 
     const cs = client._clientSettings || {};
     if (!cs.chat?.autoReadAloud) return;
 
-    _autoReadCompletedIds.add(newMsg.id);
-    // 延迟一帧确保 DOM 更新完毕
-    nextTick(() => speakMessage(newMsg));
+    if (_streamingReadMsgId !== newMsg.id) {
+      _streamingReadMsgId = newMsg.id;
+      _spokenCharIndex = 0;
+    }
+
+    const fullText = getSpeechText(newMsg);
+    if (!fullText) return;
+
+    const unreadText = fullText.slice(_spokenCharIndex);
+    if (!unreadText) return;
+
+    // 按句中/句尾标点分割（。！？\n!?）
+    const punctuationRegex = /[^。！？\n!?]+[。！？\n!?]+/g;
+    let match;
+    let processedLength = 0;
+
+    while ((match = punctuationRegex.exec(unreadText)) !== null) {
+      const sentence = match[0].trim();
+      processedLength += match[0].length;
+      if (sentence) {
+        speakTextChunk(sentence, newMsg.id);
+      }
+    }
+
+    if (processedLength > 0) {
+      _spokenCharIndex += processedLength;
+    }
+
+    // 当流完成 (completed) 且尾部还有剩余文本时，把剩余最后一句读完
+    if (newMsg.status === "completed") {
+      const remaining = fullText.slice(_spokenCharIndex).trim();
+      if (remaining) {
+        speakTextChunk(remaining, newMsg.id);
+        _spokenCharIndex = fullText.length;
+      }
+    }
   },
   { deep: true },
 );

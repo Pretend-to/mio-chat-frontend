@@ -181,8 +181,14 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const everLogin = client.everLogin();
 
-  // 客户端设置允许游客直接访问（纯本地设置，无需后端鉴权）
-  if (to.path === "/settings/client") {
+  // 设置路由特判：无登录或无管理员权限时自动跳转到客户端设置
+  if (to.path.startsWith("/settings")) {
+    const hasAdminCode = !!localStorage.getItem("admin_code");
+    if (!everLogin || !hasAdminCode) {
+      if (to.path !== "/settings/client") {
+        return { path: "/settings/client" };
+      }
+    }
     return;
   }
 

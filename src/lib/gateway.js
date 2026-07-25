@@ -1,6 +1,8 @@
 import { useContactorsStore } from "@/stores/contactorsStore.js";
+import { useConfigStore } from "@/stores/configStore.js";
 import { client } from "@/lib/runtime.js";
 import { assembleSystemPrompt } from "@/utils/SystemPromptAssembler.js";
+import { buildUserProfileXml } from "@/lib/clientSettings.js";
 
 function getFilePrompt(fileElms) {
   const start = "\n以下是用户上传的文件：\n";
@@ -37,11 +39,21 @@ export function getValidOpenaiMessage(
     );
   });
 
-  const validMessageList = mergedList.filter(
-    (msg) => msg.role !== "mio_system",
-  );
+  const mergedMessages = mergedList.map((message) => {
+    if (message.role === "mio_system") {
+      const text = message.content?.[0]?.data?.text || "";
+      if (
+        text.includes("已注入相关元信息") ||
+        text.includes("<user_profile>")
+      ) {
+        const configStore = useConfigStore();
+        const profile =
+          configStore.userProfile || client._clientSettings?.profile || {};
+        return [{ role: "system", content: buildUserProfileXml(profile) }];
+      }
+      return [];
+    }
 
-  const mergedMessages = validMessageList.map((message) => {
     const fileList = [];
     const imageList = [];
     const subArray = [];
@@ -198,7 +210,30 @@ export function getValidOpenaiMessage(
             subArray.push(formatedMsg);
             imageList.push(elm.data.file.content);
           } else if (elm.type === "text") {
-            formatedMsg.content = elm.data.text;
+            let textContent = elm.data.text || "";
+
+            // 在组装 API 请求体时处理 carryTimestamp（避免污染 UI 层消息）
+            if (role === "user") {
+              const store = useContactorsStore();
+              const activeContactor = store.activeContactor;
+              const carryTimestamp =
+                activeContactor?.options?.messageEnhancement?.carryTimestamp ??
+                client._clientSettings?.chat?.carryTimestamp ??
+                false;
+
+              if (
+                carryTimestamp &&
+                textContent &&
+                !textContent.startsWith("<message time=")
+              ) {
+                const msgTime = message.time
+                  ? new Date(message.time).toISOString()
+                  : new Date().toISOString();
+                textContent = `<message time="${msgTime}">\n${textContent}\n</message>`;
+              }
+            }
+
+            formatedMsg.content = textContent;
             formatedMsg._content_type = "text";
             subArray.push(formatedMsg);
             if (!firstTextElmRef) {
@@ -552,7 +587,7 @@ export const gateway = {
       const enrichedOptions = { ...options };
       if (crystallizationEnabled) {
         enrichedOptions.crystallization_token_watermark =
-          crystallization.tokenWatermark || 64000;
+          crystallization.tokenWatermark || 200000;
         enrichedOptions.previous_summary = crystallization.latestSummary || "";
         enrichedOptions.crystallization_keep_turns = 1;
         // 移除 system prompt 中的 opening（已合并到消息链头部）
@@ -563,6 +598,31 @@ export const gateway = {
           };
         }
       }
+
+      // 检查全局 settings 中的 carryProfile 开关（保障 F12/WebSocket 载荷中 100% 具备用户画像）
+      const cs = client._clientSettings || {};
+      if (cs.chat?.carryProfile) {
+        const hasProfile = finalMessages.some(
+          (m) =>
+            m.role === "system" &&
+            typeof m.content === "string" &&
+            m.content.includes("<user_profile>"),
+        );
+        if (!hasProfile) {
+          const configStore = useConfigStore();
+          const profile = configStore.userProfile || cs.profile || {};
+          const profileXml = buildUserProfileXml(profile);
+          finalMessages.unshift({
+            role: "system",
+            content: profileXml,
+          });
+        }
+      }
+
+      console.log(
+        "🚀 [gateway] 最终发送给模型 WebSocket 的 messages 载荷:",
+        finalMessages,
+      );
 
       const data = {
         settings: enrichedOptions,

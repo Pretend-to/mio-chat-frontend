@@ -23,7 +23,8 @@ const DEFAULTS = {
   chat: {
     desktopEnterSend: false,
     autoReadAloud: false,
-    carryTimestamp: false,
+    readAloudVoice: "auto",
+    carryTimestamp: true,
     carryProfile: false,
   },
   agentDefault: {
@@ -155,40 +156,49 @@ export async function getLocalPresetById(id) {
   return presets.find((p) => p.id === id) || null;
 }
 
-// ==================== 浏览器信息采集 ====================
+// ==================== 实用元信息采集 ====================
 
-/**
- * 采集浏览器环境信息（用于 carryProfile 的 <user_profile>）
- * @returns {Object}
- */
-export function collectBrowserInfo() {
-  return {
-    language: navigator.language || "",
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
-    platform: navigator.platform || "",
-    userAgent: navigator.userAgent || "",
-    screen: `${screen.width}x${screen.height}`,
-    cores: navigator.hardwareConcurrency || "",
-    memory: navigator.deviceMemory || "",
-  };
+/** 获取简化的操作系统平台名称 */
+export function getOSPlatform() {
+  if (typeof navigator === "undefined") return "Unknown";
+  const ua = navigator.userAgent || "";
+  if (/mac/i.test(ua)) return "macOS";
+  if (/win/i.test(ua)) return "Windows";
+  if (/linux/i.test(ua)) return "Linux";
+  if (/iphone|ipad|ipod/i.test(ua)) return "iOS";
+  if (/android/i.test(ua)) return "Android";
+  return navigator.platform || "Unknown";
 }
 
 /**
- * 构建 <user_profile> XML 字符串
+ * 构建精简实用的 <user_profile> XML 字符串
  * @param {Object} profile  来自 client_settings.profile
  * @returns {string}
  */
 export function buildUserProfileXml(profile) {
-  const browser = collectBrowserInfo();
+  const language = navigator.language || "zh-CN";
+  const timezone =
+    Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Shanghai";
+  const os = getOSPlatform();
+  const now = new Date();
+  const timeString = now.toLocaleString("zh-CN", {
+    hour12: false,
+    weekday: "long",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
   const lines = [
     "<user_profile>",
     `  <name>${escapeXml(profile?.name || "user")}</name>`,
-    `  <language>${escapeXml(browser.language)}</language>`,
-    `  <timezone>${escapeXml(browser.timezone)}</timezone>`,
-    `  <platform>${escapeXml(browser.platform)}</platform>`,
-    `  <screen>${escapeXml(browser.screen)}</screen>`,
-    `  <cores>${escapeXml(String(browser.cores))}</cores>`,
-    `  <memory>${escapeXml(String(browser.memory))}</memory>`,
+    `  <language>${escapeXml(language)}</language>`,
+    `  <timezone>${escapeXml(timezone)}</timezone>`,
+    `  <current_time>${escapeXml(timeString)}</current_time>`,
+    `  <os_platform>${escapeXml(os)}</os_platform>`,
     "</user_profile>",
   ];
   return lines.join("\n");

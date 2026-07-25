@@ -303,7 +303,7 @@ export default class Config {
       crystallization: {
         enabled: true,
         latestSummary: "",
-        tokenWatermark: 64000,
+        tokenWatermark: 200000,
       },
       chatParams: {
         temperature: 1,

@@ -55,33 +55,17 @@
           </div>
           <div class="setting-field">
             <span class="field-label">头像</span>
-            <div class="field-value">
-              <div class="avatar-preview" @click="triggerAvatarUpload">
+            <div class="field-value avatar-field-value">
+              <div class="profile-avatar-display" @click="openAvatarDialog">
                 <img
-                  v-if="form.profile.avatar"
-                  :src="form.profile.avatar"
-                  alt="自定义头像"
+                  :src="getAdminAvatarUrl(form.profile.avatar)"
+                  alt="个人头像"
+                  class="profile-avatar-img"
                 />
-                <div v-else class="avatar-placeholder">
-                  <el-icon :size="28"><User /></el-icon>
-                </div>
-                <div class="avatar-overlay">更换</div>
               </div>
-              <input
-                ref="avatarInput"
-                type="file"
-                accept="image/*"
-                style="display: none"
-                @change="handleAvatarSelect"
-              />
-              <el-button
-                v-if="form.profile.avatar"
-                size="small"
-                text
-                type="danger"
-                @click="clearAvatar"
-                style="margin-left: 8px"
-              >清除</el-button>
+              <el-button type="primary" plain size="small" @click="openAvatarDialog">
+                修改头像
+              </el-button>
             </div>
           </div>
         </div>
@@ -93,7 +77,7 @@
           <div class="setting-field">
             <span class="field-label">主题</span>
             <div class="field-value">
-              <el-select v-model="form.appearance.theme" @change="save">
+              <el-select v-model="form.appearance.theme" @change="onAppearanceChange">
                 <el-option label="跟随系统" value="auto" />
                 <el-option label="浅色" value="light" />
                 <el-option label="深色" value="dark" />
@@ -103,7 +87,7 @@
           <div class="setting-field">
             <span class="field-label">字体大小</span>
             <div class="field-value">
-              <el-select v-model="form.appearance.fontSize" @change="save">
+              <el-select v-model="form.appearance.fontSize" @change="onAppearanceChange">
                 <el-option label="小" value="small" />
                 <el-option label="标准" value="medium" />
                 <el-option label="大" value="large" />
@@ -117,7 +101,12 @@
       <div v-if="activeTab === 'chat'" class="tab-pane">
         <div class="settings-card">
           <div class="setting-field">
-            <span class="field-label">Enter 键行为</span>
+            <span class="field-label">
+              Enter 键行为
+              <el-tooltip content="关闭时 Ctrl+Enter 发送消息" placement="top">
+                <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
+              </el-tooltip>
+            </span>
             <div class="field-value">
               <el-switch
                 v-model="form.chat.desktopEnterSend"
@@ -125,11 +114,15 @@
                 inactive-text="换行"
                 @change="save"
               />
-              <span class="field-hint">关闭时 Ctrl+Enter 发送</span>
             </div>
           </div>
           <div class="setting-field">
-            <span class="field-label">自动朗读</span>
+            <span class="field-label">
+              自动朗读
+              <el-tooltip content="AI 回复完成后自动进行语音朗读" placement="top">
+                <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
+              </el-tooltip>
+            </span>
             <div class="field-value">
               <el-switch
                 v-model="form.chat.autoReadAloud"
@@ -137,11 +130,38 @@
                 inactive-text="关"
                 @change="save"
               />
-              <span class="field-hint">AI 回复完成后自动语音朗读</span>
             </div>
           </div>
           <div class="setting-field">
-            <span class="field-label">携带时间戳</span>
+            <span class="field-label">
+              朗读音色
+              <el-tooltip content="选择语音朗读使用的系统音色" placement="top">
+                <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
+              </el-tooltip>
+            </span>
+            <div class="field-value">
+              <el-select
+                v-model="form.chat.readAloudVoice"
+                style="width: 220px"
+                @change="save"
+              >
+                <el-option label="自动选择 (默认中文)" value="auto" />
+                <el-option
+                  v-for="voice in availableVoices"
+                  :key="voice.voiceURI"
+                  :label="`${voice.name} (${voice.lang})`"
+                  :value="voice.voiceURI"
+                />
+              </el-select>
+            </div>
+          </div>
+          <div class="setting-field">
+            <span class="field-label">
+              携带时间戳
+              <el-tooltip content="发送消息时自动包合时间戳标签 <message time='...'>" placement="top">
+                <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
+              </el-tooltip>
+            </span>
             <div class="field-value">
               <el-switch
                 v-model="form.chat.carryTimestamp"
@@ -149,11 +169,15 @@
                 inactive-text="关"
                 @change="save"
               />
-              <span class="field-hint">发送消息时包裹 &lt;message time="..."&gt;</span>
             </div>
           </div>
           <div class="setting-field">
-            <span class="field-label">注入用户画像</span>
+            <span class="field-label">
+              注入用户画像
+              <el-tooltip content="首次对话时将设备与用户信息自动注入 Prompt" placement="top">
+                <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
+              </el-tooltip>
+            </span>
             <div class="field-value">
               <el-switch
                 v-model="form.chat.carryProfile"
@@ -161,7 +185,6 @@
                 inactive-text="关"
                 @change="save"
               />
-              <span class="field-hint">首次对话时将设备和用户信息注入 prompt</span>
             </div>
           </div>
         </div>
@@ -171,16 +194,36 @@
       <div v-if="activeTab === 'agent'" class="tab-pane">
         <div class="settings-card">
           <div class="section-intro">
-            选择一个本地预设作为默认 Agent。新建会话时将自动继承该预设的全部配置（模型、工具集、技能、记忆等）。
+            选择一个预设作为默认 Agent。新建会话时将自动继承该预设的全部配置（模型、工具集、技能、记忆等）。
           </div>
 
-          <div v-if="presets.length === 0" class="empty-presets">
-            <el-empty description="暂无本地预设" :image-size="80">
-              <span class="empty-tip">在联系人详情页中点击「保存到本地预设」来创建</span>
-            </el-empty>
-          </div>
+          <div class="preset-list">
+            <!-- 默认空白 Agent (系统内置，不可删除) -->
+            <div
+              :class="{
+                'preset-item': true,
+                active: !form.agentDefault.presetId,
+              }"
+              @click="selectPreset(null)"
+            >
+              <div class="preset-radio">
+                <span
+                  class="radio-dot"
+                  :class="{
+                    checked: !form.agentDefault.presetId,
+                  }"
+                ></span>
+              </div>
+              <div class="preset-info">
+                <div class="preset-name">默认空白 Agent</div>
+                <div class="preset-detail">
+                  系统内置基础预设 · 使用全局默认模型与工具配置
+                </div>
+              </div>
+              <el-tag size="small" type="info" effect="plain" class="system-tag">内置</el-tag>
+            </div>
 
-          <div v-else class="preset-list">
+            <!-- 用户本地创建的预设 -->
             <div
               v-for="preset in presets"
               :key="preset.id"
@@ -200,7 +243,7 @@
               <div class="preset-info" @click="selectPreset(preset.id)">
                 <div class="preset-name">{{ preset.name }}</div>
                 <div class="preset-detail">
-                  {{ preset.title }}
+                  {{ preset.title || '本地预设' }}
                   <span v-if="preset.options?.base?.model">
                     · {{ preset.options.base.model }}
                   </span>
@@ -211,20 +254,109 @@
                 text
                 type="danger"
                 @click.stop="deletePreset(preset)"
-                :disabled="presets.length <= 1 && form.agentDefault.presetId === preset.id"
               >删除</el-button>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- ========== 头像设置对话框 ========== -->
+    <el-dialog
+      v-model="avatarDialogVisible"
+      title="修改头像"
+      width="460px"
+      class="avatar-setting-dialog"
+      append-to-body
+    >
+      <div class="avatar-dialog-body">
+        <!-- 1. 头像策略选择 -->
+        <div class="dialog-section">
+          <div class="dialog-section-label">头像策略</div>
+          <el-radio-group v-model="tempPolicy" size="default" class="policy-radio-group">
+            <el-radio-button value="system">跟随系统</el-radio-button>
+            <el-radio-button value="qq">自定义 QQ</el-radio-button>
+            <el-radio-button value="url">自定义 URL</el-radio-button>
+            <el-radio-button value="upload">上传图片</el-radio-button>
+          </el-radio-group>
+        </div>
+
+        <!-- 2. 动态输入/操作区 -->
+        <div class="dialog-section policy-content-section">
+          <div v-if="tempPolicy === 'system'" class="policy-hint">
+            使用系统默认 QQ 头像（1099834705）
+          </div>
+
+          <div v-else-if="tempPolicy === 'qq'" class="policy-input-box">
+            <el-input
+              v-model="tempQq"
+              placeholder="请输入 QQ 号码（如：1099834705）"
+              clearable
+            />
+          </div>
+
+          <div v-else-if="tempPolicy === 'url'" class="policy-input-box">
+            <el-input
+              v-model="tempUrl"
+              placeholder="请输入图片 URL（https://...）"
+              clearable
+            />
+          </div>
+
+          <div v-else-if="tempPolicy === 'upload'" class="policy-upload-box">
+            <el-button type="primary" plain @click="triggerCropFileSelect">
+              <el-icon style="margin-right: 4px"><Picture /></el-icon>
+              选择图片并裁切
+            </el-button>
+            <span v-if="tempUploadedAvatar" class="upload-status-tag">已选择裁切图片</span>
+            <input
+              ref="cropFileInputRef"
+              type="file"
+              accept="image/*"
+              style="display: none"
+              @change="handleCropFileSelected"
+            />
+          </div>
+        </div>
+
+        <!-- 3. 头像预览区 -->
+        <div class="dialog-section preview-section">
+          <div class="dialog-section-label">头像预览</div>
+          <div class="avatar-preview-box">
+            <img
+              :src="dialogPreviewUrl"
+              alt="头像预览"
+              class="dialog-preview-img"
+            />
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="avatarDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmAvatarChange">确定</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- 图片裁剪二次弹窗 -->
+    <ImageCropper
+      :visible="cropperVisible"
+      :image-src="selectedImageSrc"
+      @close="cropperVisible = false"
+      @confirm="handleCropperConfirm"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, computed, onMounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { User } from "@element-plus/icons-vue";
+import { Picture, InfoFilled } from "@element-plus/icons-vue";
+import ImageCropper from "@/components/settings/ImageCropper.vue";
+import { useConfigStore } from "@/stores/configStore.js";
+import { applyAppearanceSettings } from "@/utils/appearance.js";
 import {
   getClientSettings,
   setClientSettings,
@@ -232,9 +364,10 @@ import {
   deleteLocalPreset as removePreset,
 } from "@/lib/clientSettings.js";
 import { client } from "@/lib/runtime.js";
+import { getAdminAvatarUrl } from "@/utils/avatar.js";
 
+const configStore = useConfigStore();
 const activeTab = ref("profile");
-const avatarInput = ref(null);
 
 const form = reactive({
   profile: {
@@ -249,7 +382,8 @@ const form = reactive({
   chat: {
     desktopEnterSend: false,
     autoReadAloud: false,
-    carryTimestamp: false,
+    readAloudVoice: "auto",
+    carryTimestamp: true,
     carryProfile: false,
   },
   agentDefault: {
@@ -259,14 +393,155 @@ const form = reactive({
 
 const presets = ref([]);
 
+// ========== 头像对话框状态 ==========
+const avatarDialogVisible = ref(false);
+const tempPolicy = ref("system");
+const tempQq = ref("");
+const tempUrl = ref("");
+const tempUploadedAvatar = ref("");
+
+// 裁切弹窗状态
+const cropperVisible = ref(false);
+const selectedImageSrc = ref("");
+const cropFileInputRef = ref(null);
+
+// 打开头像修改对话框
+const openAvatarDialog = () => {
+  const currentAvatar = form.profile.avatar || "";
+  const qqMatch = currentAvatar.match(/q=(\d+)/) || currentAvatar.match(/^(\d+)$/);
+  if (!currentAvatar) {
+    tempPolicy.value = "system";
+    tempQq.value = "";
+    tempUrl.value = "";
+    tempUploadedAvatar.value = "";
+  } else if (qqMatch) {
+    tempPolicy.value = "qq";
+    tempQq.value = qqMatch[1];
+    tempUrl.value = "";
+    tempUploadedAvatar.value = "";
+  } else if (currentAvatar.startsWith("data:image/")) {
+    tempPolicy.value = "upload";
+    tempUploadedAvatar.value = currentAvatar;
+    tempQq.value = "";
+    tempUrl.value = "";
+  } else {
+    tempPolicy.value = "url";
+    tempUrl.value = currentAvatar;
+    tempQq.value = "";
+    tempUploadedAvatar.value = "";
+  }
+  avatarDialogVisible.value = true;
+};
+
+// 计算对话框内实时的头像预览地址
+const dialogPreviewUrl = computed(() => {
+  if (tempPolicy.value === "system") {
+    return getAdminAvatarUrl(null);
+  } else if (tempPolicy.value === "qq") {
+    return tempQq.value.trim()
+      ? getAdminAvatarUrl(tempQq.value.trim())
+      : getAdminAvatarUrl(null);
+  } else if (tempPolicy.value === "url") {
+    return tempUrl.value.trim() ? tempUrl.value.trim() : getAdminAvatarUrl(null);
+  } else if (tempPolicy.value === "upload") {
+    return tempUploadedAvatar.value
+      ? tempUploadedAvatar.value
+      : getAdminAvatarUrl(null);
+  }
+  return getAdminAvatarUrl(null);
+});
+
+// 触发图片选择
+const triggerCropFileSelect = () => {
+  if (cropFileInputRef.value) {
+    cropFileInputRef.value.value = "";
+    cropFileInputRef.value.click();
+  }
+};
+
+// 选择图片后加载为 base64 并弹出 ImageCropper
+const handleCropFileSelected = (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    ElMessage.error("请选择有效的图片文件");
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    selectedImageSrc.value = event.target.result;
+    cropperVisible.value = true;
+  };
+  reader.readAsDataURL(file);
+};
+
+// 裁剪完成后回调
+const handleCropperConfirm = (croppedBase64) => {
+  tempUploadedAvatar.value = croppedBase64;
+  cropperVisible.value = false;
+  tempPolicy.value = "upload";
+};
+
+// 确定提交头像设置
+const confirmAvatarChange = async () => {
+  let targetAvatar = null;
+  if (tempPolicy.value === "system") {
+    targetAvatar = null;
+  } else if (tempPolicy.value === "qq") {
+    if (!tempQq.value.trim()) {
+      ElMessage.warning("请输入 QQ 号码");
+      return;
+    }
+    targetAvatar = getAdminAvatarUrl(tempQq.value.trim());
+  } else if (tempPolicy.value === "url") {
+    if (!tempUrl.value.trim()) {
+      ElMessage.warning("请输入图片 URL");
+      return;
+    }
+    targetAvatar = tempUrl.value.trim();
+  } else if (tempPolicy.value === "upload") {
+    if (!tempUploadedAvatar.value) {
+      ElMessage.warning("请先上传并裁切图片");
+      return;
+    }
+    targetAvatar = tempUploadedAvatar.value;
+  }
+
+  form.profile.avatar = targetAvatar;
+  avatarDialogVisible.value = false;
+  await saveNow();
+  ElMessage.success("头像更新成功");
+};
+
+// ========== 语音音色加载 ==========
+const availableVoices = ref([]);
+const loadVoices = () => {
+  if (typeof window !== "undefined" && window.speechSynthesis) {
+    const voices = window.speechSynthesis.getVoices();
+    if (voices && voices.length > 0) {
+      availableVoices.value = [...voices].sort((a, b) => {
+        const aZh = a.lang.includes("zh") ? 0 : 1;
+        const bZh = b.lang.includes("zh") ? 0 : 1;
+        return aZh - bZh;
+      });
+    }
+  }
+};
+
 // ========== 初始化 ==========
 onMounted(async () => {
+  loadVoices();
+  if (typeof window !== "undefined" && window.speechSynthesis) {
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+  }
+
   try {
     const settings = await getClientSettings();
     Object.assign(form.profile, settings.profile || {});
     Object.assign(form.appearance, settings.appearance || {});
     Object.assign(form.chat, settings.chat || {});
     form.agentDefault.presetId = settings.agentDefault?.presetId || null;
+    applyAppearanceSettings(form.appearance);
   } catch (e) {
     console.warn("加载客户端设置失败:", e);
   }
@@ -279,54 +554,38 @@ onMounted(async () => {
 });
 
 // ========== 保存 ==========
+const onAppearanceChange = () => {
+  applyAppearanceSettings(form.appearance);
+  save();
+};
+
+const saveNow = async () => {
+  if (saveTimer) clearTimeout(saveTimer);
+  try {
+    const snapshot = JSON.parse(JSON.stringify(form));
+    await setClientSettings(snapshot);
+    applyAppearanceSettings(form.appearance);
+
+    // 同步 Pinia configStore 中的 userProfile 响应式数据
+    configStore.updateUserProfile({
+      name: form.profile.name,
+      title: form.profile.title,
+      avatar: form.profile.avatar,
+    });
+
+    client._clientSettings = snapshot;
+    client.emit("avatar_updated", form.profile.avatar);
+  } catch (e) {
+    ElMessage.error("保存失败: " + e.message);
+  }
+};
+
 let saveTimer = null;
 const save = () => {
   if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(async () => {
-    try {
-      const snapshot = JSON.parse(JSON.stringify(form));
-      await setClientSettings(snapshot);
-
-      // 同步缓存到 client 实例，确保所有 composable 实时读取
-      client._clientSettings = snapshot;
-
-      // 实时同步 profile 到 client 实例
-      if (form.profile.name) client.name = form.profile.name;
-      if (form.profile.title) client.title = form.profile.title;
-      if (form.profile.avatar) client.avatar = form.profile.avatar;
-    } catch (e) {
-      ElMessage.error("保存失败: " + e.message);
-    }
+  saveTimer = setTimeout(() => {
+    saveNow();
   }, 300);
-};
-
-// ========== 头像 ==========
-const triggerAvatarUpload = () => {
-  avatarInput.value?.click();
-};
-
-const handleAvatarSelect = (e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-
-  if (file.size > 2 * 1024 * 1024) {
-    ElMessage.warning("头像文件大小不能超过 2MB");
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = () => {
-    form.profile.avatar = reader.result;
-    save();
-  };
-  reader.readAsDataURL(file);
-  e.target.value = "";
-};
-
-const clearAvatar = () => {
-  form.profile.avatar = null;
-  client.avatar = null;
-  save();
 };
 
 // ========== 预设管理 ==========
@@ -457,7 +716,21 @@ const deletePreset = async (preset) => {
   font-size: 13px;
   color: var(--mio-text-primary);
   flex-shrink: 0;
-  width: 110px;
+  min-width: 110px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.label-hint-icon {
+  font-size: 14px;
+  color: var(--mio-text-placeholder);
+  cursor: help;
+  transition: color 0.15s;
+}
+
+.label-hint-icon:hover {
+  color: var(--mio-color-primary);
 }
 
 .field-value {
@@ -468,53 +741,113 @@ const deletePreset = async (preset) => {
   gap: 8px;
 }
 
-.field-hint {
-  font-size: 12px;
-  color: var(--mio-text-placeholder);
+.avatar-field-value {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
-/* Avatar */
-.avatar-preview {
+.profile-avatar-display {
   width: 48px;
   height: 48px;
   border-radius: 50%;
   overflow: hidden;
   cursor: pointer;
-  position: relative;
   border: 1px solid var(--mio-border-color-light);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s;
 }
 
-.avatar-preview img {
+.profile-avatar-display:hover {
+  transform: scale(1.06);
+}
+
+.profile-avatar-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.avatar-placeholder {
-  width: 100%;
-  height: 100%;
-  background: var(--mio-bg-page);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.field-hint {
+  font-size: 12px;
   color: var(--mio-text-placeholder);
 }
 
-.avatar-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  color: #fff;
+/* Avatar Dialog Styles */
+.avatar-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 4px 0;
+}
+
+.dialog-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dialog-section-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--mio-text-secondary);
+}
+
+.policy-radio-group {
+  width: 100%;
+  display: flex;
+}
+
+.policy-radio-group :deep(.el-radio-button) {
+  flex: 1;
+}
+
+.policy-radio-group :deep(.el-radio-button__inner) {
+  width: 100%;
+  padding: 8px 0;
+  font-size: 13px;
+}
+
+.policy-hint {
   font-size: 12px;
+  color: var(--mio-text-placeholder);
+  background: var(--mio-bg-page);
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+
+.policy-upload-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.upload-status-tag {
+  font-size: 12px;
+  color: var(--el-color-success);
+}
+
+.preview-section {
+  align-items: center;
+}
+
+.avatar-preview-box {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--mio-border-color-light);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s;
+  background: var(--mio-bg-page);
 }
 
-.avatar-preview:hover .avatar-overlay {
-  opacity: 1;
+.dialog-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* Presets list */
@@ -598,6 +931,11 @@ const deletePreset = async (preset) => {
   font-size: 12px;
   color: var(--mio-text-secondary);
   margin-top: 2px;
+}
+
+.system-tag {
+  flex-shrink: 0;
+  margin-left: 8px;
 }
 
 /* Tab animation */

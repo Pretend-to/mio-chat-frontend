@@ -10,6 +10,8 @@ import {
 } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { client, config } from "@/lib/runtime.js";
+import { storeToRefs } from "pinia";
+import { useConfigStore } from "@/stores/configStore.js";
 import {
   useContactorsStore,
   getContactorLastTime,
@@ -41,8 +43,23 @@ const { proxy } = getCurrentInstance();
 
 // Data
 const onPhone = ref(window.innerWidth < 768);
-const processedImage = ref(client.avatar || "/p/qava?q=1099834705");
-const rawAdminAvatar = ref(client.avatar || "/p/qava?q=1099834705");
+const configStore = useConfigStore();
+const { userAvatarUrl, userProfile } = storeToRefs(configStore);
+const processedImage = ref(userAvatarUrl.value);
+const rawAdminAvatar = ref(userAvatarUrl.value);
+
+watch(
+  userAvatarUrl,
+  async (newUrl) => {
+    rawAdminAvatar.value = newUrl;
+    try {
+      processedImage.value = await processAvatarWithStatusHole(newUrl);
+    } catch (error) {
+      processedImage.value = newUrl;
+    }
+  },
+  { immediate: true },
+);
 const connectionStore = useConnectionStore();
 const contactorsStore = useContactorsStore();
 const isConnected = computed(() => connectionStore.isConnected);
@@ -172,10 +189,10 @@ const loadAvatar = async (adminId) => {
 };
 
 const initStatus = () => {
-  const adminId = client.admin_qq;
-  if (adminId) loadAvatar(adminId);
-  // Socket 连接状态现在统一通过 Pinia Store 管理
+  const adminId = client.avatar || client.admin_qq;
+  loadAvatar(adminId);
 };
+client.on("avatar_updated", initStatus);
 
 const genFakeId = () => client.genFakeId();
 
@@ -488,7 +505,7 @@ onBeforeUnmount(() => {
           </div>
           <div class="user-detail">
             <div class="user-name">
-              {{ client.name === "user" ? "秋山 澪" : client.name }}
+              {{ userProfile.name === "user" ? "秋山 澪" : userProfile.name }}
             </div>
             <div class="user-status">
               <StatusDot size="8px" />

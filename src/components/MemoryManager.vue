@@ -19,10 +19,10 @@
           <el-input-number
             v-model="localWatermark"
             :min="1000"
-            :max="200000"
-            :step="1000"
+            :max="1000000"
+            :step="5000"
             size="small"
-            style="width: 140px"
+            style="width: 150px"
             @change="onWatermarkChange"
           />
         </div>
@@ -113,7 +113,7 @@ const crystallization = computed(
 const crystallizationEnabled = computed(
   () => crystallization.value?.enabled === true,
 );
-const localWatermark = ref(crystallization.value?.tokenWatermark ?? 64000);
+const localWatermark = ref(crystallization.value?.tokenWatermark ?? 200000);
 
 // Zone contents parsed from latestSummary
 const zoneContents = ref(

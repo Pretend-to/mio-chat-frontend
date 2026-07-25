@@ -225,7 +225,7 @@ export const useContactorsStore = defineStore("contactors", () => {
         newContactors[item.id].options.crystallization = {
           enabled: true,
           latestSummary: "",
-          tokenWatermark: 64000,
+          tokenWatermark: 200000,
         };
       }
 
@@ -263,7 +263,7 @@ export const useContactorsStore = defineStore("contactors", () => {
       newContactor.options.crystallization = {
         enabled: true,
         latestSummary: "",
-        tokenWatermark: 64000,
+        tokenWatermark: 200000,
       };
     }
 
@@ -304,7 +304,7 @@ export const useContactorsStore = defineStore("contactors", () => {
         contactor.options.crystallization = {
           enabled: true,
           latestSummary: "",
-          tokenWatermark: 64000,
+          tokenWatermark: 200000,
         };
         client.setLocalStorage();
       }
@@ -531,7 +531,7 @@ export const useContactorsStore = defineStore("contactors", () => {
         contactor.options.crystallization = {
           enabled: true,
           latestSummary: "",
-          tokenWatermark: 64000,
+          tokenWatermark: 200000,
         };
       }
       contactor.options.crystallization.latestSummary = result.summary;
@@ -656,7 +656,7 @@ export const useContactorsStore = defineStore("contactors", () => {
         contactor.options.crystallization = {
           enabled: true,
           latestSummary: "",
-          tokenWatermark: 64000,
+          tokenWatermark: 200000,
         };
       }
       contactor.options.crystallization.latestSummary = displaySummary;
@@ -693,7 +693,7 @@ export const useContactorsStore = defineStore("contactors", () => {
       contactor.options.crystallization = {
         enabled: true,
         latestSummary: "",
-        tokenWatermark: 64000,
+        tokenWatermark: 200000,
       };
     }
     Object.assign(contactor.options.crystallization, patch);

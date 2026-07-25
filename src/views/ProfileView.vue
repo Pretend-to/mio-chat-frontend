@@ -51,7 +51,7 @@
         发送消息
       </el-button>
       <el-button type="primary" plain @click="saveAsPreset">
-        保存到本地预设
+        保存本地
       </el-button>
       <el-button type="danger" plain @click="centerDialogVisible = true">
         删除好友
@@ -295,7 +295,7 @@ export default {
         if (result.action === "updated") {
           this.$message.success("预设已更新");
         } else {
-          this.$message.success("已保存到本地预设");
+          this.$message.success("已保存为本地预设");
         }
       } catch (e) {
         this.$message.error("保存失败: " + e.message);

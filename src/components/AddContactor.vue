@@ -139,12 +139,15 @@
                     <img :src="getAvatarByModel(preset.model)" alt="模型头像" />
                   </div>
                   <div v-else class="preset-avatar">
-                    {{ preset.name.slice(0, 2) }}
+                    {{ preset.name ? preset.name.slice(0, 2) : "预设" }}
                   </div>
                   <div class="preset-info">
                     <div class="preset-name">{{ preset.name }}</div>
-                    <div :title="preset.opening" class="preset-description">
-                      {{ preset.opening }}
+                    <div
+                      :title="preset.opening || preset.title || ''"
+                      class="preset-description"
+                    >
+                      {{ preset.opening || preset.title || "本地预设" }}
                     </div>
                   </div>
                   <el-button @click="addBot(preset)">添加</el-button>
@@ -316,12 +319,15 @@
                   <img :src="getAvatarByModel(preset.model)" alt="模型头像" />
                 </div>
                 <div v-else class="preset-avatar">
-                  {{ preset.name.slice(0, 2) }}
+                  {{ preset.name ? preset.name.slice(0, 2) : "预设" }}
                 </div>
                 <div class="preset-info">
                   <div class="preset-name">{{ preset.name }}</div>
-                  <div :title="preset.opening" class="preset-description">
-                    {{ preset.opening }}
+                  <div
+                    :title="preset.opening || preset.title || ''"
+                    class="preset-description"
+                  >
+                    {{ preset.opening || preset.title || "本地预设" }}
                   </div>
                 </div>
                 <el-button @click="addBot(preset)">添加</el-button>
@@ -369,7 +375,7 @@ import { config, client } from "@/lib/runtime.js";
 import { getAvatarByAdapterType } from "@/utils/avatar.js";
 import { Loading, Search } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { getAvatarByModel } from "@/stores/contactorsStore.js";
 import { getLocalPresets } from "@/lib/clientSettings.js";
@@ -650,8 +656,27 @@ const loadMoreData = async () => {
 const changeShownType = (index) => {
   activeTypeIndex.value = index;
   buttonTranslate.value = `calc(${index * 25}% + 4px)`;
+  if (index === 2 || index === 1) {
+    getAddHistory();
+  }
   loadSpecificType();
 };
+
+watch(
+  () => props.show,
+  (val) => {
+    if (val) {
+      getAddHistory();
+      refreshProviders();
+    }
+  },
+);
+
+watch(activeTab, (newTab) => {
+  if (newTab === 1) {
+    getAddHistory();
+  }
+});
 
 // 处理滚动事件，实现无限滚动
 const handleScroll = ({ scrollTop }) => {

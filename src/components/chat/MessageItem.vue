@@ -60,23 +60,25 @@
           />
           <img
             v-else
-            :src="client.avatar"
-            :alt="client.name"
-            :crossorigin="isExternal(client.avatar) ? 'anonymous' : undefined"
+            :src="userAvatarUrl"
+            :alt="userProfile.name"
+            :crossorigin="
+              isExternal(userAvatarUrl) ? 'anonymous' : undefined
+            "
           />
         </div>
         <div v-if="item.role !== 'mio_system'" class="msg">
           <div class="wholename">
             <div
               v-if="
-                item.role === 'other' ? activeContactor.title : client.title
+                item.role === 'other' ? activeContactor.title : userProfile.title
               "
               class="title"
             >
-              {{ item.role === "other" ? activeContactor.title : client.title }}
+              {{ item.role === "other" ? activeContactor.title : userProfile.title }}
             </div>
             <div class="name">
-              {{ item.role === "other" ? activeContactor.name : client.name }}
+              {{ item.role === "other" ? activeContactor.name : userProfile.name }}
               <span v-if="item.triggerType === 'task'" class="task-name-tag"
                 >计划</span
               >
@@ -208,8 +210,13 @@
 <script setup>
 import { ref, computed } from "vue";
 import { client } from "@/lib/runtime.js";
+import { storeToRefs } from "pinia";
+import { useConfigStore } from "@/stores/configStore.js";
 import MessageContent from "@/components/chat/MessageContent.vue";
 import { ElMessage } from "element-plus";
+
+const configStore = useConfigStore();
+const { userAvatarUrl, userProfile } = storeToRefs(configStore);
 
 import { Loading, Warning, CollectionTag } from "@element-plus/icons-vue";
 

@@ -5,6 +5,8 @@
  */
 
 import { configAPI } from "@/lib/configApi.js";
+import { getClientSettings, setClientSettings } from "@/lib/clientSettings.js";
+import { getAdminAvatarUrl } from "@/utils/avatar.js";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
@@ -38,6 +40,30 @@ export const useConfigStore = defineStore("config", () => {
 
   // 选中的适配器（用于批量操作）
   const selectedAdapters = ref([]);
+
+  // ========== 客户端个人资料 (Pinia 响应式) ==========
+  const getInitialProfile = () => {
+    let initial = { name: "user", title: "Mio", avatar: null };
+    try {
+      const cached = localStorage.getItem("client_settings_profile");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.name) initial.name = parsed.name;
+        if (parsed.title) initial.title = parsed.title;
+        if (parsed.avatar !== undefined) initial.avatar = parsed.avatar;
+      }
+    } catch (e) {}
+    return initial;
+  };
+
+  const userProfile = ref(getInitialProfile());
+
+  /**
+   * 用户计算头像 URL
+   */
+  const userAvatarUrl = computed(() => {
+    return getAdminAvatarUrl(userProfile.value.avatar);
+  });
 
   // ========== Getters ==========
 
@@ -534,6 +560,47 @@ export const useConfigStore = defineStore("config", () => {
     return selectedAdapters.value.some((a) => `${a.type}-${a.index}` === key);
   }
 
+  /**
+   * 加载客户端设置 (localforage) 并更新 Pinia userProfile 响应式状态
+   */
+  async function loadClientSettings() {
+    try {
+      const settings = await getClientSettings();
+      if (settings?.profile) {
+        userProfile.value = {
+          name: settings.profile.name || "user",
+          title: settings.profile.title || "Mio",
+          avatar: settings.profile.avatar !== undefined ? settings.profile.avatar : null,
+        };
+        try {
+          localStorage.setItem(
+            "client_settings_profile",
+            JSON.stringify(userProfile.value),
+          );
+        } catch (e) {}
+      }
+      return settings;
+    } catch (e) {
+      console.warn("[configStore] 加载客户端设置失败:", e);
+    }
+  }
+
+  /**
+   * 更新并同步 Pinia 中的 userProfile 响应式状态
+   */
+  function updateUserProfile(profilePatch) {
+    userProfile.value = {
+      ...userProfile.value,
+      ...profilePatch,
+    };
+    try {
+      localStorage.setItem(
+        "client_settings_profile",
+        JSON.stringify(userProfile.value),
+      );
+    } catch (e) {}
+  }
+
   // ========== 返回公开的 API ==========
 
   return {
@@ -556,6 +623,8 @@ export const useConfigStore = defineStore("config", () => {
     totalPluginsCount,
     totalToolsCount,
     isAuthenticated,
+    userProfile,
+    userAvatarUrl,
 
     // Actions
     setAdminCode,
@@ -585,5 +654,7 @@ export const useConfigStore = defineStore("config", () => {
     toggleAdapterSelection,
     clearAdapterSelection,
     isAdapterSelected,
+    loadClientSettings,
+    updateUserProfile,
   };
 });

@@ -9,6 +9,9 @@ import "element-plus/dist/index.css";
 import "element-plus/theme-chalk/dark/css-vars.css";
 import "mio-previewer/style.css";
 
+import { initAppearanceFromCache } from "@/utils/appearance.js";
+initAppearanceFromCache();
+
 import { createApp } from "vue";
 import { createPinia } from "pinia";
 

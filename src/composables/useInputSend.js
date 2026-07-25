@@ -247,19 +247,9 @@ export function useInputSend({
     }
 
     if (wrappedMessage.trim()) {
-      // 覆盖链：Agent messageEnhancement > 全局客户端设置 > 硬编码默认(false)
-      const carryTimestamp =
-        activeContactor.value?.options?.messageEnhancement?.carryTimestamp ??
-        client._clientSettings?.chat?.carryTimestamp ??
-        false;
-
-      const finalText = carryTimestamp
-        ? `<message time="${new Date().toISOString()}">\n${wrappedMessage}\n</message>`
-        : wrappedMessage;
-
       container.content.push({
         type: "text",
-        data: { text: finalText },
+        data: { text: wrappedMessage },
       });
     }
     ImageSrcs.forEach((imgUrl) => {

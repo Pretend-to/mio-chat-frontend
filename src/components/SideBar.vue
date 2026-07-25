@@ -6,6 +6,7 @@ import {
 } from "@/utils/avatar.js";
 import StatusDot from "@/components/StatusDot.vue";
 import { useConnectionStore } from "@/stores/connectionStore";
+import { useConfigStore } from "@/stores/configStore";
 import { mapState } from "pinia";
 
 const PageStatus = {
@@ -27,6 +28,7 @@ export default {
   },
   computed: {
     ...mapState(useConnectionStore, ["isConnected"]),
+    ...mapState(useConfigStore, ["userAvatarUrl"]),
     isChatActive() {
       return this.activePage === PageStatus.CHAT;
     },
@@ -47,22 +49,20 @@ export default {
       },
       immediate: true,
     },
+    userAvatarUrl: {
+      immediate: true,
+      async handler(newUrl) {
+        if (!newUrl) return;
+        try {
+          this.processedImage = await processAvatarWithStatusHole(newUrl);
+        } catch (error) {
+          this.processedImage = newUrl;
+        }
+      },
+    },
   },
   mounted() {
     this.activePage = this.getPageStatusFromRoute();
-    const adminId = client.admin_qq;
-    if (adminId) {
-      this.loadAvatar(adminId);
-    } else {
-      client.on(
-        "loaded",
-        () => {
-          const adminId = client.admin_qq;
-          this.loadAvatar(adminId);
-        },
-        false,
-      );
-    }
   },
   methods: {
     async toChat() {
