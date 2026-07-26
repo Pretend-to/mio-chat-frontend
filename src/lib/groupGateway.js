@@ -502,6 +502,34 @@ export async function sendGroupCompletions(group, assistantMsgId, targetMemberId
     }
   }
 
+  // 用户通过 / 或 # 指定了工具/技能时，替本轮要发言的成员把它开上。
+  // 群成员的工具配置是各自独立的，被 @ 的人如果没开这个技能就用不了，
+  // 用户还得先去成员设置里手动勾选 —— 这里直接补上。
+  const lastUserMsg = [...(group.messageChain || [])]
+    .reverse()
+    .find((m) => m.role === "user");
+  const requestedTools = (lastUserMsg?.content || [])
+    .filter((c) => c.type === "prompt_hint" && Array.isArray(c.data?.enableTools))
+    .flatMap((c) => c.data.enableTools);
+
+  if (requestedTools.length > 0) {
+    let changed = false;
+    targetMembers.forEach((m) => {
+      if (!m.options) m.options = {};
+      if (!m.options.toolCallSettings) m.options.toolCallSettings = {};
+      if (!Array.isArray(m.options.toolCallSettings.tools)) {
+        m.options.toolCallSettings.tools = [];
+      }
+      requestedTools.forEach((name) => {
+        if (!m.options.toolCallSettings.tools.includes(name)) {
+          m.options.toolCallSettings.tools.push(name);
+          changed = true;
+        }
+      });
+    });
+    if (changed) client.setLocalStorage();
+  }
+
   if (!client.socket || typeof client.socket.streamCompletions !== "function") {
     throw new Error("Socket 未就绪或未建立连接，请确认 Socket 服务状态");
   }

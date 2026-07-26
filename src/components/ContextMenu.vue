@@ -28,7 +28,7 @@
           <i class="iconfont fuzhi"></i>
           <span>复制</span>
         </div>
-        <div @click.stop="readAloud">
+        <div v-if="!isStreaming" @click.stop="readAloud">
           <template v-if="message.id === currentSpeakingMessageId">
             <i class="mio-icon mio-icon-speaker-mute"></i>
             <span>停止朗读</span>
@@ -46,32 +46,29 @@
           <i class="iconfont fuzhi"></i>
           <span>保存图片</span>
         </div>
-        <div v-if="canRetry" @click.stop="retryMessage">
+        <div v-if="canRetry && !isStreaming" @click.stop="retryMessage">
           <i class="iconfont reset"></i>
           <span>重试</span>
         </div>
-        <div
-          v-if="['pending', 'retrying'].includes(message.status)"
-          @click.stop="stopGeneration"
-        >
+        <div v-if="isStreaming" @click.stop="stopGeneration">
           <i class="iconfont stop"></i>
           <span>停止</span>
         </div>
-        <div @click.stop="replyMessage">
+        <div v-if="!isStreaming" @click.stop="replyMessage">
           <i class="iconfont yinyong"></i>
           <span>引用</span>
         </div>
         <!-- 群聊专用：长按头像在 iOS Safari 上会被系统的图片拖放接管，
              无法 preventDefault，所以 @ 入口放在右键/长按消息菜单里 -->
-        <div v-if="mentionName" @click.stop="mentionMember">
+        <div v-if="mentionName && !isStreaming" @click.stop="mentionMember">
           <i class="mention-at">@</i>
           <span>@ {{ mentionName }}</span>
         </div>
-        <div @click.stop="togglePin">
+        <div v-if="!isStreaming" @click.stop="togglePin">
           <el-icon class="iconfont-el"><CollectionTag /></el-icon>
           <span>{{ message.isPinned ? "取消钉住" : "钉住消息" }}</span>
         </div>
-        <div @click.stop="multiSelect">
+        <div v-if="!isStreaming" @click.stop="multiSelect">
           <i class="iconfont xuanze"></i>
           <span>多选</span>
         </div>
@@ -128,6 +125,14 @@ export default {
   computed: {
     onPhone() {
       return window.innerWidth < 768;
+    },
+    /**
+     * 消息仍在生成中。此时只保留「复制 / 停止 / 删除」三项：
+     * 引用、钉住、多选、朗读、@ 都是针对成形内容的操作，对半截消息没有意义，
+     * 而且移动端是网格布局，条目一多就会撑成三行，很难看。
+     */
+    isStreaming() {
+      return ["pending", "retrying"].includes(this.message?.status);
     },
     /**
      * 可 @ 的成员名。仅群聊里 Agent 成员发的消息才有，
@@ -444,13 +449,6 @@ export default {
         align-items: center
         transform-origin: center
 
-    // 不走 iconfont：图标字体里未必有 @ 字形，直接用文字避免出豆腐块
-    & .mention-at
-        font-style: normal
-        font-weight: 600
-        font-size: 15px
-        line-height: 1
-
         // 移动端图标样式
         @media (max-width: 768px)
             position: static
@@ -462,6 +460,13 @@ export default {
             top: auto
             left: auto
             color: var(--mio-text-regular)
+
+    // @ 图标不走 iconfont（图标字体里未必有 @ 字形，会出豆腐块），用文字代替。
+    // 只覆盖字体表现，定位/尺寸继续沿用上面 & i 的规则（含其移动端重置），
+    // 不要在这里重复写 position 之类的属性。
+    & .mention-at
+        font-style: normal
+        font-weight: 600
 
     & span
         font-size: 0.8rem

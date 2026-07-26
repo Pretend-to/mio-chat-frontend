@@ -737,7 +737,9 @@ watch(
     if (textarea.value) textarea.value.innerHTML = "";
     loadSelected();
     loadDraft();
-    if (activeContactor.value?.platform === "openai" && availableSkills.value.length === 0) {
+    // 群成员也是 Agent，同样要能用技能，与单聊保持一致
+    const p = activeContactor.value?.platform;
+    if ((p === "openai" || p === "group") && availableSkills.value.length === 0) {
       fetchSkills();
     }
   },

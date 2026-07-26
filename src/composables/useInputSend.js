@@ -86,6 +86,10 @@ export function useInputSend({
         activeContactor.value.platform === "group"
       ) {
         let hasConfigChanged = false;
+        // 本次发送要求开启的工具全名。群聊里 activeContactor 是群对象，
+        // 而实际推理用的是 member.options —— 写在群上完全不生效，
+        // 必须另行收集再落到被唤起的成员身上（见 sendGroupCompletions）。
+        const enabledToolNames = new Set();
         badges.forEach((badge) => {
           const preset = badge.getAttribute("data-preset");
           const type = badge.getAttribute("data-type");
@@ -108,6 +112,7 @@ export function useInputSend({
               )
             ) {
               activeContactor.value.options.toolCallSettings.tools.push(preset);
+              enabledToolNames.add(preset);
               hasConfigChanged = true;
             }
             openaiCmdElements.push({
@@ -164,6 +169,7 @@ export function useInputSend({
                 activeContactor.value.options.toolCallSettings.tools.push(
                   stName,
                 );
+                enabledToolNames.add(stName);
                 hasConfigChanged = true;
               }
             });
@@ -178,6 +184,7 @@ export function useInputSend({
                   activeContactor.value.options.toolCallSettings.tools.push(
                     ttName,
                   );
+                  enabledToolNames.add(ttName);
                   hasConfigChanged = true;
                 }
               });
@@ -213,6 +220,7 @@ export function useInputSend({
                 activeContactor.value.options.toolCallSettings.tools.push(
                   tName,
                 );
+                enabledToolNames.add(tName);
                 hasConfigChanged = true;
               }
             });
@@ -226,6 +234,17 @@ export function useInputSend({
             });
           }
         });
+
+        // 群聊：上面那些写入落在群对象上，推理时读的却是 member.options，
+        // 等于没生效。把工具名随消息带下去，由 sendGroupCompletions 在确定了
+        // 本轮要唤起哪些成员之后，替这些成员补开对应的工具/技能。
+        if (
+          activeContactor.value.platform === "group" &&
+          enabledToolNames.size > 0 &&
+          openaiCmdElements.length > 0
+        ) {
+          openaiCmdElements[0].data.enableTools = [...enabledToolNames];
+        }
 
         if (hasConfigChanged) {
           client.setLocalStorage();
