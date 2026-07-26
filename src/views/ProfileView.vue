@@ -17,7 +17,29 @@
         </svg>
       </div>
       <div class="nav-title">{{ activeMember ? '群聊成员设置' : (activeContactor?.platform === 'group' ? '群聊设置' : '联系人详情') }}</div>
-      <div class="more-btn"></div>
+      <!-- 移动端 .action-bar 是隐藏的，三个操作全部收进这里的「更多」菜单 -->
+      <el-dropdown
+        v-if="activeContactor"
+        trigger="click"
+        placement="bottom-end"
+        @command="handleMobileAction"
+      >
+        <div class="more-btn">⋯</div>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item command="chat">发送消息</el-dropdown-item>
+            <el-dropdown-item v-if="!activeMember" command="save">
+              保存本地
+            </el-dropdown-item>
+            <el-dropdown-item command="delete" divided>
+              <span style="color: var(--el-color-danger)">
+                {{ activeMember ? '移出群聊' : (activeContactor?.platform === 'group' ? '解散群聊' : '删除好友') }}
+              </span>
+            </el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
+      <div v-else class="more-btn"></div>
     </div>
 
     <div id="profile" class="profile-main">
@@ -52,11 +74,12 @@
       <el-button plain @click="$router.push(`/chat/${activeContactor.id}`)">
         发送消息
       </el-button>
-      <el-button type="primary" plain @click="saveAsPreset">
-        保存本地
-      </el-button>
       <el-button type="danger" plain @click="centerDialogVisible = true">
         {{ activeMember ? '移出群聊' : (activeContactor?.platform === 'group' ? '解散群聊' : '删除好友') }}
+      </el-button>
+      <!-- 群成员详情没有「保存本地」：成员配置隶属于群，不是可独立复用的预设 -->
+      <el-button v-if="!activeMember" type="primary" plain @click="saveAsPreset">
+        保存本地
       </el-button>
       <el-dialog
         v-model="centerDialogVisible"
@@ -323,6 +346,16 @@ export default {
         });
       }
     },
+    // 移动端「更多」菜单：复用 .action-bar 的三个操作（该栏在移动端被隐藏）
+    handleMobileAction(command) {
+      if (command === "chat") {
+        this.$router.push(`/chat/${this.activeContactor.id}`);
+      } else if (command === "save") {
+        this.saveAsPreset();
+      } else if (command === "delete") {
+        this.centerDialogVisible = true;
+      }
+    },
     async saveAsPreset() {
       const c = this.activeContactor;
       if (!c) return;
@@ -441,6 +474,31 @@ export default {
   padding-top: 8px;
   flex-shrink: 0;
   text-align: left;
+}
+
+/* 选项说明统一走 tooltip，不要在 .field-label 里塞说明文字块：
+   该列桌面仅 14rem、移动端仅 100px，长文案会折成很高的一坨。 */
+.label-hint-icon {
+  font-size: 14px;
+  color: var(--mio-text-placeholder);
+  cursor: help;
+  vertical-align: middle;
+  margin-left: 4px;
+  transition: color 0.15s;
+}
+
+.label-hint-icon:hover {
+  color: var(--mio-color-primary);
+}
+
+.label-hint-icon.danger {
+  color: var(--mio-color-warning);
+}
+
+/* tooltip 默认不限宽，长文案会拉成一条极宽的横条 */
+.mio-hint-popper {
+  max-width: 260px !important;
+  line-height: 1.6 !important;
 }
 
 .field-value {

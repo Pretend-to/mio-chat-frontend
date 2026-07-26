@@ -44,15 +44,9 @@
           <el-tooltip
             content="开启后，LLM 执行 shell 命令（sh）时将跳过所有二次确认步骤。此模式极度危险，可能导致系统损坏或数据丢失！"
             placement="top"
+            popper-class="mio-hint-popper"
           >
-            <span
-              style="
-                color: var(--mio-color-warning);
-                margin-left: 4px;
-                cursor: help;
-              "
-              >⚠️</span
-            >
+            <span class="label-hint-icon danger">⚠️</span>
           </el-tooltip>
         </div>
         <div class="field-value">

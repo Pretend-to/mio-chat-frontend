@@ -8,17 +8,8 @@
   >
     <div class="mobile-container" :class="{ show: show }" @click.stop>
       <div class="mobile-header">
+        <button class="mobile-cancel-btn" @click="close">取消</button>
         <div class="mobile-title">添加机器人</div>
-        <button class="mobile-close-btn" @click="close">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M18 6L6 18M6 6l12 12"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            />
-          </svg>
-        </button>
       </div>
       <div class="add-contactor-body mobile">
         <!-- 标签页导航 -->
@@ -635,6 +626,8 @@ const availableGroupMembers = computed(() => {
     const contactorStore = useContactorsStore();
     return Object.values(contactorStore.contactors || {})
       .filter((c) => c.platform !== "group")
+      // 按最近活跃时间倒序，与好友列表 sortedContactors 的口径一致
+      .sort((a, b) => (b.lastUpdate || 0) - (a.lastUpdate || 0))
       .map((c) => ({
         id: c.id,
         agentId: c.id,
@@ -985,6 +978,10 @@ onUnmounted(() => {
   left: 0;
   width: 100vw;
   height: 100vh;
+  /* 移动端浏览器的 100vh 是「地址栏收起后」的大视口高度，地址栏可见时
+     实际可视区比它矮，底部内容会被压到屏幕外，而 fixed 定位又滚不到。
+     dvh 跟随可视区变化，不支持的浏览器会忽略这行回退到上面的 100vh。 */
+  height: 100dvh;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 9999;
   opacity: 0;
@@ -1015,10 +1012,12 @@ onUnmounted(() => {
 }
 
 .mobile-header {
-  display: flex;
+  display: grid;
+  /* 三列而非 space-between：左右两列等宽，标题独占中间列，
+     这样标题是相对整个 header 居中的，不会被左侧「取消」的宽度推偏。 */
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
+  padding: 14px 16px;
   border-bottom: 1px solid var(--el-border-color-light);
   background-color: var(--el-bg-color);
   position: sticky;
@@ -1027,26 +1026,33 @@ onUnmounted(() => {
 }
 
 .mobile-title {
-  font-size: 18px;
+  grid-column: 2;
+  font-size: 16px;
   font-weight: 600;
   color: var(--el-text-color-primary);
+  text-align: center;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.mobile-close-btn {
-  width: 32px;
-  height: 32px;
+.mobile-cancel-btn {
+  grid-column: 1;
+  justify-self: start;
   border: none;
   background: none;
-  color: var(--el-text-color-regular);
+  /* 纵向 padding 撑出足够的点按面积，视觉上仍是一行文字 */
+  padding: 6px 4px;
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--el-color-primary);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   border-radius: 6px;
-  transition: background-color 0.2s;
+  transition: opacity 0.15s;
 
-  &:hover {
-    background-color: var(--el-fill-color-light);
+  &:active {
+    opacity: 0.6;
   }
 }
 
@@ -1055,9 +1061,13 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
 
+  /* 移动端不要再算 calc(100vh - 65px)：65 是照着当时的 header 高度写死的，
+     header 一改就错位，且同样带着 100vh 的坑。作为 .mobile-container 的
+     flex 子项，交给 flex 自己算即可。min-height: 0 允许内部滚动区收缩。 */
   &.mobile {
-    height: calc(100vh - 65px);
+    height: auto;
     flex: 1;
+    min-height: 0;
   }
 }
 
@@ -1103,8 +1113,10 @@ onUnmounted(() => {
   flex-direction: column;
 
   &.mobile {
-    padding: 0 16px;
+    /* 补回被漏掉的底部内边距，并让开 iPhone 的 home indicator */
+    padding: 0 16px calc(12px + env(safe-area-inset-bottom)) 16px;
     flex: 1;
+    min-height: 0;
   }
 }
 
@@ -1538,6 +1550,8 @@ onUnmounted(() => {
   .create-group-btn {
     width: 100%;
     margin-top: 6px;
+    /* 空间不足时应当由上方的成员列表让位，按钮本身绝不能被压缩 */
+    flex-shrink: 0;
   }
 }
 </style>

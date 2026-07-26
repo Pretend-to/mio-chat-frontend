@@ -65,10 +65,13 @@
       <div class="setting-field">
         <div class="field-label">
           默认发言人
-          <div style="font-size: 11px; color: var(--mio-text-secondary); margin-top: 2px;">
-            用户未 @ 任何人时：优先由上一轮发言的成员接话；上一轮无人发言或多人同时发言时，
-            交给这里指定的成员（不归它管时它会自行 @ 转交）
-          </div>
+          <el-tooltip
+            placement="top"
+            popper-class="mio-hint-popper"
+            content="用户未 @ 任何人时：优先由上一轮发言的成员接话；上一轮无人发言或多人同时发言时，交给这里指定的成员（不归它管时它会自行 @ 转交）"
+          >
+            <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
+          </el-tooltip>
         </div>
         <div class="field-value">
           <el-select
@@ -91,9 +94,13 @@
       <div class="setting-field">
         <div class="field-label">
           Agent 连锁唤起最大深度
-          <div style="font-size: 11px; color: var(--mio-text-secondary); margin-top: 2px;">
-            本群内部 Agent 互相 @ 讨论的最大连续轮数（默认 5 轮，0 为禁用）
-          </div>
+          <el-tooltip
+            placement="top"
+            popper-class="mio-hint-popper"
+            content="本群内部 Agent 互相 @ 讨论的最大连续轮数。每条唤起支线独立计数，到顶后会插入系统提示。默认 5 轮，设为 0 则禁用连锁唤起。"
+          >
+            <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
+          </el-tooltip>
         </div>
         <div class="field-value">
           <el-input-number
@@ -186,6 +193,7 @@ import { useContactorsStore, getAvatarByModel } from "@/stores/contactorsStore.j
 import { getLocalPresets } from "@/lib/clientSettings.js";
 import { client } from "@/lib/runtime.js";
 import { ElMessage, ElMessageBox } from "element-plus";
+import { InfoFilled } from "@element-plus/icons-vue";
 
 const props = defineProps({
   contactorId: {
@@ -295,6 +303,8 @@ const candidateMembers = computed(() => {
   if (candidateTab.value === "recent") {
     return Object.values(contactorStore.contactors)
       .filter((c) => c.id !== props.contactorId && c.platform !== "group" && !existingIds.has(c.id))
+      // 按最近活跃时间倒序，与好友列表 sortedContactors 的口径一致
+      .sort((a, b) => (b.lastUpdate || 0) - (a.lastUpdate || 0))
       .map((c) => ({
         id: c.id,
         name: c.name,
@@ -353,6 +363,18 @@ function removeMember(memberId) {
 
   .group-title {
     margin: 0;
+  }
+}
+
+/* 移动端 .group-title 被全局样式设为 display:none，此时 space-between 下
+   只剩按钮一个子元素，会贴到容器最左边（x=0），而 .settings-card 有
+   12px 外边距 —— 按钮因此比卡片还靠外。补上与卡片对齐的横向内边距，
+   并右对齐（标题已隐藏，操作按钮靠右更符合惯例）。 */
+@media (max-width: 768px) {
+  .group-title-header {
+    justify-content: flex-end;
+    padding: 0 12px;
+    margin-top: 12px;
   }
 }
 

@@ -493,10 +493,9 @@ onBeforeUnmount(() => {
     padding: 0 0 4rem;
   }
 
-  .avatar {
-    width: 64px;
-    height: 64px;
-  }
+  /* 不要在这里覆盖 .avatar 的尺寸：它是 .avatar-container 的填充层，
+     必须保持 100%/100%。若要改移动端头像大小，请改 .avatar-container，
+     否则圆形容器和内部图片会对不上，圆圈里留出一圈空白。 */
 }
 
 .tab-pane {
