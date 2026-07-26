@@ -495,6 +495,7 @@ export const useContactorsStore = defineStore("contactors", () => {
             contactorId,
             merged.data.parameters || merged.data.arguments,
             merged.data.result,
+            message.senderMemberId || message.sender_id || null,
           );
         } else if (toolName === "toolsmanager" && merged.data.result?.success) {
           recordToolsUpdate(contactorId, merged.data.result);
@@ -565,21 +566,67 @@ export const useContactorsStore = defineStore("contactors", () => {
     }
   }
 
-  function recordMemory(contactorId, parameters, result = null) {
+  /**
+   * 解析「记忆结晶的宿主」。
+   *
+   * 单聊：宿主就是联系人本身，结晶挂在 contactor.options.crystallization。
+   * 群聊：群共用一条 messageChain，但每个 Agent 成员对这条链的压缩进度和
+   *       压缩结果都是独立的，所以宿主是成员，结晶挂在 member.options.crystallization。
+   *       成员另有 lastCompressedIndex，记录它压缩到了群消息链的哪个下标。
+   *
+   * 两者的结晶结构完全一致，因此拿到宿主后续逻辑可以完全复用。
+   *
+   * @param {string} contactorId
+   * @param {string|null} memberId 群成员 ID；单聊传 null
+   * @returns {object|null} 宿主对象（contactor 或 member）
+   */
+  function getCrystalHost(contactorId, memberId = null) {
+    const contactor = contactors.value[contactorId];
+    if (!contactor) return null;
+    if (contactor.platform !== "group") return contactor;
+    if (!memberId) return null; // 群聊必须指明成员，避免误写到群对象上
+    return (
+      (contactor.members || []).find(
+        (m) => m.id === memberId || m.agentId === memberId,
+      ) || null
+    );
+  }
+
+  /**
+   * 确保宿主上存在 crystallization 结构并返回它
+   */
+  function ensureCrystallization(host) {
+    if (!host) return null;
+    if (!host.options) host.options = {};
+    if (!host.options.crystallization) {
+      host.options.crystallization = {
+        enabled: true,
+        latestSummary: "",
+        tokenWatermark: 200000,
+      };
+    }
+    return host.options.crystallization;
+  }
+
+  function recordMemory(
+    contactorId,
+    parameters,
+    result = null,
+    memberId = null,
+  ) {
     const contactor = contactors.value[contactorId];
     if (!contactor || !parameters) return;
 
+    // 群聊里 memory 工具是某个成员调用的，必须写进该成员自己的结晶，
+    // 否则所有成员的记忆会串到一起。解析不到宿主就直接放弃，不要退化成写群对象。
+    const host = getCrystalHost(contactorId, memberId);
+    if (!host) return;
+
     // 1. 如果有后端返回的全新 summary，直接覆盖！(最优、最干净的 CRUD 同步路径)
     if (result && result.summary !== undefined) {
-      if (!contactor.options.crystallization) {
-        contactor.options.crystallization = {
-          enabled: true,
-          latestSummary: "",
-          tokenWatermark: 200000,
-        };
-      }
-      contactor.options.crystallization.latestSummary = result.summary;
-      contactor.options.crystallization.lastUpdatedAt = Date.now();
+      const crystal = ensureCrystallization(host);
+      crystal.latestSummary = result.summary;
+      crystal.lastUpdatedAt = Date.now();
       client.setLocalStorage();
       return;
     }
@@ -598,30 +645,31 @@ export const useContactorsStore = defineStore("contactors", () => {
 
     // 开启结晶时，将记忆追加到 latestSummary 的 <long_term_profile>
     if (
-      contactor.options?.crystallization?.enabled &&
-      contactor.options.crystallization.latestSummary !== undefined
+      host.options?.crystallization?.enabled &&
+      host.options.crystallization.latestSummary !== undefined
     ) {
       const fact = `Q: ${question}\nA: ${answer}`;
-      const summary = contactor.options.crystallization.latestSummary || "";
-      contactor.options.crystallization.latestSummary = appendToXmlZone(
+      const summary = host.options.crystallization.latestSummary || "";
+      host.options.crystallization.latestSummary = appendToXmlZone(
         summary,
         "long_term_profile",
         fact,
       );
-      contactor.options.crystallization.lastUpdatedAt = Date.now();
+      host.options.crystallization.lastUpdatedAt = Date.now();
       client.setLocalStorage();
       return;
     }
 
     // 未开启结晶时，使用原始的 history 追加方式
-    if (!contactor.options.presetSettings) {
-      contactor.options.presetSettings = { opening: "", history: [] };
+    if (!host.options) host.options = {};
+    if (!host.options.presetSettings) {
+      host.options.presetSettings = { opening: "", history: [] };
     }
-    if (!contactor.options.presetSettings.history) {
-      contactor.options.presetSettings.history = [];
+    if (!host.options.presetSettings.history) {
+      host.options.presetSettings.history = [];
     }
 
-    const isDuplicate = contactor.options.presetSettings.history.some(
+    const isDuplicate = host.options.presetSettings.history.some(
       (item, idx, arr) => {
         if (item.role === "user" && item.content === question) {
           const next = arr[idx + 1];
@@ -633,11 +681,11 @@ export const useContactorsStore = defineStore("contactors", () => {
 
     if (isDuplicate) return;
 
-    contactor.options.presetSettings.history.push({
+    host.options.presetSettings.history.push({
       role: "user",
       content: question,
     });
-    contactor.options.presetSettings.history.push({
+    host.options.presetSettings.history.push({
       role: "assistant",
       content: answer,
     });
@@ -696,15 +744,31 @@ export const useContactorsStore = defineStore("contactors", () => {
       }
     } else if (status === "finished") {
       const displaySummary = summary || "";
-      if (!contactor.options.crystallization) {
-        contactor.options.crystallization = {
-          enabled: true,
-          latestSummary: "",
-          tokenWatermark: 200000,
-        };
+
+      // 群聊：结晶属于产出它的那个成员，写到成员自己身上；
+      // 同时把「压缩到哪」记为该消息在群消息链中的下标 —— 群成员共用一条链，
+      // 各自的压缩进度不同，必须用显式下标而非扫描 crystallize_event 来定位。
+      const msgIndex = contactor.messageChain.findIndex(
+        (m) => m.id === messageId,
+      );
+      const memberId =
+        contactor.platform === "group" && msgIndex !== -1
+          ? contactor.messageChain[msgIndex].senderMemberId ||
+            contactor.messageChain[msgIndex].sender_id
+          : null;
+
+      const host = getCrystalHost(contactorId, memberId);
+      if (host) {
+        const crystal = ensureCrystallization(host);
+        crystal.latestSummary = displaySummary;
+        crystal.lastUpdatedAt = Date.now();
+
+        if (contactor.platform === "group" && msgIndex !== -1) {
+          // 存下标本身（含该条消息）：下次组装上下文时从这里往下取。
+          // 取闭区间起点而非 msgIndex + 1，保证边界消息不会两头都不覆盖。
+          host.lastCompressedIndex = msgIndex;
+        }
       }
-      contactor.options.crystallization.latestSummary = displaySummary;
-      contactor.options.crystallization.lastUpdatedAt = Date.now();
 
       const message = getOrCreateMessage(contactorId, messageId);
       if (message) {
@@ -730,17 +794,11 @@ export const useContactorsStore = defineStore("contactors", () => {
   /**
    * 更新联系人的结晶配置
    */
-  function updateCrystallization(contactorId, patch) {
-    const contactor = contactors.value[contactorId];
-    if (!contactor) return;
-    if (!contactor.options.crystallization) {
-      contactor.options.crystallization = {
-        enabled: true,
-        latestSummary: "",
-        tokenWatermark: 200000,
-      };
-    }
-    Object.assign(contactor.options.crystallization, patch);
+  function updateCrystallization(contactorId, patch, memberId = null) {
+    const host = getCrystalHost(contactorId, memberId);
+    if (!host) return;
+    const crystal = ensureCrystallization(host);
+    Object.assign(crystal, patch);
     client.setLocalStorage();
   }
 
@@ -812,6 +870,10 @@ export const useContactorsStore = defineStore("contactors", () => {
               contactorId,
               toolCallData.parameters || toolCallData.arguments,
               toolCallData.result,
+              metaData?.memberId ||
+                message?.senderMemberId ||
+                message?.sender_id ||
+                null,
             );
           } else if (
             toolName === "toolsmanager" &&
@@ -960,6 +1022,16 @@ export const useContactorsStore = defineStore("contactors", () => {
         client.socket?.interruptGeneration(message.id, contactorId);
       }
       contactor.messageChain.splice(index, 1);
+
+      // 群成员的 lastCompressedIndex 指向群消息链的下标，删除会让其后的所有
+      // 下标整体前移。不修正的话标记会越界一位，导致该成员静默丢掉一条上下文。
+      if (contactor.platform === "group") {
+        (contactor.members || []).forEach((m) => {
+          const mark = Number(m.lastCompressedIndex) || 0;
+          if (mark > index) m.lastCompressedIndex = mark - 1;
+        });
+      }
+
       updateContactorSummary(contactor);
       client.setLocalStorage();
     }
@@ -981,6 +1053,15 @@ export const useContactorsStore = defineStore("contactors", () => {
     if (contactor) {
       contactor.messageChain = [];
       contactor.firstMessageIndex = 0;
+
+      // 链已清空，各成员的压缩标记必须一并归零，否则会指向不存在的下标。
+      // 注意只重置进度，不动 latestSummary —— 结晶是长期记忆，不随聊天记录清除。
+      if (contactor.platform === "group") {
+        (contactor.members || []).forEach((m) => {
+          m.lastCompressedIndex = 0;
+        });
+      }
+
       updateContactorSummary(contactor);
       client.setLocalStorage();
     }
@@ -1076,6 +1157,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     // Crystallization
     handleCrystallizeEvent,
     updateCrystallization,
+    getCrystalHost,
     appendToXmlZone,
   };
 });

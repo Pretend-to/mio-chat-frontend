@@ -217,7 +217,7 @@ import { ref, computed } from "vue";
 import { client } from "@/lib/runtime.js";
 import { storeToRefs } from "pinia";
 import { useConfigStore } from "@/stores/configStore.js";
-import { useContactorsStore, getAvatarByModel } from "@/stores/contactorsStore.js";
+import { getAvatarByModel } from "@/stores/contactorsStore.js";
 import MessageContent from "@/components/chat/MessageContent.vue";
 import GroupAvatar from "@/components/GroupAvatar.vue";
 import { ElMessage } from "element-plus";
@@ -253,38 +253,50 @@ const computedUserAvatar = computed(() => {
   return userAvatarUrl.value || client.avatar || "/static/icons/512x512.png";
 });
 
-const useContactors = useContactorsStore();
-
 const replyingMember = computed(() => {
   if (props.activeContactor?.platform !== "group") return null;
-  const sId = props.item.sender_id || props.item.senderMemberId;
-  const sName = props.item.sender_name || props.item.senderName;
+  const sId = props.item.senderMemberId || props.item.sender_id;
+  const sName = props.item.senderName || props.item.sender_name;
   if (!sId && !sName) return null;
 
-  // 优先从全局 contactorsStore 查找匹配的单个 Contact Agent
-  const standalone = Object.values(useContactors.contactors).find(
-    (c) => c.id === sId || c.name === sName
-  );
+  // 群成员表是唯一真相：名称/称号/模型/头像都从这里实时取，
+  // 消息上的 sender_* 只是发送当时的快照，改名改模型后不会更新，
+  // 因此绝不能让快照优先，否则设置改了界面纹丝不动。
+  // 按 ID 定位，不用名字 —— 重名或改名都会错配。
+  const member = sId
+    ? props.activeContactor.members?.find(
+        (m) => String(m.id) === String(sId) || String(m.agentId) === String(sId),
+      )
+    : null;
 
-  const member = props.activeContactor.members?.find(
-    (m) => m.id === sId || m.agentId === sId || m.name === sName
-  );
+  if (member) {
+    return {
+      id: member.id,
+      name: member.name,
+      avatar: member.avatar,
+      avatarPolicy: member.avatarPolicy,
+      title: member.title || "Agent 成员",
+      options: member.options || {},
+    };
+  }
 
+  // 成员已被移出群：退回消息快照，至少保住历史消息的署名
   return {
     id: sId,
-    name: sName || standalone?.name || member?.name || props.activeContactor.name,
-    avatar: standalone?.avatar || member?.avatar || props.item.sender_avatar || props.item.senderAvatar,
-    avatarPolicy: standalone?.avatarPolicy ?? member?.avatarPolicy,
-    title: standalone?.title || member?.title || "Agent 成员",
-    options: standalone?.options || member?.options || {},
+    name: sName || props.activeContactor.name,
+    avatar: props.item.senderAvatar || props.item.sender_avatar,
+    avatarPolicy: undefined,
+    title: "已移出的成员",
+    options: {},
   };
 });
 
 const groupMemberAvatar = computed(() => {
   if (props.activeContactor?.platform !== "group") return null;
   const m = replyingMember.value;
-  const rawAvatar = props.item.sender_avatar || props.item.senderAvatar;
-  const targetAvatar = m?.avatar || rawAvatar;
+  // 只认 replyingMember 解析出来的头像：它已经优先取自成员表，
+  // 成员还在群里时不能再回落到消息快照，否则改了头像/模型也不会变
+  const targetAvatar = m?.avatar;
 
   // 1. 如果头像为有效的 HTTP / HTTPS / DataURL 自定义网络图，优先使用！
   if (
@@ -315,13 +327,10 @@ const groupMemberAvatar = computed(() => {
 });
 
 const groupMemberName = computed(() => {
-  if (props.activeContactor?.platform !== "group") return props.activeContactor.name;
-  return (
-    replyingMember.value?.name ||
-    props.item.sender_name ||
-    props.item.senderName ||
-    props.activeContactor.name
-  );
+  if (props.activeContactor?.platform !== "group")
+    return props.activeContactor.name;
+  // replyingMember 已按成员表实时解析，这里不再回落到消息快照
+  return replyingMember.value?.name || props.activeContactor.name;
 });
 
 const groupMemberTitle = computed(() => {

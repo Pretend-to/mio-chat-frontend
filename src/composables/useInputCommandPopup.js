@@ -24,6 +24,68 @@ export function useInputCommandPopup({
     bottom: "calc(100% + 4px)",
   });
 
+  // 当前弹窗是由哪个字符唤起的：@ 出成员，/ 和 # 出工具与技能
+  const activeTriggerChar = ref("/");
+
+  // 群聊沿用 openai 的工具/技能列表 —— 群成员本身就是 Agent，一样会执行工具，
+  // 所以 @ 与 / # 是互补而非互斥的两套补全，不能写成 else if 分支。
+  const buildToolAndSkillCommands = (list) => {
+    if (typeof config.llmTools === "object" && config.llmTools !== null) {
+      Object.keys(config.llmTools).forEach((pluginName) => {
+        const pluginTools = config.llmTools[pluginName];
+        if (pluginTools && typeof pluginTools === "object") {
+          const toolNames = Object.keys(pluginTools);
+          if (toolNames.length > 0) {
+            list.push({
+              type: "plugin",
+              label: pluginName,
+              preset: pluginName,
+              value: pluginName,
+              toolNames: toolNames,
+              description: `包含工具: ${toolNames.join(", ")}`,
+            });
+          }
+          toolNames.forEach((tName) => {
+            const tool = pluginTools[tName];
+            let displayName = tool.name;
+            let hash = "";
+            if (tool.name.includes("_mid_")) {
+              const parts = tool.name.split("_mid_");
+              displayName = parts[0];
+              hash = parts[1];
+            }
+            list.push({
+              type: "tool",
+              label: displayName,
+              hash: hash,
+              value: tool.name,
+              preset: tool.name,
+              description: tool.description,
+            });
+          });
+        }
+      });
+    }
+    const skills = availableSkills.value || [];
+    skills.forEach((skill) => {
+      let displayName = skill.name;
+      let hash = "";
+      if (skill.name.includes("_mid_")) {
+        const parts = skill.name.split("_mid_");
+        displayName = parts[0];
+        hash = parts[1];
+      }
+      list.push({
+        type: "skill",
+        label: displayName,
+        hash: hash,
+        value: skill.name,
+        preset: skill.name,
+        description: skill.description,
+      });
+    });
+  };
+
   const availableCommands = computed(() => {
     const contactor = activeContactor.value;
     if (!contactor) return [];
@@ -54,78 +116,32 @@ export function useInputCommandPopup({
         });
       }
     } else if (contactor.platform === "openai") {
-      if (typeof config.llmTools === "object" && config.llmTools !== null) {
-        Object.keys(config.llmTools).forEach((pluginName) => {
-          const pluginTools = config.llmTools[pluginName];
-          if (pluginTools && typeof pluginTools === "object") {
-            const toolNames = Object.keys(pluginTools);
-            if (toolNames.length > 0) {
-              list.push({
-                type: "plugin",
-                label: pluginName,
-                preset: pluginName,
-                value: pluginName,
-                toolNames: toolNames,
-                description: `包含工具: ${toolNames.join(", ")}`,
-              });
-            }
-            toolNames.forEach((tName) => {
-              const tool = pluginTools[tName];
-              let displayName = tool.name;
-              let hash = "";
-              if (tool.name.includes("_mid_")) {
-                const parts = tool.name.split("_mid_");
-                displayName = parts[0];
-                hash = parts[1];
-              }
-              list.push({
-                type: "tool",
-                label: displayName,
-                hash: hash,
-                value: tool.name,
-                preset: tool.name,
-                description: tool.description,
-              });
-            });
-          }
-        });
-      }
-      const skills = availableSkills.value || [];
-      skills.forEach((skill) => {
-        let displayName = skill.name;
-        let hash = "";
-        if (skill.name.includes("_mid_")) {
-          const parts = skill.name.split("_mid_");
-          displayName = parts[0];
-          hash = parts[1];
-        }
-        list.push({
-          type: "skill",
-          label: displayName,
-          hash: hash,
-          value: skill.name,
-          preset: skill.name,
-          description: skill.description,
-        });
-      });
+      buildToolAndSkillCommands(list);
     } else if (contactor.platform === "group") {
-      list.push({
-        type: "mention",
-        label: "全体成员",
-        preset: "@全体成员",
-        value: "@全体成员",
-        description: "唤醒群内所有 Agent 成员依次响应",
-      });
-      (contactor.members || []).forEach((m) => {
+      if (activeTriggerChar.value === "@") {
         list.push({
           type: "mention",
-          label: `@${m.name}`,
-          preset: `@${m.name}`,
-          value: `@${m.name}`,
-          avatar: m.avatar,
-          description: m.title || "Agent 群成员",
+          label: "全体成员",
+          preset: "@全体成员",
+          value: "@全体成员",
+          description: "唤醒群内所有 Agent 成员依次响应",
         });
-      });
+        (contactor.members || []).forEach((m) => {
+          list.push({
+            type: "mention",
+            // 展示用 @名字，落到文本里的却是带 ID 的规范式：
+            // 路由按 ID 匹配，改名或重名都不会串人
+            label: `@${m.name}`,
+            preset: `@'${m.name}'(${m.id})`,
+            value: `@${m.name}`,
+            avatar: m.avatar,
+            description: m.title || "Agent 群成员",
+          });
+        });
+      } else {
+        // 群聊里 / 与 # 同样要能唤起工具和技能，引导成员使用
+        buildToolAndSkillCommands(list);
+      }
     }
     return list;
   });
@@ -173,13 +189,12 @@ export function useInputCommandPopup({
 
   const confirmCommand = (cmd) => {
     const text = getPureTextOfTextNodes(textareaRef.value);
-    const regex = /(?:^|\s)[/#@](?!\/)/g;
+    const regex = buildTriggerRegex();
     let match;
     let lastSlashIdx = -1;
     let triggerChar = "/";
     while ((match = regex.exec(text)) !== null) {
-      const isTriggerAtStart =
-        match[0] === "/" || match[0] === "#" || match[0] === "@";
+      const isTriggerAtStart = "/#@".includes(match[0]);
       lastSlashIdx = match.index + (isTriggerAtStart ? 0 : 1);
       triggerChar = text.charAt(lastSlashIdx);
     }
@@ -253,6 +268,12 @@ export function useInputCommandPopup({
     });
   };
 
+  /** @ 仅在群聊生效，其余平台维持 / 与 # 两个触发符 */
+  const buildTriggerRegex = () =>
+    activeContactor.value?.platform === "group"
+      ? /(?:^|\s)[/#@](?!\/)/g
+      : /(?:^|\s)[/#](?!\/)/g;
+
   const checkSlashCommand = () => {
     if (
       activeContactor.value?.platform !== "onebot" &&
@@ -272,9 +293,10 @@ export function useInputCommandPopup({
 
     const occurrences = [];
     let match;
-    const regex = /(?:^|\s)[/#@](?!\/)/g;
+    // @ 只在群聊里是触发符；单聊打 @ 不应该弹出工具列表
+    const regex = buildTriggerRegex();
     while ((match = regex.exec(textWithoutBadge)) !== null) {
-      const isTriggerAtStart = match[0] === "/" || match[0] === "#" || match[0] === "@";
+      const isTriggerAtStart = "/#@".includes(match[0]);
       const slashIdx = match.index + (isTriggerAtStart ? 0 : 1);
       occurrences.push(slashIdx);
     }
@@ -352,6 +374,8 @@ export function useInputCommandPopup({
     if (occurrences.length > 0) {
       const lastSlashIdx = occurrences[occurrences.length - 1];
       const queryStart = lastSlashIdx + 1;
+      // 记录触发符，availableCommands 据此决定出成员还是出工具
+      activeTriggerChar.value = textWithoutBadge.charAt(lastSlashIdx) || "/";
       commandSearchQuery.value = textWithoutBadge.substring(queryStart).trim();
       if (!popupDismissed.value) {
         showCommandPopup.value = true;

@@ -126,7 +126,11 @@
 
       <!-- Tab: Memory Crystallization -->
       <div v-if="activeTab === 'memory'" class="tab-pane">
-        <MemoryManager v-if="contactorId" :contactor-id="contactorId" />
+        <MemoryManager
+          v-if="contactorId"
+          :contactor-id="contactorId"
+          :member-id="groupMemberId"
+        />
         <div v-else class="no-skills" style="padding: 20px; text-align: center">
           <p>无法获取联系人信息</p>
         </div>
@@ -205,6 +209,11 @@ const props = defineProps({
   isGroupMember: {
     type: Boolean,
     default: false,
+  },
+  // 群成员详情页的成员 ID：记忆结晶按成员独立存储，需要据此定位宿主
+  groupMemberId: {
+    type: String,
+    default: null,
   },
   groupName: {
     type: String,

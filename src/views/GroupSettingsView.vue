@@ -1,5 +1,52 @@
 <template>
   <div v-if="group" class="tab-pane">
+    <!-- 分栏：移动端没有侧边栏，群公告只能从这里进 -->
+    <div class="group-tabs">
+      <div
+        class="group-tab"
+        :class="{ active: activeTab === 'settings' }"
+        @click="activeTab = 'settings'"
+      >
+        群聊设置
+      </div>
+      <div
+        class="group-tab"
+        :class="{ active: activeTab === 'notice' }"
+        @click="activeTab = 'notice'"
+      >
+        群公告
+      </div>
+    </div>
+
+    <!-- ========== 群公告 ========== -->
+    <template v-if="activeTab === 'notice'">
+      <div class="group-title">群公告</div>
+      <div class="settings-card notice-card">
+        <div class="notice-tip">
+          公告会自动同步注入到各 Agent 的讨论上下文中，可用于声明本群准则或当前目标。
+        </div>
+        <el-input
+          v-model="noticeForm"
+          type="textarea"
+          :rows="8"
+          placeholder="输入群公告内容、本群准则或项目目标..."
+        />
+        <div class="notice-actions">
+          <el-button
+            v-if="noticeForm"
+            @click="noticeForm = group.notice || ''"
+          >
+            撤销修改
+          </el-button>
+          <el-button type="primary" :disabled="!noticeDirty" @click="saveNotice">
+            保存并发布
+          </el-button>
+        </div>
+      </div>
+    </template>
+
+    <!-- ========== 群聊设置 ========== -->
+    <template v-else>
     <!-- 群聊基本配置 -->
     <div class="group-title">群聊基本配置</div>
     <div class="settings-card">
@@ -153,6 +200,7 @@
         </div>
       </div>
     </div>
+    </template>
 
     <!-- 弹窗：添加成员 -->
     <el-dialog
@@ -205,6 +253,28 @@ const props = defineProps({
 const contactorStore = useContactorsStore();
 const router = useRouter();
 const group = computed(() => contactorStore.contactors[props.contactorId]);
+
+// 群公告：桌面端在侧边栏弹窗里，移动端没有侧边栏，这里是唯一入口
+const activeTab = ref("settings");
+const noticeForm = ref(group.value?.notice || "");
+
+const noticeDirty = computed(
+  () => noticeForm.value !== (group.value?.notice || ""),
+);
+
+watch(
+  () => group.value?.notice,
+  (val) => {
+    // 外部（桌面端侧边栏）改了公告时同步过来，但不要覆盖用户正在编辑的内容
+    if (!noticeDirty.value) noticeForm.value = val || "";
+  },
+);
+
+function saveNotice() {
+  if (!group.value?.id) return;
+  contactorStore.updateContactor(group.value.id, { notice: noticeForm.value });
+  ElMessage.success("群公告已更新");
+}
 
 function openMemberProfile(memberId) {
   if (!group.value?.id) return;
@@ -354,6 +424,61 @@ function removeMember(memberId) {
 </script>
 
 <style scoped lang="scss">
+.group-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 16px;
+  border-radius: 10px;
+  background: var(--mio-bg-page);
+
+  .group-tab {
+    flex: 1;
+    padding: 8px 16px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--mio-text-secondary);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &.active {
+      background: var(--mio-bg-card);
+      color: var(--mio-text-primary);
+      box-shadow: var(--mio-shadow-light);
+    }
+  }
+}
+
+.notice-card {
+  padding: 16px 24px 20px;
+
+  .notice-tip {
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--mio-text-secondary);
+    margin-bottom: 12px;
+  }
+
+  .notice-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .group-tabs {
+    margin: 0 12px 12px;
+  }
+
+  .notice-card {
+    padding: 12px 16px 16px;
+  }
+}
+
 .group-title-header {
   display: flex;
   justify-content: space-between;

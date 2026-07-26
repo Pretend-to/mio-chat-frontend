@@ -1700,6 +1700,14 @@ const handleMessageOption = async (option) => {
         ElMessage.success("已引用该消息");
       }
       break;
+    case "mention": {
+      const name = message?.senderName || message?.sender_name;
+      const memberId = message?.senderMemberId || message?.sender_id;
+      if (inputEditor.value && name) {
+        inputEditor.value.insertMention(name, memberId);
+      }
+      break;
+    }
     case "delete":
       activeContactor.value.delMessage(message.id);
       client.setLocalStorage();
@@ -1950,6 +1958,7 @@ onBeforeUnmount(() => {
         :client-x="menuLeft"
         :current-speaking-message-id="currentSpeakingMessageId"
         :can-retry="canRetry"
+        :is-group="activeContactor?.platform === 'group'"
         @message-option="handleMessageOption"
         @close="showMenu = false"
       />

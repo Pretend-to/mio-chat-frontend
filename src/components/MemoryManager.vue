@@ -4,10 +4,21 @@
     <div class="group-title">自动记忆结晶配置</div>
     <div class="settings-card">
       <div class="setting-field">
-        <div class="field-label">自动结晶</div>
+        <div class="field-label">
+          自动结晶
+          <el-tooltip
+            v-if="isForcedOn"
+            placement="top"
+            popper-class="mio-hint-popper"
+            content="群聊消息链由全体成员共享且只增不减，关闭结晶会让每个成员的上下文无限膨胀，因此群成员强制开启，不可关闭。"
+          >
+            <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
+          </el-tooltip>
+        </div>
         <div class="field-value">
           <el-switch
             :model-value="crystallizationEnabled"
+            :disabled="isForcedOn"
             @update:model-value="onToggle"
           />
         </div>
@@ -89,6 +100,7 @@
 
 <script setup>
 import { ref, computed, watch } from "vue";
+import { InfoFilled } from "@element-plus/icons-vue";
 import { useContactorsStore } from "@/stores/contactorsStore.js";
 import {
   CRYSTAL_ZONES,
@@ -101,17 +113,28 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  // 群成员详情页传入：结晶属于成员而非群，读写都要落到该成员身上
+  memberId: {
+    type: String,
+    default: null,
+  },
 });
 
 const contactorStore = useContactorsStore();
 
-const contactor = computed(() => contactorStore.contactors[props.contactorId]);
+// 结晶宿主：单聊是联系人本身，群聊是指定成员
+const crystalHost = computed(() =>
+  contactorStore.getCrystalHost(props.contactorId, props.memberId),
+);
 const crystallization = computed(
-  () => contactor.value?.options?.crystallization,
+  () => crystalHost.value?.options?.crystallization,
 );
 
+// 群成员强制开启结晶：群消息链共享且只增不减，没有压缩上下文会无限膨胀
+const isForcedOn = computed(() => !!props.memberId);
+
 const crystallizationEnabled = computed(
-  () => crystallization.value?.enabled === true,
+  () => isForcedOn.value || crystallization.value?.enabled === true,
 );
 const localWatermark = ref(crystallization.value?.tokenWatermark ?? 200000);
 
@@ -154,17 +177,24 @@ watch(
 );
 
 function onToggle(val) {
-  contactorStore.updateCrystallization(props.contactorId, {
-    enabled: val,
-    latestSummary: crystallization.value?.latestSummary ?? "",
-    tokenWatermark: localWatermark.value,
-  });
+  if (isForcedOn.value) return; // 群成员不允许关闭
+  contactorStore.updateCrystallization(
+    props.contactorId,
+    {
+      enabled: val,
+      latestSummary: crystallization.value?.latestSummary ?? "",
+      tokenWatermark: localWatermark.value,
+    },
+    props.memberId,
+  );
 }
 
 function onWatermarkChange(val) {
-  contactorStore.updateCrystallization(props.contactorId, {
-    tokenWatermark: val,
-  });
+  contactorStore.updateCrystallization(
+    props.contactorId,
+    { tokenWatermark: val },
+    props.memberId,
+  );
 }
 
 function onZoneInput() {
@@ -173,10 +203,11 @@ function onZoneInput() {
 
 function saveZones() {
   const newXml = buildXmlFromZones(zoneContents.value);
-  contactorStore.updateCrystallization(props.contactorId, {
-    latestSummary: newXml,
-    lastUpdatedAt: Date.now(),
-  });
+  contactorStore.updateCrystallization(
+    props.contactorId,
+    { latestSummary: newXml, lastUpdatedAt: Date.now() },
+    props.memberId,
+  );
   isDirty.value = false;
 }
 
@@ -184,10 +215,11 @@ function clearSummary() {
   const emptyZones = {};
   CRYSTAL_ZONES.forEach((z) => (emptyZones[z.key] = ""));
   zoneContents.value = emptyZones;
-  contactorStore.updateCrystallization(props.contactorId, {
-    latestSummary: "",
-    lastUpdatedAt: Date.now(),
-  });
+  contactorStore.updateCrystallization(
+    props.contactorId,
+    { latestSummary: "", lastUpdatedAt: Date.now() },
+    props.memberId,
+  );
   isDirty.value = false;
 }
 </script>

@@ -61,6 +61,12 @@
           <i class="iconfont yinyong"></i>
           <span>引用</span>
         </div>
+        <!-- 群聊专用：长按头像在 iOS Safari 上会被系统的图片拖放接管，
+             无法 preventDefault，所以 @ 入口放在右键/长按消息菜单里 -->
+        <div v-if="mentionName" @click.stop="mentionMember">
+          <i class="mention-at">@</i>
+          <span>@ {{ mentionName }}</span>
+        </div>
         <div @click.stop="togglePin">
           <el-icon class="iconfont-el"><CollectionTag /></el-icon>
           <span>{{ message.isPinned ? "取消钉住" : "钉住消息" }}</span>
@@ -114,10 +120,23 @@ export default {
       type: Boolean,
       default: true,
     },
+    isGroup: {
+      type: Boolean,
+      default: false,
+    },
   },
   computed: {
     onPhone() {
       return window.innerWidth < 768;
+    },
+    /**
+     * 可 @ 的成员名。仅群聊里 Agent 成员发的消息才有，
+     * 用户自己的消息和单聊消息返回空串，菜单项即不渲染。
+     */
+    mentionName() {
+      if (!this.isGroup) return "";
+      if (this.message?.role !== "other") return "";
+      return this.message?.senderName || this.message?.sender_name || "";
     },
   },
   data() {
@@ -194,6 +213,10 @@ export default {
     },
     replyMessage() {
       this.$emit("message-option", "reply");
+    },
+    mentionMember() {
+      this.$emit("message-option", "mention");
+      this.$emit("close");
     },
     togglePin() {
       this.$emit("message-option", "toggle-pin");
@@ -420,6 +443,13 @@ export default {
         justify-content: center
         align-items: center
         transform-origin: center
+
+    // 不走 iconfont：图标字体里未必有 @ 字形，直接用文字避免出豆腐块
+    & .mention-at
+        font-style: normal
+        font-weight: 600
+        font-size: 15px
+        line-height: 1
 
         // 移动端图标样式
         @media (max-width: 768px)

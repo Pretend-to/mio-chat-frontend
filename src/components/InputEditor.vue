@@ -576,8 +576,58 @@ const insertReplyBadge = (message) => {
   adjustTextareaHeight();
 };
 
+/**
+ * 在输入框末尾插入一个 @成员 徽标。
+ *
+ * 结构与命令面板 confirmCommand 产出的徽标保持一致（command-badge +
+ * data-type="mention" + data-preset="@名字"），这样 useInputSend 能按同一条
+ * 分支把它还原成 "@名字 " 文本，群聊的 @ 路由才认得出来。
+ *
+ * @param {string} memberName 群成员名称（仅用于显示）
+ * @param {string} memberId 群成员 ID（写进 data-preset，路由按它匹配）
+ */
+const insertMention = (memberName, memberId) => {
+  if (!textarea.value || !memberName) return;
+
+  const label = `@${memberName}`;
+  // 落到发送文本里的是带 ID 的规范式，避免同名/改名导致 @ 串人
+  const preset = memberId ? `@'${memberName}'(${memberId})` : label;
+
+  // 已经 @ 过同一个人就不重复插入，只把光标移到末尾
+  const existing = Array.from(
+    textarea.value.querySelectorAll('.command-badge[data-type="mention"]'),
+  ).some((b) => b.getAttribute("data-preset") === preset);
+
+  if (!existing) {
+    const badgeEl = document.createElement("span");
+    badgeEl.className = "command-badge";
+    badgeEl.setAttribute("contenteditable", "false");
+    badgeEl.setAttribute("data-type", "mention");
+    badgeEl.setAttribute("data-preset", preset);
+    badgeEl.setAttribute("data-label", label);
+    badgeEl.innerText = label;
+    if (scopeId.value) {
+      badgeEl.setAttribute(scopeId.value, "");
+    }
+
+    textarea.value.appendChild(badgeEl);
+    textarea.value.appendChild(document.createTextNode(" "));
+  }
+
+  textarea.value.focus();
+  const range = document.createRange();
+  const sel = window.getSelection();
+  range.selectNodeContents(textarea.value);
+  range.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(range);
+
+  adjustTextareaHeight();
+};
+
 defineExpose({
   insertReplyBadge,
+  insertMention,
   saveDraft,
   compressAndUploadImage,
 });

@@ -9,6 +9,7 @@
 
 import { client } from "@/lib/runtime.js";
 import { getValidOpenaiMessage } from "@/lib/gateway.js";
+import { assembleSystemPrompt } from "@/utils/SystemPromptAssembler.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { useContactorsStore } from "@/stores/contactorsStore.js";
 import { getAdminAvatarUrl } from "@/utils/avatar.js";
@@ -106,10 +107,28 @@ function extractMessageText(message, includeReason = true) {
  * @returns {Array<Object>} finalMessages
  */
 export function formatGroupMessagesForMember(group, member) {
-  const systemPrompt = buildGroupSystemPrompt(group, member);
+  const groupPrompt = buildGroupSystemPrompt(group, member);
+
+  // 记忆结晶按成员独立：群共用一条 messageChain，但每个成员压缩到哪、
+  // 压出了什么都各不相同。结晶内容并入 system message（与单聊 assembleSystemPrompt 同款），
+  // 原始消息则从该成员自己的 lastCompressedIndex 往下取。
+  // 群聊强制开启结晶，不提供关闭开关：群消息链是所有成员共享且只增不减的，
+  // 没有压缩的话每个成员的上下文都会无限膨胀，比单聊更早撞上限。
+  const crystal = member.options?.crystallization;
+  const systemPrompt = assembleSystemPrompt(
+    groupPrompt,
+    crystal?.latestSummary || "",
+  );
+
   const finalMessages = [{ role: "system", content: systemPrompt }];
 
-  const messageChain = group.messageChain || [];
+  const fullChain = group.messageChain || [];
+  const startIndex = Math.min(
+    Math.max(Number(member.lastCompressedIndex) || 0, 0),
+    fullChain.length,
+  );
+  const messageChain = startIndex > 0 ? fullChain.slice(startIndex) : fullChain;
+
   let pendingHistoryXml = [];
 
   const flushPendingHistory = () => {
@@ -167,6 +186,26 @@ export function formatGroupMessagesForMember(group, member) {
 
   // 刷出尾部剩余的聊天历史
   flushPendingHistory();
+
+  // 收尾必须是 user 轮，否则请求非法。
+  //
+  // 触发场景：A、B、C 依次发言且 A 在发言里 @ 了 C。为 C 组装上下文时，
+  // A 和 B 的发言被打包成一个 XML user 块，紧接着 C 自己的那条以 assistant 收尾，
+  // 数组最后一条就成了 assistant —— 接口会直接拒绝（不能以模型发言结尾）。
+  //
+  // 除了协议问题，语义上也不对：C 看到的最后一句是自己说的，
+  // 像是已经回应过那个 @ 了，容易直接沉默。所以补一条明确的发言邀请。
+  const lastMsg = finalMessages[finalMessages.length - 1];
+  if (!lastMsg || lastMsg.role !== "user") {
+    finalMessages.push({
+      role: "user",
+      content:
+        `<group_chat_turn_notice>\n` +
+        `现在轮到你（${member.name}）发言。请基于上面的群聊记录作出回应。\n` +
+        `如果上文中有人 @ 了你，请优先回应对方；若讨论已经收敛、没有需要你补充的内容，简短收尾即可。\n` +
+        `</group_chat_turn_notice>`,
+    });
+  }
 
   return finalMessages;
 }
@@ -347,6 +386,81 @@ function resolveImplicitResponder(group, currentUserMsg) {
 }
 
 /**
+ * 从文本中解析出被 @ 的群成员。
+ *
+ * 匹配以 ID 为准，绝不用 text.includes(`@${name}`) 这种子串判断 ——
+ * 成员叫「小明」和「小明助手」时，@小明助手 会把两个人都唤起。
+ *
+ * 支持两种写法：
+ *  1. 规范式 @'名字'(ID) / @{名字}(ID) —— Agent 互相唤起、以及输入框 @ 徽标产出的格式，
+ *     以括号里的 ID 为准，ID 解析不到才回落到名字全等。
+ *  2. 裸写 @名字 —— 用户手打的情况。要求整名匹配且右侧是边界，
+ *     并按名字长度倒序匹配，保证长名优先、短名不会被顺带命中。
+ *
+ * @param {string} text
+ * @param {Array<Object>} members
+ * @returns {Array<Object>} 命中的成员（去重，保持 members 中的对象引用）
+ */
+export function resolveMentionedMembers(text, members) {
+  const found = new Map();
+  if (!text || !Array.isArray(members) || members.length === 0) return [];
+
+  // 已被规范式消费掉的片段替换为空格，避免裸名匹配二次命中同一处
+  let rest = text;
+
+  const QUOTE = "['‘’]";
+  const regex = new RegExp(
+    `@(?:${QUOTE}([^'‘’]+)${QUOTE}|\\{([^}]+)\\})(?:\\(([^)]+)\\))?`,
+    "g",
+  );
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    const name = match[1] || match[2];
+    const id = match[3];
+
+    let hit = null;
+    if (id) {
+      hit = members.find(
+        (m) => String(m.id) === String(id) || String(m.agentId) === String(id),
+      );
+    }
+    if (!hit && name) {
+      hit = members.find((m) => m.name === name);
+    }
+    if (hit) found.set(hit.id, hit);
+
+    rest = rest.replace(match[0], " ".repeat(match[0].length));
+  }
+
+  // 裸 @名字：长名优先
+  const byLengthDesc = [...members].sort(
+    (a, b) => (b.name || "").length - (a.name || "").length,
+  );
+  for (const member of byLengthDesc) {
+    const name = member.name;
+    if (!name || found.has(member.id)) continue;
+
+    let idx = rest.indexOf(`@${name}`);
+    while (idx !== -1) {
+      const after = rest.charAt(idx + 1 + name.length);
+      // 右边界为空（结尾）、空白或常见标点才算完整的一次 @；
+      // 否则说明它只是某个更长名字的前缀，跳过。
+      if (after === "" || /[\s,，.。!！?？:：;；、)）\]】"'"']/.test(after)) {
+        found.set(member.id, member);
+        rest =
+          rest.slice(0, idx) +
+          " ".repeat(name.length + 1) +
+          rest.slice(idx + 1 + name.length);
+        break;
+      }
+      idx = rest.indexOf(`@${name}`, idx + 1);
+    }
+  }
+
+  return [...found.values()];
+}
+
+/**
  * 在群聊中路由并触发 Agent 响应
  * @param {Object} group
  * @param {string} assistantMsgId - 主占位消息 ID
@@ -377,7 +491,7 @@ export async function sendGroupCompletions(group, assistantMsgId, targetMemberId
       targetMembers = [...group.members];
     } else {
       // 检查匹配的名字 @AgentName
-      const matched = group.members.filter((m) => text.includes(`@${m.name}`));
+      const matched = resolveMentionedMembers(text, group.members);
       if (matched.length > 0) {
         targetMembers = matched;
       } else {
@@ -434,9 +548,25 @@ export async function sendGroupCompletions(group, assistantMsgId, targetMemberId
       memberAvatar: member.avatar,
     };
 
+    // 水位线由前端下发（后端只管推理）。群聊里每个成员的结晶进度独立，
+    // 因此参数必须逐成员组装，不能共用群级配置。
     const options = member.options || {};
+    const memberCrystal = options.crystallization;
+    const settings = { ...options };
+
+    // 群聊结晶恒开，无条件下发水位线参数
+    settings.crystallization_token_watermark =
+      memberCrystal?.tokenWatermark || 200000;
+    settings.previous_summary = memberCrystal?.latestSummary || "";
+    settings.crystallization_keep_turns = 1;
+    // opening 已经并进 system message（见 formatGroupMessagesForMember），
+    // 这里清掉避免后端重复注入人格
+    if (settings.presetSettings) {
+      settings.presetSettings = { ...settings.presetSettings, opening: "" };
+    }
+
     const data = {
-      settings: options,
+      settings,
       messages: finalMessages,
     };
 
@@ -480,38 +610,17 @@ export function checkAndTriggerAgentInvocation(group, message) {
   const text = extractMessageText(message, false);
   if (!text || !text.includes("@")) return;
 
-  // 匹配直引号 ' 和弯引号 ‘’ 两种单引号格式，兴廵 LLM 输出和 typographer 转换后的内容
-  const QUOTE = "['‘’]";
-  const regex = new RegExp(
-    `@(?:${QUOTE}([^'‘’]+)${QUOTE}|\\{([^}]+)\\})(?:\\(([^)]+)\\))?`,
-    "g"
-  );
-  let match;
+  // 与用户侧 @ 路由共用同一套解析（以 ID 为准），避免两边口径不一致
   const targetMemberIds = new Set();
-
-  while ((match = regex.exec(text)) !== null) {
-    const name = match[1] || match[2];
-    const id = match[3];
-
-    let found = null;
-    if (id) {
-      found = group.members?.find(
-        (m) => String(m.id) === String(id) || String(m.agentId) === String(id)
-      );
-    }
-    if (!found && name) {
-      found = group.members?.find((m) => m.name === name);
-    }
-
+  resolveMentionedMembers(text, group.members || []).forEach((found) => {
     if (
-      found &&
       !found.isUser &&
       found.id !== message.sender_id &&
       found.id !== message.senderMemberId
     ) {
       targetMemberIds.add(found.id);
     }
-  }
+  });
 
   if (targetMemberIds.size === 0) return;
 

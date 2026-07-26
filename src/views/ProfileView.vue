@@ -60,6 +60,7 @@
             :name="activeMember ? activeMember.name : activeContactor.name"
             :avatar="activeMember ? activeMember.avatar : activeContactor.avatar"
             :is-group-member="!!activeMember"
+            :group-member-id="activeMember ? String(activeMember.id) : null"
             :group-name="activeContactor?.name || ''"
             :is-connected="isConnected"
             :avatar-policy-list="avatarPolicyList"
