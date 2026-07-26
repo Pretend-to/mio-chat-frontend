@@ -20,6 +20,7 @@ import MessageItem from "@/components/chat/MessageItem.vue";
 import ScreenshotPreview from "@/components/chat/ScreenshotPreview.vue";
 import InputEditor from "@/components/InputEditor.vue";
 import ContextMenu from "@/components/ContextMenu.vue";
+import GroupSidebar from "@/components/chat/GroupSidebar.vue";
 
 // Composables
 import { useChatSelection } from "@/composables/useChatSelection.js";
@@ -44,6 +45,7 @@ import {
   imageViewerPlugin,
 } from "mio-previewer/plugins/custom";
 import { katexPlugin } from "mio-previewer/plugins/markdown-it";
+import { agentMentionPlugin } from "@/plugins/agentMentionPlugin.js";
 import { CollectionTag, Close } from "@element-plus/icons-vue";
 
 const route = useRoute();
@@ -281,6 +283,49 @@ const sendMessage = async (msg, toServer = true) => {
       store.failedMessage(contactor.id, msg.id, e.message || "发送失败");
       throw e;
     }
+  } else if (contactor.platform === "group") {
+    // Agent 群聊平台处理
+    toButtom();
+
+    if (!toServer) {
+      store.updateContactorSummary(contactor);
+      client.setLocalStorage();
+      return msg.id;
+    }
+
+    const assistantMsgId = numberString(16);
+    store.getOrCreateMessage(
+      contactor.id,
+      assistantMsgId,
+      {
+        role: "other",
+        status: "pending",
+        content: [{ type: "blank", data: {} }],
+      },
+    );
+
+    store.updateContactorSummary(contactor);
+    client.setLocalStorage();
+    toButtom();
+
+    if (msgInChain) {
+      msgInChain.status = "pending";
+    }
+
+    try {
+      const { sendGroupCompletions } = await import("@/lib/groupGateway.js");
+      await sendGroupCompletions(contactor, assistantMsgId);
+      store.completeMessage(contactor.id, msg.id);
+      return msg.id;
+    } catch (e) {
+      ElMessage.error(e.message || "群聊发送失败");
+      store.failedMessage(contactor.id, msg.id, e.message || "群聊发送失败");
+      const asstIdx = contactor.messageChain.findIndex((m) => m.id === assistantMsgId);
+      if (asstIdx !== -1) {
+        contactor.messageChain.splice(asstIdx, 1);
+      }
+      return msg.id;
+    }
   } else {
     // OpenAI platform
     toButtom();
@@ -481,7 +526,7 @@ let isObservingResize = false;
 let oldInnerHeight = 0;
 let observeTimer = null;
 const loadingIcon = "<span id='message-loading-icon'></span>";
-const katexPluginList = [{ plugin: katexPlugin }];
+const katexPluginList = [{ plugin: katexPlugin }, { plugin: agentMentionPlugin }];
 
 const mioPlugins = [
   { plugin: codeBlockPlugin },
@@ -1253,13 +1298,27 @@ const handleTouchStart = (event, index) => {
   }
 };
 
-const toProfile = () => {
-  router.push({
-    name: "profile_view",
-    params: {
-      id: activeContactor.value.id,
-    },
-  });
+const toProfile = (memberId = null) => {
+  if (
+    activeContactor.value?.platform === "group" &&
+    memberId &&
+    typeof memberId === "string"
+  ) {
+    router.push({
+      name: "profile_view",
+      params: {
+        id: activeContactor.value.id,
+      },
+      query: { memberId },
+    });
+  } else {
+    router.push({
+      name: "profile_view",
+      params: {
+        id: activeContactor.value.id,
+      },
+    });
+  }
 };
 
 /**
@@ -1829,12 +1888,13 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="mio-chat-window" v-if="activeContactor">
-    <ChatHeader
-      :active-contactor="activeContactor"
-      @back="tolist"
-      @to-profile="toProfile"
-      @share="share"
-    />
+    <div class="chat-main-area">
+      <ChatHeader
+        :active-contactor="activeContactor"
+        @back="tolist"
+        @to-profile="toProfile"
+        @share="share"
+      />
 
     <!-- Selection Banners -->
     <transition name="select-banner-fade">
@@ -2031,6 +2091,13 @@ onBeforeUnmount(() => {
         &times;
       </button>
     </div>
+    </div> <!-- End of .chat-main-area -->
+
+    <!-- QQ Style Right Sidebar for Group Chat (Desktop only) -->
+    <GroupSidebar
+      v-if="activeContactor.platform === 'group' && !isMobileDevice"
+      :group="activeContactor"
+    />
 
     <!-- Screenshot Preview Dialog & Drawer -->
     <ScreenshotPreview
@@ -2070,7 +2137,16 @@ $mobile: 768px
     display: flex
     flex-grow: 1
     background-color: var(--mio-bg-chat-window)
+    flex-direction: row
+    height: 100%
+    overflow: hidden
+
+.chat-main-area
+    flex: 1
+    display: flex
     flex-direction: column
+    height: 100%
+    min-width: 0
 
 .multi-select-action-bar
     flex-shrink: 0

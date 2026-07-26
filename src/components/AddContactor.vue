@@ -165,8 +165,108 @@
             </div>
           </div>
 
-          <!-- 分享码 -->
-          <div v-show="activeTab === 2" class="share-code-view">
+          <!-- 创建群聊 Tab (activeTab === 2) -->
+          <div v-show="activeTab === 2" class="group-create-view mobile">
+            <div class="group-form">
+              <div class="form-row">
+                <span class="form-label">群名称</span>
+                <el-input
+                  v-model="groupName"
+                  placeholder="例如：Mio 思考与讨论群..."
+                  clearable
+                />
+              </div>
+              <div class="form-row">
+                <span class="form-label">群介绍</span>
+                <el-input
+                  v-model="groupIntro"
+                  type="textarea"
+                  :rows="2"
+                  placeholder="可选：描述该群聊的角色分配与讨论目标..."
+                />
+              </div>
+            </div>
+
+            <div class="group-member-selector">
+              <div class="selector-header">
+                <span class="selector-title">选择群成员</span>
+                <div class="selector-subtabs">
+                  <span
+                    class="subtab"
+                    :class="{ active: groupMemberTab === 'recent' }"
+                    @click="groupMemberTab = 'recent'"
+                    >最近聊天</span
+                  >
+                  <span
+                    class="subtab"
+                    :class="{ active: groupMemberTab === 'presets' }"
+                    @click="groupMemberTab = 'presets'"
+                    >本地预设</span
+                  >
+                </div>
+              </div>
+
+              <el-scrollbar class="selector-list">
+                <div
+                  v-for="item in availableGroupMembers"
+                  :key="item.id"
+                  class="member-item"
+                  @click="toggleGroupMember(item)"
+                >
+                  <el-checkbox
+                    :model-value="isMemberSelected(item.id)"
+                    @click.stop
+                    @change="toggleGroupMember(item)"
+                  />
+                  <img :src="item.avatar" class="member-avatar" />
+                  <div class="member-info">
+                    <div class="member-name">{{ item.name }}</div>
+                    <div class="member-desc">{{ item.title || item.opening || 'Agent' }}</div>
+                  </div>
+                </div>
+                <el-empty
+                  v-if="availableGroupMembers.length === 0"
+                  description="暂无可选成员"
+                  :image-size="40"
+                />
+              </el-scrollbar>
+
+              <!-- 已选成员预览区 (固定在灰色卡片内底端) -->
+              <div class="selected-preview-bar">
+                <div class="preview-title">
+                  已选成员 <span class="count-badge">({{ selectedGroupMembers.length }})</span>
+                </div>
+                <div class="preview-chips-container">
+                  <template v-if="selectedGroupMembers.length > 0">
+                    <div
+                      v-for="m in selectedGroupMembers"
+                      :key="m.id"
+                      class="member-chip"
+                    >
+                      <img :src="m.avatar" class="chip-avatar" />
+                      <span class="chip-name">{{ m.name }}</span>
+                      <span class="chip-remove" @click.stop="toggleGroupMember(m)">×</span>
+                    </div>
+                  </template>
+                  <div v-else class="empty-chips-hint">
+                    暂未勾选成员（请在上方列表中选择）
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <el-button
+              type="primary"
+              class="create-group-btn"
+              :disabled="!groupName.trim() || selectedGroupMembers.length === 0"
+              @click="handleCreateGroup"
+            >
+              创建 Agent 群聊 (已选 {{ selectedGroupMembers.length }} 人)
+            </el-button>
+          </div>
+
+          <!-- 分享码 (activeTab === 3) -->
+          <div v-show="activeTab === 3" class="share-code-view">
             <div class="share-input-container">
               <div class="input-label">输入分享码或分享链接</div>
               <el-input
@@ -345,8 +445,109 @@
           </div>
         </div>
 
-        <!-- 分享码 -->
-        <div v-show="activeTab === 2" class="share-code-view">
+        <!-- 创建群聊 Tab (activeTab === 2) -->
+        <div v-show="activeTab === 2" class="group-create-view">
+          <div class="group-form">
+            <div class="form-row">
+              <span class="form-label">群名称</span>
+              <el-input
+                v-model="groupName"
+                placeholder="例如：Mio 思考与讨论群..."
+                clearable
+              />
+            </div>
+            <div class="form-row">
+              <span class="form-label">群介绍</span>
+              <el-input
+                v-model="groupIntro"
+                type="textarea"
+                :rows="2"
+                placeholder="可选：描述该群聊的角色分配与讨论目标..."
+              />
+            </div>
+          </div>
+
+          <!-- 选人区 -->
+          <div class="group-member-selector">
+            <div class="selector-header">
+              <span class="selector-title">选择群成员</span>
+              <div class="selector-subtabs">
+                <span
+                  class="subtab"
+                  :class="{ active: groupMemberTab === 'recent' }"
+                  @click="groupMemberTab = 'recent'"
+                  >最近聊天</span
+                >
+                <span
+                  class="subtab"
+                  :class="{ active: groupMemberTab === 'presets' }"
+                  @click="groupMemberTab = 'presets'"
+                  >本地预设</span
+                >
+              </div>
+            </div>
+
+            <el-scrollbar class="selector-list">
+              <div
+                v-for="item in availableGroupMembers"
+                :key="item.id"
+                class="member-item"
+                @click="toggleGroupMember(item)"
+              >
+                <el-checkbox
+                  :model-value="isMemberSelected(item.id)"
+                  @click.stop
+                  @change="toggleGroupMember(item)"
+                />
+                <img :src="item.avatar" class="member-avatar" />
+                <div class="member-info">
+                  <div class="member-name">{{ item.name }}</div>
+                  <div class="member-desc">{{ item.title || item.opening || 'Agent' }}</div>
+                </div>
+              </div>
+              <el-empty
+                v-if="availableGroupMembers.length === 0"
+                description="暂无可选成员"
+                :image-size="40"
+              />
+            </el-scrollbar>
+
+            <!-- 已选成员预览区 (固定在灰色卡片内底端) -->
+            <div class="selected-preview-bar">
+              <div class="preview-title">
+                已选成员 <span class="count-badge">({{ selectedGroupMembers.length }})</span>
+              </div>
+              <div class="preview-chips-container">
+                <template v-if="selectedGroupMembers.length > 0">
+                  <div
+                    v-for="m in selectedGroupMembers"
+                    :key="m.id"
+                    class="member-chip"
+                  >
+                    <img :src="m.avatar" class="chip-avatar" />
+                    <span class="chip-name">{{ m.name }}</span>
+                    <span class="chip-remove" @click.stop="toggleGroupMember(m)">×</span>
+                  </div>
+                </template>
+                <div v-else class="empty-chips-hint">
+                  暂未勾选成员（请在上方列表中选择）
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <el-button
+            type="primary"
+            class="create-group-btn"
+            :disabled="!groupName.trim() || selectedGroupMembers.length === 0"
+            @click="handleCreateGroup"
+          >
+            创建 Agent 群聊 (已选 {{ selectedGroupMembers.length }} 人)
+          </el-button>
+        </div>
+
+        <!-- 分享码 (activeTab === 3) -->
+        <div v-show="activeTab === 3" class="share-code-view">
           <div class="share-input-container">
             <div class="input-label">输入分享码或分享链接</div>
             <el-input
@@ -377,7 +578,7 @@ import { Loading, Search } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { getAvatarByModel } from "@/stores/contactorsStore.js";
+import { getAvatarByModel, useContactorsStore } from "@/stores/contactorsStore.js";
 import { getLocalPresets } from "@/lib/clientSettings.js";
 
 // Props
@@ -402,7 +603,7 @@ const router = useRouter();
 
 // Constants
 const avaliablePresetTypes = ["推荐", "最近", "本地", "系统"];
-const tabs = ["适配器", "预设", "分享码"];
+const tabs = ["适配器", "预设", "创建群聊", "分享码"];
 
 // Reactive state
 const activeTab = ref(0);
@@ -422,6 +623,72 @@ const moreSystemPresets = ref(true);
 const moreRecommendPresets = ref(true);
 const isMobile = ref(false);
 const availableProviders = ref([]);
+
+// ========== 群聊创建状态 ==========
+const groupName = ref("Agent 智囊团");
+const groupIntro = ref("");
+const groupMemberTab = ref("recent");
+const selectedGroupMembers = ref([]);
+
+const availableGroupMembers = computed(() => {
+  if (groupMemberTab.value === "recent") {
+    const contactorStore = useContactorsStore();
+    return Object.values(contactorStore.contactors || {})
+      .filter((c) => c.platform !== "group")
+      .map((c) => ({
+        id: c.id,
+        agentId: c.id,
+        name: c.name,
+        avatar: c.avatar || "/static/icons/512x512.png",
+        title: c.title || "联系人",
+        options: c.options,
+      }));
+  } else {
+    return localPresets.value.map((p) => ({
+      id: p.id,
+      agentId: p.id,
+      name: p.name,
+      avatar: p.avatar || getAvatarByModel(p.model) || "/static/icons/512x512.png",
+      title: p.title || "本地预设",
+      options: {
+        base: { model: p.model || "gpt-4o", stream: true },
+        presetSettings: { opening: p.opening || "", history: p.history || [] },
+        toolCallSettings: { mode: "auto", tools: p.tools || [] },
+      },
+    }));
+  }
+});
+
+const isMemberSelected = (id) => {
+  return selectedGroupMembers.value.some((m) => m.id === id);
+};
+
+const toggleGroupMember = (item) => {
+  const idx = selectedGroupMembers.value.findIndex((m) => m.id === item.id);
+  if (idx !== -1) {
+    selectedGroupMembers.value.splice(idx, 1);
+  } else {
+    selectedGroupMembers.value.push(item);
+  }
+};
+
+const handleCreateGroup = async () => {
+  if (!groupName.value.trim() || selectedGroupMembers.value.length === 0) return;
+  const contactorStore = useContactorsStore();
+  try {
+    const newGroup = await contactorStore.addGroupContactor({
+      name: groupName.value.trim(),
+      intro: groupIntro.value.trim(),
+      members: selectedGroupMembers.value,
+      avatarPolicy: "composite",
+    });
+    ElMessage.success(`群聊「${newGroup.name}」创建成功`);
+    close();
+    contactorStore.selectContactor(newGroup.id);
+  } catch (e) {
+    ElMessage.error("创建群聊失败: " + e.message);
+  }
+};
 
 // Computed
 const showPresetsLoader = computed(() => {
@@ -831,7 +1098,7 @@ onUnmounted(() => {
 .tab-content {
   flex-grow: 1;
   overflow: hidden;
-  padding: 0 20px;
+  padding: 0 20px 16px 20px;
   display: flex;
   flex-direction: column;
 
@@ -1081,6 +1348,197 @@ onUnmounted(() => {
   font-size: 14px;
   color: var(--el-text-color-regular);
   margin-bottom: 8px;
+}
+
+.group-create-view {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 0 0 0;
+
+  .group-form {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .form-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .form-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--el-text-color-regular);
+      }
+    }
+  }
+
+  .group-member-selector {
+    flex: 1;
+    min-height: 0;
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 8px;
+    padding: 10px;
+    background-color: var(--el-fill-color-light);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    .selector-header {
+      flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .selector-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--el-text-color-primary);
+      }
+
+      .selector-subtabs {
+        display: flex;
+        gap: 6px;
+
+        .subtab {
+          font-size: 11px;
+          padding: 2px 8px;
+          border-radius: 4px;
+          cursor: pointer;
+          color: var(--el-text-color-secondary);
+          background: var(--el-bg-color-overlay);
+          border: 1px solid var(--el-border-color-lighter);
+
+          &.active {
+            color: #fff;
+            background: var(--el-color-primary);
+            border-color: var(--el-color-primary);
+          }
+        }
+      }
+    }
+
+    .selector-list {
+      flex: 1;
+      min-height: 0;
+      border-radius: 6px;
+      background: var(--el-bg-color-overlay);
+      border: 1px solid var(--el-border-color-lighter);
+
+      .member-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.15s;
+
+        &:hover {
+          background-color: var(--el-fill-color-light);
+        }
+
+        .member-avatar {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          object-fit: cover;
+        }
+
+        .member-info {
+          flex: 1;
+          min-width: 0;
+
+          .member-name {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--el-text-color-primary);
+          }
+
+          .member-desc {
+            font-size: 10px;
+            color: var(--el-text-color-placeholder);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+        }
+      }
+    }
+
+    .selected-preview-bar {
+      margin-top: 2px;
+      padding-top: 6px;
+      border-top: 1px dashed var(--el-border-color);
+
+      .preview-title {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--el-text-color-secondary);
+        margin-bottom: 4px;
+
+        .count-badge {
+          color: var(--el-color-primary);
+          font-weight: 600;
+        }
+      }
+
+      .preview-chips-container {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        height: 28px;
+        overflow-x: auto;
+        overflow-y: hidden;
+
+        .empty-chips-hint {
+          font-size: 11px;
+          color: var(--el-text-color-placeholder);
+        }
+
+        .member-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 2px 8px 2px 4px;
+          background: var(--el-color-primary-light-9);
+          border: 1px solid var(--el-color-primary-light-7);
+          border-radius: 12px;
+          font-size: 11px;
+          color: var(--el-color-primary);
+          white-space: nowrap;
+          flex-shrink: 0;
+
+          .chip-avatar {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            object-fit: cover;
+          }
+
+          .chip-remove {
+            margin-left: 2px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+
+            &:hover {
+              color: var(--el-color-danger);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .create-group-btn {
+    width: 100%;
+    margin-top: 6px;
+  }
 }
 </style>
 

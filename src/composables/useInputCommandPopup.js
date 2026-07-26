@@ -108,6 +108,24 @@ export function useInputCommandPopup({
           description: skill.description,
         });
       });
+    } else if (contactor.platform === "group") {
+      list.push({
+        type: "mention",
+        label: "全体成员",
+        preset: "@全体成员",
+        value: "@全体成员",
+        description: "唤醒群内所有 Agent 成员依次响应",
+      });
+      (contactor.members || []).forEach((m) => {
+        list.push({
+          type: "mention",
+          label: `@${m.name}`,
+          preset: `@${m.name}`,
+          value: `@${m.name}`,
+          avatar: m.avatar,
+          description: m.title || "Agent 群成员",
+        });
+      });
     }
     return list;
   });
@@ -155,12 +173,13 @@ export function useInputCommandPopup({
 
   const confirmCommand = (cmd) => {
     const text = getPureTextOfTextNodes(textareaRef.value);
-    const regex = /(?:^|\s)[/#](?!\/)/g;
+    const regex = /(?:^|\s)[/#@](?!\/)/g;
     let match;
     let lastSlashIdx = -1;
     let triggerChar = "/";
     while ((match = regex.exec(text)) !== null) {
-      const isTriggerAtStart = match[0] === "/" || match[0] === "#";
+      const isTriggerAtStart =
+        match[0] === "/" || match[0] === "#" || match[0] === "@";
       lastSlashIdx = match.index + (isTriggerAtStart ? 0 : 1);
       triggerChar = text.charAt(lastSlashIdx);
     }
@@ -169,11 +188,19 @@ export function useInputCommandPopup({
       const badgeEl = document.createElement("span");
       badgeEl.className = "command-badge";
       badgeEl.setAttribute("contenteditable", "false");
-      badgeEl.setAttribute("data-preset", cmd.preset);
+      badgeEl.setAttribute("data-preset", cmd.preset || cmd.value);
       badgeEl.setAttribute("data-type", cmd.type || "command");
-      badgeEl.setAttribute("data-label", cmd.label);
 
-      const labelText = triggerChar + cmd.label;
+      let rawLabel = cmd.label || cmd.value || "";
+      if (rawLabel.startsWith("@")) {
+        rawLabel = rawLabel.substring(1);
+      }
+      const labelText =
+        triggerChar === "@" || cmd.type === "mention"
+          ? `@${rawLabel}`
+          : `${triggerChar}${rawLabel}`;
+      badgeEl.setAttribute("data-label", labelText);
+
       if (cmd.type === "tool") {
         badgeEl.innerHTML = `<i class="mio-icon mio-icon-tool" style="margin-right: 4px; vertical-align: middle;"></i><span>${labelText}</span>`;
       } else if (cmd.type === "skill") {
@@ -229,7 +256,8 @@ export function useInputCommandPopup({
   const checkSlashCommand = () => {
     if (
       activeContactor.value?.platform !== "onebot" &&
-      activeContactor.value?.platform !== "openai"
+      activeContactor.value?.platform !== "openai" &&
+      activeContactor.value?.platform !== "group"
     ) {
       showCommandPopup.value = false;
       return;
@@ -244,9 +272,9 @@ export function useInputCommandPopup({
 
     const occurrences = [];
     let match;
-    const regex = /(?:^|\s)[/#](?!\/)/g;
+    const regex = /(?:^|\s)[/#@](?!\/)/g;
     while ((match = regex.exec(textWithoutBadge)) !== null) {
-      const isTriggerAtStart = match[0] === "/" || match[0] === "#";
+      const isTriggerAtStart = match[0] === "/" || match[0] === "#" || match[0] === "@";
       const slashIdx = match.index + (isTriggerAtStart ? 0 : 1);
       occurrences.push(slashIdx);
     }

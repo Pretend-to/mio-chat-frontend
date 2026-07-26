@@ -3,6 +3,23 @@ import { useConfigStore } from "@/stores/configStore.js";
 import { client } from "@/lib/runtime.js";
 import { assembleSystemPrompt } from "@/utils/SystemPromptAssembler.js";
 import { buildUserProfileXml } from "@/lib/clientSettings.js";
+import { sendGroupCompletions } from "@/lib/groupGateway.js";
+
+/**
+ * 消息落盘后再向服务端发送 ACK，通知其清除 streamCache。
+ * 必须等 saveNow 落盘完成才能发，否则缓存已清而本地未持久化时消息会永久丢失。
+ */
+async function ackPersistedMessage(contactorId, messageId) {
+  if (!contactorId || !messageId) return;
+  try {
+    await client.saveNow();
+  } catch (err) {
+    // 落盘失败就不 ACK，保留服务端缓存，下次 enter_chat 仍可同步回来
+    console.error("持久化失败，跳过 ACK:", err);
+    return;
+  }
+  client.socket?.ackMessage(contactorId, messageId);
+}
 
 function getFilePrompt(fileElms) {
   const start = "\n以下是用户上传的文件：\n";
@@ -522,6 +539,19 @@ export const gateway = {
       );
 
       return response.message_id;
+    } else if (platform === "group") {
+      if (!client.isConnected) {
+        throw new Error("连接已断开，请检查网络或刷新页面");
+      }
+      const contactorStore = useContactorsStore();
+      const contactor = contactorStore.contactors[contactorId];
+      if (!contactor) {
+        throw new Error("群聊联系人未找到");
+      }
+      const targetMsg = (messagesChain || []).find((m) => m.id === messageId);
+      const targetMemberId =
+        targetMsg?.sender_id || targetMsg?.senderMemberId || null;
+      await sendGroupCompletions(contactor, messageId, targetMemberId);
     } else {
       // OpenAI 平台
       if (!client.isConnected) {
@@ -645,11 +675,17 @@ export const gateway = {
 
     // Set message status to completed locally immediately to stop the spinner
     const contactorStore = useContactorsStore();
-    contactorStore.completeMessage(contactorId, messageId);
+    // 用户主动中断，不应触发群聊 Agent 连锁唤起
+    contactorStore.completeMessage(contactorId, messageId, {
+      triggerInvocation: false,
+    });
 
-    if (platform === "openai") {
+    if (platform === "openai" || platform === "group") {
       if (!client.socket) return;
       client.socket.interruptGeneration(messageId, contactorId);
+      // 主动 ACK：若服务端已无对应活跃事件，则不会回 complete 帧，
+      // 缓存里的 streaming 记录会残留并在每次 enter_chat 被重复同步
+      ackPersistedMessage(contactorId, messageId);
     }
   },
 
@@ -707,9 +743,7 @@ export const gateway = {
 
         // 如果同步回来的是已完成/已失败的终态消息，也给后端发 ACK 清除流缓存
         if (["completed", "failed"].includes(data.status)) {
-          if (client.socket && typeof client.socket.ackMessage === "function") {
-            client.socket.ackMessage(contactorId, messageId);
-          }
+          ackPersistedMessage(contactorId, messageId);
         }
         // 断线同步恢复：若消息未完成/未失败，且同步的 chunks 中含有挂起待处理的 action，则还原至 interactionStore
         if (
@@ -803,9 +837,7 @@ export const gateway = {
       } else if (e.message === "failed") {
         contactorStore.failedMessage(contactorId, messageId, e.data);
       }
-      if (client.socket && typeof client.socket.ackMessage === "function") {
-        client.socket.ackMessage(contactorId, messageId);
-      }
+      ackPersistedMessage(contactorId, messageId);
     }
   },
 

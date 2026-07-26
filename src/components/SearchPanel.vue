@@ -1,4 +1,6 @@
 <script setup>
+import GroupAvatar from "@/components/GroupAvatar.vue";
+
 defineProps({
   searchQuery: {
     type: String,
@@ -84,7 +86,8 @@ const highlight = (text, query) => {
             class="avatar"
             :class="contact.avatarPolicy == 1 ? 'custom' : 'model'"
           >
-            <img :src="contact.avatar" :alt="contact.name" />
+            <GroupAvatar v-if="contact.platform === 'group'" :contactor="contact" />
+            <img v-else :src="contact.avatar" :alt="contact.name" />
           </div>
           <div class="info">
             <div

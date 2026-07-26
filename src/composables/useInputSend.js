@@ -50,10 +50,25 @@ export function useInputSend({
     }
 
     const clone = textareaRef.value.cloneNode(true);
-    clone
-      .querySelectorAll(".command-badge, .reply-badge")
-      .forEach((b) => b.remove());
+    clone.querySelectorAll(".reply-badge").forEach((b) => b.remove());
+    clone.querySelectorAll(".command-badge").forEach((b) => {
+      const type = b.getAttribute("data-type");
+      const preset =
+        b.getAttribute("data-preset") ||
+        b.getAttribute("data-label") ||
+        b.innerText ||
+        "";
+      if (type === "mention" || activeContactor.value?.platform === "group") {
+        const textNode = document.createTextNode(preset + " ");
+        if (b.parentNode) {
+          b.parentNode.replaceChild(textNode, b);
+        }
+      } else {
+        b.remove();
+      }
+    });
     const remainingText = getSafeText(clone.innerText).trim();
+    msg = remainingText;
 
     const badges = textareaRef.value.querySelectorAll(".command-badge");
     if (badges.length > 0) {
@@ -66,7 +81,10 @@ export function useInputSend({
           msg = remainingText ? `${preset} ${remainingText}` : preset;
         }
         isCommand = true;
-      } else if (activeContactor.value.platform === "openai") {
+      } else if (
+        activeContactor.value.platform === "openai" ||
+        activeContactor.value.platform === "group"
+      ) {
         let hasConfigChanged = false;
         badges.forEach((badge) => {
           const preset = badge.getAttribute("data-preset");

@@ -3,76 +3,92 @@
     <!-- Header: Basic Info (QQ Style) -->
     <div class="profile-header">
       <div class="avatar-container">
+        <GroupAvatar
+          v-if="activeContactorPlatform === 'group' && !isGroupMember"
+          :contactor="currentContactor"
+        />
         <div
+          v-else
           class="avatar"
           :style="{ backgroundImage: `url(${avatar || ''})` }"
         ></div>
       </div>
       <div class="profile-info">
+        <div v-if="isGroupMember" class="group-member-tag" style="margin-bottom: 6px;">
+          <el-tag size="small" type="warning" effect="dark" round>
+            群聊【{{ groupName }}】成员设置
+          </el-tag>
+        </div>
         <h1 class="profile-name">{{ name || "Mio Assistant" }}</h1>
-        <div class="profile-id">ID {{ basicInfo.id || "114514" }}</div>
+        <div class="profile-id">ID {{ basicInfo.id || contactorId || "114514" }}</div>
         <div class="status-text">
-          <span :class="{ 'online-indicator': true, offline: !isConnected }"
+          <span :class="{ 'online-indicator': true, offline: !isGroupMember && activeContactorPlatform !== 'group' && !isConnected }"
             >●</span
           >
-          {{ isConnected ? "在线" : "离线" }}
+          {{ isGroupMember ? `群聊 "${groupName}" 内部 Agent 成员` : (activeContactorPlatform === 'group' ? (currentContactor ? `${currentContactor.members?.length || 0} 位成员` : 'Agent 群聊') : (isConnected ? "在线" : "离线")) }}
         </div>
       </div>
     </div>
 
-    <!-- Top Tabs -->
-    <div class="tabs-container" v-if="activeContactorPlatform !== 'onebot'">
+    <!-- Top Tabs (non-onebot & non-group or isGroupMember) -->
+    <div class="tabs-container" v-if="activeContactorPlatform !== 'onebot' && (activeContactorPlatform !== 'group' || isGroupMember)">
       <div class="segmented-tabs">
-        <div
-          :class="{ 'tab-item': true, active: activeTab === 'basic' }"
-          @click="activeTab = 'basic'"
-        >
-          基础配置
-        </div>
-        <div
-          :class="{ 'tab-item': true, active: activeTab === 'tools' }"
-          @click="activeTab = 'tools'"
-        >
-          工具调用
-        </div>
-        <div
-          :class="{ 'tab-item': true, active: activeTab === 'skills' }"
-          @click="activeTab = 'skills'"
-        >
-          技能库
-        </div>
-        <div
-          :class="{ 'tab-item': true, active: activeTab === 'presets' }"
-          @click="activeTab = 'presets'"
-        >
-          历史预设
-        </div>
-        <div
-          :class="{ 'tab-item': true, active: activeTab === 'memory' }"
-          @click="activeTab = 'memory'"
-        >
-          记忆结晶
-        </div>
-        <div
-          :class="{ 'tab-item': true, active: activeTab === 'automation' }"
-          @click="activeTab = 'automation'"
-        >
-          定时任务
-        </div>
-        <div
-          :class="{ 'tab-item': true, active: activeTab === 'advanced' }"
-          @click="activeTab = 'advanced'"
-        >
-          高级扩展
+          <div
+            :class="{ 'tab-item': true, active: activeTab === 'basic' }"
+            @click="activeTab = 'basic'"
+          >
+            基础配置
+          </div>
+          <div
+            :class="{ 'tab-item': true, active: activeTab === 'tools' }"
+            @click="activeTab = 'tools'"
+          >
+            工具调用
+          </div>
+          <div
+            :class="{ 'tab-item': true, active: activeTab === 'skills' }"
+            @click="activeTab = 'skills'"
+          >
+            技能库
+          </div>
+          <div
+            :class="{ 'tab-item': true, active: activeTab === 'presets' }"
+            @click="activeTab = 'presets'"
+          >
+            历史预设
+          </div>
+          <div
+            :class="{ 'tab-item': true, active: activeTab === 'memory' }"
+            @click="activeTab = 'memory'"
+          >
+            记忆结晶
+          </div>
+          <div
+            :class="{ 'tab-item': true, active: activeTab === 'automation' }"
+            @click="activeTab = 'automation'"
+          >
+            定时任务
+          </div>
+          <div
+            :class="{ 'tab-item': true, active: activeTab === 'advanced' }"
+            @click="activeTab = 'advanced'"
+          >
+            高级扩展
+          </div>
         </div>
       </div>
-    </div>
 
     <!-- Settings Content Area -->
     <div class="settings-content">
+      <!-- Group Settings Platform View -->
+      <GroupSettingsView
+        v-if="activeContactorPlatform === 'group' && !isGroupMember"
+        :contactor-id="contactorId"
+      />
+
       <!-- Tab: Basic -->
       <ContactorBasicTab
-        v-if="activeTab === 'basic'"
+        v-else-if="activeTab === 'basic'"
         :model-value="modelValue"
         @update:model-value="(val) => $emit('update:modelValue', val)"
         :basic-info="basicInfo"
@@ -144,6 +160,9 @@ import ContactorToolsTab from "./profile/ContactorToolsTab.vue";
 import ContactorSkillsTab from "./profile/ContactorSkillsTab.vue";
 import ContactorAutomationTab from "./profile/ContactorAutomationTab.vue";
 import ContactorAdvancedTab from "./profile/ContactorAdvancedTab.vue";
+import GroupSettingsView from "@/views/GroupSettingsView.vue";
+import GroupAvatar from "@/components/GroupAvatar.vue";
+import { useContactorsStore } from "@/stores/contactorsStore.js";
 import { configAPI } from "@/lib/configApi.js";
 
 const props = defineProps({
@@ -183,6 +202,14 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  isGroupMember: {
+    type: Boolean,
+    default: false,
+  },
+  groupName: {
+    type: String,
+    default: "",
+  },
   name: {
     type: String,
     default: "",
@@ -208,6 +235,11 @@ const props = defineProps({
     default: () => [],
   },
 });
+
+const contactorStore = useContactorsStore();
+const currentContactor = computed(() =>
+  props.contactorId ? contactorStore.contactors[props.contactorId] : null
+);
 
 defineEmits([
   "update:modelValue",
@@ -245,18 +277,14 @@ const namePolicyListForShow = computed(() => {
 });
 
 const fetchAdapterMetadata = async () => {
+  if (props.activeContactorPlatform === "group") return;
   try {
     const res = await configAPI.getAdapterTypes();
     if (res.code === 0 && res.data?.adapters) {
       adapterMetadata.value = res.data.adapters;
-      console.log(
-        "[Debug] 适配器元数据加载成功，共",
-        adapterMetadata.value.length,
-        "个",
-      );
     }
   } catch (err) {
-    console.error("获取适配器元数据失败:", err);
+    // 忽略非管理员环境下的错误
   }
 };
 
@@ -266,7 +294,9 @@ onMounted(() => {
   }
   updateMobile();
   window.addEventListener("resize", updateMobile);
-  fetchAdapterMetadata();
+  if (props.activeContactorPlatform !== "group") {
+    fetchAdapterMetadata();
+  }
 });
 
 onBeforeUnmount(() => {
@@ -288,17 +318,21 @@ onBeforeUnmount(() => {
 
 .avatar-container {
   position: relative;
-  flex-shrink: 0;
-}
-
-.avatar {
   width: 96px;
   height: 96px;
   border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid var(--mio-border-color-light);
+  background-color: var(--mio-bg-page);
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
   background-size: cover;
   background-position: center;
-  background-color: var(--mio-bg-page);
-  border: 1px solid var(--mio-border-color-light);
 }
 
 .profile-info {

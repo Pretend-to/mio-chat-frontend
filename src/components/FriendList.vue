@@ -17,6 +17,7 @@ import {
   getContactorLastTime,
 } from "@/stores/contactorsStore.js";
 import AddContactor from "@/components/AddContactor.vue";
+import GroupAvatar from "@/components/GroupAvatar.vue";
 import ContextMenu from "@/components/ContextMenu.vue";
 import { shareOrCopy } from "@/utils/tools.js";
 import {
@@ -585,7 +586,8 @@ onBeforeUnmount(() => {
             class="mio-contact-item__avatar"
             :class="item.avatarPolicy == 1 ? 'custom' : 'model'"
           >
-            <img :src="item.avatar" :alt="item.name" />
+            <GroupAvatar v-if="item.platform === 'group'" :contactor="item" />
+            <img v-else :src="item.avatar" :alt="item.name" />
           </div>
           <div class="mio-contact-item__info">
             <div class="mio-contact-item__name">{{ item.name }}</div>

@@ -16,7 +16,7 @@
           <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
       </div>
-      <div class="nav-title">联系人详情</div>
+      <div class="nav-title">{{ activeMember ? '群聊成员设置' : (activeContactor?.platform === 'group' ? '群聊设置' : '联系人详情') }}</div>
       <div class="more-btn"></div>
     </div>
 
@@ -35,8 +35,10 @@
             :safety-settings-params="safetyParams"
             :safety-simple-value-options="safetySimpleValue"
             :presets-history-data="options.presetSettings?.history"
-            :name="activeContactor.name"
-            :avatar="activeContactor.avatar"
+            :name="activeMember ? activeMember.name : activeContactor.name"
+            :avatar="activeMember ? activeMember.avatar : activeContactor.avatar"
+            :is-group-member="!!activeMember"
+            :group-name="activeContactor?.name || ''"
             :is-connected="isConnected"
             :avatar-policy-list="avatarPolicyList"
             :name-policy-list="namePolicyList"
@@ -54,7 +56,7 @@
         保存本地
       </el-button>
       <el-button type="danger" plain @click="centerDialogVisible = true">
-        删除好友
+        {{ activeMember ? '移出群聊' : (activeContactor?.platform === 'group' ? '解散群聊' : '删除好友') }}
       </el-button>
       <el-dialog
         v-model="centerDialogVisible"
@@ -63,7 +65,7 @@
         center
         class="confirm-dialog"
       >
-        <span> 确认要删除此好友吗？该操作不可逆。 </span>
+        <span> {{ activeMember ? '确认要从群聊中移出该成员吗？' : '确认要删除此好友吗？该操作不可逆。' }} </span>
         <template #footer>
           <div class="dialog-footer">
             <el-button @click="centerDialogVisible = false">取消</el-button>
@@ -82,6 +84,7 @@ import { useConnectionStore } from "@/stores/connectionStore";
 import { mapState } from "pinia";
 import { useStatusBarColor } from "@/composables/useStatusBarColor";
 import { saveLocalPreset } from "@/lib/clientSettings.js";
+import { useContactorsStore } from "@/stores/contactorsStore.js";
 
 export default {
   components: {
@@ -91,7 +94,7 @@ export default {
     useStatusBarColor("var(--mio-bg-card)");
   },
   data() {
-    const currentId = parseInt(this.$route.params.id);
+    const currentId = String(this.$route.params.id);
     const contactor = client.getContactor(currentId);
 
     const toolCallModes = config.getToolCallModes();
@@ -129,6 +132,7 @@ export default {
     return {
       client: client, // 导出 client 到模板
       activeContactor: contactor,
+      activeMember: null,
       options: null, // Will be initialized in initContactor
       centerDialogVisible: false,
       avatarPolicyList: avatarPolicyList,
@@ -161,16 +165,26 @@ export default {
   },
   watch: {
     "$route.params.id"(newVal) {
-      const newId = parseInt(newVal);
+      const newId = String(newVal);
       this.activeContactor = client.getContactor(newId);
+      this.initContactor();
+    },
+    "$route.query.memberId"() {
       this.initContactor();
     },
     options: {
       handler(newOptions) {
         if (newOptions && this.activeContactor) {
-          // Sync back to the source of truth
-          this.activeContactor.options = JSON.parse(JSON.stringify(newOptions));
-          client.setLocalStorage();
+          if (this.activeMember) {
+            this.activeMember.options = JSON.parse(JSON.stringify(newOptions));
+            const store = useContactorsStore();
+            store.updateContactor(this.activeContactor.id, {
+              members: [...this.activeContactor.members],
+            });
+          } else {
+            this.activeContactor.options = JSON.parse(JSON.stringify(newOptions));
+            client.setLocalStorage();
+          }
         }
       },
       deep: true,
@@ -178,13 +192,25 @@ export default {
     basicInfo: {
       handler(newInfo) {
         if (newInfo && this.activeContactor) {
-          // Sync back to the source of truth
-          this.activeContactor.name = newInfo.name;
-          this.activeContactor.avatar = newInfo.avatar;
-          this.activeContactor.namePolicy = newInfo.namePolicy;
-          this.activeContactor.avatarPolicy = newInfo.avatarPolicy;
-          this.activeContactor.priority = newInfo.priority ? 0 : 1;
-          client.setLocalStorage();
+          if (this.activeMember) {
+            this.activeMember.name = newInfo.name;
+            this.activeMember.avatar = newInfo.avatar;
+            this.activeMember.title = newInfo.title;
+            this.activeMember.namePolicy = newInfo.namePolicy;
+            this.activeMember.avatarPolicy = newInfo.avatarPolicy;
+            this.activeMember.priority = newInfo.priority ? 0 : 1;
+            const store = useContactorsStore();
+            store.updateContactor(this.activeContactor.id, {
+              members: [...this.activeContactor.members],
+            });
+          } else {
+            this.activeContactor.name = newInfo.name;
+            this.activeContactor.avatar = newInfo.avatar;
+            this.activeContactor.namePolicy = newInfo.namePolicy;
+            this.activeContactor.avatarPolicy = newInfo.avatarPolicy;
+            this.activeContactor.priority = newInfo.priority ? 0 : 1;
+            client.setLocalStorage();
+          }
         }
       },
       deep: true,
@@ -240,8 +266,33 @@ export default {
         );
         return;
       }
-      // Deep clone options to avoid direct mutation of contactor's options by child
-      // The watcher on `this.options` will handle persisting changes.
+
+      const memberId = this.$route.query?.memberId;
+      if (this.activeContactor.platform === "group" && memberId) {
+        const foundMember = this.activeContactor.members?.find(
+          (m) => m.id === memberId || m.agentId === memberId
+        );
+        if (foundMember) {
+          this.activeMember = foundMember;
+          if (!this.activeMember.options) this.activeMember.options = {};
+          this.options = JSON.parse(JSON.stringify(this.activeMember.options));
+
+          const { id, name, avatar, title, namePolicy, avatarPolicy, priority } =
+            this.activeMember;
+          this.basicInfo = {
+            id,
+            name: name || "Agent 成员",
+            avatar: avatar || "/static/icons/512x512.png",
+            title: title || "Agent 成员",
+            namePolicy: namePolicy ?? 1,
+            avatarPolicy: avatarPolicy ?? 1,
+            priority: priority === 1 ? false : true,
+          };
+          return;
+        }
+      }
+
+      this.activeMember = null;
       this.options = JSON.parse(JSON.stringify(this.activeContactor.options));
 
       const { id, name, avatar, namePolicy, avatarPolicy, priority } =
@@ -255,15 +306,12 @@ export default {
         priority: priority === 1 ? false : true,
       };
 
-      // If contactor platform is onebot, tool call related options might need to be forced
       if (this.activeContactor.platform === "onebot") {
         if (this.options.toolCallSettings) {
           this.options.toolCallSettings.mode = "none";
           this.options.toolCallSettings.tools = [];
         }
       }
-      // The child component `ContactorSettings` will use this.options
-      // to initialize its internal state.
     },
     handleUpdateOpenaiPresets(presets) {
       if (this.options && this.options.presetSettings) {
@@ -305,8 +353,22 @@ export default {
     async delContactor() {
       if (!this.activeContactor) return;
       this.centerDialogVisible = false;
-      await client.rmContactor(this.activeContactor.id);
-      this.$router.push("/");
+
+      if (this.activeMember) {
+        const updatedMembers = (this.activeContactor.members || []).filter(
+          (m) => m.id !== this.activeMember.id && m.agentId !== this.activeMember.id
+        );
+        const store = useContactorsStore();
+        await store.updateContactor(this.activeContactor.id, {
+          members: updatedMembers,
+        });
+        this.$message.success(`已从群聊中移出成员【${this.activeMember.name}】`);
+        this.activeMember = null;
+        this.$router.push(`/profile/${this.activeContactor.id}`);
+      } else {
+        await client.rmContactor(this.activeContactor.id);
+        this.$router.push("/");
+      }
     },
     handleProviderSwitched() {
       if (!this.activeContactor) return;

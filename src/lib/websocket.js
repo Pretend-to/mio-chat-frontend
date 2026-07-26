@@ -348,6 +348,22 @@ export default class Socket extends EventEmitter {
   }
 
   /**
+   * 发送消息持久化 ACK，通知服务端清除该消息的 streamCache
+   * @param {string} contactorId - 联系人 ID
+   * @param {string} messageId - 消息 ID
+   */
+  ackMessage(contactorId, messageId) {
+    if (!this.socket || !this.socket.connected) return;
+    const request = {
+      request_id: randomString(16),
+      protocol: "llm",
+      type: "ack_message",
+      data: { contactorId, messageId },
+    };
+    this.socket.emit("message", JSON.stringify(request));
+  }
+
+  /**
    * 发送中断生成信号
    * @param {string} messageId - 消息 ID
    * @param {string} contactorId - 联系人 ID

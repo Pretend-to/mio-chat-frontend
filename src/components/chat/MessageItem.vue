@@ -49,36 +49,41 @@
         :style="{ pointerEvents: isMultiSelect ? 'none' : 'auto' }"
       >
         <div v-if="item.role !== 'mio_system'" class="avatar">
-          <img
-            v-if="item.role === 'other'"
-            :src="activeContactor.avatar"
-            :alt="activeContactor.name"
-            :crossorigin="
-              isExternal(activeContactor.avatar) ? 'anonymous' : undefined
-            "
-            @click="$emit('to-profile')"
-          />
+          <template v-if="item.role === 'other'">
+            <img
+              :src="groupMemberAvatar || activeContactor.avatar || '/static/icons/512x512.png'"
+              :alt="groupMemberName || activeContactor.name"
+              @click="$emit('to-profile', item.sender_id || item.senderMemberId)"
+            />
+          </template>
           <img
             v-else
-            :src="userAvatarUrl"
-            :alt="userProfile.name"
-            :crossorigin="
-              isExternal(userAvatarUrl) ? 'anonymous' : undefined
-            "
+            :src="computedUserAvatar"
+            :alt="userProfile.name || '我'"
           />
         </div>
         <div v-if="item.role !== 'mio_system'" class="msg">
           <div class="wholename">
             <div
               v-if="
-                item.role === 'other' ? activeContactor.title : userProfile.title
+                item.role === 'other'
+                  ? (groupMemberTitle || activeContactor.title)
+                  : (userProfile.title || '用户')
               "
               class="title"
             >
-              {{ item.role === "other" ? activeContactor.title : userProfile.title }}
+              {{
+                item.role === "other"
+                  ? (groupMemberTitle || activeContactor.title)
+                  : (userProfile.title || "用户")
+              }}
             </div>
             <div class="name">
-              {{ item.role === "other" ? activeContactor.name : userProfile.name }}
+              {{
+                item.role === "other"
+                  ? (groupMemberName || activeContactor.name)
+                  : (userProfile.name || "我")
+              }}
               <span v-if="item.triggerType === 'task'" class="task-name-tag"
                 >计划</span
               >
@@ -212,7 +217,9 @@ import { ref, computed } from "vue";
 import { client } from "@/lib/runtime.js";
 import { storeToRefs } from "pinia";
 import { useConfigStore } from "@/stores/configStore.js";
+import { useContactorsStore, getAvatarByModel } from "@/stores/contactorsStore.js";
 import MessageContent from "@/components/chat/MessageContent.vue";
+import GroupAvatar from "@/components/GroupAvatar.vue";
 import { ElMessage } from "element-plus";
 
 const configStore = useConfigStore();
@@ -240,6 +247,86 @@ const corsOption = computed(() => {
     }
   }
   return domains.length > 0 ? domains : false;
+});
+
+const computedUserAvatar = computed(() => {
+  return userAvatarUrl.value || client.avatar || "/static/icons/512x512.png";
+});
+
+const useContactors = useContactorsStore();
+
+const replyingMember = computed(() => {
+  if (props.activeContactor?.platform !== "group") return null;
+  const sId = props.item.sender_id || props.item.senderMemberId;
+  const sName = props.item.sender_name || props.item.senderName;
+  if (!sId && !sName) return null;
+
+  // 优先从全局 contactorsStore 查找匹配的单个 Contact Agent
+  const standalone = Object.values(useContactors.contactors).find(
+    (c) => c.id === sId || c.name === sName
+  );
+
+  const member = props.activeContactor.members?.find(
+    (m) => m.id === sId || m.agentId === sId || m.name === sName
+  );
+
+  return {
+    id: sId,
+    name: sName || standalone?.name || member?.name || props.activeContactor.name,
+    avatar: standalone?.avatar || member?.avatar || props.item.sender_avatar || props.item.senderAvatar,
+    avatarPolicy: standalone?.avatarPolicy ?? member?.avatarPolicy,
+    title: standalone?.title || member?.title || "Agent 成员",
+    options: standalone?.options || member?.options || {},
+  };
+});
+
+const groupMemberAvatar = computed(() => {
+  if (props.activeContactor?.platform !== "group") return null;
+  const m = replyingMember.value;
+  const rawAvatar = props.item.sender_avatar || props.item.senderAvatar;
+  const targetAvatar = m?.avatar || rawAvatar;
+
+  // 1. 如果头像为有效的 HTTP / HTTPS / DataURL 自定义网络图，优先使用！
+  if (
+    targetAvatar &&
+    !targetAvatar.includes("512*512") &&
+    targetAvatar !== "/static/icons/512x512.png" &&
+    (targetAvatar.startsWith("http") ||
+      targetAvatar.startsWith("data:") ||
+      targetAvatar.startsWith("//") ||
+      m?.avatarPolicy === 1 ||
+      m?.avatarPolicy === "custom")
+  ) {
+    return targetAvatar;
+  }
+
+  // 2. 否则按模型跟随规则解析
+  const model = m?.options?.base?.model || m?.options?.model || m?.model;
+  const provider = m?.options?.provider || m?.provider;
+  if (model) {
+    return getAvatarByModel(model, provider);
+  }
+
+  if (targetAvatar && !targetAvatar.includes("512*512")) {
+    return targetAvatar;
+  }
+
+  return "/static/icons/512x512.png";
+});
+
+const groupMemberName = computed(() => {
+  if (props.activeContactor?.platform !== "group") return props.activeContactor.name;
+  return (
+    replyingMember.value?.name ||
+    props.item.sender_name ||
+    props.item.senderName ||
+    props.activeContactor.name
+  );
+});
+
+const groupMemberTitle = computed(() => {
+  if (props.activeContactor?.platform !== "group") return props.activeContactor.title;
+  return replyingMember.value?.title || "Agent 成员";
 });
 
 const isExternal = (url) => {

@@ -3,6 +3,7 @@ import { ref, computed } from "vue";
 import { getAvatarByOwner, getAvatarByAdapterType } from "@/utils/avatar.js";
 import { numberString } from "@/utils/generate.js";
 import { config, client } from "@/lib/runtime.js";
+import { checkAndTriggerAgentInvocation } from "@/lib/groupGateway.js";
 
 const avatarPolicy = ["MODEL", "CUSTOM"];
 const namePolicy = ["MODEL", "CUSTOM", "SUMMARY"];
@@ -206,6 +207,8 @@ export const useContactorsStore = defineStore("contactors", () => {
         title: item.title,
         name: item.name,
         avatar: item.avatar,
+        intro: item.intro ?? "",
+        members: item.members ?? [],
         priority: item.priority ?? 1,
         firstMessageIndex: item.firstMessageIndex ?? 0,
         messageChain: item.messageChain ?? [],
@@ -276,6 +279,47 @@ export const useContactorsStore = defineStore("contactors", () => {
     return newContactor;
   }
 
+  async function addGroupContactor({ name, intro = "", members = [], avatarPolicy = "composite", avatar = null }) {
+    const id = numberString(10);
+
+    const newGroup = {
+      platform: "group",
+      id,
+      name: name || "Agent 群聊",
+      intro: intro || "",
+      title: "group",
+      avatarPolicy,
+      avatar: avatar || null,
+      members: members.map((m) => ({
+        id: m.id || numberString(10),
+        agentId: m.agentId || m.id,
+        name: m.name || "Agent",
+        avatar: m.avatar || "/static/icons/512x512.png",
+        title: m.title || "成员",
+        intro: m.intro || "",
+        options: m.options
+          ? JSON.parse(JSON.stringify(m.options))
+          : client.config?.getLLMDefaultConfig?.() || {},
+      })),
+      priority: 0,
+      firstMessageIndex: 0,
+      messageChain: [],
+      active: false,
+      lastUpdate: Date.now(),
+      createTime: Date.now(),
+      hasPendingTask: false,
+      draft: "",
+      options: {
+        base: { max_messages_num: 20 },
+      },
+      lastMessageSummary: "",
+    };
+
+    contactors.value[id] = newGroup;
+    client.setLocalStorage();
+    return newGroup;
+  }
+
   function removeContactor(id) {
     if (contactors.value[id]) {
       delete contactors.value[id];
@@ -328,7 +372,7 @@ export const useContactorsStore = defineStore("contactors", () => {
   }
 
   function loadContactorAvatar(contactor) {
-    let avatar = "/static/icons/512*512.png";
+    let avatar = "/static/icons/512x512.png";
     if (avatarPolicy[contactor.avatarPolicy] === "MODEL") {
       const model = contactor.options?.base?.model || contactor.options?.model;
       avatar = getAvatarByModel(model, contactor.options?.provider);
@@ -715,6 +759,14 @@ export const useContactorsStore = defineStore("contactors", () => {
       if (metaData?.timestamp) {
         message.time = metaData.timestamp;
       }
+      if (metaData?.memberName || metaData?.memberId) {
+        message.sender_id = metaData.memberId;
+        message.sender_name = metaData.memberName;
+        message.sender_avatar = metaData.memberAvatar;
+        message.senderMemberId = metaData.memberId;
+        message.senderName = metaData.memberName;
+        message.senderAvatar = metaData.memberAvatar;
+      }
     }
 
     const newContent = [];
@@ -815,8 +867,13 @@ export const useContactorsStore = defineStore("contactors", () => {
     }
 
     if (status === "completed") {
+      // 只在消息首次完成时触发 Agent 唤起，断线重连服务端回放的已完成消息不重复触发
+      const wasAlreadyCompleted = message.status === "completed";
       message.status = "completed";
       closeReasoningBlocks(message.content, true);
+      if (!wasAlreadyCompleted && contactor.platform === "group") {
+        checkAndTriggerAgentInvocation(contactor, message);
+      }
     } else if (status === "failed") {
       message.status = "failed";
       closeReasoningBlocks(message.content, true);
@@ -842,17 +899,30 @@ export const useContactorsStore = defineStore("contactors", () => {
     client.setLocalStorage();
   }
 
-  function completeMessage(contactorId, messageId) {
+  function completeMessage(contactorId, messageId, options = {}) {
     const contactor = contactors.value[contactorId];
     if (!contactor) return;
 
     const message = getOrCreateMessage(contactorId, messageId);
+    const wasAlreadyCompleted = message.status === "completed";
     message.status = "completed";
     closeReasoningBlocks(message.content, true);
 
     contactor.lastUpdate = Date.now();
     updateContactorSummary(contactor);
     client.setLocalStorage();
+
+    // 群聊 Agent 连锁唤起：仅在 Agent 回复首次自然完成时触发。
+    // 用户消息（role === "user"）的 @ 路由由 sendGroupCompletions 自行处理，
+    // 用户主动中断的消息由调用方传 triggerInvocation: false 排除。
+    if (
+      options.triggerInvocation !== false &&
+      !wasAlreadyCompleted &&
+      contactor.platform === "group" &&
+      message.role === "other"
+    ) {
+      checkAndTriggerAgentInvocation(contactor, message);
+    }
   }
 
   function failedMessage(contactorId, messageId, _error) {
@@ -916,7 +986,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     }
   }
 
-  function insertSystemMessage(contactorId, text) {
+  function insertSystemMessage(contactorId, text, extra = {}) {
     const contactor = contactors.value[contactorId];
     if (!contactor) return;
 
@@ -930,9 +1000,18 @@ export const useContactorsStore = defineStore("contactors", () => {
           data: { text },
         },
       ],
+      ...extra,
     };
     contactor.messageChain.push(systemMsg);
     contactor.lastUpdate = Date.now();
+    updateContactorSummary(contactor);
+    client.setLocalStorage();
+  }
+
+  function updateContactor(id, patch) {
+    const contactor = contactors.value[id];
+    if (!contactor) return;
+    Object.assign(contactor, patch);
     updateContactorSummary(contactor);
     client.setLocalStorage();
   }
@@ -947,6 +1026,11 @@ export const useContactorsStore = defineStore("contactors", () => {
       title: item.title,
       name: item.name,
       avatar: item.avatar,
+      intro: item.intro,
+      notice: item.notice,
+      maxInvocationDepth: item.maxInvocationDepth,
+      defaultResponderId: item.defaultResponderId,
+      members: item.members,
       priority: item.priority,
       messageChain: item.messageChain,
       active: item.active,
@@ -970,6 +1054,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     // Actions
     loadContactors,
     addContactor,
+    addGroupContactor,
     removeContactor,
     selectContactor,
     updateDraft,
@@ -977,6 +1062,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     loadContactorAvatar,
     loadContactorName,
     updateContactorSummary,
+    updateContactor,
     appendOrUpdateMessage,
     getOrCreateMessage,
     syncMessage,

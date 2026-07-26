@@ -171,7 +171,7 @@
           <line x1="15" x2="15.01" y1="9" y2="9" />
         </svg>
       </div>
-      <div class="bu-emoji">
+      <div v-if="activeContactor?.platform !== 'group'" class="bu-emoji">
         <p class="ho-emoji">
           {{ activeContactor.platform == "openai" ? "模型选择" : "工具选择" }}
         </p>
