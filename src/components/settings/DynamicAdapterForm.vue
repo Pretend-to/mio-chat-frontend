@@ -9,12 +9,16 @@
     <!-- 基本信息 -->
     <el-divider content-position="left">配置详情</el-divider>
 
-    <!-- 动态生成的字段 -->
     <template v-for="(fieldConfig, fieldName) in schema" :key="fieldName">
       <el-form-item
         :label="fieldConfig.label || fieldName"
         :prop="fieldName"
-        :required="fieldConfig.required"
+        :required="
+          fieldConfig.required &&
+          fieldName !== 'base_url' &&
+          !fieldName.endsWith('_base_url') &&
+          !fieldConfig.default
+        "
       >
         <!-- 布尔类型 - 开关 -->
         <el-switch
@@ -48,7 +52,10 @@
           v-else-if="fieldConfig.type === 'url'"
           :model-value="modelValue[fieldName]"
           @update:model-value="updateField(fieldName, $event)"
-          :placeholder="fieldConfig.placeholder || fieldConfig.description"
+          :placeholder="
+            fieldConfig.placeholder ||
+            (fieldConfig.default ? `默认: ${fieldConfig.default}` : fieldConfig.description)
+          "
           clearable
         />
 
@@ -104,7 +111,10 @@
           v-else
           :model-value="modelValue[fieldName]"
           @update:model-value="updateField(fieldName, $event)"
-          :placeholder="fieldConfig.placeholder || fieldConfig.description"
+          :placeholder="
+            fieldConfig.placeholder ||
+            (fieldConfig.default ? `默认: ${fieldConfig.default}` : fieldConfig.description)
+          "
           :readonly="fieldConfig.readonly"
           clearable
         />

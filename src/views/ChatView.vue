@@ -849,6 +849,9 @@ const handleMouseUp = () => {
 };
 
 const toButtom = (clicked) => {
+  autoScroll.value = true;
+  showRollDown.value = false;
+
   const execScroll = () => {
     const elm =
       chatWindow.value || document.getElementById("main-messages-window");
@@ -863,7 +866,10 @@ const toButtom = (clicked) => {
   if (clicked === true) {
     execScroll();
   }
-  nextTick(() => requestAnimationFrame(execScroll));
+  nextTick(() => {
+    requestAnimationFrame(execScroll);
+    setTimeout(execScroll, 50);
+  });
 };
 
 const currentScrollTargetId = ref(null);

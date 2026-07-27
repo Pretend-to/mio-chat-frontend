@@ -233,8 +233,10 @@ const rules = computed(() => {
   Object.entries(schema).forEach(([fieldName, fieldConfig]) => {
     const fieldRules = [];
 
-    // 必填验证
-    if (fieldConfig.required) {
+    // 必填验证（如果为 base_url、带 _base_url 的字段或字段声明了 default，则不强制必填）
+    const isBaseUrlField =
+      fieldName === "base_url" || fieldName.endsWith("_base_url");
+    if (fieldConfig.required && !isBaseUrlField && !fieldConfig.default) {
       fieldRules.push({
         required: true,
         message: `请输入${fieldConfig.label || fieldName}`,
@@ -380,6 +382,13 @@ const handleSubmit = async () => {
       // 添加模式：只提交 schema 中定义的字段
       submitData = {};
       Object.keys(schema).forEach((key) => {
+        if (
+          (key === "base_url" || key.endsWith("_base_url")) &&
+          (!formData.value[key] || !String(formData.value[key]).trim()) &&
+          schema[key]?.default
+        ) {
+          formData.value[key] = schema[key].default;
+        }
         if (formData.value[key] !== undefined) {
           submitData[key] = formData.value[key];
         }
@@ -405,6 +414,14 @@ const handleSubmit = async () => {
           formData.value[key]?.startsWith("***")
         ) {
           return;
+        }
+
+        if (
+          (key === "base_url" || key.endsWith("_base_url")) &&
+          (!formData.value[key] || !String(formData.value[key]).trim()) &&
+          schema[key]?.default
+        ) {
+          formData.value[key] = schema[key].default;
         }
 
         // 只在字段值发生变化时添加
