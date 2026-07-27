@@ -290,8 +290,8 @@ const mergeOptions = (options) => {
 const addPresetContactor = async (preset) => {
   const contactor = {
     id: genFakeId(),
-    namePolicy: 1,
-    avatarPolicy: preset.avatar ? 1 : 0,
+    namePolicy: preset.namePolicy !== undefined ? preset.namePolicy : (preset.name ? 1 : 2),
+    avatarPolicy: preset.avatarPolicy !== undefined ? preset.avatarPolicy : (preset.avatar ? 1 : 0),
     avatar: preset.avatar || undefined,
     name: preset.name,
     title: preset.title,
@@ -302,32 +302,72 @@ const addPresetContactor = async (preset) => {
 };
 
 const genBotByProvider = async (provider) => {
-  // 默认 Agent 联动：优先从用户设定的默认预设克隆
+  const options = config.getLLMDefaultConfig(provider);
+  let name = undefined;
+  let title = options.base?.model || provider;
+  let avatar = undefined;
+  let avatarPolicy = 0;
+  let namePolicy = 2;
+
+  // 默认 Agent 联动：继承用户设定的默认预设的人格配置（开场白、预设历史、工具等），
+  // 但保持新建时选择的适配器/模型优先级最高，不被预设中的模型覆盖。
   const cs = client._clientSettings || {};
   const defaultPresetId = cs.agentDefault?.presetId;
   if (defaultPresetId) {
     try {
       const preset = await getLocalPresetById(defaultPresetId);
       if (preset) {
-        await addPresetContactor(preset);
-        return;
+        if (preset.name) {
+          name = preset.name;
+          namePolicy = preset.namePolicy !== undefined ? preset.namePolicy : 1;
+        } else if (preset.namePolicy !== undefined) {
+          namePolicy = preset.namePolicy;
+        }
+        if (preset.avatar) {
+          avatar = preset.avatar;
+          avatarPolicy = preset.avatarPolicy !== undefined ? preset.avatarPolicy : 1;
+        } else if (preset.avatarPolicy !== undefined) {
+          avatarPolicy = preset.avatarPolicy;
+        }
+        if (preset.title) {
+          title = preset.title;
+        }
+        if (preset.opening) options.presetSettings.opening = preset.opening;
+        if (preset.history) options.presetSettings.history = preset.history;
+        if (preset.tools?.length > 0) {
+          const resolvedTools = [];
+          const allPluginTools = Object.values(config.llmTools || {});
+          for (const shortName of preset.tools) {
+            for (const pluginTools of allPluginTools) {
+              if (!pluginTools || typeof pluginTools !== "object") continue;
+              const fullName = Object.keys(pluginTools).find(
+                (n) => n === shortName || n.startsWith(shortName + "_mid_"),
+              );
+              if (fullName) {
+                resolvedTools.push(fullName);
+                break;
+              }
+            }
+          }
+          options.toolCallSettings.tools = resolvedTools;
+        }
       }
     } catch (e) {
       console.warn("[genBotByProvider] 加载默认预设失败，回退到空白配置:", e);
     }
   }
 
-  // 回退：空白配置
-  const options = config.getLLMDefaultConfig(provider);
-  const blankConfig = {
+  const botConfig = {
     id: genFakeId(),
-    title: options.base.model,
-    avatarPolicy: 0,
-    namePolicy: 2,
+    name,
+    title,
+    avatar,
+    avatarPolicy,
+    namePolicy,
     priority: 1,
-    options: options,
+    options,
   };
-  await client.addConcator("openai", blankConfig);
+  await client.addConcator("openai", botConfig);
 };
 
 const showFriendContextMenu = (event, friend) => {

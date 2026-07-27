@@ -366,6 +366,8 @@ export default {
         name: c.name || "未命名",
         title: c.title || "",
         avatar: c.avatar || "",
+        namePolicy: c.namePolicy !== undefined ? c.namePolicy : 0,
+        avatarPolicy: c.avatarPolicy !== undefined ? c.avatarPolicy : 0,
         model: c.options?.base?.model || "",
         tools: c.options?.toolCallSettings?.tools || [],
         history: c.options?.presetSettings?.history || [],
