@@ -52,7 +52,7 @@
     <div
       v-else-if="element.type === 'tool_call'"
       class="tool-call-container-wrapper"
-      style="width: 100%"
+      style="align-self: flex-start; max-width: 100%"
     >
       <template v-if="getToolName(element.data) === 'toolsmanager'">
         <ActionBlock
@@ -346,6 +346,7 @@ function outerItems(data) {
 
   & > *
     margin: 2px 0
+
 
 @keyframes move
   0%

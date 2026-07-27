@@ -131,7 +131,7 @@ export function useInputCommandPopup({
             type: "mention",
             // 展示用 @名字，落到文本里的却是带 ID 的规范式：
             // 路由按 ID 匹配，改名或重名都不会串人
-            label: `@${m.name}`,
+            label: m.name,
             preset: `@'${m.name}'(${m.id})`,
             value: `@${m.name}`,
             avatar: m.avatar,

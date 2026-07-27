@@ -58,7 +58,7 @@ export function useInputSend({
         b.getAttribute("data-label") ||
         b.innerText ||
         "";
-      if (type === "mention" || activeContactor.value?.platform === "group") {
+      if (type === "mention") {
         const textNode = document.createTextNode(preset + " ");
         if (b.parentNode) {
           b.parentNode.replaceChild(textNode, b);

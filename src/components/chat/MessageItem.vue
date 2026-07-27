@@ -871,3 +871,29 @@ $mobile: 768px
   margin: 0
   overflow-x: auto
 </style>
+
+<!--
+  气泡内的命令徽标（@成员 / 工具 / 技能）。
+
+  这些 span 由 markdown 插件通过 v-html 注入，拿不到 scoped 属性，
+  所以必须放在非 scoped 块里；同时 InputEditor.vue 有一份全局的
+  `.command-badge` 规则且全带 !important，这里靠更高的选择器特异性压过它。
+
+  颜色一律从 currentColor 派生，不写死主题色：用户气泡在亮色模式下是蓝底
+  白字，固定的 --mio-color-primary 会糊成一片；跟随前景色则用户气泡得到半透明
+  白片、Agent 气泡得到中性灰片，明暗两套主题也都自动成立，无需分别写规则。
+-->
+<style lang="sass">
+.message-bubble-wrapper .command-badge
+  // 不支持 color-mix 的浏览器回退到中性灰，仍保证可读
+  background-color: rgba(128, 128, 128, 0.18) !important
+  background-color: color-mix(in srgb, currentColor 16%, transparent) !important
+  border-color: rgba(128, 128, 128, 0.35) !important
+  border-color: color-mix(in srgb, currentColor 38%, transparent) !important
+  color: currentColor !important
+  // 气泡里是阅读态，不像输入框那样需要点按目标，压扁一点更贴合行内文字
+  height: auto !important
+  line-height: 1.4 !important
+  padding: 0 5px !important
+  font-weight: 600 !important
+</style>
