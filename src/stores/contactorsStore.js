@@ -209,7 +209,7 @@ export const useContactorsStore = defineStore("contactors", () => {
         avatar: item.avatar,
         intro: item.intro ?? "",
         members: item.members ?? [],
-        priority: item.priority ?? 1,
+        priority: item.priority === true ? 0 : item.priority === false ? 1 : (item.priority ?? 1),
         firstMessageIndex: item.firstMessageIndex ?? 0,
         messageChain: item.messageChain ?? [],
         active: false,
@@ -301,7 +301,7 @@ export const useContactorsStore = defineStore("contactors", () => {
           ? JSON.parse(JSON.stringify(m.options))
           : client.config?.getLLMDefaultConfig?.() || {},
       })),
-      priority: 0,
+      priority: 1,
       firstMessageIndex: 0,
       messageChain: [],
       active: false,
