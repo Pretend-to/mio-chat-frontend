@@ -297,6 +297,7 @@ const displayAvatars = computed(() => {
   }
   // 组合头像策略：包含【当前登录用户】+【群聊成员 Agent】
   const userAvatar = getAdminAvatarUrl(client.avatar) || defaultAvatar;
+  const rawMembers = props.contactor?.members || props.members || [];
   const agentAvatars = rawMembers.map((m) => m.avatar).filter(Boolean);
 
   const list = [userAvatar, ...agentAvatars];
@@ -499,4 +500,5 @@ function handleImgError(e) {
       }
     }
   }
+}
 </style>
