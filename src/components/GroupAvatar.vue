@@ -113,7 +113,7 @@
           <img
             :src="displayAvatars[3]"
             class="sub-avatar"
-            alt="avatar"
+     alt="avatar"
             @error="handleImgError($event)"
           />
           <img
@@ -126,26 +126,131 @@
       </div>
     </template>
 
-    <!-- 6 个人及以上: 3x3 九宫格 -->
-    <template v-else>
-      <div class="layout-grid">
+    <!-- 6 个人: 3x2 居中网格 -->
+    <template v-else-if="displayAvatars.length === 6">
+      <div class="layout-6">
         <img
-          v-for="(url, idx) in displayAvatars.slice(0, 9)"
+          v-for="(url, idx) in displayAvatars"
           :key="idx"
           :src="url"
-          class="grid-avatar"
+          class="sub-avatar"
           alt="avatar"
           @error="handleImgError($event)"
         />
       </div>
     </template>
+
+    <!-- 7 个人: 上 1 中 3 下 3 排布 -->
+    <template v-else-if="displayAvatars.length === 7">
+      <div class="layout-7">
+        <div class="top-row">
+          <img
+            :src="displayAvatars[0]"
+            class="sub-avatar"
+            alt="avatar"
+            @error="handleImgError($event)"
+          />
+        </div>
+        <div class="middle-row">
+          <img
+            v-for="(url, idx) in displayAvatars.slice(1, 4)"
+            :key="idx"
+            :src="url"
+            class="sub-avatar"
+            alt="avatar"
+            @error="handleImgError($event)"
+          />
+        </div>
+        <div class="bottom-row">
+          <img
+            v-for="(url, idx) in displayAvatars.slice(4, 7)"
+            :key="idx"
+            :src="url"
+            class="sub-avatar"
+            alt="avatar"
+            @error="handleImgError($event)"
+          />
+        </div>
+      </div>
+    </template>
+
+    <!-- 8 个人: 上 2 中 3 下 3 排布 -->
+    <template v-else-if="displayAvatars.length === 8">
+      <div class="layout-8">
+        <div class="top-row">
+          <img
+            v-for="(url, idx) in displayAvatars.slice(0, 2)"
+            :key="idx"
+            :src="url"
+            class="sub-avatar"
+            alt="avatar"
+            @error="handleImgError($event)"
+          />
+        </div>
+        <div class="middle-row">
+          <img
+            v-for="(url, idx) in displayAvatars.slice(2, 5)"
+            :key="idx"
+            :src="url"
+            class="sub-avatar"
+            alt="avatar"
+            @error="handleImgError($event)"
+          />
+        </div>
+        <div class="bottom-row">
+          <img
+            v-for="(url, idx) in displayAvatars.slice(5, 8)"
+            :key="idx"
+            :src="url"
+            class="sub-avatar"
+            alt="avatar"
+            @error="handleImgError($event)"
+          />
+        </div>
+      </div>
+    </template>
+
+    <!-- 9 个人及以上: 上 3 中 3 下 3 排布 -->
+    <template v-else>
+      <div class="layout-9">
+        <div class="row">
+          <img
+            v-for="(url, idx) in displayAvatars.slice(0, 3)"
+            :key="idx"
+            :src="url"
+            class="sub-avatar"
+            alt="avatar"
+            @error="handleImgError($event)"
+          />
+        </div>
+        <div class="row">
+          <img
+            v-for="(url, idx) in displayAvatars.slice(3, 6)"
+            :key="idx"
+            :src="url"
+            class="sub-avatar"
+            alt="avatar"
+            @error="handleImgError($event)"
+          />
+        </div>
+        <div class="row">
+          <img
+            v-for="(url, idx) in displayAvatars.slice(6, 9)"
+            :key="idx"
+            :src="url"
+            class="sub-avatar"
+            alt="avatar"
+            @error="handleImgError($event)"
+          />
+        </div>
+      </div>
+    </template>
   </div>
 </template>
-
 <script setup>
 import { computed } from "vue";
 import client from "@/lib/client.js";
-
+import { getAdminAvatarUrl } from "@/utils/avatar.js";
 const props = defineProps({
   contactor: {
     type: Object,
@@ -190,11 +295,8 @@ const displayAvatars = computed(() => {
   if (policy === "custom" || policy === 1) {
     if (customAvatar) return [customAvatar];
   }
-
   // 组合头像策略：包含【当前登录用户】+【群聊成员 Agent】
-  const userAvatar = client.avatar || defaultAvatar;
-
-  const rawMembers = props.contactor?.members || props.members || [];
+  const userAvatar = getAdminAvatarUrl(client.avatar) || defaultAvatar;
   const agentAvatars = rawMembers.map((m) => m.avatar).filter(Boolean);
 
   const list = [userAvatar, ...agentAvatars];
@@ -329,35 +431,18 @@ function handleImgError(e) {
     justify-content: center;
     width: 100%;
     height: 100%;
-    padding: 2px;
+    padding: 3px;
     gap: 2px;
     box-sizing: border-box;
 
-    .top-row {
+    .top-row, .bottom-row {
       display: flex;
       justify-content: center;
       width: 100%;
-      height: 45%;
       gap: 2px;
 
       .sub-avatar {
-        height: 100%;
-        aspect-ratio: 1 / 1;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 1px solid rgba(255, 255, 255, 0.7);
-      }
-    }
-
-    .bottom-row {
-      display: flex;
-      justify-content: center;
-      width: 100%;
-      height: 45%;
-      gap: 2px;
-
-      .sub-avatar {
-        height: 100%;
+        width: 30%;
         aspect-ratio: 1 / 1;
         border-radius: 50%;
         object-fit: cover;
@@ -366,26 +451,52 @@ function handleImgError(e) {
     }
   }
 
-  /* 6 个人及以上: 3x3 九宫格 */
-  .layout-grid {
+  /* 6 个人: 3x2 居中网格 */
+  .layout-6 {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
     gap: 2px;
     padding: 3px;
     width: 100%;
     height: 100%;
-    align-items: center;
+    align-content: center; /* 垂直居中所有的行 */
     justify-items: center;
     box-sizing: border-box;
 
-    .grid-avatar {
+    .sub-avatar {
       width: 100%;
-      height: 100%;
+      aspect-ratio: 1 / 1; /* 强制 1:1 比例，防止拉伸 */
       border-radius: 50%;
       object-fit: cover;
       border: 1px solid rgba(255, 255, 255, 0.7);
     }
   }
-}
+
+  /* 7个人、8个人、9个人及以上: 统一采用 flex 比例化 3 行排列，防止任何形式的尺寸不一、拉伸和不居中 */
+  .layout-7, .layout-8, .layout-9 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 3px;
+    gap: 2px;
+    box-sizing: border-box;
+
+    .top-row, .middle-row, .bottom-row, .row {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      gap: 2px;
+
+      .sub-avatar {
+        width: 30%;
+        aspect-ratio: 1 / 1;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 1px solid rgba(255, 255, 255, 0.7);
+      }
+    }
+  }
 </style>
