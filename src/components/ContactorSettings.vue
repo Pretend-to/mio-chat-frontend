@@ -61,7 +61,7 @@
             :class="{ 'tab-item': true, active: activeTab === 'memory' }"
             @click="activeTab = 'memory'"
           >
-            记忆结晶
+            记忆模块
           </div>
           <div
             :class="{ 'tab-item': true, active: activeTab === 'automation' }"

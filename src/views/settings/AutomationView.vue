@@ -600,6 +600,22 @@ const fetchPresets = async () => {
     // 静默失败
   }
 };
+const handleSave = async () => {
+  saving.value = true;
+  try {
+    await configStore.updateConfigSection("system", {
+      system_llm_channel: formData.system_llm_channel,
+      system_llm_title_prompt: formData.system_llm_title_prompt,
+    });
+    Object.assign(originalData, formData);
+    ElMessage.success("配置已保存");
+  } catch (error) {
+    ElMessage.error("保存失败: " + error.message);
+  } finally {
+    saving.value = false;
+  }
+};
+
 const handleReset = () => {
   Object.assign(formData, originalData);
   ElMessage.info("已重置");

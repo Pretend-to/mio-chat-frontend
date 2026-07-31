@@ -102,9 +102,7 @@
           v-if="
             [
               'model',
-              'max_messages_num',
               'stream',
-              'temperature',
               'reasoning_effort',
             ].includes(key)
           "
@@ -129,25 +127,9 @@
                 :value="m"
               />
             </el-select>
-            <el-input-number
-              v-else-if="key === 'max_messages_num'"
-              v-model="localLlmGeneralKeys[key]"
-              :min="1"
-              :step="1"
-              style="width: 100%"
-              @change="updateGeneralSettings"
-            />
             <el-switch
               v-else-if="['stream'].includes(key)"
               v-model="localLlmGeneralKeys[key]"
-              @change="updateGeneralSettings"
-            />
-            <el-slider
-              v-else-if="['temperature'].includes(key)"
-              v-model="localLlmGeneralKeys[key]"
-              :step="sliderTypes.a.step"
-              :min="sliderTypes.a.min"
-              :max="sliderTypes.a.max"
               @change="updateGeneralSettings"
             />
             <el-slider
@@ -260,10 +242,8 @@ const currentModelsList = computed(() => {
 const getShownKey = (key) => {
   const shownNameMap = {
     model: "模型",
-    max_messages_num: "最大历史消息数",
     stream: "流式响应",
     reasoning_effort: "思考强度",
-    temperature: "温度",
   };
   return shownNameMap[key] || key;
 };

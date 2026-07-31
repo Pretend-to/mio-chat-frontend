@@ -794,6 +794,22 @@ export const useContactorsStore = defineStore("contactors", () => {
   /**
    * 更新联系人的结晶配置
    */
+  /**
+   * 更新联系人 options 中指定 section 的部分字段
+   * @param {string} contactorId
+   * @param {string} section - 如 "base"、"chatParams" 等
+   * @param {Object} patch - 要合并的字段
+   * @param {string|null} memberId - 群成员 ID，单聊留空
+   */
+  function updateContactorOption(contactorId, section, patch, memberId = null) {
+    const host = getCrystalHost(contactorId, memberId);
+    if (!host) return;
+    if (!host.options) host.options = {};
+    if (!host.options[section]) host.options[section] = {};
+    Object.assign(host.options[section], patch);
+    client.setLocalStorage();
+  }
+
   function updateCrystallization(contactorId, patch, memberId = null) {
     const host = getCrystalHost(contactorId, memberId);
     if (!host) return;
@@ -1156,7 +1172,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     toJSON,
     // Crystallization
     handleCrystallizeEvent,
-    updateCrystallization,
+    updateCrystallization,    updateContactorOption,
     getCrystalHost,
     appendToXmlZone,
   };

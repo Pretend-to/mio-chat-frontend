@@ -1,47 +1,78 @@
 <template>
   <div class="memory-manager-container">
-    <!-- Group: Memory Crystallization Config -->
-    <div class="group-title">自动记忆结晶配置</div>
+    <!-- Group: Context Management Mode -->
+    <div class="group-title">上下文管理模式</div>
     <div class="settings-card">
       <div class="setting-field">
-        <div class="field-label">
-          自动结晶
-          <el-tooltip
-            v-if="isForcedOn"
-            placement="top"
-            popper-class="mio-hint-popper"
-            content="群聊消息链由全体成员共享且只增不减，关闭结晶会让每个成员的上下文无限膨胀，因此群成员强制开启，不可关闭。"
-          >
-            <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
-          </el-tooltip>
-        </div>
+        <div class="field-label">管理模式</div>
         <div class="field-value">
-          <el-switch
-            :model-value="crystallizationEnabled"
-            :disabled="isForcedOn"
-            @update:model-value="onToggle"
-          />
+          <el-radio-group
+            v-model="contextMode"
+            @change="onContextModeChange"
+          >
+            <el-radio-button value="crystal">记忆结晶</el-radio-button>
+            <el-radio-button value="window">滑动窗口</el-radio-button>
+          </el-radio-group>
         </div>
       </div>
 
-      <div v-if="crystallizationEnabled" class="setting-field">
-        <div class="field-label">Token 水位线</div>
+      <!-- Sliding Window: max messages -->
+      <div v-if="contextMode === 'window'" class="setting-field">
+        <div class="field-label">最大历史消息数</div>
         <div class="field-value">
           <el-input-number
-            v-model="localWatermark"
-            :min="1000"
-            :max="1000000"
-            :step="5000"
+            v-model="localMaxMessages"
+            :min="1"
+            :step="1"
             size="small"
-            style="width: 150px"
-            @change="onWatermarkChange"
+            style="width: 120px"
+            @change="onMaxMessagesChange"
           />
         </div>
       </div>
+
+      <!-- Memory Crystal: crystallization config -->
+      <template v-if="contextMode === 'crystal'">
+        <div class="setting-field">
+          <div class="field-label">
+            自动结晶
+            <el-tooltip
+              v-if="isForcedOn"
+              placement="top"
+              popper-class="mio-hint-popper"
+              content="群聊消息链由全体成员共享且只增不减，关闭结晶会让每个成员的上下文无限膨胀，因此群成员强制开启，不可关闭。"
+            >
+              <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
+            </el-tooltip>
+          </div>
+          <div class="field-value">
+            <el-switch
+              :model-value="crystallizationEnabled"
+              :disabled="isForcedOn"
+              @update:model-value="onToggle"
+            />
+          </div>
+        </div>
+
+        <div v-if="crystallizationEnabled" class="setting-field">
+          <div class="field-label">Token 水位线</div>
+          <div class="field-value">
+            <el-input-number
+              v-model="localWatermark"
+              :min="1000"
+              :max="1000000"
+              :step="5000"
+              size="small"
+              style="width: 150px"
+              @change="onWatermarkChange"
+            />
+          </div>
+        </div>
+      </template>
     </div>
 
-    <!-- Group: Visual Crystallization Editor -->
-    <template v-if="crystallizationEnabled">
+    <!-- Group: Visual Crystallization Editor (only in crystal mode) -->
+    <template v-if="contextMode === 'crystal' && crystallizationEnabled">
       <div class="group-title">分区结晶事实管理</div>
       <div class="settings-card editor-card">
         <div class="settings-row">
@@ -85,7 +116,7 @@
       </div>
     </template>
 
-    <div v-else class="settings-card disabled-hint-card">
+    <div v-else-if="contextMode === 'crystal'" class="settings-card disabled-hint-card">
       <div class="disabled-hint-content">
         <span class="lock-icon">🔒</span>
         <span class="hint-text"
@@ -130,13 +161,21 @@ const crystallization = computed(
   () => crystalHost.value?.options?.crystallization,
 );
 
-// 群成员强制开启结晶：群消息链共享且只增不减，没有压缩上下文会无限膨胀
+// 上下文管理模式: "crystal" | "window"，默认记忆结晶
+const contextMode = ref(
+  crystalHost.value?.options?.base?.contextMode || "crystal",
+);
+
+// 群成员强制开启结晶：群消息链共享且只增不减
 const isForcedOn = computed(() => !!props.memberId);
 
 const crystallizationEnabled = computed(
   () => isForcedOn.value || crystallization.value?.enabled === true,
 );
 const localWatermark = ref(crystallization.value?.tokenWatermark ?? 200000);
+const localMaxMessages = ref(
+  crystalHost.value?.options?.base?.max_messages_num ?? 20,
+);
 
 // Zone contents parsed from latestSummary
 const zoneContents = ref(
@@ -176,8 +215,33 @@ watch(
   },
 );
 
+watch(
+  () => crystalHost.value?.options?.base?.max_messages_num,
+  (newVal) => {
+    if (newVal != null) localMaxMessages.value = newVal;
+  },
+);
+
+function onContextModeChange(val) {
+  contactorStore.updateContactorOption(
+    props.contactorId,
+    "base",
+    { contextMode: val },
+    props.memberId,
+  );
+}
+
+function onMaxMessagesChange(val) {
+  contactorStore.updateContactorOption(
+    props.contactorId,
+    "base",
+    { max_messages_num: val },
+    props.memberId,
+  );
+}
+
 function onToggle(val) {
-  if (isForcedOn.value) return; // 群成员不允许关闭
+  if (isForcedOn.value) return;
   contactorStore.updateCrystallization(
     props.contactorId,
     {
@@ -251,8 +315,8 @@ function clearSummary() {
     border-bottom: none
 
 .field-label
-  font-size: 13px;
-  color: var(--mio-text-primary);
+  font-size: 13px
+  color: var(--mio-text-primary)
   font-weight: 500
 
 .field-value

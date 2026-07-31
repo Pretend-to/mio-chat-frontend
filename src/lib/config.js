@@ -299,6 +299,7 @@ export default class Config {
         model: defaultModel, // 动态确定
         max_messages_num: 10,
         stream: true,
+        contextMode: "crystal",
       },
       crystallization: {
         enabled: true,

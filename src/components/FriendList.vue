@@ -290,8 +290,8 @@ const mergeOptions = (options) => {
 const addPresetContactor = async (preset) => {
   const contactor = {
     id: genFakeId(),
-    namePolicy: preset.namePolicy !== undefined ? preset.namePolicy : (preset.name ? 1 : 2),
-    avatarPolicy: preset.avatarPolicy !== undefined ? preset.avatarPolicy : (preset.avatar ? 1 : 0),
+    namePolicy: preset.namePolicy !== undefined ? preset.namePolicy : 2,
+    avatarPolicy: preset.avatarPolicy !== undefined ? preset.avatarPolicy : 0,
     avatar: preset.avatar || undefined,
     name: preset.name,
     title: preset.title,
@@ -319,21 +319,20 @@ const genBotByProvider = async (provider) => {
       if (preset) {
         if (preset.name) {
           name = preset.name;
-          namePolicy = preset.namePolicy !== undefined ? preset.namePolicy : 1;
+          namePolicy = preset.namePolicy !== undefined ? preset.namePolicy : 2;
         } else if (preset.namePolicy !== undefined) {
           namePolicy = preset.namePolicy;
         }
         if (preset.avatar) {
           avatar = preset.avatar;
-          avatarPolicy = preset.avatarPolicy !== undefined ? preset.avatarPolicy : 1;
+          avatarPolicy = preset.avatarPolicy !== undefined ? preset.avatarPolicy : 0;
         } else if (preset.avatarPolicy !== undefined) {
           avatarPolicy = preset.avatarPolicy;
         }
-        if (preset.title) {
-          title = preset.title;
-        }
         if (preset.opening) options.presetSettings.opening = preset.opening;
         if (preset.history) options.presetSettings.history = preset.history;
+        if (preset.temperature !== undefined) options.chatParams.temperature = preset.temperature;
+        if (preset.reasoning_effort !== undefined) options.chatParams.reasoning_effort = preset.reasoning_effort;
         if (preset.tools?.length > 0) {
           const resolvedTools = [];
           const allPluginTools = Object.values(config.llmTools || {});

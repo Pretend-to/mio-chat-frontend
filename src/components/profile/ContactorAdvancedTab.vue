@@ -6,14 +6,22 @@
       <template v-for="(_, key) in localLlmGeneralKeys" :key="key">
         <div
           v-if="
-            ['top_p', 'frequency_penalty', 'presence_penalty'].includes(key)
+            ['temperature', 'top_p', 'frequency_penalty', 'presence_penalty'].includes(key)
           "
           class="setting-field"
         >
           <div class="field-label">{{ getShownKey(key) }}</div>
           <div class="field-value">
             <el-slider
-              v-if="key === 'top_p'"
+              v-if="['temperature'].includes(key)"
+              v-model="localLlmGeneralKeys[key]"
+              :step="sliderTypes.a.step"
+              :min="sliderTypes.a.min"
+              :max="sliderTypes.a.max"
+              @change="updateGeneralSettings"
+            />
+            <el-slider
+              v-else-if="key === 'top_p'"
               v-model="localLlmGeneralKeys[key]"
               :step="sliderTypes.b.step"
               :min="sliderTypes.b.min"
@@ -105,12 +113,14 @@ const localExtraSettings = ref(
 );
 
 const sliderTypes = {
+  a: { min: 0, max: 2, step: 0.1 },
   b: { min: 0, max: 1, step: 0.1 },
   c: { min: -2, max: 2, step: 0.1 },
 };
 
 const getShownKey = (key) => {
   const shownNameMap = {
+    temperature: "温度",
     top_p: "核采样",
     frequency_penalty: "重复惩罚度",
     presence_penalty: "话题新鲜度",
@@ -142,9 +152,10 @@ const emitUpdate = () => {
   const newOptions = JSON.parse(JSON.stringify(props.modelValue || {}));
   if (!newOptions.chatParams) newOptions.chatParams = {};
 
-  const { top_p, frequency_penalty, presence_penalty } =
+  const { temperature, top_p, frequency_penalty, presence_penalty } =
     localLlmGeneralKeys.value;
   Object.assign(newOptions.chatParams, {
+    temperature,
     top_p,
     frequency_penalty,
     presence_penalty,

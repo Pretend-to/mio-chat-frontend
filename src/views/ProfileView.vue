@@ -108,7 +108,7 @@ import { useConnectionStore } from "@/stores/connectionStore";
 import { mapState } from "pinia";
 import { useStatusBarColor } from "@/composables/useStatusBarColor";
 import { saveLocalPreset } from "@/lib/clientSettings.js";
-import { useContactorsStore } from "@/stores/contactorsStore.js";
+import { useContactorsStore, getAvatarByModel } from "@/stores/contactorsStore.js";
 
 export default {
   components: {
@@ -199,14 +199,60 @@ export default {
     options: {
       handler(newOptions) {
         if (newOptions && this.activeContactor) {
+          const model = newOptions?.base?.model;
+          const provider = newOptions?.provider;
+
           if (this.activeMember) {
+            // 群聊成员设置模式（this.activeContactor.platform 为 "group"）
             this.activeMember.options = JSON.parse(JSON.stringify(newOptions));
+            if (model) {
+              this.activeMember.title = model;
+              if (this.basicInfo) this.basicInfo.title = model;
+              if (
+                this.activeMember.avatarPolicy === 0 ||
+                this.activeMember.avatarPolicy === "MODEL"
+              ) {
+                const newAvatar = getAvatarByModel(model, provider);
+                this.activeMember.avatar = newAvatar;
+                if (this.basicInfo) this.basicInfo.avatar = newAvatar;
+              }
+              if (
+                this.activeMember.namePolicy === 0 ||
+                this.activeMember.namePolicy === "MODEL"
+              ) {
+                this.activeMember.name = model;
+                if (this.basicInfo) this.basicInfo.name = model;
+              }
+            }
             const store = useContactorsStore();
             store.updateContactor(this.activeContactor.id, {
               members: [...this.activeContactor.members],
             });
           } else {
+            // 单聊联系人模式
             this.activeContactor.options = JSON.parse(JSON.stringify(newOptions));
+            if (
+              model &&
+              (this.activeContactor.platform === "openai" ||
+                this.activeContactor.platform === "llm")
+            ) {
+              this.activeContactor.title = model;
+              if (this.basicInfo) this.basicInfo.title = model;
+              if (
+                this.activeContactor.avatarPolicy === 0 ||
+                this.activeContactor.avatarPolicy === "MODEL"
+              ) {
+                this.activeContactor.avatar = this.activeContactor.loadAvatar();
+                if (this.basicInfo) this.basicInfo.avatar = this.activeContactor.avatar;
+              }
+              if (
+                this.activeContactor.namePolicy === 0 ||
+                this.activeContactor.namePolicy === "MODEL"
+              ) {
+                this.activeContactor.name = model;
+                if (this.basicInfo) this.basicInfo.name = model;
+              }
+            }
             client.setLocalStorage();
           }
         }
@@ -372,6 +418,8 @@ export default {
         tools: c.options?.toolCallSettings?.tools || [],
         history: c.options?.presetSettings?.history || [],
         opening: c.options?.presetSettings?.opening || "",
+        temperature: c.options?.chatParams?.temperature,
+        reasoning_effort: c.options?.chatParams?.reasoning_effort,
       };
 
       try {
@@ -410,9 +458,8 @@ export default {
       if (!this.activeContactor) return;
       // This event is specifically for actions parent needs to take,
       // like reloading avatar, that are outside the 'options' object.
+      // title 同步已统一归口到 options watcher（provider 切换同样走 emitUpdate）
       this.activeContactor.loadAvatar();
-      // The options object (including provider and default model)
-      // would have already been updated by the child component via v-model.
     },
 
     updateContactorName() {
