@@ -3,6 +3,7 @@
     v-model="store.showTraceModal"
     title="异常堆栈诊断追踪"
     width="680px"
+    align-center
     class="saas-dialog"
     destroy-on-close
   >
@@ -182,5 +183,7 @@ function formatTime(timestamp) {
 
 :deep(.el-dialog__body) {
   padding: 24px 20px !important;
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
 }
 </style>
