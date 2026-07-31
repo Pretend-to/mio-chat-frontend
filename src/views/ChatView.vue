@@ -549,7 +549,7 @@ const getDelayStatus = computed(() => {
 });
 
 const mdOptions = computed(() => {
-  return { breaks: activeContactor.value?.platform === "onebot" };
+  return { breaks: true };
 });
 
 const renderedCount = ref(20);

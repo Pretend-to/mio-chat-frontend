@@ -428,7 +428,7 @@ export function useInputCommandPopup({
       if (desktopEnterSend) {
         if (event.shiftKey) {
           // Shift+Enter → 换行
-          document.execCommand("insertHTML", false, "\n");
+          document.execCommand("insertHTML", false, "<div><br></div>");
           event.preventDefault();
           return true;
         } else {
@@ -444,7 +444,7 @@ export function useInputCommandPopup({
           sendCallback();
           return true;
         } else {
-          document.execCommand("insertHTML", false, "\n");
+          document.execCommand("insertHTML", false, "<div><br></div>");
           event.preventDefault();
           return true;
         }
