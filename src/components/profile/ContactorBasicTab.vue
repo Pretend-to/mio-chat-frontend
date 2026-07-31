@@ -225,15 +225,17 @@ const sliderTypes = {
   a: { min: 0, max: 2, step: 0.1 },
   d: {
     min: -1,
-    max: 3,
+    max: 5,
     step: 1,
     formatter: (value) => {
       const map = {
         "-1": "默认",
         0: "关闭思考",
-        1: "基础思考",
-        2: "均衡思考",
-        3: "深度思考",
+        1: "极简",
+        2: "轻度",
+        3: "中度",
+        4: "深度",
+        5: "极致",
       };
       return map[value];
     },
