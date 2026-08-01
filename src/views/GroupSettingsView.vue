@@ -140,6 +140,28 @@
 
       <div class="setting-field">
         <div class="field-label">
+          上下文 ToolCall 传递
+          <el-tooltip
+            placement="top"
+            popper-class="mio-hint-popper"
+            content="构造群聊讨论上下文时，其他 Agent 的 toolcall 以何种形式呈现给当前发言成员。完整：含工具名、参数与结果；简略：仅工具名，参数与结果不可见。"
+          >
+            <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
+          </el-tooltip>
+        </div>
+        <div class="field-value">
+          <el-switch
+            :model-value="groupForm.toolCallContextMode === 'brief'"
+            @update:model-value="handleToolCallModeSwitch"
+            inline-prompt
+            active-text="简略"
+            inactive-text="完整"
+          />
+        </div>
+      </div>
+
+      <div class="setting-field">
+        <div class="field-label">
           Agent 连锁唤起最大深度
           <el-tooltip
             placement="top"
@@ -306,6 +328,7 @@ const groupForm = reactive({
   priority: false,
   maxInvocationDepth: 5,
   defaultResponderId: "",
+  toolCallContextMode: "full",
 });
 
 watch(
@@ -316,10 +339,14 @@ watch(
       groupForm.intro = val.intro || "";
       groupForm.avatarPolicy = val.avatarPolicy || "composite";
       groupForm.avatar = val.avatar || "";
-      groupForm.priority = !!val.priority;
+      // priority 数字语义 0=置顶 1=普通（兼容历史遗留的布尔值）。
+      // 不能写 !!val.priority：!!0 = false 会把「置顶」读成「关」，导致
+      // 保存后 watch(deep) 把开关弹回、连续保存时置顶状态反复反转。
+      groupForm.priority = val.priority === 0 || val.priority === true;
       groupForm.maxInvocationDepth =
         val.maxInvocationDepth !== undefined ? Number(val.maxInvocationDepth) : 5;
       groupForm.defaultResponderId = val.defaultResponderId || "";
+      groupForm.toolCallContextMode = val.toolCallContextMode || "full";
     }
   },
   { immediate: true, deep: true }
@@ -332,14 +359,21 @@ function saveGroupInfo() {
     intro: groupForm.intro,
     avatarPolicy: groupForm.avatarPolicy,
     avatar: groupForm.avatar,
-    priority: groupForm.priority,
+    // el-switch 是布尔值，落库统一转成数字语义：true → 0 置顶，false → 1 普通
+    priority: groupForm.priority ? 0 : 1,
     maxInvocationDepth: groupForm.maxInvocationDepth,
     defaultResponderId: groupForm.defaultResponderId || "",
+    toolCallContextMode: groupForm.toolCallContextMode || "full",
   });
   ElMessage.success("群聊基本配置已更新");
 }
 
 function handleAvatarPolicyChange(val) {
+  saveGroupInfo();
+}
+
+function handleToolCallModeSwitch(val) {
+  groupForm.toolCallContextMode = val ? "brief" : "full";
   saveGroupInfo();
 }
 

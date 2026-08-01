@@ -183,9 +183,15 @@ export const useContactorsStore = defineStore("contactors", () => {
   const activeContactorId = ref(null);
 
   // Getters
+  // 置顶语义统一为数字 0（置顶）/ 1（普通）。比较器对历史遗留的布尔值
+  // （GroupSettingsView 曾把 el-switch 的 true/false 直接写入 priority）做归一化，
+  // 否则 false - 1 = -1 会把未置顶的群排到所有普通会话之前、true - 1 = 0 会让置顶失效。
+  const normPriority = (p) => (p === true || p === 0 ? 0 : 1);
   const sortedContactors = computed(() => {
     return Object.values(contactors.value).sort((a, b) => {
-      if (a.priority !== b.priority) return a.priority - b.priority;
+      const pa = normPriority(a.priority);
+      const pb = normPriority(b.priority);
+      if (pa !== pb) return pa - pb;
       return b.lastUpdate - a.lastUpdate;
     });
   });
@@ -208,6 +214,10 @@ export const useContactorsStore = defineStore("contactors", () => {
         name: item.name,
         avatar: item.avatar,
         intro: item.intro ?? "",
+        notice: item.notice ?? "",
+        maxInvocationDepth: item.maxInvocationDepth,
+        defaultResponderId: item.defaultResponderId ?? "",
+        toolCallContextMode: item.toolCallContextMode || "full",
         members: item.members ?? [],
         priority: item.priority === true ? 0 : item.priority === false ? 1 : (item.priority ?? 1),
         firstMessageIndex: item.firstMessageIndex ?? 0,
@@ -309,6 +319,7 @@ export const useContactorsStore = defineStore("contactors", () => {
       createTime: Date.now(),
       hasPendingTask: false,
       draft: "",
+      toolCallContextMode: "full",
       options: {
         base: { max_messages_num: 20 },
       },
@@ -366,7 +377,8 @@ export const useContactorsStore = defineStore("contactors", () => {
   function setPriority(id, priority) {
     const contactor = contactors.value[id];
     if (contactor) {
-      contactor.priority = priority;
+      // 归一化：true/0 → 0 置顶，其余 → 1 普通，防止布尔值污染排序与置顶样式
+      contactor.priority = priority === true || priority === 0 ? 0 : 1;
       client.setLocalStorage();
     }
   }
@@ -1108,7 +1120,13 @@ export const useContactorsStore = defineStore("contactors", () => {
   function updateContactor(id, patch) {
     const contactor = contactors.value[id];
     if (!contactor) return;
-    Object.assign(contactor, patch);
+    const normalized = { ...patch };
+    // 写入前归一化 priority，统一 0（置顶）/ 1（普通）数字语义
+    if (normalized.priority !== undefined) {
+      normalized.priority =
+        normalized.priority === true || normalized.priority === 0 ? 0 : 1;
+    }
+    Object.assign(contactor, normalized);
     updateContactorSummary(contactor);
     client.setLocalStorage();
   }
@@ -1127,6 +1145,7 @@ export const useContactorsStore = defineStore("contactors", () => {
       notice: item.notice,
       maxInvocationDepth: item.maxInvocationDepth,
       defaultResponderId: item.defaultResponderId,
+      toolCallContextMode: item.toolCallContextMode || "full",
       members: item.members,
       priority: item.priority,
       messageChain: item.messageChain,

@@ -177,7 +177,13 @@ export function formatGroupMessagesForMember(group, member) {
           })
         : "";
 
-      const msgXml = formatMessageXml(msg, senderId, senderName, timeText);
+      const msgXml = formatMessageXml(
+        msg,
+        senderId,
+        senderName,
+        timeText,
+        group.toolCallContextMode || "full",
+      );
       if (msgXml) {
         pendingHistoryXml.push(msgXml);
       }
@@ -222,14 +228,23 @@ function escapeXml(str) {
 
 /**
  * 格式化单个 tool_call 节点为 XML，并对参数和结果做 1000 字符长文本截断
+ * @param {Object} toolCallData - tool_call 节点数据
+ * @param {number} maxLen - 参数/结果最大长度
+ * @param {string} [mode="full"] - "full" 完整（含参数与结果）| "brief" 简略（仅工具名）
  */
-function formatToolCallXml(toolCallData, maxLen = 1000) {
+function formatToolCallXml(toolCallData, maxLen = 1000, mode = "full") {
   if (!toolCallData) return "";
   const name =
     toolCallData.name ||
     toolCallData.function?.name ||
     toolCallData.action ||
     "unknown_tool";
+
+  // 简略模式：只暴露工具名，参数与结果不可见
+  if (mode === "brief") {
+    return `    <tool_call name="${escapeXml(name)}" />`;
+  }
+
 
   // 1. 解析与格式化 parameters
   let rawParams =
@@ -290,7 +305,7 @@ function formatToolCallXml(toolCallData, maxLen = 1000) {
 /**
  * 将整条消息（包括文本与工具调用）渲染为结构化 XML
  */
-function formatMessageXml(msg, senderId, senderName, timeText) {
+function formatMessageXml(msg, senderId, senderName, timeText, toolCallMode = "full") {
   if (!msg || !Array.isArray(msg.content)) return "";
 
   const textParts = [];
@@ -304,7 +319,7 @@ function formatMessageXml(msg, senderId, senderName, timeText) {
     } else if (elm.type === "file" && elm.data?.name) {
       textParts.push(`[文件: ${elm.data.name}]`);
     } else if (elm.type === "tool_call" && elm.data) {
-      const toolXml = formatToolCallXml(elm.data, 1000);
+      const toolXml = formatToolCallXml(elm.data, 1000, toolCallMode);
       if (toolXml) {
         toolCallParts.push(toolXml);
       }
