@@ -64,6 +64,7 @@ export default class Client extends EventEmitter {
     this.bot_qq = null; // Web
     this.onPhone = null; // Dynamic
     this.config = config; // Parameter
+    this._bootId = null; // 后端进程启动标识（上次登录时记录），用于检测服务器重启
 
     // 同步从 localStorage 读取预缓存的 profile，保证首屏渲染 0 延迟防闪烁
     let initialAvatar = null;
@@ -147,6 +148,14 @@ export default class Client extends EventEmitter {
     const localStorage = await this.getLocalStorage();
     if (localStorage) {
       this.loadLocalStorage(localStorage);
+    }
+
+    // 读取上次登录时记录的后端进程启动标识（用于重启检测）
+    try {
+      const storedBootId = await localforage.getItem("mio_boot_id");
+      this._bootId = storedBootId || null;
+    } catch (e) {
+      this._bootId = null;
     }
 
     // 加载客户端本地设置，覆盖硬编码的 name / title / avatar
@@ -682,6 +691,7 @@ export default class Client extends EventEmitter {
       contactList: store.toJSON(),
     };
     await localforage.setItem("client", JSON.stringify(client));
+    await localforage.setItem("mio_boot_id", this._bootId || "");
     console.log("Client saved");
   }
 
@@ -708,6 +718,25 @@ export default class Client extends EventEmitter {
         this.emit("connection_changed", true);
         this.config.setLlmModels(info.models);
         this.addMsgListener();
+
+        // 后端重启检测：bootId 变化说明进程已重启，
+        // 清扫 UI 上因流缓存丢失而永远"执行中"的 tool_call
+        if (info.bootId && this._bootId && info.bootId !== this._bootId) {
+          const store = getStore();
+          if (store && typeof store.markInterruptedToolCalls === "function") {
+            store.markInterruptedToolCalls();
+          }
+          console.log(
+            "[BootId] 检测到后端重启 (" +
+              this._bootId +
+              " -> " +
+              info.bootId +
+              ")，已清扫中断的工具调用",
+          );
+        }
+        this._bootId = info.bootId || this._bootId;
+        this.saveNow(); // 立即持久化新 bootId
+
         if (this.contactList.length == 0) {
           this.genDefaultConctor(info);
         } else if (info.onebot_enabled) {

@@ -1076,6 +1076,44 @@ export const useContactorsStore = defineStore("contactors", () => {
     }
   }
 
+  /**
+   * 后端重启清扫：把消息链中仍处于"执行中"且没有结果的 tool_call
+   * 直接置为 failed 终态，避免 UI 上永远显示"执行中"。
+   * 由 client.js 在检测到 bootId 变化时调用。
+   */
+  function markInterruptedToolCalls() {
+    let cleaned = 0;
+    for (const contactorId of Object.keys(contactors.value)) {
+      const contactor = contactors.value[contactorId];
+      if (!contactor || !Array.isArray(contactor.messageChain)) continue;
+      for (const message of contactor.messageChain) {
+        if (!message || !Array.isArray(message.content)) continue;
+        for (const elm of message.content) {
+          if (elm.type !== "tool_call" || !elm.data) continue;
+          const toolCall = elm.data;
+          const isRunning =
+            toolCall.action === "running" ||
+            toolCall.action === "pending" ||
+            toolCall.action === "started";
+          if (isRunning && !toolCall.result) {
+            toolCall.action = "failed";
+            toolCall.status = "failed";
+            toolCall.result = {
+              error: "服务器重启，工具执行被打断",
+            };
+            cleaned++;
+          }
+        }
+      }
+    }
+    if (cleaned > 0) {
+      console.log(
+        `[Contactors] 清扫 ${cleaned} 个因服务器重启而中断的工具调用`,
+      );
+      client.setLocalStorage();
+    }
+  }
+
   function clearHistory(contactorId) {
     const contactor = contactors.value[contactorId];
     if (contactor) {
@@ -1186,6 +1224,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     failedMessage,
     deleteMessage,
     deleteMessageById,
+    markInterruptedToolCalls,
     clearHistory,
     insertSystemMessage,
     toJSON,
