@@ -69,6 +69,15 @@
             {{ item.text || "查看链接" }}
           </el-link>
         </template>
+        <template v-else-if="item.type === 'iframe'">
+          <iframe
+            :srcdoc="wrapIframeDoc(item.html)"
+            :style="{ height: (item.height || 480) + 'px' }"
+            class="extra-render-iframe"
+            sandbox="allow-scripts"
+            frameborder="0"
+          ></iframe>
+        </template>
       </div>
     </div>
   </ActionBlock>
@@ -143,6 +152,12 @@ export default {
     innerItems() {
       const extra = this.toolCall.extraRender || [];
       return extra.filter((r) => r.placement !== "outer");
+    },
+    // srcdoc 包装为完整文档并重置 body 默认 margin/padding，避免 8px 白边；已是完整 DOCTYPE 文档则不重复包装
+    wrapIframeDoc(html) {
+      const s = String(html || "").trim();
+      if (/^<!doctype\s+html/i.test(s)) return s;
+      return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>html,body{margin:0;padding:0;height:100%}</style></head><body>${s}</body></html>`;
     },
     toolTitle() {
       if (this.toolCall.displayName) {
@@ -377,8 +392,15 @@ export default {
   margin: 4px 0;
 }
 
-.extra-render-link {
-  font-size: 13px;
-  text-decoration: none;
-}
+  .extra-render-link {
+    font-size: 13px;
+    text-decoration: none;
+  }
+
+  .extra-render-iframe {
+    width: 100%;
+    border: 1px solid var(--mio-border-color-light);
+    border-radius: 6px;
+    background-color: #fff;
+  }
 </style>

@@ -700,7 +700,14 @@ onMounted(() => {
   };
   document.addEventListener("click", clickOutsideHandler.value);
 
-  if (activeContactor.value?.platform === "openai") {
+  // 首会话可能是 openai 也可能是 group（如刷新后恢复上次群聊会话），
+  // 且 watch(activeContactor.id) 对「挂载时已是当前会话」不触发，
+  // 必须在这里与 watch 用同一条件兜底拉取技能，否则群聊 / 菜单永远没有 skills。
+  const initialPlatform = activeContactor.value?.platform;
+  if (
+    (initialPlatform === "openai" || initialPlatform === "group") &&
+    availableSkills.value.length === 0
+  ) {
     fetchSkills();
   }
 });

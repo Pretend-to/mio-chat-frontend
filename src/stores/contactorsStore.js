@@ -3,7 +3,10 @@ import { ref, computed } from "vue";
 import { getAvatarByOwner, getAvatarByAdapterType } from "@/utils/avatar.js";
 import { numberString } from "@/utils/generate.js";
 import { config, client } from "@/lib/runtime.js";
-import { checkAndTriggerAgentInvocation } from "@/lib/groupGateway.js";
+import {
+  checkAndTriggerAgentInvocation,
+  settlePendingMentions,
+} from "@/lib/groupGateway.js";
 
 const avatarPolicy = ["MODEL", "CUSTOM"];
 const namePolicy = ["MODEL", "CUSTOM", "SUMMARY"];
@@ -962,7 +965,12 @@ export const useContactorsStore = defineStore("contactors", () => {
       message.status = "completed";
       closeReasoningBlocks(message.content, true);
       if (!wasAlreadyCompleted && contactor.platform === "group") {
-        checkAndTriggerAgentInvocation(contactor, message);
+        // 补答消息是链的终点：不再传播唤起/结算，避免风暴式放大
+        if (!message.isSettlementReply) {
+          checkAndTriggerAgentInvocation(contactor, message);
+          // 并行竞态兜底：成员发言期间入链的 @ 消息在此结算补答
+          settlePendingMentions(contactor, message);
+        }
       }
     } else if (status === "failed") {
       message.status = "failed";
@@ -1011,7 +1019,12 @@ export const useContactorsStore = defineStore("contactors", () => {
       contactor.platform === "group" &&
       message.role === "other"
     ) {
-      checkAndTriggerAgentInvocation(contactor, message);
+      // 补答消息是链的终点：不再传播唤起/结算，避免风暴式放大
+      if (!message.isSettlementReply) {
+        checkAndTriggerAgentInvocation(contactor, message);
+        // 并行竞态兜底：成员发言期间入链的 @ 消息在此结算补答
+        settlePendingMentions(contactor, message);
+      }
     }
   }
 

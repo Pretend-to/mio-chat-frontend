@@ -387,9 +387,11 @@ export function useChatSelection({
       selectedMessages.value,
     );
     if (shareResult && shareResult.shareUrl) {
-      const { success, message } = shareOrCopy(shareResult.shareUrl);
+      const { success, message } = await shareOrCopy(shareResult.shareUrl);
+      // 空 message = 用户取消分享，不弹任何提示
+      if (!message) return;
       if (success) {
-        ElMessage.success("分享链接已复制到剪贴板");
+        ElMessage.success(message);
       } else {
         ElMessage.error(message);
       }

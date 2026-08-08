@@ -1107,7 +1107,9 @@ const share = async () => {
   const shareResult = await client.shareContactor(activeContactor.value.id);
   if (shareResult && shareResult.shareUrl) {
     const { shareUrl } = shareResult;
-    const { success, message } = shareOrCopy(shareUrl);
+    const { success, message } = await shareOrCopy(shareUrl);
+    // 空 message = 用户取消分享，不弹任何提示
+    if (!message) return;
     if (success) {
       ElMessage.success(message);
     } else {

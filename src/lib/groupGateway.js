@@ -177,6 +177,15 @@ export function formatGroupMessagesForMember(group, member) {
           })
         : "";
 
+      if (msg.status === "pending") {
+        // 流式进行中的消息：向其他成员暴露「正在输入 + 已有片段」，
+        // 避免他们基于「对方完全没说话」的假象盲目互唤。
+        pendingHistoryXml.push(
+          formatTypingMessageXml(msg, senderId, senderName, timeText)
+        );
+        return;
+      }
+
       const msgXml = formatMessageXml(
         msg,
         senderId,
@@ -305,6 +314,37 @@ function formatToolCallXml(toolCallData, maxLen = 1000, mode = "full") {
 /**
  * 将整条消息（包括文本与工具调用）渲染为结构化 XML
  */
+/**
+ * 将流式进行中（pending）的消息渲染为「正在输入 + 未完成片段」的 XML。
+ * 让其他成员知道该成员已经在说话，避免基于「对方没发言」的假象盲目互唤；
+ * 同时保留已产生的片段，供对方提前判断话题方向。
+ * @param {Object} msg - pending 消息
+ * @param {string} senderId
+ * @param {string} senderName
+ * @param {string} timeText
+ * @returns {string}
+ */
+function formatTypingMessageXml(msg, senderId, senderName, timeText) {
+  const textParts = [];
+  (msg.content || []).forEach((elm) => {
+    if (elm.type === "text" && elm.data?.text) {
+      textParts.push(elm.data.text);
+    } else if (elm.type === "image" && elm.data?.file) {
+      textParts.push(`[图片: ${elm.data.file}]`);
+    }
+  });
+  const partial = textParts.join("\n").trim();
+  const notice = partial
+    ? `${senderName} 正在输入中，以下是未完成的输入内容：\n${partial}`
+    : `${senderName} 正在输入中`;
+
+  return (
+    `  <message sender_id="${escapeXml(senderId)}" sender_name="${escapeXml(senderName)}" time="${escapeXml(timeText)}" status="typing">\n` +
+    `    <typing>${escapeXml(notice)}</typing>\n` +
+    `  </message>`
+  );
+}
+
 function formatMessageXml(msg, senderId, senderName, timeText, toolCallMode = "full") {
   if (!msg || !Array.isArray(msg.content)) return "";
 
@@ -554,6 +594,12 @@ export async function sendGroupCompletions(group, assistantMsgId, targetMemberId
     const member = targetMembers[i];
     let msgId = assistantMsgId;
 
+    // 记录该成员启动流式瞬间链上「已完成」的消息 ID 快照。
+    // settlePendingMentions 用它判断「哪些 @ 我的消息我发言时看不到」→ 完成后补答。
+    const snapshotCompletedIds = group.messageChain
+      .filter((m) => m.status === "completed")
+      .map((m) => m.id);
+
     if (i > 0) {
       msgId = numberString(16);
       group.messageChain.push({
@@ -568,6 +614,7 @@ export async function sendGroupCompletions(group, assistantMsgId, targetMemberId
         senderMemberId: member.id,
         senderName: member.name,
         senderAvatar: member.avatar,
+        snapshotCompletedIds,
       });
     } else {
       const placeholder = group.messageChain.find((m) => m.id === assistantMsgId);
@@ -578,6 +625,7 @@ export async function sendGroupCompletions(group, assistantMsgId, targetMemberId
         placeholder.senderMemberId = member.id;
         placeholder.senderName = member.name;
         placeholder.senderAvatar = member.avatar;
+        placeholder.snapshotCompletedIds = snapshotCompletedIds;
       }
     }
 
@@ -708,6 +756,20 @@ export function checkAndTriggerAgentInvocation(group, message) {
       const member = reactiveGroup.members?.find((m) => m.id === targetId);
       if (!member) return;
 
+      // 忙时跳过：目标成员正在流式生成（链上有它的 pending 消息）→ 本次唤起无效。
+      // @ 消息仍保留在链上，目标完成后由 settlePendingMentions 结算补答，@ 不会丢。
+      const isBusy = reactiveGroup.messageChain.some(
+        (m) =>
+          m.status === "pending" &&
+          (m.senderMemberId === targetId || m.sender_id === targetId)
+      );
+      if (isBusy) {
+        console.log(
+          `ℹ️ [groupGateway] ${member.name} 正在输入中，跳过本次 @ 唤起（其完成后自动结算）`
+        );
+        return;
+      }
+
       // 先立即写入 pending 占位气泡，让 UI 马上呈现预热状态
       const assistantMsgId = numberString(16);
       reactiveGroup.messageChain.push({
@@ -723,11 +785,109 @@ export function checkAndTriggerAgentInvocation(group, message) {
         senderName: member.name,
         senderAvatar: member.avatar,
         invocationDepth: nextDepth,
+        snapshotCompletedIds: reactiveGroup.messageChain
+          .filter((m) => m.status === "completed")
+          .map((m) => m.id),
       });
 
       sendGroupCompletions(reactiveGroup, assistantMsgId, targetId).catch((err) => {
         console.error("❌ [groupGateway] 链式唤起 Agent 失败:", err);
       });
     });
+  }, 200);
+}
+
+/**
+ * 群聊完成时结算（防断链）：成员完成发言后，若链上有「它启动流式时尚未完成、
+ * 且 @ 了它」的消息，说明它发言时看不到对方的完整内容（并行竞态下的决策滞后），
+ * 追加一轮补答，让其基于完整上下文收敛。
+ *
+ * 与 checkAndTriggerAgentInvocation 的忙时跳过配合成闭环：
+ * 忙时跳过唤起（@ 保留在链上）→ 完成时这里兜底补答（@ 不丢、流转不断）。
+ *
+ * @param {Object} group
+ * @param {Object} completedMsg - 刚完成的消息
+ */
+export function settlePendingMentions(group, completedMsg) {
+  if (!group || group.platform !== "group" || !completedMsg) return;
+  if (completedMsg.role !== "other") return;
+
+  const memberId = completedMsg.senderMemberId || completedMsg.sender_id;
+  if (!memberId) return;
+
+  const chain = group.messageChain || [];
+  const snapshot = new Set(completedMsg.snapshotCompletedIds || []);
+
+  const triggerMsgs = chain.filter((m) => {
+    if (m.id === completedMsg.id) return false;
+    if (m.status !== "completed") return false;
+    if (snapshot.has(m.id)) return false; // 启动时已完成的，上下文里能看到
+    const sid = m.senderMemberId || m.sender_id;
+    if (sid === memberId) return false;
+    const text = extractMessageText(m, false);
+    if (!text || !text.includes("@")) return false;
+    return resolveMentionedMembers(text, group.members || []).some(
+      (f) => f.id === memberId,
+    );
+  });
+
+  if (triggerMsgs.length === 0) return;
+
+  const maxDepth =
+    group.maxInvocationDepth !== undefined
+      ? Number(group.maxInvocationDepth)
+      : 5;
+  if (maxDepth <= 0) return;
+
+  // depth 继承：取触发消息里最大的深度 + 1，受 maxInvocationDepth 约束
+  const currentDepth = Math.max(
+    ...triggerMsgs.map((m) => Number(m.invocationDepth) || 0),
+  );
+  const nextDepth = currentDepth + 1;
+  if (nextDepth > maxDepth) return;
+
+  // 延迟一拍再唤起：等并行支线全部落定，避免刚结算完又撞上新的 pending
+  setTimeout(() => {
+    const contactorsStore = useContactorsStore();
+    const reactiveGroup = contactorsStore.contactors[group.id];
+    if (!reactiveGroup) return;
+
+    const member = reactiveGroup.members?.find((m) => m.id === memberId);
+    if (!member) return;
+
+    // 若此刻它又被唤起（新 pending），等它完成后再结算，不重复补答
+    const isBusy = reactiveGroup.messageChain.some(
+      (m) =>
+        m.status === "pending" &&
+        (m.senderMemberId === memberId || m.sender_id === memberId),
+    );
+    if (isBusy) return;
+
+    const assistantMsgId = numberString(16);
+    reactiveGroup.messageChain.push({
+      id: assistantMsgId,
+      role: "other",
+      status: "pending",
+      time: Date.now(),
+      content: [{ type: "blank", data: {} }],
+      sender_id: member.id,
+      sender_name: member.name,
+      sender_avatar: member.avatar,
+      senderMemberId: member.id,
+      senderName: member.name,
+      senderAvatar: member.avatar,
+      invocationDepth: nextDepth,
+      // 补答是链的终点：完成时不再传播唤起/结算，避免风暴式放大
+      isSettlementReply: true,
+      snapshotCompletedIds: reactiveGroup.messageChain
+        .filter((m) => m.status === "completed")
+        .map((m) => m.id),
+    });
+
+    sendGroupCompletions(reactiveGroup, assistantMsgId, memberId).catch(
+      (err) => {
+        console.error("❌ [groupGateway] 补答结算唤起失败:", err);
+      },
+    );
   }, 200);
 }
