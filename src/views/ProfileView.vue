@@ -260,9 +260,44 @@ export default {
       deep: true,
     },
     basicInfo: {
-      handler(newInfo) {
+      handler(newInfo, oldInfo) {
         if (newInfo && this.activeContactor) {
-          if (this.activeMember) {
+          const isGroupMember = !!this.activeMember;
+          const target = isGroupMember ? this.activeMember : this.activeContactor;
+          const options = target?.options || this.options;
+          const model = options?.base?.model || options?.model;
+          const provider = options?.provider;
+
+          // 当头像策略被切换为「跟随模型」(0 / "MODEL") 时，立即重新算并响应式更新头像
+          const isAvatarModelPolicy =
+            newInfo.avatarPolicy === 0 || newInfo.avatarPolicy === "MODEL";
+          const wasAvatarModelPolicy =
+            oldInfo &&
+            (oldInfo.avatarPolicy === 0 || oldInfo.avatarPolicy === "MODEL");
+
+          if (isAvatarModelPolicy && (!wasAvatarModelPolicy || !newInfo.avatar)) {
+            if (model) {
+              const modelAvatar = getAvatarByModel(model, provider);
+              if (modelAvatar) {
+                newInfo.avatar = modelAvatar;
+              }
+            }
+          }
+
+          // 当名称策略被切换为「跟随模型」(0 / "MODEL") 时，立即同步模型名
+          const isNameModelPolicy =
+            newInfo.namePolicy === 0 || newInfo.namePolicy === "MODEL";
+          const wasNameModelPolicy =
+            oldInfo &&
+            (oldInfo.namePolicy === 0 || oldInfo.namePolicy === "MODEL");
+
+          if (isNameModelPolicy && (!wasNameModelPolicy || !newInfo.name)) {
+            if (model) {
+              newInfo.name = model;
+            }
+          }
+
+          if (isGroupMember) {
             this.activeMember.name = newInfo.name;
             this.activeMember.avatar = newInfo.avatar;
             this.activeMember.title = newInfo.title;
@@ -354,8 +389,8 @@ export default {
             name: name || "Agent 成员",
             avatar: avatar || "/static/icons/512x512.png",
             title: title || "Agent 成员",
-            namePolicy: namePolicy ?? 1,
-            avatarPolicy: avatarPolicy ?? 1,
+            namePolicy: namePolicy ?? 0,
+            avatarPolicy: avatarPolicy ?? 0,
             priority: priority === 1 ? false : true,
           };
           return;

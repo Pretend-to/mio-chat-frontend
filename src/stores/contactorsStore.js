@@ -1,12 +1,9 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import { getAvatarByOwner, getAvatarByAdapterType } from "@/utils/avatar.js";
+import { getAvatarByAdapterType } from "@/utils/avatar.js";
 import { numberString } from "@/utils/generate.js";
 import { config, client } from "@/lib/runtime.js";
-import {
-  checkAndTriggerAgentInvocation,
-  settlePendingMentions,
-} from "@/lib/groupGateway.js";
+import { resolveUnhandledMentions } from "@/lib/groupGateway.js";
 
 const avatarPolicy = ["MODEL", "CUSTOM"];
 const namePolicy = ["MODEL", "CUSTOM", "SUMMARY"];
@@ -310,6 +307,8 @@ export const useContactorsStore = defineStore("contactors", () => {
         avatar: m.avatar || "/static/icons/512x512.png",
         title: m.title || "成员",
         intro: m.intro || "",
+        namePolicy: m.namePolicy !== undefined ? m.namePolicy : 0,
+        avatarPolicy: m.avatarPolicy !== undefined ? m.avatarPolicy : 0,
         options: m.options
           ? JSON.parse(JSON.stringify(m.options))
           : client.config?.getLLMDefaultConfig?.() || {},
@@ -965,12 +964,7 @@ export const useContactorsStore = defineStore("contactors", () => {
       message.status = "completed";
       closeReasoningBlocks(message.content, true);
       if (!wasAlreadyCompleted && contactor.platform === "group") {
-        // 补答消息是链的终点：不再传播唤起/结算，避免风暴式放大
-        if (!message.isSettlementReply) {
-          checkAndTriggerAgentInvocation(contactor, message);
-          // 并行竞态兜底：成员发言期间入链的 @ 消息在此结算补答
-          settlePendingMentions(contactor, message);
-        }
+        resolveUnhandledMentions(contactor, message);
       }
     } else if (status === "failed") {
       message.status = "failed";
@@ -1019,12 +1013,7 @@ export const useContactorsStore = defineStore("contactors", () => {
       contactor.platform === "group" &&
       message.role === "other"
     ) {
-      // 补答消息是链的终点：不再传播唤起/结算，避免风暴式放大
-      if (!message.isSettlementReply) {
-        checkAndTriggerAgentInvocation(contactor, message);
-        // 并行竞态兜底：成员发言期间入链的 @ 消息在此结算补答
-        settlePendingMentions(contactor, message);
-      }
+      resolveUnhandledMentions(contactor, message);
     }
   }
 
@@ -1064,12 +1053,19 @@ export const useContactorsStore = defineStore("contactors", () => {
       }
       contactor.messageChain.splice(index, 1);
 
-      // 群成员的 lastCompressedIndex 指向群消息链的下标，删除会让其后的所有
-      // 下标整体前移。不修正的话标记会越界一位，导致该成员静默丢掉一条上下文。
+      // 群成员的 lastCompressedIndex 指向群消息链的下标，删除会让其后及当天的所有
+      // 下标整体前移。必须修正，防止标记越界导致上下文切空或跳过消息。
       if (contactor.platform === "group") {
         (contactor.members || []).forEach((m) => {
           const mark = Number(m.lastCompressedIndex) || 0;
-          if (mark > index) m.lastCompressedIndex = mark - 1;
+          if (mark >= index) {
+            m.lastCompressedIndex = Math.max(0, mark - 1);
+          }
+          if (contactor.messageChain.length === 0) {
+            m.lastCompressedIndex = 0;
+          } else if (m.lastCompressedIndex >= contactor.messageChain.length) {
+            m.lastCompressedIndex = contactor.messageChain.length - 1;
+          }
         });
       }
 

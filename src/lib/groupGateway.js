@@ -12,8 +12,6 @@ import { getValidOpenaiMessage } from "@/lib/gateway.js";
 import { assembleSystemPrompt } from "@/utils/SystemPromptAssembler.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { useContactorsStore } from "@/stores/contactorsStore.js";
-import { getAdminAvatarUrl } from "@/utils/avatar.js";
-import { buildUserProfileXml } from "@/lib/clientSettings.js";
 import { numberString } from "@/utils/generate.js";
 
 /**
@@ -123,11 +121,16 @@ export function formatGroupMessagesForMember(group, member) {
   const finalMessages = [{ role: "system", content: systemPrompt }];
 
   const fullChain = group.messageChain || [];
-  const startIndex = Math.min(
-    Math.max(Number(member.lastCompressedIndex) || 0, 0),
-    fullChain.length,
-  );
-  const messageChain = startIndex > 0 ? fullChain.slice(startIndex) : fullChain;
+  let rawMark = Number(member.lastCompressedIndex);
+  if (isNaN(rawMark)) rawMark = 0;
+  const maxValidIndex = Math.max(0, fullChain.length - 1);
+  const startIndex = Math.min(Math.max(rawMark, 0), maxValidIndex);
+  const messageChain =
+    fullChain.length > 0 && startIndex < fullChain.length
+      ? startIndex > 0
+        ? fullChain.slice(startIndex)
+        : fullChain
+      : fullChain;
 
   let pendingHistoryXml = [];
 
@@ -594,11 +597,17 @@ export async function sendGroupCompletions(group, assistantMsgId, targetMemberId
     const member = targetMembers[i];
     let msgId = assistantMsgId;
 
-    // 记录该成员启动流式瞬间链上「已完成」的消息 ID 快照。
-    // settlePendingMentions 用它判断「哪些 @ 我的消息我发言时看不到」→ 完成后补答。
-    const snapshotCompletedIds = group.messageChain
-      .filter((m) => m.status === "completed")
-      .map((m) => m.id);
+    // 忙时判断：若该成员已有 pending 消息正运行（非本次传入的占位符），跳过重复触发
+    const isBusy = group.messageChain.some(
+      (m) =>
+        m.status === "pending" &&
+        m.id !== assistantMsgId &&
+        (m.senderMemberId === member.id || m.sender_id === member.id),
+    );
+    if (isBusy) {
+      console.log(`ℹ️ [groupGateway] ${member.name} 正在生成中，跳过重复触发`);
+      continue;
+    }
 
     if (i > 0) {
       msgId = numberString(16);
@@ -614,7 +623,6 @@ export async function sendGroupCompletions(group, assistantMsgId, targetMemberId
         senderMemberId: member.id,
         senderName: member.name,
         senderAvatar: member.avatar,
-        snapshotCompletedIds,
       });
     } else {
       const placeholder = group.messageChain.find((m) => m.id === assistantMsgId);
@@ -625,7 +633,6 @@ export async function sendGroupCompletions(group, assistantMsgId, targetMemberId
         placeholder.senderMemberId = member.id;
         placeholder.senderName = member.name;
         placeholder.senderAvatar = member.avatar;
-        placeholder.snapshotCompletedIds = snapshotCompletedIds;
       }
     }
 
@@ -684,93 +691,156 @@ function hasPendingDepthWarning(group) {
 }
 
 /**
- * 检查并触发 Agent 互相唤起/连锁唤起
+ * 扫描群消息链，查找是否存在未被响应的 @ Mention，并按需发起 Agent 唤起。
+ *
+ * 核心规则：
+ * 1. 对于群内的每个 Agent 成员 M：
+ *    - 忙时检查：若 M 当前有 pending 消息正在生成，跳过（待 M 完成发言后再重检）。
+ *    - 尾部保护：若消息链最末端（非 mio_system）就是 M 刚发出的发言，跳过（刚发完言，等待他人响应）。
+ * 2. 检索消息链中所有 @ 了 M 且发件人非 M 的消息 msg_X：
+ *    - 若在 msg_X 之后，消息链中尚未出现 M 发出的任何消息（pending 或 completed），
+ *      说明该 @ 消息尚未被 M 响应。
+ * 3. 汇总有未响应 @ 的成员，计算 nextDepth = max(triggerMsgs.invocationDepth) + 1。
+ * 4. 深度上限检查，推送 pending 占位气泡并触发生成。
+ *
  * @param {Object} group
- * @param {Object} message
+ * @param {Object} [triggerMessage]
+ * @param {boolean} [dryRun=false] 是否仅返回结果而不执行实际唤起（用于单测）
  */
-export function checkAndTriggerAgentInvocation(group, message) {
+export function resolveUnhandledMentions(group, triggerMessage = null, dryRun = false) {
   if (
     !group ||
     group.platform !== "group" ||
-    !message ||
-    message.status !== "completed"
+    !Array.isArray(group.members) ||
+    group.members.length === 0
   ) {
-    return;
+    return dryRun ? { validTriggers: [], exceededTriggers: [] } : undefined;
   }
 
-  const text = extractMessageText(message, false);
-  if (!text || !text.includes("@")) return;
+  const chain = group.messageChain || [];
+  if (chain.length === 0) {
+    return dryRun ? { validTriggers: [], exceededTriggers: [] } : undefined;
+  }
 
-  // 与用户侧 @ 路由共用同一套解析（以 ID 为准），避免两边口径不一致
-  const targetMemberIds = new Set();
-  resolveMentionedMembers(text, group.members || []).forEach((found) => {
-    if (
-      !found.isUser &&
-      found.id !== message.sender_id &&
-      found.id !== message.senderMemberId
-    ) {
-      targetMemberIds.add(found.id);
+  // 获取消息链末端最近一条有效消息（排除 mio_system）
+  let tailMsg = null;
+  for (let i = chain.length - 1; i >= 0; i--) {
+    if (chain[i] && chain[i].role !== "mio_system") {
+      tailMsg = chain[i];
+      break;
     }
-  });
-
-  if (targetMemberIds.size === 0) return;
+  }
 
   const maxDepth =
     group.maxInvocationDepth !== undefined ? Number(group.maxInvocationDepth) : 5;
 
   if (maxDepth <= 0) {
-    console.log("ℹ️ [groupGateway] 当前群聊已禁用 Agent 连锁唤起(0轮)");
-    return;
+    return dryRun ? { validTriggers: [], exceededTriggers: [] } : undefined;
   }
 
-  // 深度记在消息上，而不是记在群上：每条被唤起的消息继承「触发它的那条消息的深度 + 1」。
-  // 这样同时唤起多个成员时每条支线独立计数，一条到顶不会连累另一条，
-  // 也不需要任何「回合结束」式的重置 —— 用户新发的消息本就没有 invocationDepth，天然从 0 起算。
-  const currentDepth = Number(message.invocationDepth) || 0;
+  const membersToTrigger = [];
 
-  if (currentDepth >= maxDepth) {
-    console.warn(
-      `⚠️ [groupGateway] 达到当前群聊设置的 Agent 互相唤起最大深度上限(${maxDepth}轮)，终止链式唤起`
+  for (const member of group.members) {
+    if (member.isUser) continue;
+    const memberId = member.id;
+
+    // A. 忙时检查：若该成员已有 pending 消息，跳过（完成后会重检）
+    const isBusy = chain.some(
+      (m) =>
+        m.status === "pending" &&
+        (m.senderMemberId === memberId || m.sender_id === memberId),
     );
-    // 本轮内只提醒一次：多条支线同时到顶时不重复刷屏
-    if (!hasPendingDepthWarning(group)) {
-      const contactorsStore = useContactorsStore();
-      contactorsStore.insertSystemMessage(
-        group.id,
-        `已达到本群设定的 Agent 连锁唤起上限（${maxDepth} 轮），后续的 @ 唤起已自动停止。继续发言或 @ 指定成员即可重新开始。`,
-        { isInvocationLimit: true }
-      );
+    if (isBusy) continue;
+
+    // B. 尾部保护：若消息链最新一条发言就是该成员发出的，跳过（刚发完言，等待别人回应）
+    if (
+      tailMsg &&
+      (tailMsg.senderMemberId === memberId || tailMsg.sender_id === memberId)
+    ) {
+      continue;
     }
-    return;
+
+    // C. 检索该成员所有未响应的 @ 消息
+    const unhandledMsgs = [];
+
+    for (let i = 0; i < chain.length; i++) {
+      const msg = chain[i];
+      if (!msg || msg.role === "mio_system") continue;
+
+      // 跳过由自己发出的消息
+      const sid = msg.senderMemberId || msg.sender_id;
+      if (sid === memberId) continue;
+
+      const text = extractMessageText(msg, false);
+      if (!text || !text.includes("@")) continue;
+
+      const mentions = resolveMentionedMembers(text, group.members);
+      if (!mentions.some((m) => m.id === memberId)) continue;
+
+      // 检查在 msg[i] 之后，是否有该成员发出过消息
+      let hasResponded = false;
+      for (let j = i + 1; j < chain.length; j++) {
+        const nextMsg = chain[j];
+        if (!nextMsg || nextMsg.role === "mio_system") continue;
+        const nextSid = nextMsg.senderMemberId || nextMsg.sender_id;
+        if (nextSid === memberId) {
+          hasResponded = true;
+          break;
+        }
+      }
+
+      if (!hasResponded) {
+        unhandledMsgs.push(msg);
+      }
+    }
+
+    if (unhandledMsgs.length > 0) {
+      const maxTriggerDepth = Math.max(
+        ...unhandledMsgs.map((m) => Number(m.invocationDepth) || 0),
+      );
+      const nextDepth = maxTriggerDepth + 1;
+
+      membersToTrigger.push({
+        member,
+        nextDepth,
+      });
+    }
   }
 
-  const nextDepth = currentDepth + 1;
+  const validTriggers = membersToTrigger.filter((t) => t.nextDepth <= maxDepth);
+  const exceededTriggers = membersToTrigger.filter((t) => t.nextDepth > maxDepth);
+
+  if (dryRun) {
+    return { validTriggers, exceededTriggers };
+  }
+
+  if (exceededTriggers.length > 0 && !hasPendingDepthWarning(group)) {
+    console.warn(
+      `⚠️ [groupGateway] 达到当前群聊设置的 Agent 互相唤起最大深度上限(${maxDepth}轮)，终止链式唤起`,
+    );
+    const contactorsStore = useContactorsStore();
+    contactorsStore.insertSystemMessage(
+      group.id,
+      `已达到本群设定的 Agent 连锁唤起上限（${maxDepth} 轮），后续的 @ 唤起已自动停止。继续发言或 @ 指定成员即可重新开始。`,
+      { isInvocationLimit: true },
+    );
+  }
+
+  if (validTriggers.length === 0) return;
 
   setTimeout(() => {
-    // 重新从 Pinia store 取响应式对象，确保 push 能触发 Vue 响应式更新
     const contactorsStore = useContactorsStore();
     const reactiveGroup = contactorsStore.contactors[group.id];
     if (!reactiveGroup) return;
 
-    targetMemberIds.forEach((targetId) => {
-      const member = reactiveGroup.members?.find((m) => m.id === targetId);
-      if (!member) return;
-
-      // 忙时跳过：目标成员正在流式生成（链上有它的 pending 消息）→ 本次唤起无效。
-      // @ 消息仍保留在链上，目标完成后由 settlePendingMentions 结算补答，@ 不会丢。
-      const isBusy = reactiveGroup.messageChain.some(
+    validTriggers.forEach(({ member, nextDepth }) => {
+      const isStillBusy = reactiveGroup.messageChain.some(
         (m) =>
           m.status === "pending" &&
-          (m.senderMemberId === targetId || m.sender_id === targetId)
+          (m.senderMemberId === member.id || m.sender_id === member.id),
       );
-      if (isBusy) {
-        console.log(
-          `ℹ️ [groupGateway] ${member.name} 正在输入中，跳过本次 @ 唤起（其完成后自动结算）`
-        );
-        return;
-      }
+      if (isStillBusy) return;
 
-      // 先立即写入 pending 占位气泡，让 UI 马上呈现预热状态
       const assistantMsgId = numberString(16);
       reactiveGroup.messageChain.push({
         id: assistantMsgId,
@@ -785,109 +855,19 @@ export function checkAndTriggerAgentInvocation(group, message) {
         senderName: member.name,
         senderAvatar: member.avatar,
         invocationDepth: nextDepth,
-        snapshotCompletedIds: reactiveGroup.messageChain
-          .filter((m) => m.status === "completed")
-          .map((m) => m.id),
       });
 
-      sendGroupCompletions(reactiveGroup, assistantMsgId, targetId).catch((err) => {
-        console.error("❌ [groupGateway] 链式唤起 Agent 失败:", err);
-      });
+      sendGroupCompletions(reactiveGroup, assistantMsgId, member.id).catch(
+        (err) => {
+          console.error("❌ [groupGateway] 链式唤起 Agent 失败:", err);
+        },
+      );
     });
-  }, 200);
+  }, 100);
 }
 
-/**
- * 群聊完成时结算（防断链）：成员完成发言后，若链上有「它启动流式时尚未完成、
- * 且 @ 了它」的消息，说明它发言时看不到对方的完整内容（并行竞态下的决策滞后），
- * 追加一轮补答，让其基于完整上下文收敛。
- *
- * 与 checkAndTriggerAgentInvocation 的忙时跳过配合成闭环：
- * 忙时跳过唤起（@ 保留在链上）→ 完成时这里兜底补答（@ 不丢、流转不断）。
- *
- * @param {Object} group
- * @param {Object} completedMsg - 刚完成的消息
- */
-export function settlePendingMentions(group, completedMsg) {
-  if (!group || group.platform !== "group" || !completedMsg) return;
-  if (completedMsg.role !== "other") return;
-
-  const memberId = completedMsg.senderMemberId || completedMsg.sender_id;
-  if (!memberId) return;
-
-  const chain = group.messageChain || [];
-  const snapshot = new Set(completedMsg.snapshotCompletedIds || []);
-
-  const triggerMsgs = chain.filter((m) => {
-    if (m.id === completedMsg.id) return false;
-    if (m.status !== "completed") return false;
-    if (snapshot.has(m.id)) return false; // 启动时已完成的，上下文里能看到
-    const sid = m.senderMemberId || m.sender_id;
-    if (sid === memberId) return false;
-    const text = extractMessageText(m, false);
-    if (!text || !text.includes("@")) return false;
-    return resolveMentionedMembers(text, group.members || []).some(
-      (f) => f.id === memberId,
-    );
-  });
-
-  if (triggerMsgs.length === 0) return;
-
-  const maxDepth =
-    group.maxInvocationDepth !== undefined
-      ? Number(group.maxInvocationDepth)
-      : 5;
-  if (maxDepth <= 0) return;
-
-  // depth 继承：取触发消息里最大的深度 + 1，受 maxInvocationDepth 约束
-  const currentDepth = Math.max(
-    ...triggerMsgs.map((m) => Number(m.invocationDepth) || 0),
-  );
-  const nextDepth = currentDepth + 1;
-  if (nextDepth > maxDepth) return;
-
-  // 延迟一拍再唤起：等并行支线全部落定，避免刚结算完又撞上新的 pending
-  setTimeout(() => {
-    const contactorsStore = useContactorsStore();
-    const reactiveGroup = contactorsStore.contactors[group.id];
-    if (!reactiveGroup) return;
-
-    const member = reactiveGroup.members?.find((m) => m.id === memberId);
-    if (!member) return;
-
-    // 若此刻它又被唤起（新 pending），等它完成后再结算，不重复补答
-    const isBusy = reactiveGroup.messageChain.some(
-      (m) =>
-        m.status === "pending" &&
-        (m.senderMemberId === memberId || m.sender_id === memberId),
-    );
-    if (isBusy) return;
-
-    const assistantMsgId = numberString(16);
-    reactiveGroup.messageChain.push({
-      id: assistantMsgId,
-      role: "other",
-      status: "pending",
-      time: Date.now(),
-      content: [{ type: "blank", data: {} }],
-      sender_id: member.id,
-      sender_name: member.name,
-      sender_avatar: member.avatar,
-      senderMemberId: member.id,
-      senderName: member.name,
-      senderAvatar: member.avatar,
-      invocationDepth: nextDepth,
-      // 补答是链的终点：完成时不再传播唤起/结算，避免风暴式放大
-      isSettlementReply: true,
-      snapshotCompletedIds: reactiveGroup.messageChain
-        .filter((m) => m.status === "completed")
-        .map((m) => m.id),
-    });
-
-    sendGroupCompletions(reactiveGroup, assistantMsgId, memberId).catch(
-      (err) => {
-        console.error("❌ [groupGateway] 补答结算唤起失败:", err);
-      },
-    );
-  }, 200);
+/** 兼容旧调用的导出别名 */
+export function checkAndTriggerAgentInvocation(group, message) {
+  return resolveUnhandledMentions(group, message);
 }
+

@@ -414,6 +414,8 @@ const candidateMembers = computed(() => {
         name: c.name,
         avatar: c.avatar,
         title: c.title || c.platform,
+        namePolicy: c.namePolicy !== undefined ? c.namePolicy : 0,
+        avatarPolicy: c.avatarPolicy !== undefined ? c.avatarPolicy : 0,
         options: c.options,
       }));
   } else {
@@ -425,6 +427,8 @@ const candidateMembers = computed(() => {
         name: p.name,
         avatar: p.avatar || getAvatarByModel(p.model),
         title: p.title || p.model || "预设",
+        namePolicy: p.namePolicy !== undefined ? p.namePolicy : 0,
+        avatarPolicy: p.avatarPolicy !== undefined ? p.avatarPolicy : 0,
         options: p,
       }));
   }
@@ -438,6 +442,8 @@ function addCandidateToGroup(item) {
     name: item.name,
     avatar: item.avatar || "/static/icons/512x512.png",
     title: item.title || "Agent 成员",
+    namePolicy: item.namePolicy !== undefined ? item.namePolicy : 0,
+    avatarPolicy: item.avatarPolicy !== undefined ? item.avatarPolicy : 0,
     options: item.options ? JSON.parse(JSON.stringify(item.options)) : {},
   };
   const members = [...(group.value.members || []), newMember];

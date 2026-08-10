@@ -634,6 +634,8 @@ const availableGroupMembers = computed(() => {
         name: c.name,
         avatar: c.avatar || "/static/icons/512x512.png",
         title: c.title || "联系人",
+        namePolicy: c.namePolicy !== undefined ? c.namePolicy : 0,
+        avatarPolicy: c.avatarPolicy !== undefined ? c.avatarPolicy : 0,
         options: c.options,
       }));
   } else {
@@ -643,6 +645,8 @@ const availableGroupMembers = computed(() => {
       name: p.name,
       avatar: p.avatar || getAvatarByModel(p.model) || "/static/icons/512x512.png",
       title: p.title || "本地预设",
+      namePolicy: p.namePolicy !== undefined ? p.namePolicy : 0,
+      avatarPolicy: p.avatarPolicy !== undefined ? p.avatarPolicy : 0,
       options: {
         base: { model: p.model || "gpt-4o", stream: true },
         presetSettings: { opening: p.opening || "", history: p.history || [] },
