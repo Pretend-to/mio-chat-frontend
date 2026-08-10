@@ -321,29 +321,7 @@ export default class Config {
         opening: "",
         history: [],
       },
-      extraSettings: {
-        gemini: {
-          imageGeneration: false,
-          // Gemini 特定示例
-          internalTools: {
-            google_search: false,
-            code_execution: false,
-            url_context: false,
-          },
-          safetySettings: {
-            // 使用固定的默认安全设置结构
-            [GEMINI_SAFETY_SETTINGS_TYPE.HARASSMENT]:
-              GEMINI_SAFETY_BLOCK_SETTINGS.DEFAULT,
-            [GEMINI_SAFETY_SETTINGS_TYPE.HATE_SPEECH]:
-              GEMINI_SAFETY_BLOCK_SETTINGS.DEFAULT,
-            [GEMINI_SAFETY_SETTINGS_TYPE.SEXUALLY_EXPLICIT]:
-              GEMINI_SAFETY_BLOCK_SETTINGS.DEFAULT,
-            [GEMINI_SAFETY_SETTINGS_TYPE.DANGEROUS_CONTENT]:
-              GEMINI_SAFETY_BLOCK_SETTINGS.DEFAULT,
-            // 如果有其他类别，也在这里添加
-          },
-        },
-      },
+      extraSettings: {},
     };
 
     // 3. 确保 this.LLMDefaultConfig 是一个对象
