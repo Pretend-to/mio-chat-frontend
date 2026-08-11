@@ -1028,14 +1028,23 @@ export const useContactorsStore = defineStore("contactors", () => {
     // 过滤掉 type === "blank" 占位节点，防止界面显示思考中的转圈
     message.content = message.content.filter((elm) => elm.type !== "blank");
 
-    // 格式化具体的错误信息并作为代码块塞进 message 的 content 中，避免重复塞入
-    const errorText = formatErrorMessage(_error);
-    const lastElm = message.content[message.content.length - 1];
-    if (!lastElm || lastElm.type !== "text" || lastElm.data?.text !== errorText) {
-      message.content.push({
-        type: "text",
-        data: { text: errorText },
-      });
+    // 用户消息失败时不要把错误文本塞进消息内容：
+    // 1. 错误已由调用方 ElMessage 弹窗提示；
+    // 2. 塞入后会被当作消息正文在重发/后续上下文里发给模型，污染对话。
+    // 仅保留 assistant（role 非 user）消息的内联错误展示。
+    if (message.role !== "user") {
+      const errorText = formatErrorMessage(_error);
+      const lastElm = message.content[message.content.length - 1];
+      if (
+        !lastElm ||
+        lastElm.type !== "text" ||
+        lastElm.data?.text !== errorText
+      ) {
+        message.content.push({
+          type: "text",
+          data: { text: errorText },
+        });
+      }
     }
 
     contactor.lastUpdate = Date.now();

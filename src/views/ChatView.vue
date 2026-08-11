@@ -1337,7 +1337,6 @@ const toProfile = (memberId = null) => {
 const reuploadBlobImages = async (message) => {
   if (!message || !Array.isArray(message.content)) return;
   const uploadFn = inputEditor.value?.compressAndUploadImage;
-  if (!uploadFn) return;
 
   for (const elm of message.content) {
     if (elm.type !== "image") continue;
@@ -1347,10 +1346,18 @@ const reuploadBlobImages = async (message) => {
     try {
       const response = await fetch(url);
       const blob = await response.blob();
-      const file = new File([blob], "retry-image." + (blob.type.split("/")[1] || "png"), {
-        type: blob.type,
-      });
-      elm.data.file = await uploadFn(file);
+      const filename = "retry-image." + (blob.type.split("/")[1] || "png");
+      const file = new File([blob], filename, { type: blob.type });
+
+      if (uploadFn) {
+        elm.data.file = await uploadFn(file);
+      } else {
+        // InputEditor 未挂载（如多选模式）时直接走 client 上传，避免 blob URL 被原样发出
+        const formData = new FormData();
+        formData.append("image", file, filename);
+        const upload = await client.uploadImage(formData);
+        elm.data.file = upload.data.url;
+      }
     } catch (e) {
       console.error("重试时重新上传图片失败:", e);
       // 上传失败则移除该图片元素，并告知用户
@@ -1380,6 +1387,8 @@ const handleRetryMessage = async (item) => {
     item.time = Date.now();
     client.setLocalStorage();
     try {
+      // 重试前重新上传本地图片（blob: / data: URL），避免 blob URL 被原样发给后端
+      await reuploadBlobImages(item);
       await contactor.webSend(item);
       ElMessage.success("消息已重新发送");
     } catch (e) {
@@ -1638,6 +1647,8 @@ const handleMessageOption = async (option) => {
           status: "pending",
           time: Date.now(),
         };
+        // 重试前重新上传本地图片（blob: / data: URL），避免 blob URL 被原样发给后端
+        await reuploadBlobImages(msgToSend);
         activeContactor.value.webSend(msgToSend);
         ElMessage.success("消息已重新发送");
       } else {
