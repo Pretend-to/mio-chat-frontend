@@ -1014,9 +1014,22 @@ export default class Client extends EventEmitter {
       };
 
       const uploadChunk = async (chunk, index, totalChunks) => {
+        // iOS WebKit: file.slice() 的 Blob 直接进 FormData 会被序列化成畸形 multipart，
+        // 导致后端 busboy 报 "Unexpected end of form"（HTTP 500）。
+        // 先读成 ArrayBuffer 再包成全新 File，绕开 iOS 的 slice 序列化缺陷。
+        let filePart = chunk;
+        try {
+          const buf = await chunk.arrayBuffer();
+          filePart = new File([buf], file.name, {
+            type: file.type || "application/octet-stream",
+          });
+        } catch (error) {
+          return Promise.reject(`Chunk read error: ${error.message}`);
+        }
+
         return new Promise((resolve, reject) => {
           const formData = new FormData();
-          formData.append("file", chunk);
+          formData.append("file", filePart);
           formData.append("md5", md5Hash);
           formData.append("chunkIndex", index);
           formData.append("totalChunks", totalChunks);
@@ -1119,6 +1132,7 @@ export default class Client extends EventEmitter {
       worker.onmessage = (e) => {
         if (e.data.hash) {
           md5Hash = e.data.hash;
+          worker.terminate(); // MD5 计算完成，释放 worker 资源
           console.log("MD5 calculated. Starting upload...");
           uploadFileChunks();
         } else if (e.data.error) {
