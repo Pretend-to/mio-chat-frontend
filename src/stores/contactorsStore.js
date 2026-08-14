@@ -9,8 +9,11 @@ const avatarPolicy = ["MODEL", "CUSTOM"];
 const namePolicy = ["MODEL", "CUSTOM", "SUMMARY"];
 
 // Helper function to format timestamps for contact list view
-export function getContactorLastTime(messageChain) {
-  const last = messageChain?.[messageChain.length - 1];
+export function getContactorLastTime(messageChainOrTime) {
+  // 兼容两种入参：消息链数组（取最后一条）或直接时间戳
+  const last = Array.isArray(messageChainOrTime)
+    ? messageChainOrTime?.[messageChainOrTime.length - 1]
+    : { time: messageChainOrTime };
   if (!last) {
     return "";
   }
@@ -221,7 +224,21 @@ export const useContactorsStore = defineStore("contactors", () => {
         members: item.members ?? [],
         priority: item.priority === true ? 0 : item.priority === false ? 1 : (item.priority ?? 1),
         firstMessageIndex: item.firstMessageIndex ?? 0,
-        messageChain: item.messageChain ?? [],
+        // 懒加载：不再把完整消息链注入内存（IndexedDB per-contact key 按需读）。
+        // 列表预览用 lastMessageSummary / lastMessageTime，均已在持久化时维护。
+        messageChain: [],
+        lastMessageTime:
+          item.lastMessageTime ??
+          (Array.isArray(item.messageChain) && item.messageChain.length > 0
+            ? item.messageChain[item.messageChain.length - 1].time
+            : null) ??
+          item.lastUpdate ??
+          null,
+        // 内部字段（不持久化）：
+        // _chainLoaded: 当前联系人消息链是否已从 IndexedDB 加载
+        // _pendingMessages: 链加载完成前到达的消息（合并用）
+        _chainLoaded: false,
+        _pendingMessages: [],
         active: false,
         lastUpdate: item.lastUpdate ?? Date.now(),
         createTime: item.createTime ?? Date.now(),
@@ -415,9 +432,15 @@ export const useContactorsStore = defineStore("contactors", () => {
   }
 
   function updateContactorSummary(contactor) {
-    contactor.lastMessageSummary = getLastMessageSummary(
-      contactor.messageChain,
-    );
+    // 链未加载时从 pending 取（pending 即最新到达的消息）
+    const chain = contactor._chainLoaded
+      ? contactor.messageChain
+      : contactor._pendingMessages || [];
+    contactor.lastMessageSummary = getLastMessageSummary(chain);
+    const lastMsg = chain[chain.length - 1];
+    if (lastMsg?.time) {
+      contactor.lastMessageTime = lastMsg.time;
+    }
   }
 
   // Messaging operations
@@ -425,7 +448,12 @@ export const useContactorsStore = defineStore("contactors", () => {
     const contactor = contactors.value[contactorId];
     if (!contactor) return null;
 
-    let message = contactor.messageChain.find((msg) => msg.id === messageId);
+    // 链未加载（不在聊天页 / 加载中）：写入 pending，加载完成时合并，
+    // 避免消息 push 进空链后被后续加载的链整体替换而丢失
+    const chain = contactor._chainLoaded
+      ? contactor.messageChain
+      : contactor._pendingMessages;
+    let message = chain.find((msg) => msg.id === messageId);
     if (!message) {
       message = {
         role: defaults.role || "other",
@@ -434,7 +462,7 @@ export const useContactorsStore = defineStore("contactors", () => {
         id: messageId,
         content: defaults.content || [{ type: "blank", data: {} }],
       };
-      contactor.messageChain.push(message);
+      chain.push(message);
     }
     return message;
   }
@@ -1099,9 +1127,11 @@ export const useContactorsStore = defineStore("contactors", () => {
    * 直接置为 failed 终态，避免 UI 上永远显示"执行中"。
    * 由 client.js 在检测到 bootId 变化时调用。
    */
-  function markInterruptedToolCalls() {
+  function markInterruptedToolCalls(targetId) {
     let cleaned = 0;
-    for (const contactorId of Object.keys(contactors.value)) {
+    // 支持指定联系人（懒加载后启动时链为空，改为进入聊天页加载链后局部清扫）
+    const ids = targetId ? [targetId] : Object.keys(contactors.value);
+    for (const contactorId of ids) {
       const contactor = contactors.value[contactorId];
       if (!contactor || !Array.isArray(contactor.messageChain)) continue;
       for (const message of contactor.messageChain) {
@@ -1204,7 +1234,7 @@ export const useContactorsStore = defineStore("contactors", () => {
       toolCallContextMode: item.toolCallContextMode || "full",
       members: item.members,
       priority: item.priority,
-      messageChain: item.messageChain,
+      lastMessageTime: item.lastMessageTime ?? null,
       active: item.active,
       lastUpdate: item.lastUpdate,
       createTime: item.createTime,
@@ -1212,6 +1242,53 @@ export const useContactorsStore = defineStore("contactors", () => {
       firstMessageIndex: item.firstMessageIndex,
       draft: item.draft,
     }));
+  }
+
+  /**
+   * 懒加载指定联系人的消息链（IndexedDB per-contact key）
+   * 加载完成后合并加载期间到达的 pending 消息，注入响应式链。
+   * 由 ChatView 在进入聊天页 / 切换联系人时调用。
+   */
+  async function loadMessageChain(contactorId) {
+    const contactor = contactors.value[contactorId];
+    if (!contactor) return null;
+    if (contactor._chainLoaded) return contactor.messageChain;
+
+    const loaded = (await client.loadMessages(contactorId)) || [];
+
+    // 合并加载期间到达的消息（同 id 覆盖，新 id 追加）：
+    // 1. _pendingMessages —— getOrCreateMessage 在链未加载时写入的
+    // 2. messageChain 里已直接 push 的 —— ChatView handleMessage 等
+    //    在链加载前直接操作空链的消息（避免整体替换后丢失）
+    const pending = contactor._pendingMessages || [];
+    const early = Array.isArray(contactor.messageChain)
+      ? contactor.messageChain
+      : [];
+    const merged = [...loaded];
+    for (const m of [...early, ...pending]) {
+      if (!m || !m.id) continue;
+      const idx = merged.findIndex((x) => x.id === m.id);
+      if (idx !== -1) {
+        merged[idx] = m;
+      } else {
+        merged.push(m);
+      }
+    }
+    contactor.messageChain = merged;
+    contactor._pendingMessages = [];
+    contactor._chainLoaded = true;
+    updateContactorSummary(contactor);
+
+    // 后端重启清扫（原启动全量遍历；懒加载后改为加载到哪个清哪个）
+    try {
+      markInterruptedToolCalls(contactorId);
+    } catch (e) {
+      console.error("[contactors] 清扫中断 tool_call 失败:", e);
+    }
+
+    // 触发持久化（per-contact key + 元信息）
+    client.setLocalStorage();
+    return contactor.messageChain;
   }
 
   return {
@@ -1225,6 +1302,7 @@ export const useContactorsStore = defineStore("contactors", () => {
 
     // Actions
     loadContactors,
+    loadMessageChain,
     addContactor,
     addGroupContactor,
     removeContactor,

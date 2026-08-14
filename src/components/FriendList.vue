@@ -634,7 +634,7 @@ onBeforeUnmount(() => {
           <div class="mio-contact-item__info">
             <div class="mio-contact-item__name">{{ item.name }}</div>
             <div class="mio-contact-item__time">
-              {{ getContactorLastTime(item.messageChain) }}
+              {{ getContactorLastTime(item.lastMessageTime) }}
             </div>
             <div class="mio-contact-item__message-summary">
               <template v-if="item.draft">

@@ -597,6 +597,21 @@ export default class Client extends EventEmitter {
   }
 
   /**
+   * 懒加载指定联系人的消息链（IndexedDB per-contact key）
+   * @param {string} contactorId 联系人 id
+   * @returns {Promise<Array|null>} 消息链数组，未找到返回 null
+   */
+  async loadMessages(contactorId) {
+    try {
+      const data = await localforage.getItem(`mio_msg_${contactorId}`);
+      return Array.isArray(data) ? data : null;
+    } catch (e) {
+      console.error("[Client] 加载消息链失败:", e);
+      return null;
+    }
+  }
+
+  /**
    * Get user information from localStorage
    * @returns {object|false} User information or false if not found
    */
@@ -629,8 +644,35 @@ export default class Client extends EventEmitter {
     }
     if (client.contactList && client.contactList.length != 0) {
       store.loadContactors(client.contactList);
+      // 旧数据一次性迁移：contactList 里残留的全量 messageChain
+      // 拆到 per-contact key（异步，不阻塞启动），下次保存写新格式
+      this._migrateLegacyMessageChains(client.contactList);
     } else {
       store.loadContactors([]);
+    }
+  }
+
+  /**
+   * 旧数据迁移（0.2.x → 0.3.x 持久化格式）：
+   * 老格式 client JSON 内嵌全量 messageChain，启动一次 parse 会吃掉大量内存。
+   * 这里把每个联系人的链拆到独立 key（mio_msg_<id>），迁移后由 saveNow
+   * 写新格式元信息（toJSON 不含链）。幂等：中断后下次启动重跑，覆盖写入无害。
+   */
+  async _migrateLegacyMessageChains(contactList) {
+    try {
+      let migrated = false;
+      for (const item of contactList) {
+        if (Array.isArray(item.messageChain) && item.messageChain.length > 0) {
+          await localforage.setItem(`mio_msg_${item.id}`, item.messageChain);
+          migrated = true;
+        }
+      }
+      if (migrated) {
+        // 立即保存新格式元信息（下次启动不再解析全量链）
+        this.saveNow();
+      }
+    } catch (e) {
+      console.error("[Client] 迁移旧消息链失败:", e);
     }
   }
   /**
@@ -685,6 +727,33 @@ export default class Client extends EventEmitter {
       console.error("Failed to flush all stream buffers:", err);
     }
 
+    // 1. 消息链：只写「内存中已加载」的联系人（懒加载后只有当前聊天联系人），
+    //    每个联系人独立 key，按需读入，避免启动全量反序列化
+    try {
+      const contactors = Object.values(store.contactors || {});
+      for (const c of contactors) {
+        if (c?._chainLoaded && Array.isArray(c.messageChain)) {
+          await localforage.setItem(`mio_msg_${c.id}`, c.messageChain);
+        } else if (c?._pendingMessages?.length > 0) {
+          // 链未加载但有 pending 消息：合并写入，防止重启丢失
+          const existing = (await this.loadMessages(c.id)) || [];
+          const merged = [...existing];
+          for (const p of c._pendingMessages) {
+            const idx = merged.findIndex((m) => m?.id === p.id);
+            if (idx !== -1) {
+              merged[idx] = p;
+            } else {
+              merged.push(p);
+            }
+          }
+          await localforage.setItem(`mio_msg_${c.id}`, merged);
+        }
+      }
+    } catch (err) {
+      console.error("[Client] 保存消息链失败:", err);
+    }
+
+    // 2. 元信息（toJSON 已不含 messageChain，只含摘要/时间等轻量字段）
     const client = {
       id: this.id,
       code: this.code,
