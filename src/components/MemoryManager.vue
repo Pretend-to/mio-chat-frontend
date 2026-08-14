@@ -10,7 +10,7 @@
             v-model="contextMode"
             @change="onContextModeChange"
           >
-            <el-radio-button value="crystal">记忆结晶</el-radio-button>
+            <el-radio-button value="crystal">上下文压缩</el-radio-button>
             <el-radio-button value="window">滑动窗口</el-radio-button>
           </el-radio-group>
         </div>
@@ -35,12 +35,12 @@
       <template v-if="contextMode === 'crystal'">
         <div class="setting-field">
           <div class="field-label">
-            自动结晶
+            自动压缩
             <el-tooltip
               v-if="isForcedOn"
               placement="top"
               popper-class="mio-hint-popper"
-              content="群聊消息链由全体成员共享且只增不减，关闭结晶会让每个成员的上下文无限膨胀，因此群成员强制开启，不可关闭。"
+              content="群聊消息链由全体成员共享且只增不减，关闭压缩会让每个成员的上下文无限膨胀，因此群成员强制开启，不可关闭。"
             >
               <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
             </el-tooltip>
@@ -55,7 +55,7 @@
         </div>
 
         <div v-if="crystallizationEnabled" class="setting-field">
-          <div class="field-label">Context 压缩上限</div>
+          <div class="field-label">压缩上限</div>
           <div class="field-value">
             <el-select
               :model-value="watermarkMode"
@@ -99,21 +99,21 @@
 
     <!-- Group: Visual Crystallization Editor (only in crystal mode) -->
     <template v-if="contextMode === 'crystal' && crystallizationEnabled">
-      <div class="group-title">分区结晶事实管理</div>
+      <div class="group-title">分区记忆管理</div>
       <div class="settings-card editor-card">
         <div class="settings-row">
           <div class="row-left">
             <span class="last-updated" v-if="lastUpdatedTime">
-              上次结晶时间: {{ lastUpdatedTime }}
+              上次压缩时间: {{ lastUpdatedTime }}
             </span>
             <span class="last-updated" v-else-if="hasCrystallizationContent">
-              记忆结晶已保存并生效
+              压缩内容已保存并生效
             </span>
-            <span class="last-updated" v-else> 暂无已保存的结晶事实 </span>
+            <span class="last-updated" v-else> 暂无已保存的压缩内容 </span>
           </div>
           <div class="row-actions">
             <el-button size="small" type="danger" plain @click="clearSummary">
-              清空结晶
+              清空压缩内容
             </el-button>
             <el-button type="primary" size="small" @click="saveZones">
               保存修改
@@ -146,8 +146,8 @@
       <div class="disabled-hint-content">
         <span class="lock-icon">🔒</span>
         <span class="hint-text"
-          >自动结晶功能已关闭。开启自动结晶后，长对话中将自动启用 Token
-          上下文压缩上限控制，并在此处直观地进行用户画像、短期目标、开发约束等多分区记忆的
+          >自动压缩功能已关闭。开启自动压缩后，长对话中将自动启用 Token
+          上下文压缩控制，并在此处直观地进行用户画像、短期目标、开发约束等多分区记忆的
           CRUD 交互式管理与保存。</span
         >
       </div>
@@ -170,7 +170,7 @@ const props = defineProps({
     type: String,
     required: true,
   },
-  // 群成员详情页传入：结晶属于成员而非群，读写都要落到该成员身上
+  // 群成员详情页传入：压缩内容属于成员而非群，读写都要落到该成员身上
   memberId: {
     type: String,
     default: null,
@@ -179,7 +179,7 @@ const props = defineProps({
 
 const contactorStore = useContactorsStore();
 
-// 结晶宿主：单聊是联系人本身，群聊是指定成员
+// 压缩宿主：单聊是联系人本身，群聊是指定成员
 const crystalHost = computed(() =>
   contactorStore.getCrystalHost(props.contactorId, props.memberId),
 );
@@ -187,18 +187,18 @@ const crystallization = computed(
   () => crystalHost.value?.options?.crystallization,
 );
 
-// 上下文管理模式: "crystal" | "window"，默认记忆结晶
+// 上下文管理模式: "crystal" | "window"，默认上下文压缩
 const contextMode = ref(
   crystalHost.value?.options?.base?.contextMode || "crystal",
 );
 
-// 群成员强制开启结晶：群消息链共享且只增不减
+// 群成员强制开启压缩：群消息链共享且只增不减
 const isForcedOn = computed(() => !!props.memberId);
 
 const crystallizationEnabled = computed(
   () => isForcedOn.value || crystallization.value?.enabled === true,
 );
-// Context 压缩上限：'auto'（按模型规格动态计算 80%）或手动数值
+// 压缩上限：'auto'（按模型规格动态计算 80%）或手动数值
 const watermarkMode = ref(
   typeof crystallization.value?.tokenWatermark === 'number' ? 'custom' : 'auto',
 );

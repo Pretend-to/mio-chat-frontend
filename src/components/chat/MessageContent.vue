@@ -211,7 +211,7 @@
       @toggle="toggleCrystallizeDetails(elmIndex)"
     >
       <div class="detail-section">
-        <div class="section-label">整理后记忆结晶 (XML)</div>
+        <div class="section-label">整理后上下文压缩 (XML)</div>
         <pre class="xml-box">{{ element.data.summary }}</pre>
       </div>
     </ActionBlock>
