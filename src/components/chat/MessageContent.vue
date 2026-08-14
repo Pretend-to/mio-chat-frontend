@@ -219,8 +219,9 @@
 </template>
 
 <script setup>
-import { computed, ref, defineAsyncComponent } from "vue";
+import { computed, ref, defineAsyncComponent, onMounted, onUnmounted } from "vue";
 import { client } from "@/lib/runtime.js";
+import { wrapIframeDoc, setupIframeAutoResize } from "@/utils/iframeAutoResize.js";
 import ToolCallBar from "@/components/ToolCallBar.vue";
 import ReasonBlock from "@/components/ReasonBlock.vue";
 import ActionBlock from "@/components/ActionBlock.vue";
@@ -346,12 +347,10 @@ function outerItems(data) {
   return extra.filter((r) => r.placement === "outer");
 }
 
-// srcdoc 包装为完整文档并重置 body 默认 margin/padding，避免 8px 白边；已是完整 DOCTYPE 文档则不重复包装
-function wrapIframeDoc(html) {
-  const s = String(html || "").trim();
-  if (/^<!doctype\s+html/i.test(s)) return s;
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>html,body{margin:0;padding:0;height:100%}</style></head><body>${s}</body></html>`;
-}
+// iframe 高度自适应：内容变化时自动贴合（ResizeObserver + postMessage）
+const { enable: enableIframeResize, disable: disableIframeResize } = setupIframeAutoResize();
+onMounted(enableIframeResize);
+onUnmounted(disableIframeResize);
 </script>
 
 <style lang="sass" scoped>

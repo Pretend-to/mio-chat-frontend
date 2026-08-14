@@ -87,6 +87,7 @@
 import ActionBlock from "./ActionBlock.vue";
 import MdRenderer from "mio-previewer";
 import { client } from "@/lib/runtime.js";
+import { wrapIframeDoc as wrapIframeDocUtil, setupIframeAutoResize } from "@/utils/iframeAutoResize.js";
 
 export default {
   components: {
@@ -153,11 +154,9 @@ export default {
       const extra = this.toolCall.extraRender || [];
       return extra.filter((r) => r.placement !== "outer");
     },
-    // srcdoc 包装为完整文档并重置 body 默认 margin/padding，避免 8px 白边；已是完整 DOCTYPE 文档则不重复包装
+    // Options API 模板需要 methods 方法：转发到 util（注入高度自适应脚本）
     wrapIframeDoc(html) {
-      const s = String(html || "").trim();
-      if (/^<!doctype\s+html/i.test(s)) return s;
-      return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>html,body{margin:0;padding:0;height:100%}</style></head><body>${s}</body></html>`;
+      return wrapIframeDocUtil(html);
     },
     toolTitle() {
       if (this.toolCall.displayName) {
@@ -250,6 +249,9 @@ export default {
     },
   },
   mounted() {
+    // iframe 高度自适应监听
+    this._iframeAutoResize = setupIframeAutoResize();
+    this._iframeAutoResize.enable();
     // 如果挂载时就在运行，且是实时消息，强制展开一次
     if (
       this.toolCall.action === "running" ||
@@ -258,6 +260,9 @@ export default {
     ) {
       this.showExtraInfo = true;
     }
+  },
+  beforeUnmount() {
+    this._iframeAutoResize?.disable();
   },
   methods: {
     toggleExtraInfo(expanded) {
