@@ -82,16 +82,20 @@
           </div>
           <div class="field-value">
             <el-input-number
-              v-model="watermarkValue"
+              :model-value="watermarkMode === 'custom' ? watermarkValue : autoWatermark"
               :disabled="watermarkMode !== 'custom'"
               :min="1000"
               :max="1000000"
               :step="5000"
               size="small"
               style="width: 150px"
-              placeholder="自动计算"
+              :placeholder="watermarkMode === 'auto' ? '自动' : '输入数值'"
               @change="onWatermarkChange"
             />
+            <span v-if="watermarkMode === 'auto'" class="auto-watermark-tip">
+              自动模式按当前模型规格计算，约
+              <b>{{ formatCtx(autoWatermark) || '—' }}</b> Token
+            </span>
           </div>
         </div>
       </template>
@@ -159,6 +163,7 @@
 import { ref, computed, watch } from "vue";
 import { InfoFilled } from "@element-plus/icons-vue";
 import { useContactorsStore } from "@/stores/contactorsStore.js";
+import { useConfigStore } from "@/stores/configStore.js";
 import {
   CRYSTAL_ZONES,
   parseXmlZones,
@@ -178,6 +183,7 @@ const props = defineProps({
 });
 
 const contactorStore = useContactorsStore();
+const configStore = useConfigStore();
 
 // 压缩宿主：单聊是联系人本身，群聊是指定成员
 const crystalHost = computed(() =>
@@ -198,6 +204,25 @@ const isForcedOn = computed(() => !!props.memberId);
 const crystallizationEnabled = computed(
   () => isForcedOn.value || crystallization.value?.enabled === true,
 );
+
+// 自动模式下的动态上限值：取自 Registry 元数据（后端按模型规格算好的 80%）
+const autoWatermark = computed(() => {
+  const host = crystalHost.value;
+  if (!host) return null;
+  const provider = host.options?.provider;
+  const model = host.options?.base?.model || host.options?.model;
+  if (!provider || !model) return null;
+  return configStore.modelsMeta?.[provider]?.[model]?.watermark ?? null;
+});
+
+const formatCtx = (n) => {
+  if (!n) return "";
+  return n >= 1000000
+    ? `${(n / 1000000).toFixed(1)}M`
+    : n >= 1000
+      ? `${Math.round(n / 1000)}K`
+      : `${n}`;
+};
 // 压缩上限：'auto'（按模型规格动态计算 80%）或手动数值
 const watermarkMode = ref(
   typeof crystallization.value?.tokenWatermark === 'number' ? 'custom' : 'auto',
@@ -395,6 +420,16 @@ function clearSummary() {
   display: flex
   align-items: center
   justify-content: flex-end
+
+.auto-watermark-tip
+  font-size: 12px
+  color: var(--mio-text-secondary)
+  margin-left: 8px
+  white-space: nowrap
+
+  b
+    color: var(--mio-color-primary)
+    font-weight: 600
 
 .editor-card
   padding: 20px 24px
