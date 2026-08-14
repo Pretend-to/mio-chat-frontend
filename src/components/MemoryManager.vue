@@ -92,10 +92,6 @@
               :placeholder="watermarkMode === 'auto' ? '自动' : '输入数值'"
               @change="onWatermarkChange"
             />
-            <span v-if="watermarkMode === 'auto'" class="auto-watermark-tip">
-              自动模式按当前模型规格计算，约
-              <b>{{ formatCtx(autoWatermark) || '—' }}</b> Token
-            </span>
           </div>
         </div>
       </template>
@@ -215,14 +211,6 @@ const autoWatermark = computed(() => {
   return configStore.modelsMeta?.[provider]?.[model]?.watermark ?? null;
 });
 
-const formatCtx = (n) => {
-  if (!n) return "";
-  return n >= 1000000
-    ? `${(n / 1000000).toFixed(1)}M`
-    : n >= 1000
-      ? `${Math.round(n / 1000)}K`
-      : `${n}`;
-};
 // 压缩上限：'auto'（按模型规格动态计算 80%）或手动数值
 const watermarkMode = ref(
   typeof crystallization.value?.tokenWatermark === 'number' ? 'custom' : 'auto',
@@ -420,16 +408,6 @@ function clearSummary() {
   display: flex
   align-items: center
   justify-content: flex-end
-
-.auto-watermark-tip
-  font-size: 12px
-  color: var(--mio-text-secondary)
-  margin-left: 8px
-  white-space: nowrap
-
-  b
-    color: var(--mio-color-primary)
-    font-weight: 600
 
 .editor-card
   padding: 20px 24px
