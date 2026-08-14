@@ -225,6 +225,14 @@ export const useConfigStore = defineStore("config", () => {
   }
 
   /**
+   * 从 socket 登录/推送写入模型规格元数据（按权限筛选，普通用户也能获得）
+   */
+  function setModelsMeta(meta) {
+    if (!meta || typeof meta !== "object") return;
+    modelsMeta.value = meta;
+  }
+
+  /**
    * 获取指定配置节点
    */
   async function fetchConfigSection(section) {
@@ -651,6 +659,7 @@ export const useConfigStore = defineStore("config", () => {
     fetchConfig,
     fetchConfigSection,
     fetchModelMetadata,
+    setModelsMeta,
     fetchPlugins,
     updateConfig,
     updateConfigSection,

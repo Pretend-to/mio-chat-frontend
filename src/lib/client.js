@@ -717,6 +717,11 @@ export default class Client extends EventEmitter {
         this.emit("socket_ready", socket);
         this.emit("connection_changed", true);
         this.config.setLlmModels(info.models);
+        // 模型规格元数据（登录即下发，按权限筛选），供 MemoryManager 等展示动态压缩上限
+        const configStore = getStore("config");
+        if (info.models_meta && configStore) {
+          configStore.setModelsMeta(info.models_meta);
+        }
         this.addMsgListener();
 
         // 后端重启检测：bootId 变化说明进程已重启，
@@ -838,7 +843,13 @@ export default class Client extends EventEmitter {
 
         // 支持后端推送的 models/providers 更新
         if (e.type === "models_updated" && e.data) {
-          const { providers, models, default_model } = e.data;
+          const { providers, models, models_meta, default_model } = e.data;
+
+          // 更新模型规格元数据（按权限筛选）
+          if (models_meta) {
+            const configStore = getStore("config");
+            if (configStore) configStore.setModelsMeta(models_meta);
+          }
 
           // 更新 Config 中的 llmModels
           if (
@@ -879,7 +890,7 @@ export default class Client extends EventEmitter {
           }
 
           // 广播事件给客户端监听者（比如 UI）
-          this.emit("models_updated", { providers, models });
+          this.emit("models_updated", { providers, models, models_meta });
           return;
         }
 
