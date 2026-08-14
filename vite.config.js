@@ -66,6 +66,10 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       target: "es2022",
+      // rolldown 默认对所有 chunk（含懒加载路由、异步组件）生成 modulepreload，
+      // 导致 echarts/mermaid 等按需代码在启动时被提前下载+编译，内存飙高。
+      // 关闭后 chunk 真正按需加载，启动只编译静态可达的代码。
+      modulePreload: false,
       minify: "terser",
       cssCodeSplit: true,
       terserOptions: {
@@ -86,7 +90,11 @@ export default defineConfig(({ mode }) => {
               },
               {
                 name: "vendor_editor_preview",
-                test: /[\\/]node_modules[\\/]mio-previewer/,
+                // 只匹配 mio-previewer 主入口（含 markdown-it 渲染器本体），
+                // 刻意排除其 dist/ 下按需加载的异步 chunk（mermaid 引擎、
+                // prism 语言模块、viewerjs 等）——它们路径也含 mio-previewer，
+                // 若不排除会被强制合并成 2.8MB 同步大块，破坏按需加载
+                test: /[\\/]mio-previewer[\\/]dist[\\/]mio-previewer\.es\.js$/,
                 priority: 45,
               },
               {
@@ -105,20 +113,39 @@ export default defineConfig(({ mode }) => {
                 priority: 30,
               },
               {
+                name: "views",
+                // 恢复路由视图聚合：ChatView/HomeView 等与主页面同链，
+                // 用户点击联系人列表项可立即进入聊天，无需等待懒加载 chunk。
+                // 仅排除 DashboardView：其内部静态 import echarts (~1MB)，
+                // 若不排除 echarts 会随启动链加载；排除后只在访问 dashboard
+                // 路由时异步加载
+                test: (id) =>
+                  /[\\/]src[\\/]views[\\/]/.test(id) &&
+                  !id.includes('/views/DashboardView.vue'),
+                priority: 15,
+              },
+              {
                 name: "vendor_misc",
-                test: /[\\/]node_modules[\\/]/,
+                // 排除 mio-previewer 包内按需加载的异步 chunk（mermaid 引擎、
+                // viewerjs、prism 语言等位于 mio-previewer/dist/ 下），
+                // 让它们不匹配任何 group，从而保留动态 import 的异步拆分，
+                // 避免被强制合并成 2.4MB 同步大块并在启动时 preload
+                test: (id) =>
+                  /[\\/]node_modules[\\/]/.test(id) &&
+                  !id.includes('/mio-previewer/dist/'),
                 priority: 10,
               },
               {
                 name: "components",
-                test: /[\\/]src[\\/]components[\\/]/,
+                // 排除 dashboard 子目录：其内部静态 import echarts (~1MB)，
+                // 若并入启动链会导致 echarts 被 preload；排除后跟随
+                // DashboardView（懒加载路由）异步加载
+                test: (id) =>
+                  /[\\/]src[\\/]components[\\/]/.test(id) &&
+                  !id.includes('/components/dashboard/'),
                 priority: 20,
               },
-              {
-                name: "views",
-                test: /[\\/]src[\\/]views[\\/]/,
-                priority: 15,
-              },
+
             ],
           },
           chunkFileNames: `assets/js/[name]-[hash].js`,
