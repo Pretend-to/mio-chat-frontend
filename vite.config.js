@@ -113,6 +113,18 @@ export default defineConfig(({ mode }) => {
                 priority: 30,
               },
               {
+                name: "views",
+                // 恢复路由视图聚合：ChatView/HomeView 等与主页面同链，
+                // 用户点击联系人列表项可立即进入聊天，无需等待懒加载 chunk。
+                // 仅排除 DashboardView：其内部静态 import echarts (~1MB)，
+                // 若不排除 echarts 会随启动链加载；排除后只在访问 dashboard
+                // 路由时异步加载
+                test: (id) =>
+                  /[\\/]src[\\/]views[\\/]/.test(id) &&
+                  !id.includes('/views/DashboardView.vue'),
+                priority: 15,
+              },
+              {
                 name: "vendor_misc",
                 // 排除 mio-previewer 包内按需加载的异步 chunk（mermaid 引擎、
                 // viewerjs、prism 语言等位于 mio-previewer/dist/ 下），
