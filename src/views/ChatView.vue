@@ -554,8 +554,6 @@ const mdOptions = computed(() => {
 
 const renderedCount = ref(20);
 const isLoadingHistory = ref(false);
-// 消息链懒加载中（进入聊天页时从 IndexedDB 读取当前联系人消息链）
-const messageLoading = ref(false);
 
 watch(
   () => [
@@ -707,7 +705,7 @@ watch(
 
 watch(
   () => route.params.id,
-  async (newVal, oldVal) => {
+  (newVal, oldVal) => {
     if (!newVal) return;
 
     cancelSpeech();
@@ -717,38 +715,16 @@ watch(
       useInteractionStore().clearInteraction();
     });
 
-    // Deactivate old contactor + flush 其消息链（防抖窗口内消息不丢）
+    // Deactivate old contactor
     if (oldVal) {
       const oldContactor = contactorsStore.contactors[oldVal];
       if (oldContactor) {
         oldContactor.active = false;
       }
-      try {
-        // 立即持久化：旧联系人链 + 元信息（等写盘完成再释放，防止丢消息）
-        await client.saveNow();
-      } catch (e) {
-        console.error("[ChatView] 切换前保存失败:", e);
-      }
-      if (oldContactor) {
-        // 释放旧联系人消息链（内存只保留当前聊天联系人）
-        oldContactor._chainLoaded = false;
-        oldContactor._pendingMessages = [];
-        oldContactor.messageChain = [];
-      }
     }
 
     // Switch to new contactor in store
     contactorsStore.selectContactor(newVal);
-
-    // 懒加载新联系人消息链（IndexedDB per-contact key，本地快）
-    messageLoading.value = true;
-    try {
-      await contactorsStore.loadMessageChain(newVal);
-    } catch (e) {
-      console.error("[ChatView] 加载消息链失败:", e);
-    } finally {
-      messageLoading.value = false;
-    }
 
     autoScroll.value = false;
     nextTick(() => {
@@ -2028,18 +2004,6 @@ onBeforeUnmount(() => {
                 ? "正在加载历史消息..."
                 : "继续向上滚动加载历史消息"
             }}</span>
-          </div>
-        </div>
-
-        <!-- 消息链懒加载中（进入聊天页读取 IndexedDB） -->
-        <div v-if="messageLoading" class="chain-loading">
-          <div class="loading-content">
-            <div class="spinner-dots">
-              <span class="dot"></span>
-              <span class="dot"></span>
-              <span class="dot"></span>
-            </div>
-            <span class="loading-text">正在加载消息...</span>
           </div>
         </div>
 
