@@ -617,7 +617,7 @@ export const gateway = {
       const enrichedOptions = { ...options };
       if (crystallizationEnabled) {
         enrichedOptions.crystallization_token_watermark =
-          crystallization.tokenWatermark || 200000;
+          crystallization.tokenWatermark ?? 'auto';
         enrichedOptions.previous_summary = crystallization.latestSummary || "";
         enrichedOptions.crystallization_keep_turns = 1;
         // 移除 system prompt 中的 opening（已合并到消息链头部）

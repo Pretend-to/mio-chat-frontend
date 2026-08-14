@@ -214,6 +214,30 @@
               </template>
             </el-table-column>
 
+            <el-table-column label="模型规格" min-width="200" align="center">
+              <template #default="{ row }">
+                <div v-if="row.registrySummary" class="registry-summary">
+                  <el-tag
+                    v-if="row.registrySummary.visionCount > 0"
+                    size="small"
+                    type="success"
+                    effect="plain"
+                  >
+                    视觉 {{ row.registrySummary.visionCount }}
+                  </el-tag>
+                  <el-tooltip
+                    :content="row.registrySummary.sourceText"
+                    placement="top"
+                  >
+                    <el-tag size="small" effect="plain">
+                      ctx {{ row.registrySummary.ctxRange }}
+                    </el-tag>
+                  </el-tooltip>
+                </div>
+                <span v-else class="registry-empty">-</span>
+              </template>
+            </el-table-column>
+
             <el-table-column label="状态" width="100" align="center">
               <template #default="{ row }">
                 <el-switch
@@ -379,11 +403,58 @@ const allAdapters = computed(() => {
         providerName,
         models,
         modelCount,
+        registrySummary: computeRegistrySummary(providerName),
       });
     });
   });
   return adapters;
 });
+
+// 基于 Registry 元数据计算适配器模型规格摘要（前端零硬编码）
+function computeRegistrySummary(providerName) {
+  const meta = configStore.modelsMeta[providerName];
+  if (!meta) return null;
+
+  const entries = Object.values(meta);
+  if (!entries.length) return null;
+
+  const ctxs = entries
+    .map((m) => m.maxInput)
+    .filter((v) => typeof v === "number" && v > 0);
+  const visionCount = entries.filter((m) => m.vision).length;
+
+  const sourceCount = {};
+  entries.forEach((m) => {
+    sourceCount[m.matchSource] = (sourceCount[m.matchSource] || 0) + 1;
+  });
+
+  const sourceLabel = {
+    "litellm-exact": "LiteLLM 精确",
+    "litellm-prefix": "LiteLLM 前缀",
+    "builtin-rule": "内置规则",
+    fallback: "兜底",
+  };
+  const sourceText = Object.entries(sourceCount)
+    .map(([key, count]) => `${sourceLabel[key] || key} ${count}`)
+    .join("，");
+
+  return {
+    visionCount,
+    ctxRange: ctxs.length
+      ? `${formatCtx(Math.min(...ctxs))} ~ ${formatCtx(Math.max(...ctxs))}`
+      : "-",
+    sourceText,
+  };
+}
+
+function formatCtx(n) {
+  if (!n) return "-";
+  return n >= 1000000
+    ? `${(n / 1000000).toFixed(1)}M`
+    : n >= 1000
+      ? `${Math.round(n / 1000)}K`
+      : `${n}`;
+}
 
 // 获取已启用的适配器数量
 const enabledCount = computed(() => {
@@ -989,7 +1060,20 @@ onUnmounted(() => {
   }
 
   .adapters-list {
-    .adapter-card {
+  .registry-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.registry-empty {
+  color: #909399;
+  font-size: 12px;
+}
+
+  .adapter-card {
       margin-bottom: 12px;
 
       .card-header {

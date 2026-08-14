@@ -34,6 +34,8 @@
           :show-default="true"
           :show-fetch-button="true"
           :fetching-models="fetchingModels"
+          :models-meta="configStore.modelsMeta"
+          :provider-name="providerName"
           @fetch-models="handleFetchModels"
         />
       </el-form>
@@ -162,6 +164,14 @@ const currentAdapterSchema = computed(() => {
     (a) => a.type === props.type,
   );
   return adapterInfo?.initialConfigSchema || {};
+});
+
+// 当前适配器实例对应的 provider 名（用于查询 Registry 元数据）
+const providerName = computed(() => {
+  if (props.mode === "edit" && props.adapter) {
+    return props.adapter.name || `${props.type}-${props.index + 1}`;
+  }
+  return "";
 });
 
 // 预览模型列表（用于模型选择器）

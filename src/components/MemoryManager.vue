@@ -56,14 +56,25 @@
 
         <div v-if="crystallizationEnabled" class="setting-field">
           <div class="field-label">Token 水位线</div>
-          <div class="field-value">
+          <div class="field-value watermark-field">
+            <el-select
+              :model-value="watermarkMode"
+              size="small"
+              style="width: 168px"
+              @update:model-value="onWatermarkModeChange"
+            >
+              <el-option label="自动（按模型规格 80%）" value="auto" />
+              <el-option label="自定义" value="custom" />
+            </el-select>
             <el-input-number
-              v-model="localWatermark"
+              v-if="watermarkMode === 'custom'"
+              v-model="watermarkValue"
               :min="1000"
               :max="1000000"
               :step="5000"
               size="small"
               style="width: 150px"
+              placeholder="输入数值"
               @change="onWatermarkChange"
             />
           </div>
@@ -172,7 +183,15 @@ const isForcedOn = computed(() => !!props.memberId);
 const crystallizationEnabled = computed(
   () => isForcedOn.value || crystallization.value?.enabled === true,
 );
-const localWatermark = ref(crystallization.value?.tokenWatermark ?? 200000);
+// Token 水位线：'auto'（按模型规格动态计算 80%）或自定义数值
+const watermarkMode = ref(
+  typeof crystallization.value?.tokenWatermark === 'number' ? 'custom' : 'auto',
+);
+const watermarkValue = ref(
+  typeof crystallization.value?.tokenWatermark === 'number'
+    ? crystallization.value.tokenWatermark
+    : null,
+);
 const localMaxMessages = ref(
   crystalHost.value?.options?.base?.max_messages_num ?? 20,
 );
@@ -211,7 +230,10 @@ watch(
 watch(
   () => crystallization.value?.tokenWatermark,
   (newVal) => {
-    if (newVal != null) localWatermark.value = newVal;
+    if (newVal != null) {
+      watermarkMode.value = typeof newVal === 'number' ? 'custom' : 'auto';
+      if (typeof newVal === 'number') watermarkValue.value = newVal;
+    }
   },
 );
 
@@ -247,10 +269,32 @@ function onToggle(val) {
     {
       enabled: val,
       latestSummary: crystallization.value?.latestSummary ?? "",
-      tokenWatermark: localWatermark.value,
+      tokenWatermark:
+        watermarkMode.value === 'auto'
+          ? 'auto'
+          : (watermarkValue.value ?? 'auto'),
     },
     props.memberId,
   );
+}
+
+function onWatermarkModeChange(mode) {
+  if (mode === 'auto') {
+    contactorStore.updateCrystallization(
+      props.contactorId,
+      { tokenWatermark: 'auto' },
+      props.memberId,
+    );
+    return;
+  }
+  // 切到自定义：若已有数值立即保存，否则等待用户输入
+  if (watermarkValue.value != null) {
+    contactorStore.updateCrystallization(
+      props.contactorId,
+      { tokenWatermark: watermarkValue.value },
+      props.memberId,
+    );
+  }
 }
 
 function onWatermarkChange(val) {
@@ -323,6 +367,9 @@ function clearSummary() {
   display: flex
   align-items: center
   justify-content: flex-end
+
+.watermark-field
+  gap: 8px
 
 .editor-card
   padding: 20px 24px

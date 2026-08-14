@@ -107,6 +107,15 @@ class ConfigAPI {
     return this.request(`/api/config/${section}`);
   }
 
+  /**
+   * 获取模型元数据映射（Registry 规格决策结果）
+   * 结构: { providerName: { modelName: { matchSource, maxInput, watermark, vision, fc, reasoning } } }
+   * @returns {Promise<object>} 模型元数据映射
+   */
+  async getModelsMeta() {
+    return this.request("/api/config/models-meta");
+  }
+
   // ========== 存储管理 ==========
 
   /**

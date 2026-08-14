@@ -29,6 +29,9 @@ export const useConfigStore = defineStore("config", () => {
   // 模型列表 { provider: [{ owner, models }] }
   const models = ref({});
 
+  // 模型元数据映射（Registry 规格决策）{ provider: { model: { matchSource, maxInput, watermark, vision, fc, reasoning } } }
+  const modelsMeta = ref({});
+
   // 加载状态
   const loading = ref(false);
 
@@ -191,6 +194,8 @@ export const useConfigStore = defineStore("config", () => {
       adapters.value = response.data.llm_adapters || {};
       // 同时获取 models 数据
       models.value = response.data.models || {};
+      // 拉取模型元数据（Registry 规格，供管理界面展示 ctx/watermark/vision/matchSource）
+      fetchModelMetadata();
       return response.data;
     } catch (error) {
       console.error("获取配置失败:", error);
@@ -204,6 +209,18 @@ export const useConfigStore = defineStore("config", () => {
       throw error;
     } finally {
       loading.value = false;
+    }
+  }
+
+  /**
+   * 获取模型元数据映射（Registry 规格决策结果）
+   */
+  async function fetchModelMetadata() {
+    try {
+      const response = await configAPI.getModelsMeta();
+      modelsMeta.value = response.data || {};
+    } catch (error) {
+      console.error("获取模型元数据失败:", error);
     }
   }
 
@@ -609,6 +626,7 @@ export const useConfigStore = defineStore("config", () => {
     adapterTypes,
     adapters,
     models,
+    modelsMeta,
     plugins,
     loading,
     needRestart,
@@ -632,6 +650,7 @@ export const useConfigStore = defineStore("config", () => {
     fetchAdapterTypes,
     fetchConfig,
     fetchConfigSection,
+    fetchModelMetadata,
     fetchPlugins,
     updateConfig,
     updateConfigSection,

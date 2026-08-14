@@ -17,7 +17,44 @@
             :key="model"
             :label="model"
             :value="model"
-          />
+          >
+            <template #default>
+              <span class="model-option">
+                <span class="model-name">{{ model }}</span>
+                <template v-if="modelMeta(model)">
+                  <el-tag
+                    v-if="modelMeta(model).vision"
+                    size="small"
+                    type="success"
+                    effect="plain"
+                  >
+                    视觉
+                  </el-tag>
+                  <el-tag
+                    v-if="modelMeta(model).maxInput"
+                    size="small"
+                    effect="plain"
+                  >
+                    {{ formatCtx(modelMeta(model).maxInput) }} ctx
+                  </el-tag>
+                  <el-tag
+                    v-if="modelMeta(model).watermark"
+                    size="small"
+                    type="warning"
+                    effect="plain"
+                  >
+                    水位 {{ formatCtx(modelMeta(model).watermark) }}
+                  </el-tag>
+                  <el-tag
+                    size="small"
+                    :type="matchSourceType[modelMeta(model).matchSource]"
+                  >
+                    {{ matchSourceLabel[modelMeta(model).matchSource] }}
+                  </el-tag>
+                </template>
+              </span>
+            </template>
+          </el-option>
         </el-select>
         <el-button
           v-if="showFetchButton"
@@ -98,7 +135,44 @@
           :key="model"
           :label="model"
           :value="model"
-        />
+        >
+          <template #default>
+            <span class="model-option">
+              <span class="model-name">{{ model }}</span>
+              <template v-if="modelMeta(model)">
+                <el-tag
+                  v-if="modelMeta(model).vision"
+                  size="small"
+                  type="success"
+                  effect="plain"
+                >
+                  视觉
+                </el-tag>
+                <el-tag
+                  v-if="modelMeta(model).maxInput"
+                  size="small"
+                  effect="plain"
+                >
+                  {{ formatCtx(modelMeta(model).maxInput) }} ctx
+                </el-tag>
+                <el-tag
+                  v-if="modelMeta(model).watermark"
+                  size="small"
+                  type="warning"
+                  effect="plain"
+                >
+                  水位 {{ formatCtx(modelMeta(model).watermark) }}
+                </el-tag>
+                <el-tag
+                  size="small"
+                  :type="matchSourceType[modelMeta(model).matchSource]"
+                >
+                  {{ matchSourceLabel[modelMeta(model).matchSource] }}
+                </el-tag>
+              </template>
+            </span>
+          </template>
+        </el-option>
       </el-select>
       <template #extra>
         <span class="form-item-tip">访客可使用的具体模型列表</span>
@@ -170,6 +244,14 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  modelsMeta: {
+    type: Object,
+    default: () => ({}),
+  },
+  providerName: {
+    type: String,
+    default: "",
+  },
 });
 
 const emit = defineEmits(["update:modelValue", "fetch-models"]);
@@ -179,6 +261,36 @@ const newKeyword = ref("");
 // 获取模型列表
 const handleFetchModels = () => {
   emit("fetch-models");
+};
+
+// ===== 模型规格元数据（来自后端 Registry 决策，前端零硬编码）=====
+const modelMeta = (model) => {
+  if (!props.providerName || !props.modelsMeta?.[props.providerName]) {
+    return null;
+  }
+  return props.modelsMeta[props.providerName][model] || null;
+};
+
+const formatCtx = (n) => {
+  if (!n) return "";
+  return n >= 1000000
+    ? `${(n / 1000000).toFixed(1)}M`
+    : n >= 1000
+      ? `${Math.round(n / 1000)}K`
+      : `${n}`;
+};
+
+const matchSourceLabel = {
+  "litellm-exact": "LiteLLM 精确",
+  "litellm-prefix": "LiteLLM 前缀",
+  "builtin-rule": "内置规则",
+  fallback: "兜底",
+};
+const matchSourceType = {
+  "litellm-exact": "success",
+  "litellm-prefix": "primary",
+  "builtin-rule": "warning",
+  fallback: "info",
 };
 
 // 访客可用模型预览
@@ -313,6 +425,21 @@ const updateFullNames = (value) => {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+}
+
+.model-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding-right: 12px;
+}
+
+.model-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 :deep(.el-divider) {

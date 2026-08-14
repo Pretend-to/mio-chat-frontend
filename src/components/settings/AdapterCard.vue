@@ -48,6 +48,24 @@
             <el-tag size="small" :type="modelCountType" effect="plain" round>
               {{ modelCount }} 个
             </el-tag>
+            <template v-if="registrySummary">
+              <el-tag
+                v-if="registrySummary.visionCount > 0"
+                size="small"
+                type="success"
+                effect="plain"
+              >
+                视觉 {{ registrySummary.visionCount }}
+              </el-tag>
+              <el-tooltip
+                :content="registrySummary.sourceText"
+                placement="top"
+              >
+                <el-tag size="small" effect="plain">
+                  ctx {{ registrySummary.ctxRange }}
+                </el-tag>
+              </el-tooltip>
+            </template>
           </span>
         </div>
       </div>
@@ -108,6 +126,14 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  modelsMeta: {
+    type: Object,
+    default: () => ({}),
+  },
+  providerName: {
+    type: String,
+    default: "",
+  },
 });
 
 const emit = defineEmits(["edit", "delete", "refresh", "toggle", "select"]);
@@ -146,6 +172,52 @@ const modelCountType = computed(() => {
   if (modelCount.value === 0) return "danger";
   if (modelCount.value < 5) return "warning";
   return "success";
+});
+
+// Registry 元数据摘要（ctx 范围 / 视觉数 / 规则来源分布）
+const registrySummary = computed(() => {
+  if (!props.providerName || !props.modelsMeta?.[props.providerName]) {
+    return null;
+  }
+  const entries = Object.values(props.modelsMeta[props.providerName]);
+  if (!entries.length) return null;
+
+  const ctxs = entries
+    .map((m) => m.maxInput)
+    .filter((v) => typeof v === "number" && v > 0);
+  const visionCount = entries.filter((m) => m.vision).length;
+
+  const sourceCount = {};
+  entries.forEach((m) => {
+    sourceCount[m.matchSource] = (sourceCount[m.matchSource] || 0) + 1;
+  });
+
+  const sourceLabel = {
+    "litellm-exact": "LiteLLM 精确",
+    "litellm-prefix": "LiteLLM 前缀",
+    "builtin-rule": "内置规则",
+    fallback: "兜底",
+  };
+  const sourceText = Object.entries(sourceCount)
+    .map(([key, count]) => `${sourceLabel[key] || key} ${count}`)
+    .join("，");
+
+  const formatCtx = (n) => {
+    if (!n) return "-";
+    return n >= 1000000
+      ? `${(n / 1000000).toFixed(1)}M`
+      : n >= 1000
+        ? `${Math.round(n / 1000)}K`
+        : `${n}`;
+  };
+
+  return {
+    visionCount,
+    ctxRange: ctxs.length
+      ? `${formatCtx(Math.min(...ctxs))} ~ ${formatCtx(Math.max(...ctxs))}`
+      : "-",
+    sourceText,
+  };
 });
 
 // 编辑
@@ -292,6 +364,13 @@ const handleSelect = (value) => {
 
       &.model-count {
         font-family: inherit;
+        max-width: none;
+        white-space: normal;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
       }
     }
   }

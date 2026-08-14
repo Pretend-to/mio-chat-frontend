@@ -654,7 +654,7 @@ export async function sendGroupCompletions(group, assistantMsgId, targetMemberId
 
     // 群聊结晶恒开，无条件下发水位线参数
     settings.crystallization_token_watermark =
-      memberCrystal?.tokenWatermark || 200000;
+      memberCrystal?.tokenWatermark ?? 'auto';
     settings.previous_summary = memberCrystal?.latestSummary || "";
     settings.crystallization_keep_turns = 1;
     // opening 已经并进 system message（见 formatGroupMessagesForMember），
