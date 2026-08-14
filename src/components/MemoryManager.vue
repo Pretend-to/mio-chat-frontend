@@ -55,7 +55,7 @@
         </div>
 
         <div v-if="crystallizationEnabled" class="setting-field">
-          <div class="field-label">Token 水位线模式</div>
+          <div class="field-label">Context 压缩上限</div>
           <div class="field-value">
             <el-select
               :model-value="watermarkMode"
@@ -64,18 +64,18 @@
               @update:model-value="onWatermarkModeChange"
             >
               <el-option label="自动" value="auto" />
-              <el-option label="自定义" value="custom" />
+              <el-option label="手动" value="custom" />
             </el-select>
           </div>
         </div>
 
         <div v-if="crystallizationEnabled" class="setting-field">
           <div class="field-label">
-            水位线数值
+            上限数值
             <el-tooltip
               placement="top"
               popper-class="mio-hint-popper"
-              content="自动模式下按模型规格动态计算 80% 水位线，自定义模式需手动指定具体 Token 数量"
+              content="自动模式下按模型规格动态计算 80% 上限，手动模式需手动指定具体 Token 数量"
             >
               <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
             </el-tooltip>
@@ -147,7 +147,7 @@
         <span class="lock-icon">🔒</span>
         <span class="hint-text"
           >自动结晶功能已关闭。开启自动结晶后，长对话中将自动启用 Token
-          水位线控制，并在此处直观地进行用户画像、短期目标、开发约束等多分区记忆的
+          上下文压缩上限控制，并在此处直观地进行用户画像、短期目标、开发约束等多分区记忆的
           CRUD 交互式管理与保存。</span
         >
       </div>
@@ -198,7 +198,7 @@ const isForcedOn = computed(() => !!props.memberId);
 const crystallizationEnabled = computed(
   () => isForcedOn.value || crystallization.value?.enabled === true,
 );
-// Token 水位线：'auto'（按模型规格动态计算 80%）或自定义数值
+// Context 压缩上限：'auto'（按模型规格动态计算 80%）或手动数值
 const watermarkMode = ref(
   typeof crystallization.value?.tokenWatermark === 'number' ? 'custom' : 'auto',
 );
@@ -294,6 +294,7 @@ function onToggle(val) {
 }
 
 function onWatermarkModeChange(mode) {
+  watermarkMode.value = mode;
   if (mode === 'auto') {
     contactorStore.updateCrystallization(
       props.contactorId,
@@ -302,14 +303,14 @@ function onWatermarkModeChange(mode) {
     );
     return;
   }
-  // 切到自定义：若已有数值立即保存，否则等待用户输入
-  if (watermarkValue.value != null) {
-    contactorStore.updateCrystallization(
-      props.contactorId,
-      { tokenWatermark: watermarkValue.value },
-      props.memberId,
-    );
-  }
+  // 切到手动：尚无数值时给默认值并立即保存，确保 UI 与 store 同步
+  const val = watermarkValue.value ?? 100000;
+  watermarkValue.value = val;
+  contactorStore.updateCrystallization(
+    props.contactorId,
+    { tokenWatermark: val },
+    props.memberId,
+  );
 }
 
 function onWatermarkChange(val) {

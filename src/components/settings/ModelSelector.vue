@@ -43,7 +43,7 @@
                     type="warning"
                     effect="plain"
                   >
-                    水位 {{ formatCtx(modelMeta(model).watermark) }}
+                    上限 {{ formatCtx(modelMeta(model).watermark) }}
                   </el-tag>
                   <el-tag
                     size="small"
@@ -161,7 +161,7 @@
                   type="warning"
                   effect="plain"
                 >
-                  水位 {{ formatCtx(modelMeta(model).watermark) }}
+                  上限 {{ formatCtx(modelMeta(model).watermark) }}
                 </el-tag>
                 <el-tag
                   size="small"
