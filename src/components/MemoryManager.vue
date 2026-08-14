@@ -55,26 +55,41 @@
         </div>
 
         <div v-if="crystallizationEnabled" class="setting-field">
-          <div class="field-label">Token 水位线</div>
-          <div class="field-value watermark-field">
+          <div class="field-label">Token 水位线模式</div>
+          <div class="field-value">
             <el-select
               :model-value="watermarkMode"
               size="small"
               style="width: 168px"
               @update:model-value="onWatermarkModeChange"
             >
-              <el-option label="自动（按模型规格 80%）" value="auto" />
+              <el-option label="自动" value="auto" />
               <el-option label="自定义" value="custom" />
             </el-select>
+          </div>
+        </div>
+
+        <div v-if="crystallizationEnabled" class="setting-field">
+          <div class="field-label">
+            水位线数值
+            <el-tooltip
+              placement="top"
+              popper-class="mio-hint-popper"
+              content="自动模式下按模型规格动态计算 80% 水位线，自定义模式需手动指定具体 Token 数量"
+            >
+              <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
+            </el-tooltip>
+          </div>
+          <div class="field-value">
             <el-input-number
-              v-if="watermarkMode === 'custom'"
               v-model="watermarkValue"
+              :disabled="watermarkMode !== 'custom'"
               :min="1000"
               :max="1000000"
               :step="5000"
               size="small"
               style="width: 150px"
-              placeholder="输入数值"
+              placeholder="自动计算"
               @change="onWatermarkChange"
             />
           </div>
@@ -363,13 +378,22 @@ function clearSummary() {
   color: var(--mio-text-primary)
   font-weight: 500
 
+
+.label-hint-icon
+  font-size: 14px
+  color: var(--mio-text-placeholder)
+  cursor: help
+  vertical-align: middle
+  margin-left: 4px
+  transition: color 0.15s
+
+  &:hover
+    color: var(--mio-color-primary)
+
 .field-value
   display: flex
   align-items: center
   justify-content: flex-end
-
-.watermark-field
-  gap: 8px
 
 .editor-card
   padding: 20px 24px
