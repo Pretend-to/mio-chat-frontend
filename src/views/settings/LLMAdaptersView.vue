@@ -153,7 +153,7 @@
           </div>
 
           <el-table
-            v-else
+            v-else-if="!isMobile"
             :data="allAdapters"
             style="width: 100%"
             @selection-change="handleSelectionChange"
@@ -278,6 +278,26 @@
               </template>
             </el-table-column>
           </el-table>
+          <!-- 移动端卡片列表 -->
+          <div v-else class="mobile-cards">
+            <adapter-card
+              v-for="item in allAdapters"
+              :key="`${item.type}-${item.index}`"
+              :adapter="item.adapter"
+              :type="item.type"
+              :index="item.index"
+              :models="item.models"
+              :models-meta="configStore.modelsMeta"
+              :provider-name="item.providerName"
+              selectable
+              :is-selected="configStore.isAdapterSelected(item.type, item.index)"
+              @edit="handleCardEdit"
+              @delete="handleCardDelete"
+              @refresh="handleCardRefresh"
+              @toggle="handleCardToggle"
+              @select="handleCardSelect"
+            />
+          </div>
         </div>
       </div>
     </transition>
@@ -347,6 +367,7 @@
 </template>
 
 <script setup>
+import AdapterCard from "@/components/settings/AdapterCard.vue";
 import AdapterEditor from "@/components/settings/AdapterEditor.vue";
 import { useConfigStore } from "@/stores/configStore.js";
 import { getAvatarByAdapterType } from "@/utils/avatar.js";
@@ -565,6 +586,55 @@ const handleToggle = async (row) => {
   }
 };
 
+// ===== 移动端卡片事件适配 =====
+// 根据 type/index 找到适配器行数据
+const findAdapterRow = (type, index) => {
+  return allAdapters.value.find(
+    (item) => item.type === type && item.index === index,
+  );
+};
+// 编辑（卡片）
+const handleCardEdit = ({ type, index }) => {
+  const row = findAdapterRow(type, index);
+  if (row) handleEdit(row);
+};
+// 删除（卡片，确认弹窗由卡片内部处理）
+const handleCardDelete = async ({ type, index }) => {
+  try {
+    await configStore.deleteAdapter(type, index);
+    ElMessage.success("删除成功");
+  } catch (error) {
+    ElMessage.error("删除失败：" + error.message);
+  }
+};
+// 刷新（卡片）
+const handleCardRefresh = async ({ type, index }) => {
+  try {
+    await configStore.refreshAdapterModels(type, index);
+    ElMessage.success("模型列表刷新成功");
+  } catch (error) {
+    ElMessage.error("刷新失败：" + error.message);
+  }
+};
+// 切换启用/禁用（卡片）
+const handleCardToggle = async ({ type, index, enable }) => {
+  const row = findAdapterRow(type, index);
+  if (!row) return;
+  const original = row.adapter.enable;
+  try {
+    await configStore.updateAdapter(type, index, { ...row.adapter, enable });
+    ElMessage.success(enable ? "已启用" : "已禁用");
+  } catch (error) {
+    row.adapter.enable = original;
+    ElMessage.error("操作失败：" + error.message);
+  }
+};
+// 选择/取消选择（卡片，与批量操作栏联动）
+const handleCardSelect = ({ type, index, selected }) => {
+  if (selected !== configStore.isAdapterSelected(type, index)) {
+    configStore.toggleAdapterSelection(type, index);
+  }
+};
 // 处理表格选择变化
 const handleSelectionChange = (selection) => {
   // 清空当前选择
@@ -1040,6 +1110,18 @@ onUnmounted(() => {
     padding: 12px 0;
   }
 }
+// 适配器列表行内公共样式（桌面/移动通用）
+.registry-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.registry-empty {
+  color: #909399;
+  font-size: 12px;
+}
 // 移动端响应式样式
 @media (max-width: 768px) {
   .page-header {
@@ -1047,7 +1129,6 @@ onUnmounted(() => {
       display: none !important;
     }
   }
-
   .stats-bar {
     .stat-item {
       .stat-label {
@@ -1058,69 +1139,50 @@ onUnmounted(() => {
       }
     }
   }
-
   .adapters-list {
-  .registry-summary {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.registry-empty {
-  color: #909399;
-  font-size: 12px;
-}
-
-  .adapter-card {
-      margin-bottom: 12px;
-
-      .card-header {
-        padding: 12px 16px;
-
-        .adapter-title {
-          font-size: 16px;
-        }
-
-        .adapter-actions {
-          gap: 8px;
-
-          .el-button {
-            padding: 6px 12px;
-            font-size: 13px;
-          }
-        }
-      }
-
-      .card-content {
-        padding: 12px 16px;
-
-        .adapter-info {
-          .info-item {
-            margin-bottom: 8px;
-
-            .info-label {
-              font-size: 13px;
-            }
-
-            .info-value {
-              font-size: 14px;
-            }
-          }
-        }
-      }
+    max-height: none;
+    overflow: visible;
+    background: transparent;
+    border-radius: 0;
+    // 移动端卡片列表
+    .mobile-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
   }
-
   .empty-state {
     padding: 40px 20px;
-
     .el-empty {
       :deep(.el-empty__description) {
         font-size: 14px;
       }
     }
+  }
+}
+// 适配器选择器对话框移动端适配
+@media (max-width: 768px) {
+  .adapter-selector-dialog {
+    :deep(.el-dialog) {
+      width: 94vw !important;
+      margin-top: 6vh;
+      border-radius: 12px;
+    }
+    :deep(.el-dialog__header) {
+      padding: 14px 16px 8px;
+    }
+    :deep(.el-dialog__body) {
+      padding: 12px 16px 16px;
+    }
+  }
+  .selector-scrollbar {
+    max-height: 60vh;
+  }
+  .grid-container {
+    grid-template-columns: 1fr;
+  }
+  .selector-card {
+    padding: 14px;
   }
 }
 

@@ -3,7 +3,7 @@
     :model-value="visible"
     :title="dialogTitle"
     @close="handleClose"
-    width="700px"
+    :width="isMobile ? '100%' : '700px'"
     :close-on-click-modal="false"
     class="form-dialog adapter-editor-dialog"
   >
@@ -12,8 +12,8 @@
         ref="formRef"
         :model="formData"
         :rules="rules"
-        label-width="120px"
-        label-position="left"
+        :label-width="isMobile ? 'auto' : '120px'"
+        :label-position="isMobile ? 'top' : 'left'"
       >
         <!-- 动态生成的配置表单 -->
         <dynamic-adapter-form
@@ -56,9 +56,19 @@
 import { configAPI } from "@/lib/configApi.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { ElMessage } from "element-plus";
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import DynamicAdapterForm from "./DynamicAdapterForm.vue";
 import ModelSelector from "./ModelSelector.vue";
+
+const isMobile = ref(false);
+const updateIsMobile = () => {
+  isMobile.value = window.innerWidth <= 768;
+};
+updateIsMobile();
+window.addEventListener("resize", updateIsMobile);
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", updateIsMobile);
+});
 
 const props = defineProps({
   visible: {
@@ -608,6 +618,48 @@ watch(
 :deep(.el-input-group__append) {
   .input-append-button {
     width: 100px;
+  }
+}
+
+// 移动端：全屏弹窗 + 顶部对齐表单
+@media (max-width: 768px) {
+  :deep(.adapter-editor-dialog) {
+    width: 100vw !important;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0 !important;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  :deep(.adapter-editor-dialog .el-dialog__header) {
+    padding: 14px 16px 10px;
+    flex-shrink: 0;
+  }
+
+  :deep(.adapter-editor-dialog .el-dialog__body) {
+    flex: 1;
+    overflow: hidden;
+    padding: 0 16px;
+    .dialog-content {
+      max-height: none;
+      height: 100%;
+      padding-bottom: 16px;
+    }
+  }
+
+  :deep(.adapter-editor-dialog .el-dialog__footer) {
+    flex-shrink: 0;
+    padding: 12px 16px;
+    .dialog-footer {
+      .el-button {
+        flex: 1;
+        margin-left: 0;
+      }
+    }
   }
 }
 </style>

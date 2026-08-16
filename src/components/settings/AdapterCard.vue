@@ -11,6 +11,7 @@
     <!-- 卡片头部 -->
     <div class="card-header">
       <div class="header-left">
+        <el-tag size="small" type="primary" effect="plain">{{ typeLabel }}</el-tag>
         <el-tag :type="adapter.enable ? 'success' : 'info'" size="small">
           {{ adapter.enable ? "已启用" : "已禁用" }}
         </el-tag>
@@ -144,6 +145,15 @@ const refreshing = ref(false);
 // 显示名称
 const displayName = computed(() => {
   return props.adapter.name || `${props.type}-${props.index + 1}`;
+});
+
+// 类型显示名（openai -> OpenAI，anthropic-chat -> Anthropic Chat）
+const typeLabel = computed(() => {
+  return props.type
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 });
 
 // 脱敏的 API Key
@@ -386,6 +396,62 @@ const handleSelect = (value) => {
   .el-button {
     border-radius: 8px;
     padding: 8px 16px;
+  }
+}
+
+// 移动端紧凑样式
+@media (max-width: 768px) {
+  .card-checkbox {
+    top: 12px;
+    left: 12px;
+  }
+
+  .card-header {
+    padding: 14px 14px 8px;
+
+    .header-left {
+      gap: 6px;
+      padding-left: 22px;
+      flex-wrap: wrap;
+    }
+
+    .adapter-name {
+      font-size: 15px;
+      width: 100%;
+    }
+  }
+
+  .card-body {
+    padding: 8px 14px 14px;
+
+    .info-container {
+      padding: 10px;
+      gap: 6px;
+      border-radius: 8px;
+    }
+
+    .info-item {
+      font-size: 12px;
+
+      .value {
+        max-width: 120px;
+
+        &.model-count {
+          max-width: none;
+        }
+      }
+    }
+  }
+
+  .card-actions {
+    gap: 6px;
+    padding: 10px 14px;
+
+    .el-button {
+      flex: 1;
+      padding: 7px 0;
+      margin-left: 0;
+    }
   }
 }
 </style>

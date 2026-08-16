@@ -11,17 +11,19 @@
           default-first-option
           placeholder="请选择或输入默认模型"
           class="model-select"
+          popper-class="model-select-popper"
         >
           <el-option
             v-for="model in availableModels"
             :key="model"
             :label="model"
             :value="model"
+            class="model-option-item"
           >
             <template #default>
               <span class="model-option">
                 <span class="model-name">{{ model }}</span>
-                <template v-if="modelMeta(model)">
+                <span v-if="modelMeta(model)" class="model-tags">
                   <el-tag
                     v-if="modelMeta(model).vision"
                     size="small"
@@ -51,7 +53,7 @@
                   >
                     {{ matchSourceLabel[modelMeta(model).matchSource] }}
                   </el-tag>
-                </template>
+                </span>
               </span>
             </template>
           </el-option>
@@ -129,17 +131,19 @@
         filterable
         placeholder="选择访客可用的模型"
         style="width: 100%"
+        popper-class="model-select-popper"
       >
         <el-option
           v-for="model in availableModels"
           :key="model"
           :label="model"
           :value="model"
+          class="model-option-item"
         >
           <template #default>
             <span class="model-option">
               <span class="model-name">{{ model }}</span>
-              <template v-if="modelMeta(model)">
+              <span v-if="modelMeta(model)" class="model-tags">
                 <el-tag
                   v-if="modelMeta(model).vision"
                   size="small"
@@ -169,7 +173,7 @@
                 >
                   {{ matchSourceLabel[modelMeta(model).matchSource] }}
                 </el-tag>
-              </template>
+              </span>
             </span>
           </template>
         </el-option>
@@ -429,8 +433,9 @@ const updateFullNames = (value) => {
 
 .model-option {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
   width: 100%;
   padding-right: 12px;
 }
@@ -440,6 +445,13 @@ const updateFullNames = (value) => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+}
+
+.model-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 :deep(.el-divider) {
@@ -456,6 +468,42 @@ const updateFullNames = (value) => {
 :deep(.el-input-group__append) {
   .input-append-button {
     width: 100px;
+  }
+}
+</style>
+
+<!-- 下拉弹层（teleport 到 body，需全局样式） -->
+<style lang="scss">
+.model-select-popper {
+  min-width: 260px;
+  max-width: min(92vw, 420px);
+
+  .el-select-dropdown__item {
+    height: auto;
+    min-height: 32px;
+    padding: 6px 12px;
+    white-space: normal;
+  }
+
+  .model-option {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    width: 100%;
+  }
+
+  .model-name {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .model-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
   }
 }
 </style>

@@ -216,6 +216,22 @@ const updateField = (fieldName, value) => {
     align-items: flex-start;
     box-shadow: 0 4px 15px rgba(64, 158, 255, 0.05);
 
+    @media (max-width: 768px) {
+      padding: 10px 12px;
+      gap: 8px;
+      margin-bottom: 16px;
+      border-radius: 10px;
+
+      .info-icon {
+        font-size: 16px;
+      }
+
+      .adapter-description {
+        font-size: 13px;
+        line-height: 1.6;
+      }
+    }
+
     .info-icon {
       font-size: 20px;
       color: #409eff;
@@ -313,6 +329,10 @@ const updateField = (fieldName, value) => {
   :deep(.el-input-group__append) {
     .input-append-button {
       width: 100px;
+
+      @media (max-width: 768px) {
+        width: 64px;
+      }
     }
   }
 }
