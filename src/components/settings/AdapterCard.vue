@@ -293,9 +293,9 @@ const handleSelect = (value) => {
   position: relative;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   border-radius: 16px;
-  border: 1px solid transparent;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--mio-border-color-lighter);
+  background: var(--mio-bg-card);
+  box-shadow: var(--mio-shadow-light);
   overflow: visible;
 
   &.is-selected {
@@ -304,7 +304,7 @@ const handleSelect = (value) => {
   }
 
   &:hover {
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
     z-index: 1;
   }
 
@@ -338,7 +338,7 @@ const handleSelect = (value) => {
     margin: 0;
     font-size: 18px;
     font-weight: 600;
-    color: #303133;
+    color: var(--mio-text-primary);
   }
 }
 
@@ -346,7 +346,7 @@ const handleSelect = (value) => {
   padding: 10px 20px 20px;
 
   .info-container {
-    background: #f8f9fa;
+    background: var(--mio-bg-info-light);
     border-radius: 12px;
     padding: 12px;
     display: flex;
@@ -361,11 +361,11 @@ const handleSelect = (value) => {
     font-size: 13px;
 
     .label {
-      color: #909399;
+      color: var(--mio-text-secondary);
     }
 
     .value {
-      color: #606266;
+      color: var(--mio-text-regular);
       font-family: monospace;
       max-width: 150px;
       overflow: hidden;
@@ -391,7 +391,7 @@ const handleSelect = (value) => {
   justify-content: flex-end;
   gap: 8px;
   padding: 12px 20px;
-  border-top: 1px solid #f0f2f5;
+  border-top: 1px solid var(--mio-border-color-lighter);
 
   .el-button {
     border-radius: 8px;

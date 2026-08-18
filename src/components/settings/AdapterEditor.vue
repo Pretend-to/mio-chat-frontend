@@ -588,7 +588,7 @@ watch(
 }
 
 .form-item-tip {
-  color: #909399;
+  color: var(--mio-text-secondary);
   font-size: 12px;
 }
 
@@ -607,7 +607,7 @@ watch(
 
 :deep(.el-divider__text) {
   font-weight: 600;
-  color: #606266;
+  color: var(--mio-text-regular);
 }
 
 :deep(.el-upload-dragger) {

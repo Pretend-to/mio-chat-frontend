@@ -1119,7 +1119,7 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 .registry-empty {
-  color: #909399;
+  color: var(--mio-text-secondary);
   font-size: 12px;
 }
 // 移动端响应式样式

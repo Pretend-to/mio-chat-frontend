@@ -207,9 +207,9 @@ const updateField = (fieldName, value) => {
 .dynamic-adapter-form {
   .adapter-description-container {
     padding: 16px 20px;
-    background: linear-gradient(135deg, #f0f7ff 0%, #f5faff 100%);
+    background: var(--mio-bg-primary-light);
     border-radius: 14px;
-    border: 1px solid #d9ecff;
+    border: 1px solid color-mix(in srgb, var(--mio-color-primary) 25%, transparent);
     margin-bottom: 24px;
     display: flex;
     gap: 14px;
@@ -234,7 +234,7 @@ const updateField = (fieldName, value) => {
 
     .info-icon {
       font-size: 20px;
-      color: #409eff;
+      color: var(--mio-color-primary);
       margin-top: 2px;
       flex-shrink: 0;
     }
@@ -242,26 +242,26 @@ const updateField = (fieldName, value) => {
     .adapter-description {
       font-size: 14px;
       line-height: 1.7;
-      color: #5e6d82;
+      color: var(--mio-text-regular);
       flex: 1;
 
       :deep(strong) {
-        color: #2c3e50;
+        color: var(--mio-text-primary);
         font-weight: 600;
       }
 
       :deep(.markdown-link) {
-        color: #409eff;
+        color: var(--mio-color-primary);
         text-decoration: none;
         font-weight: 500;
-        border-bottom: 1px solid rgba(64, 158, 255, 0.3);
+        border-bottom: 1px solid color-mix(in srgb, var(--mio-color-primary) 30%, transparent);
         transition: all 0.2s ease;
         padding-bottom: 1px;
 
         &:hover {
-          color: #66b1ff;
-          border-bottom-color: #409eff;
-          background: rgba(64, 158, 255, 0.05);
+          color: var(--mio-color-primary-hover);
+          border-bottom-color: var(--mio-color-primary);
+          background: var(--mio-bg-primary-light);
         }
       }
 
@@ -275,7 +275,7 @@ const updateField = (fieldName, value) => {
       :deep(.desc-list-index) {
         width: 20px;
         height: 20px;
-        background: #409eff;
+        background: var(--mio-color-primary);
         color: white;
         border-radius: 50%;
         display: flex;
@@ -301,7 +301,7 @@ const updateField = (fieldName, value) => {
   }
 
   .field-description {
-    color: #909399;
+    color: var(--mio-text-secondary);
     font-size: 12px;
     margin-top: 4px;
     line-height: 1.4;
@@ -318,7 +318,7 @@ const updateField = (fieldName, value) => {
 
   :deep(.el-divider__text) {
     font-weight: 600;
-    color: #606266;
+    color: var(--mio-text-regular);
   }
 
   :deep(.el-upload-dragger) {

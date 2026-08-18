@@ -208,7 +208,7 @@
         </el-tag>
         <span
           v-if="guestAvailableModels.length > 10"
-          style="color: #909399; font-size: 12px"
+          style="color: var(--mio-text-secondary); font-size: 12px"
         >
           等 {{ guestAvailableModels.length }} 个模型
         </span>
@@ -397,7 +397,7 @@ const updateFullNames = (value) => {
 }
 
 .form-item-tip {
-  color: #909399;
+  color: var(--mio-text-secondary);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -412,9 +412,9 @@ const updateFullNames = (value) => {
   gap: 8px;
   min-height: 32px;
   padding: 8px;
-  background-color: #f5f7fa;
+  background-color: var(--mio-bg-info-light);
   border-radius: 4px;
-  border: 1px dashed #dcdfe6;
+  border: 1px dashed var(--mio-border-color);
 }
 
 .preview-title {
@@ -459,9 +459,9 @@ const updateFullNames = (value) => {
 }
 
 :deep(.el-divider__text) {
-  background-color: #fff;
+  background-color: var(--mio-bg-card);
   font-weight: 600;
-  color: #606266;
+  color: var(--mio-text-regular);
 }
 
 // 统一输入框附加按钮宽度
