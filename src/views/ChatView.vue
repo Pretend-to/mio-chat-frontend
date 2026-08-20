@@ -235,6 +235,7 @@ const {
   speakMessage,
   cancelSpeech,
   speakTextChunk,
+  getSpeechText,
 } = useChatSpeech();
 
 // 2. Scroll & Virtual Load Composable
@@ -512,11 +513,7 @@ watch(
       _spokenCharIndex = 0;
     }
 
-    const fullText = (newMsg.content || [])
-      .filter((elm) => elm.type === "text")
-      .map((elm) => elm.data?.text || "")
-      .join("\n")
-      .trim();
+    const fullText = getSpeechText(newMsg);
     if (!fullText) return;
 
     const unreadText = fullText.slice(_spokenCharIndex);

@@ -4,6 +4,21 @@ import { client } from "@/lib/runtime.js";
 import { useContactorsStore } from "@/stores/contactorsStore.js";
 
 /**
+ * 过滤文本中的所有 Emoji 表情符，避免 TTS 朗读出 emoji 描述词
+ */
+export function stripEmojis(text) {
+  if (!text) return "";
+  return text
+    .replace(/\p{Extended_Pictographic}/gu, "")
+    .replace(/[\u{1F3FB}-\u{1F3FF}]/gu, "") // 肤色修饰符
+    .replace(/[\uFE0E\uFE0F]/g, "") // 变体选择符
+    .replace(/\u200D/g, "") // 零宽连字
+    .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, "") // 国旗区域符号
+    .replace(/[ \t]+/g, " ")
+    .trim();
+}
+
+/**
  * 语音朗读（TTS / Web Speech API）合成与状态管理
  */
 export function useChatSpeech() {
@@ -16,11 +31,11 @@ export function useChatSpeech() {
 
   const getSpeechText = (message) => {
     if (!message || !message.content) return "";
-    return message.content
+    const raw = message.content
       .filter((elm) => elm.type === "text")
       .map((elm) => elm.data?.text || "")
-      .join("\n")
-      .trim();
+      .join("\n");
+    return stripEmojis(raw);
   };
 
   const applyVoiceToUtterance = (utterance) => {
@@ -63,10 +78,13 @@ export function useChatSpeech() {
   const speakTextChunk = (text, messageId) => {
     if (typeof window === "undefined" || !window.speechSynthesis || !text) return;
 
+    const cleanText = stripEmojis(text);
+    if (!cleanText) return;
+
     currentSpeakingMessageId.value = messageId;
     _activeSpeechChunksCount++;
 
-    const utterance = new SpeechSynthesisUtterance(text);
+    const utterance = new SpeechSynthesisUtterance(cleanText);
     applyVoiceToUtterance(utterance);
 
     const cleanupChunk = () => {
@@ -136,5 +154,6 @@ export function useChatSpeech() {
     speakMessage,
     cancelSpeech,
     speakTextChunk,
+    getSpeechText,
   };
 }
