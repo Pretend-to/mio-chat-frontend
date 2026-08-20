@@ -104,21 +104,9 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue"]);
 
-const DEFAULT_ADVANCED_PARAMS = {
-  temperature: 1,
-  top_p: 1,
-  frequency_penalty: 0,
-  presence_penalty: 0,
-};
-
-const getInitialAdvancedParams = (chatParams) => ({
-  ...DEFAULT_ADVANCED_PARAMS,
-  ...(chatParams || {}),
+const localLlmGeneralKeys = ref({
+  ...(props.modelValue?.chatParams || {}),
 });
-
-const localLlmGeneralKeys = ref(
-  getInitialAdvancedParams(props.modelValue?.chatParams),
-);
 const localYoloMode = ref(props.modelValue?.yolo || false);
 const localExtraSettings = ref(
   JSON.parse(JSON.stringify(props.modelValue?.extraSettings || {})),
@@ -198,7 +186,9 @@ watch(
   () => props.modelValue,
   (newVal) => {
     if (newVal) {
-      localLlmGeneralKeys.value = getInitialAdvancedParams(newVal.chatParams);
+      localLlmGeneralKeys.value = {
+        ...(newVal.chatParams || {}),
+      };
       localYoloMode.value = newVal.yolo || false;
       localExtraSettings.value = JSON.parse(
         JSON.stringify(newVal.extraSettings || {}),

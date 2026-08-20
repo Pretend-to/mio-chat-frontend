@@ -32,85 +32,6 @@ function getImagePrompt(imageElms) {
 }
 
 /**
- * 清理 chatParams，如果参数保持默认值则不传递给后端，避免给不支持特定参数的模型（如推理模型）发送冗余/不支持的参数。
- * 默认值规则：
- * - temperature: 1
- * - top_p: 1
- * - frequency_penalty: 0
- * - presence_penalty: 0
- * - reasoning_effort: -1 (或 < 0)
- *
- * @param {Object} chatParams
- * @returns {Object|undefined} 过滤掉默认值后的 chatParams，如果为空则返回 undefined
- */
-export function cleanChatParams(chatParams) {
-  if (!chatParams || typeof chatParams !== "object") {
-    return undefined;
-  }
-
-  const cleaned = {};
-
-  if (
-    chatParams.temperature !== undefined &&
-    chatParams.temperature !== null &&
-    Number(chatParams.temperature) !== 1
-  ) {
-    cleaned.temperature = Number(chatParams.temperature);
-  }
-
-  if (
-    chatParams.top_p !== undefined &&
-    chatParams.top_p !== null &&
-    Number(chatParams.top_p) !== 1
-  ) {
-    cleaned.top_p = Number(chatParams.top_p);
-  }
-
-  if (
-    chatParams.frequency_penalty !== undefined &&
-    chatParams.frequency_penalty !== null &&
-    Number(chatParams.frequency_penalty) !== 0
-  ) {
-    cleaned.frequency_penalty = Number(chatParams.frequency_penalty);
-  }
-
-  if (
-    chatParams.presence_penalty !== undefined &&
-    chatParams.presence_penalty !== null &&
-    Number(chatParams.presence_penalty) !== 0
-  ) {
-    cleaned.presence_penalty = Number(chatParams.presence_penalty);
-  }
-
-  if (
-    chatParams.reasoning_effort !== undefined &&
-    chatParams.reasoning_effort !== null &&
-    Number(chatParams.reasoning_effort) >= 0
-  ) {
-    cleaned.reasoning_effort = Number(chatParams.reasoning_effort);
-  }
-
-  // 保留其他自定义/扩展参数
-  for (const [key, val] of Object.entries(chatParams)) {
-    if (
-      ![
-        "temperature",
-        "top_p",
-        "frequency_penalty",
-        "presence_penalty",
-        "reasoning_effort",
-      ].includes(key)
-    ) {
-      if (val !== undefined && val !== null) {
-        cleaned[key] = val;
-      }
-    }
-  }
-
-  return Object.keys(cleaned).length > 0 ? cleaned : undefined;
-}
-
-/**
  * 格式化并合并要发送给 OpenAI 的上下文消息列表
  */
 export function getValidOpenaiMessage(
@@ -725,16 +646,6 @@ export const gateway = {
             role: "system",
             content: profileXml,
           });
-        }
-      }
-
-      // 清理高级采样参数：如果保持默认值则不传递
-      if (enrichedOptions.chatParams) {
-        const cleanedChatParams = cleanChatParams(enrichedOptions.chatParams);
-        if (cleanedChatParams) {
-          enrichedOptions.chatParams = cleanedChatParams;
-        } else {
-          delete enrichedOptions.chatParams;
         }
       }
 
