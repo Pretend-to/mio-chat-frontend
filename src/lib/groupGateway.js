@@ -122,9 +122,26 @@ export function formatGroupMessagesForMember(group, member) {
 
   const fullChain = group.messageChain || [];
   let rawMark = Number(member.lastCompressedIndex);
-  if (isNaN(rawMark)) rawMark = 0;
+  if (isNaN(rawMark) || rawMark < 0) rawMark = 0;
+
+  // 查找消息链中最新一条有效用户发言的下标
+  let lastUserIdx = -1;
+  for (let i = fullChain.length - 1; i >= 0; i--) {
+    if (fullChain[i] && fullChain[i].role === "user") {
+      lastUserIdx = i;
+      break;
+    }
+  }
+
   const maxValidIndex = Math.max(0, fullChain.length - 1);
-  const startIndex = Math.min(Math.max(rawMark, 0), maxValidIndex);
+  let startIndex = Math.min(Math.max(rawMark, 0), maxValidIndex);
+
+  // 关键防御：如果断点越过了最新的用户发言（例如历史消息删除、清空后产生索引脱节），
+  // 强制将 startIndex 修正到最新用户发言之前，确保 Agent 绝对不会漏看用户最新输入！
+  if (lastUserIdx !== -1 && startIndex > lastUserIdx) {
+    startIndex = Math.max(0, lastUserIdx);
+  }
+
   const messageChain =
     fullChain.length > 0 && startIndex < fullChain.length
       ? startIndex > 0
@@ -204,6 +221,14 @@ export function formatGroupMessagesForMember(group, member) {
 
   // 刷出尾部剩余的聊天历史
   flushPendingHistory();
+
+  // 首轮保护：紧随 system 之后的首条对话必须是 user 角色，防止模型接口报错（不能以 assistant 开头）
+  if (finalMessages.length > 1 && finalMessages[1].role === "assistant") {
+    finalMessages.splice(1, 0, {
+      role: "user",
+      content: `<group_chat_turn_notice>请基于之前的群聊记录继续发言。</group_chat_turn_notice>`,
+    });
+  }
 
   // 收尾必须是 user 轮，否则请求非法。
   //

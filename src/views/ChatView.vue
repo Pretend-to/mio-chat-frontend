@@ -1029,10 +1029,11 @@ const performScrollToMessage = (messageId, shouldFlash = true) => {
 };
 
 const cleanScreen = () => {
-  activeContactor.value.messageChain = [];
-  activeContactor.value.updateFirstMessage();
-  client.setLocalStorage();
-  activeContactor.value.emit("updateMessageSummary");
+  if (activeContactor.value) {
+    contactorsStore.clearHistory(activeContactor.value.id);
+    activeContactor.value.updateFirstMessage();
+    activeContactor.value.emit("updateMessageSummary");
+  }
 
   autoScroll.value = false;
   ElMessage.success("已清除会话记录");
@@ -1040,6 +1041,12 @@ const cleanScreen = () => {
 
 const cleanHistory = () => {
   activeContactor.value.updateFirstMessage();
+  if (activeContactor.value.platform === "group") {
+    const chainLen = activeContactor.value.messageChain.length;
+    (activeContactor.value.members || []).forEach((m) => {
+      m.lastCompressedIndex = chainLen;
+    });
+  }
   ElMessage.success("上下文信息已清除，之后的请求将不再记录上文记录");
 
   for (let i = activeContactor.value.messageChain.length - 1; i >= 0; i--) {

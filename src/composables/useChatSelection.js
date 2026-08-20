@@ -2,6 +2,7 @@ import { ref, reactive, watch, onBeforeUnmount } from "vue";
 import { ElMessage } from "element-plus";
 import { client } from "@/lib/runtime.js";
 import { shareOrCopy } from "@/utils/tools.js";
+import { useContactorsStore } from "@/stores/contactorsStore.js";
 
 export function useChatSelection({
   chatWindowRef,
@@ -305,11 +306,12 @@ export function useChatSelection({
   // Selection actions
   const handleMultiDelete = (activeContactor) => {
     if (selectedMessages.value.length === 0) return;
-    for (let i = activeContactor.messageChain.length - 1; i >= 0; i--) {
-      if (selectedMessages.value.includes(activeContactor.messageChain[i].id)) {
-        activeContactor.messageChain.splice(i, 1);
-      }
-    }
+    const contactorsStore = useContactorsStore();
+    // 复制选中的 ID 列表逆序删除，确保断点与索引正确收敛
+    const idsToDelete = [...selectedMessages.value];
+    idsToDelete.forEach((msgId) => {
+      contactorsStore.deleteMessageById(activeContactor.id, msgId);
+    });
     client.setLocalStorage();
     cancelMultiSelect();
   };

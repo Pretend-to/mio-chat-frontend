@@ -1062,7 +1062,12 @@ export const useContactorsStore = defineStore("contactors", () => {
       }
       contactor.messageChain.splice(index, 1);
 
-      // 群成员的 lastCompressedIndex 指向群消息链的下标，删除会让其后及当天的所有
+      // 单聊：修正 firstMessageIndex
+      if (contactor.firstMessageIndex !== undefined && contactor.firstMessageIndex >= index) {
+        contactor.firstMessageIndex = Math.max(0, contactor.firstMessageIndex - 1);
+      }
+
+      // 群聊：群成员的 lastCompressedIndex 指向群消息链的下标，删除会让其后及当天的所有
       // 下标整体前移。必须修正，防止标记越界导致上下文切空或跳过消息。
       if (contactor.platform === "group") {
         (contactor.members || []).forEach((m) => {
@@ -1072,10 +1077,21 @@ export const useContactorsStore = defineStore("contactors", () => {
           }
           if (contactor.messageChain.length === 0) {
             m.lastCompressedIndex = 0;
+            if (m.options?.crystallization) {
+              m.options.crystallization.latestSummary = "";
+            }
           } else if (m.lastCompressedIndex >= contactor.messageChain.length) {
             m.lastCompressedIndex = contactor.messageChain.length - 1;
           }
         });
+      } else {
+        // 单聊若全部删空，同步清理单聊的记忆结晶
+        if (contactor.messageChain.length === 0) {
+          contactor.firstMessageIndex = 0;
+          if (contactor.options?.crystallization) {
+            contactor.options.crystallization.latestSummary = "";
+          }
+        }
       }
 
       updateContactorSummary(contactor);
@@ -1138,12 +1154,18 @@ export const useContactorsStore = defineStore("contactors", () => {
       contactor.messageChain = [];
       contactor.firstMessageIndex = 0;
 
-      // 链已清空，各成员的压缩标记必须一并归零，否则会指向不存在的下标。
-      // 注意只重置进度，不动 latestSummary —— 结晶是长期记忆，不随聊天记录清除。
+      // 链已清空，各成员的压缩标记与记忆结晶必须一并重置归零，防止残留历史幻觉与切断新消息。
       if (contactor.platform === "group") {
         (contactor.members || []).forEach((m) => {
           m.lastCompressedIndex = 0;
+          if (m.options?.crystallization) {
+            m.options.crystallization.latestSummary = "";
+          }
         });
+      } else {
+        if (contactor.options?.crystallization) {
+          contactor.options.crystallization.latestSummary = "";
+        }
       }
 
       updateContactorSummary(contactor);

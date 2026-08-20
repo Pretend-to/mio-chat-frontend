@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import {
   resolveMentionedMembers,
   resolveUnhandledMentions,
+  formatGroupMessagesForMember,
 } from "../groupGateway.js";
 
 // Mock pinia and client runtime
@@ -357,4 +358,77 @@ describe("groupGateway - Mention Resolution & Invocation Engine", () => {
       expect(group.members[0].avatarPolicy).toBe(0);
     });
   });
+
+  describe("formatGroupMessagesForMember - Message Deletion & Index Resilience", () => {
+    it("should never skip the latest user message even if lastCompressedIndex is desynchronized", () => {
+      const member = {
+        id: "member_a",
+        name: "AgentA",
+        lastCompressedIndex: 10, // 残留的历史断点
+        options: {
+          crystallization: {
+            latestSummary: "",
+          },
+        },
+      };
+
+      const group = {
+        platform: "group",
+        members: [member],
+        messageChain: [
+          {
+            id: "msg_user_1",
+            role: "user",
+            status: "completed",
+            content: [{ type: "text", data: { text: "你好 @AgentA" } }],
+          },
+          {
+            id: "msg_asst_1",
+            role: "other",
+            status: "pending",
+            senderMemberId: "member_a",
+            content: [{ type: "blank", data: {} }],
+          },
+        ],
+      };
+
+      const messages = formatGroupMessagesForMember(group, member, "System prompt");
+      expect(messages.length).toBeGreaterThanOrEqual(2);
+      expect(messages[0].role).toBe("system");
+      // 必须包含用户最新发送的发言
+      const hasUserMsg = messages.some(
+        (m) => m.role === "user" && typeof m.content === "string" && m.content.includes("你好 @AgentA"),
+      );
+      expect(hasUserMsg).toBe(true);
+    });
+
+    it("should ensure the first turn after system is always a user message", () => {
+      const member = {
+        id: "member_a",
+        name: "AgentA",
+        lastCompressedIndex: 0,
+        options: { crystallization: { latestSummary: "" } },
+      };
+
+      // 历史中用户消息全被删除，只剩 Agent 自身的发言
+      const group = {
+        platform: "group",
+        members: [member],
+        messageChain: [
+          {
+            id: "msg_asst_1",
+            role: "other",
+            status: "completed",
+            senderMemberId: "member_a",
+            content: [{ type: "text", data: { text: "之前的回答" } }],
+          },
+        ],
+      };
+
+      const messages = formatGroupMessagesForMember(group, member, "System prompt");
+      expect(messages[0].role).toBe("system");
+      expect(messages[1].role).toBe("user"); // 必须是 user 角色，不能直接是 assistant
+    });
+  });
 });
+
