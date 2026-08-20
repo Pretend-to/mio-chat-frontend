@@ -32,6 +32,74 @@ function getImagePrompt(imageElms) {
 }
 
 /**
+ * 清理高级采样参数（temperature, top_p, frequency_penalty, presence_penalty）。
+ * 如果保持默认值则不传递给后端，避免给不支持特定参数的模型（如推理模型）发送冗余或不兼容参数。
+ * 默认值规则：
+ * - temperature: 1
+ * - top_p: 1
+ * - frequency_penalty: 0
+ * - presence_penalty: 0
+ *
+ * 注：reasoning_effort 以及 tool_choice 等参数常驻保留；且返回结果始终为安全的对象格式（至少为 {}），避免后端解构报错。
+ *
+ * @param {Object} chatParams
+ * @returns {Object} 过滤掉默认高级采样参数后的 chatParams 对象（保证始终为 Object）
+ */
+export function cleanChatParams(chatParams) {
+  if (!chatParams || typeof chatParams !== "object") {
+    return {};
+  }
+
+  const cleaned = { ...chatParams };
+
+  // temperature: 默认值为 1，如果为 1 或未设置则删除
+  if (
+    cleaned.temperature === undefined ||
+    cleaned.temperature === null ||
+    Number(cleaned.temperature) === 1
+  ) {
+    delete cleaned.temperature;
+  } else {
+    cleaned.temperature = Number(cleaned.temperature);
+  }
+
+  // top_p: 默认值为 1，如果为 1 或未设置则删除
+  if (
+    cleaned.top_p === undefined ||
+    cleaned.top_p === null ||
+    Number(cleaned.top_p) === 1
+  ) {
+    delete cleaned.top_p;
+  } else {
+    cleaned.top_p = Number(cleaned.top_p);
+  }
+
+  // frequency_penalty: 默认值为 0，如果为 0 或未设置则删除
+  if (
+    cleaned.frequency_penalty === undefined ||
+    cleaned.frequency_penalty === null ||
+    Number(cleaned.frequency_penalty) === 0
+  ) {
+    delete cleaned.frequency_penalty;
+  } else {
+    cleaned.frequency_penalty = Number(cleaned.frequency_penalty);
+  }
+
+  // presence_penalty: 默认值为 0，如果为 0 或未设置则删除
+  if (
+    cleaned.presence_penalty === undefined ||
+    cleaned.presence_penalty === null ||
+    Number(cleaned.presence_penalty) === 0
+  ) {
+    delete cleaned.presence_penalty;
+  } else {
+    cleaned.presence_penalty = Number(cleaned.presence_penalty);
+  }
+
+  return cleaned;
+}
+
+/**
  * 格式化并合并要发送给 OpenAI 的上下文消息列表
  */
 export function getValidOpenaiMessage(
@@ -647,6 +715,15 @@ export const gateway = {
             content: profileXml,
           });
         }
+      }
+
+      // 清理高级采样参数（默认值不传递），同时保证 chatParams 始终为对象格式以兼容后端解构
+      if (enrichedOptions.chatParams || enrichedOptions.options?.chatParams) {
+        enrichedOptions.chatParams = cleanChatParams(
+          enrichedOptions.chatParams || enrichedOptions.options?.chatParams,
+        );
+      } else {
+        enrichedOptions.chatParams = {};
       }
 
       console.log(

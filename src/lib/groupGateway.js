@@ -8,7 +8,7 @@
  */
 
 import { client } from "@/lib/runtime.js";
-import { getValidOpenaiMessage } from "@/lib/gateway.js";
+import { getValidOpenaiMessage, cleanChatParams } from "@/lib/gateway.js";
 import { assembleSystemPrompt } from "@/utils/SystemPromptAssembler.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { useContactorsStore } from "@/stores/contactorsStore.js";
@@ -661,6 +661,15 @@ export async function sendGroupCompletions(group, assistantMsgId, targetMemberId
     // 这里清掉避免后端重复注入人格
     if (settings.presetSettings) {
       settings.presetSettings = { ...settings.presetSettings, opening: "" };
+    }
+
+    // 清理高级采样参数（默认值不传递），同时保证 chatParams 始终为对象格式以兼容后端解构
+    if (settings.chatParams || settings.options?.chatParams) {
+      settings.chatParams = cleanChatParams(
+        settings.chatParams || settings.options?.chatParams,
+      );
+    } else {
+      settings.chatParams = {};
     }
 
     const data = {
