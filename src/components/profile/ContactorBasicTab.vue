@@ -199,6 +199,7 @@ const emitBasicInfoUpdate = () => {
 // LLM Options States
 const localLlmProvider = ref(props.modelValue?.provider || "");
 const localLlmGeneralKeys = ref({
+  reasoning_effort: -1,
   ...(props.modelValue?.base || {}),
   ...(props.modelValue?.chatParams || {}),
 });
@@ -291,6 +292,7 @@ watch(
     if (newVal) {
       localLlmProvider.value = newVal.provider || "";
       localLlmGeneralKeys.value = {
+        reasoning_effort: -1,
         ...(newVal.base || {}),
         ...(newVal.chatParams || {}),
       };
