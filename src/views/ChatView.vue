@@ -25,6 +25,12 @@ import GroupSidebar from "@/components/chat/GroupSidebar.vue";
 // Composables
 import { useChatSelection } from "@/composables/useChatSelection.js";
 import { useChatScreenshot } from "@/composables/useChatScreenshot.js";
+import { useChatSpeech } from "@/composables/useChatSpeech.js";
+import { useChatScroll } from "@/composables/useChatScroll.js";
+import { useChatRetry } from "@/composables/useChatRetry.js";
+import { useChatMessageMenu } from "@/composables/useChatMessageMenu.js";
+import { useChatSend } from "@/composables/useChatSend.js";
+import { useChatMedia } from "@/composables/useChatMedia.js";
 
 // Stores & Libs
 import { useConnectionStore } from "@/stores/connectionStore";
@@ -71,313 +77,6 @@ if (params.has("scroll")) {
 
 const preview = ref(previewVal);
 const scroll = ref(scrollVal);
-
-// Speech Synthesis State & Functions
-const currentSpeakingMessageId = ref(null);
-
-// carryProfile：跟踪每个会话是否已注入过 <user_profile>
-const _profileInjectedIds = new Set();
-
-const getSpeechText = (message) => {
-  if (!message || !message.content) return "";
-  return message.content
-    .filter((elm) => elm.type === "text")
-    .map((elm) => elm.data?.text || "")
-    .join("\n")
-    .trim();
-};
-
-const applyVoiceToUtterance = (utterance) => {
-  if (!window.speechSynthesis) return;
-  const voices = window.speechSynthesis.getVoices();
-  if (!voices || !voices.length) return;
-
-  const cs = client._clientSettings || {};
-  const selectedVoiceUri = cs.chat?.readAloudVoice || "auto";
-
-  if (selectedVoiceUri && selectedVoiceUri !== "auto") {
-    const matchedVoice = voices.find(
-      (v) => v.voiceURI === selectedVoiceUri || v.name === selectedVoiceUri,
-    );
-    if (matchedVoice) {
-      utterance.voice = matchedVoice;
-      return;
-    }
-  }
-
-  // 默认查找中文音色
-  const cnVoice = voices.find(
-    (v) => v.lang.includes("zh-CN") || v.lang.includes("zh-"),
-  );
-  if (cnVoice) {
-    utterance.voice = cnVoice;
-  }
-};
-
-let _activeSpeechChunksCount = 0;
-let _streamingReadMsgId = null;
-let _spokenCharIndex = 0;
-
-const cancelSpeech = () => {
-  if (typeof window !== "undefined" && window.speechSynthesis) {
-    window.speechSynthesis.cancel();
-  }
-  _activeSpeechChunksCount = 0;
-  _streamingReadMsgId = null;
-  _spokenCharIndex = 0;
-  currentSpeakingMessageId.value = null;
-};
-
-const speakTextChunk = (text, messageId) => {
-  if (!window.speechSynthesis || !text) return;
-
-  currentSpeakingMessageId.value = messageId;
-  _activeSpeechChunksCount++;
-
-  const utterance = new SpeechSynthesisUtterance(text);
-  applyVoiceToUtterance(utterance);
-
-  const cleanupChunk = () => {
-    _activeSpeechChunksCount = Math.max(0, _activeSpeechChunksCount - 1);
-    if (
-      _activeSpeechChunksCount === 0 &&
-      currentSpeakingMessageId.value === messageId
-    ) {
-      const activeMsg = contactorsStore.activeContactor?.messageChain?.find(
-        (m) => m.id === messageId,
-      );
-      if (!activeMsg || activeMsg.status !== "pending") {
-        currentSpeakingMessageId.value = null;
-        _streamingReadMsgId = null;
-        _spokenCharIndex = 0;
-      }
-    }
-  };
-
-  utterance.onend = cleanupChunk;
-  utterance.onerror = cleanupChunk;
-
-  window.speechSynthesis.speak(utterance);
-};
-
-const speakMessage = (message) => {
-  if (!window.speechSynthesis) {
-    ElMessage.warning("当前浏览器不支持语音合成");
-    return;
-  }
-
-  if (currentSpeakingMessageId.value === message.id) {
-    cancelSpeech();
-    return;
-  }
-
-  cancelSpeech();
-
-  const text = getSpeechText(message);
-  if (!text) {
-    ElMessage.info("没有可朗读的文本内容");
-    return;
-  }
-
-  currentSpeakingMessageId.value = message.id;
-
-  const punctuationRegex = /[^。！？\n!?]+[。！？\n!?]+/g;
-  let match;
-  let processedLength = 0;
-
-  while ((match = punctuationRegex.exec(text)) !== null) {
-    const sentence = match[0].trim();
-    processedLength += match[0].length;
-    if (sentence) {
-      speakTextChunk(sentence, message.id);
-    }
-  }
-
-  const remaining = text.slice(processedLength).trim();
-  if (remaining) {
-    speakTextChunk(remaining, message.id);
-  }
-};
-
-// Sending message logic
-const sendMessage = async (msg, toServer = true) => {
-  const store = useContactorsStore();
-  const contactor = store.activeContactor;
-  if (!contactor) return;
-
-  autoScroll.value = false;
-  contactor.lastUpdate = Date.now();
-
-  const exists = contactor.messageChain.some((m) => m.id === msg.id);
-  if (!exists) {
-    contactor.messageChain.push(msg);
-  }
-
-  // carryProfile: 首次发送时插入 <user_profile> 到会话头部
-  if (
-    toServer &&
-    contactor.platform === "openai" &&
-    !_profileInjectedIds.has(contactor.id)
-  ) {
-    const cs = client._clientSettings || {};
-    if (cs.chat?.carryProfile) {
-      const hasProfileInChain = contactor.messageChain.some(
-        (m) =>
-          m.role === "mio_system" &&
-          Array.isArray(m.content) &&
-          m.content.some(
-            (c) =>
-              c.data?.text &&
-              (c.data.text.includes("已注入相关元信息") ||
-                c.data.text.includes("<user_profile>")),
-          ),
-      );
-
-      if (!hasProfileInChain) {
-        const userMsgIndex = contactor.messageChain.findIndex(
-          (m) => m.role === "user",
-        );
-        const systemMsg = {
-          role: "mio_system",
-          time: Date.now(),
-          content: [{ type: "text", data: { text: "已注入相关元信息" } }],
-          id: numberString(16),
-          status: "completed",
-        };
-
-        if (userMsgIndex !== -1) {
-          contactor.messageChain.splice(userMsgIndex, 0, systemMsg);
-        } else {
-          contactor.messageChain.unshift(systemMsg);
-        }
-      }
-    }
-    _profileInjectedIds.add(contactor.id);
-  }
-
-  const msgInChain = contactor.messageChain.find((m) => m.id === msg.id);
-
-  if (contactor.platform === "onebot") {
-    store.updateContactorSummary(contactor);
-    client.setLocalStorage();
-
-    toButtom();
-
-    if (!toServer) return msg.id;
-
-    try {
-      const messageId = await gateway.send(
-        "onebot",
-        contactor.id,
-        contactor.messageChain,
-        msg.id,
-      );
-      if (msgInChain) {
-        msgInChain.id = messageId;
-      }
-      msg.id = messageId;
-      store.completeMessage(contactor.id, messageId);
-      return messageId;
-    } catch (e) {
-      ElMessage.error(e.message || "发送失败");
-      store.failedMessage(contactor.id, msg.id, e.message || "发送失败");
-      throw e;
-    }
-  } else if (contactor.platform === "group") {
-    // Agent 群聊平台处理
-    toButtom();
-
-    if (!toServer) {
-      store.updateContactorSummary(contactor);
-      client.setLocalStorage();
-      return msg.id;
-    }
-
-    const assistantMsgId = numberString(16);
-    store.getOrCreateMessage(
-      contactor.id,
-      assistantMsgId,
-      {
-        role: "other",
-        status: "pending",
-        content: [{ type: "blank", data: {} }],
-      },
-    );
-
-    store.updateContactorSummary(contactor);
-    client.setLocalStorage();
-    toButtom();
-
-    if (msgInChain) {
-      msgInChain.status = "pending";
-    }
-
-    try {
-      const { sendGroupCompletions } = await import("@/lib/groupGateway.js");
-      await sendGroupCompletions(contactor, assistantMsgId);
-      store.completeMessage(contactor.id, msg.id);
-      return msg.id;
-    } catch (e) {
-      ElMessage.error(e.message || "群聊发送失败");
-      store.failedMessage(contactor.id, msg.id, e.message || "群聊发送失败");
-      const asstIdx = contactor.messageChain.findIndex((m) => m.id === assistantMsgId);
-      if (asstIdx !== -1) {
-        contactor.messageChain.splice(asstIdx, 1);
-      }
-      return msg.id;
-    }
-  } else {
-    // OpenAI platform
-    toButtom();
-
-    if (!toServer) {
-      store.updateContactorSummary(contactor);
-      client.setLocalStorage();
-      return msg.id;
-    }
-
-    // Create assistant response placeholder
-    const assistantMsgId = numberString(16);
-    const assistantMsg = store.getOrCreateMessage(
-      contactor.id,
-      assistantMsgId,
-      {
-        role: "other",
-        status: "pending",
-        content: [{ type: "blank", data: {} }],
-      },
-    );
-
-    store.updateContactorSummary(contactor);
-    client.setLocalStorage();
-
-    toButtom();
-
-    if (msgInChain) {
-      msgInChain.status = "pending";
-    }
-    try {
-      await gateway.send(
-        "openai",
-        contactor.id,
-        contactor.messageChain,
-        assistantMsgId,
-        contactor.options,
-      );
-      store.completeMessage(contactor.id, msg.id);
-      return msg.id;
-    } catch (e) {
-      ElMessage.error(e.message || "请求失败");
-      store.failedMessage(contactor.id, msg.id, e.message || "请求失败");
-      // 请求未发出，删除无意义的 assistant 占位消息
-      const asstIdx = contactor.messageChain.findIndex((m) => m.id === assistantMsgId);
-      if (asstIdx !== -1) {
-        contactor.messageChain.splice(asstIdx, 1);
-      }
-      throw e;
-    }
-  }
-};
 
 const activeContactor = computed(() => {
   const contactor = contactorsStore.activeContactor;
@@ -500,26 +199,9 @@ const userInput = ref("");
 const extraOptions = ref([]);
 const wraperPresets = ref({});
 const selectedOption = ref(null);
-
-const seletedText = ref("");
-const seletedImage = ref("");
-const canRetry = ref(true);
-const retryList = ref([]);
-const showMenu = ref(false);
-const menuTop = ref(0);
-const menuLeft = ref(0);
-const lastClickTime = ref(0);
-const validMessageIndex = ref(-1);
-const inputEditor = ref(null);
-const autoScroll = ref(false);
 const fullScreen = ref(false);
-const chatWindow = ref(null);
-const messagesInner = ref(null);
-const prevScrollTop = ref(0);
-const showRollDown = ref(false);
 const inputBarTop = ref(0);
-const clearMessageTip = "以上的对话记录已清除";
-const isLocatingMessage = ref(false);
+const inputEditor = ref(null);
 
 let resizeObserver = null;
 let isObservingResize = false;
@@ -538,11 +220,6 @@ const mioPlugins = [
   { plugin: imageViewerPlugin },
 ];
 
-// updateTrigger, forceUpdate and messageVersions are no longer needed —
-// since activeContactor.value comes from Pinia reactive state, Vue 3 will
-// automatically re-render whenever messageChain changes.
-// We keep a toupdate flag for auto-scroll signalling only.
-
 // Computed Properties
 const getDelayStatus = computed(() => {
   return isConnected.value ? "ultra" : "offline";
@@ -552,36 +229,129 @@ const mdOptions = computed(() => {
   return { breaks: true };
 });
 
-const renderedCount = ref(20);
-const isLoadingHistory = ref(false);
+// 1. Speech Composable
+const {
+  currentSpeakingMessageId,
+  speakMessage,
+  cancelSpeech,
+  speakTextChunk,
+} = useChatSpeech();
 
-watch(
-  () => [
-    activeContactor.value?.id,
-    activeContactor.value?.messageChain?.length,
-  ],
-  ([newId, newLength], [oldId, oldLength]) => {
-    if (newId !== oldId) {
-      renderedCount.value = 20;
-      isLoadingHistory.value = false;
-      isLocatingMessage.value = false;
-    } else if (newLength !== undefined && oldLength !== undefined) {
-      renderedCount.value = Math.max(
-        20,
-        renderedCount.value + (newLength - oldLength),
-      );
-    }
-  },
-);
+// 2. Scroll & Virtual Load Composable
+const {
+  chatWindow,
+  messagesInner,
+  autoScroll,
+  showRollDown,
+  isLoadingHistory,
+  renderedCount,
+  isLocatingMessage,
+  currentScrollTargetId,
+  renderedMessages: activeMessageChain,
+  toBottom: toButtom,
+  locateMessage: performScrollToMessage,
+  scrollHandler: handleChatScroll,
+} = useChatScroll({ activeContactor, scrollDefault: scrollVal });
 
-const activeMessageChain = computed(() => {
-  const chain = activeContactor.value?.messageChain || [];
-  if (chain.length <= renderedCount.value) {
-    return chain;
-  }
-  return chain.slice(chain.length - renderedCount.value);
+const prevScrollTop = ref(0);
+
+// 3. Message Sending & Cleaning Composable
+const {
+  sendMessage,
+  cleanScreen,
+  cleanHistory,
+  delSystemMessage,
+  handleDeleteMessage,
+} = useChatSend({ activeContactor, toBottom: toButtom, autoScroll });
+
+// 4. Message Retry Composable
+const {
+  retryList,
+  getRetryTargetIndex,
+  handleRetryMessage,
+  handleMenuRetry,
+} = useChatRetry({ activeContactor, toBottom: toButtom, inputEditor });
+
+// 5. Selection & Screenshot states
+const selectedMessages = ref([]);
+const isMultiSelect = ref(false);
+const isMobileDevice = ref(window.innerWidth < 768);
+
+const {
+  dragSelect,
+  hasSelectedAbove,
+  hasSelectedBelow,
+  firstVisibleIndex,
+  lastVisibleIndex,
+  minSelectedIndex,
+  maxSelectedIndex,
+  toggleSelect,
+  cancelMultiSelect,
+  updateVisibilitySelectionState,
+  handleMouseDown,
+  handleMouseUpDrag,
+  selectToTopHere,
+  selectToBottomHere,
+  handleMultiDelete,
+  handleMultiCopy,
+  handleMultiShareMD,
+  handleMultiShareLink,
+} = useChatSelection({
+  chatWindowRef: chatWindow,
+  activeMessageChain,
+  selectedMessages,
+  isMultiSelect,
+  isMobileDevice,
 });
 
+const {
+  showImagePreview,
+  previewImageUrl,
+  previewShareUrl,
+  generatingImage,
+  exportWidthMode,
+  qrUrl,
+  showQRCode,
+  handleMultiShareImage,
+  onExportWidthModeChange,
+  generateScreenshot,
+  downloadPreviewImage,
+  shareMobilePreviewLink,
+  copyPreviewImage,
+} = useChatScreenshot({
+  chatWindowRef: chatWindow,
+  selectedMessages,
+});
+
+const onQRCodeChange = async () => {
+  await generateScreenshot();
+};
+
+// 6. Context Menu Composable
+const {
+  showMenu,
+  menuTop,
+  menuLeft,
+  validMessageIndex,
+  canRetry,
+  seletedText,
+  seletedImage,
+  showMessageMenu,
+  handleTouchStart,
+  handleMessageOption,
+  getseletedMessage,
+} = useChatMessageMenu({
+  activeContactor,
+  renderedCount,
+  getRetryTargetIndex,
+  handleMenuRetry,
+  speakMessage,
+  inputEditor,
+  isMultiSelect,
+  selectedMessages,
+});
+
+// Opening Message
 const openingMessage = computed(() => {
   const opening = activeContactor.value?.options?.presetSettings?.opening;
   if (!opening) return null;
@@ -636,62 +406,6 @@ const getMenuStyle = computed(() => {
     return style;
   }
 });
-
-// Selection & Screenshot states
-const selectedMessages = ref([]);
-const isMultiSelect = ref(false);
-const isMobileDevice = ref(window.innerWidth < 768);
-
-// Composable invocation
-const {
-  dragSelect,
-  hasSelectedAbove,
-  hasSelectedBelow,
-  firstVisibleIndex,
-  lastVisibleIndex,
-  minSelectedIndex,
-  maxSelectedIndex,
-  toggleSelect,
-  cancelMultiSelect,
-  updateVisibilitySelectionState,
-  handleMouseDown,
-  handleMouseUpDrag,
-  selectToTopHere,
-  selectToBottomHere,
-  handleMultiDelete,
-  handleMultiCopy,
-  handleMultiShareMD,
-  handleMultiShareLink,
-} = useChatSelection({
-  chatWindowRef: chatWindow,
-  activeMessageChain,
-  selectedMessages,
-  isMultiSelect,
-  isMobileDevice,
-});
-
-const {
-  showImagePreview,
-  previewImageUrl,
-  previewShareUrl,
-  generatingImage,
-  exportWidthMode,
-  qrUrl,
-  showQRCode,
-  handleMultiShareImage,
-  onExportWidthModeChange,
-  generateScreenshot,
-  downloadPreviewImage,
-  shareMobilePreviewLink,
-  copyPreviewImage,
-} = useChatScreenshot({
-  chatWindowRef: chatWindow,
-  selectedMessages,
-});
-
-const onQRCodeChange = async () => {
-  await generateScreenshot();
-};
 
 // Watchers
 watch(
@@ -779,6 +493,8 @@ watch(isMultiSelect, (val) => {
 });
 
 // autoReadAloud：流式按句实时朗读（匹配流式文本输出）
+let _streamingReadMsgId = null;
+let _spokenCharIndex = 0;
 watch(
   () => {
     const c = contactorsStore.activeContactor;
@@ -796,7 +512,11 @@ watch(
       _spokenCharIndex = 0;
     }
 
-    const fullText = getSpeechText(newMsg);
+    const fullText = (newMsg.content || [])
+      .filter((elm) => elm.type === "text")
+      .map((elm) => elm.data?.text || "")
+      .join("\n")
+      .trim();
     if (!fullText) return;
 
     const unreadText = fullText.slice(_spokenCharIndex);
@@ -844,243 +564,7 @@ const handleMouseUp = () => {
   const selectedText = window.getSelection().toString();
   if (selectedText) {
     seletedText.value = selectedText;
-    console.log("选中的文本：" + selectedText);
   }
-};
-
-const toButtom = (clicked) => {
-  autoScroll.value = true;
-  showRollDown.value = false;
-
-  const execScroll = () => {
-    const elm =
-      chatWindow.value || document.getElementById("main-messages-window");
-    if (!elm) return;
-
-    elm.scrollTo({
-      top: elm.scrollHeight,
-      behavior: clicked === true ? "smooth" : "instant",
-    });
-  };
-
-  if (clicked === true) {
-    execScroll();
-  }
-  nextTick(() => {
-    requestAnimationFrame(execScroll);
-    setTimeout(execScroll, 50);
-  });
-};
-
-const currentScrollTargetId = ref(null);
-
-const performScrollToMessage = (messageId, shouldFlash = true) => {
-  if (!messageId) return;
-  autoScroll.value = false;
-  isLocatingMessage.value = true;
-
-  const chain = activeContactor.value?.messageChain || [];
-  const msgIndex = chain.findIndex((m) => m.id === messageId);
-  if (msgIndex === -1) {
-    isLocatingMessage.value = false;
-    return;
-  }
-
-  const currentRenderedStartIndex = chain.length - renderedCount.value;
-  if (msgIndex < currentRenderedStartIndex) {
-    renderedCount.value = Math.min(chain.length, chain.length - msgIndex + 10);
-  }
-
-  if (shouldFlash) {
-    currentScrollTargetId.value = messageId;
-  }
-
-  const scrollContainer =
-    chatWindow.value || document.getElementById("main-messages-window");
-
-  const scrollToElement = (behavior = "smooth") => {
-    const elm = scrollContainer;
-    if (!elm) return false;
-    const element = elm.querySelector(`[data-id="${messageId}"]`);
-    if (!element) return false;
-
-    const getElementOffsetTop = (el, container) => {
-      let top = 0;
-      let curr = el;
-      while (curr && curr !== container) {
-        top += curr.offsetTop;
-        curr = curr.offsetParent;
-      }
-      return top;
-    };
-    const offsetTop = getElementOffsetTop(element, elm);
-    elm.scrollTo({
-      top: Math.max(0, offsetTop - elm.clientHeight * 0.3),
-      behavior,
-    });
-    if (shouldFlash) {
-      element.classList.add("highlight-flash");
-    }
-    return true;
-  };
-
-  let mutationObs = null;
-  let resizeObs = null;
-  let fallbackTimer = null;
-  let stabilizeTimer = null;
-
-  const cleanup = () => {
-    mutationObs?.disconnect();
-    mutationObs = null;
-    resizeObs?.disconnect();
-    resizeObs = null;
-    if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
-    if (stabilizeTimer) { clearTimeout(stabilizeTimer); stabilizeTimer = null; }
-    scrollContainer?.removeEventListener("wheel", onUserInteract, { passive: true });
-    scrollContainer?.removeEventListener("touchstart", onUserInteract, { passive: true });
-    scrollContainer?.removeEventListener("mousedown", onUserInteract, { passive: true });
-    if (currentScrollTargetId.value === messageId) {
-      currentScrollTargetId.value = null;
-    }
-    isLocatingMessage.value = false;
-  };
-
-  const onUserInteract = () => cleanup();
-
-  // 阶段1: 等待目标元素出现在 DOM（renderedCount 扩展后 Vue 重渲染需要时间）
-  // 用 MutationObserver 监听消息列表容器子树，目标元素一出现立刻滚
-  const waitForElementAndScroll = () => {
-    // 先尝试直接滚（如果已经在屏幕里）
-    if (scrollToElement("smooth")) {
-      startResizeTracking();
-      return;
-    }
-
-    // 目标元素还没渲染，用 MutationObserver 等它出现
-    const innerContainer = messagesInner.value || scrollContainer;
-    if (!innerContainer) {
-      // 没有内容容器，直接 fallback
-      startResizeTracking();
-      return;
-    }
-
-    mutationObs = new MutationObserver(() => {
-      if (scrollToElement("instant")) {
-        mutationObs?.disconnect();
-        mutationObs = null;
-        startResizeTracking();
-      }
-    });
-    mutationObs.observe(innerContainer, { childList: true, subtree: true });
-  };
-
-  // 阶段2: 目标元素已在 DOM，用 ResizeObserver 监听内容容器高度变化
-  // 补偿 Markdown/LaTeX 渲染完成后的位置漂移
-  const startResizeTracking = () => {
-    if (!scrollContainer) { cleanup(); return; }
-
-    const innerContainer = messagesInner.value || scrollContainer;
-    resizeObs = new ResizeObserver(() => {
-      scrollToElement("instant");
-      if (stabilizeTimer) clearTimeout(stabilizeTimer);
-      // 连续 400ms 无高度变化 → 渲染稳定，结束追踪
-      stabilizeTimer = setTimeout(() => {
-        scrollToElement("instant");
-        cleanup();
-      }, 400);
-    });
-    resizeObs.observe(innerContainer);
-
-    // 监听用户主动交互，取消自动定位
-    scrollContainer.addEventListener("wheel", onUserInteract, { passive: true });
-    scrollContainer.addEventListener("touchstart", onUserInteract, { passive: true });
-    scrollContainer.addEventListener("mousedown", onUserInteract, { passive: true });
-
-    // 安全兜底：5s 后强制结束
-    fallbackTimer = setTimeout(() => {
-      scrollToElement("instant");
-      cleanup();
-    }, 5000);
-  };
-
-  nextTick(() => {
-    waitForElementAndScroll();
-
-    if (shouldFlash) {
-      // 清理 URL query 参数
-      router.replace({
-        query: { ...route.query, scrollTo: undefined, t: undefined },
-      });
-
-      // 1.2s 后移除高亮动画
-      setTimeout(() => {
-        const elm = scrollContainer;
-        elm?.querySelector(`[data-id="${messageId}"]`)?.classList.remove("highlight-flash");
-      }, 1200);
-
-      // 5s 后释放 scroll target 锁
-      setTimeout(() => {
-        if (currentScrollTargetId.value === messageId) {
-          currentScrollTargetId.value = null;
-        }
-      }, 5000);
-    }
-  });
-};
-
-const cleanScreen = () => {
-  if (activeContactor.value) {
-    contactorsStore.clearHistory(activeContactor.value.id);
-    activeContactor.value.updateFirstMessage();
-    activeContactor.value.emit("updateMessageSummary");
-  }
-
-  autoScroll.value = false;
-  ElMessage.success("已清除会话记录");
-};
-
-const cleanHistory = () => {
-  activeContactor.value.updateFirstMessage();
-  if (activeContactor.value.platform === "group") {
-    const chainLen = activeContactor.value.messageChain.length;
-    (activeContactor.value.members || []).forEach((m) => {
-      m.lastCompressedIndex = chainLen;
-    });
-  }
-  ElMessage.success("上下文信息已清除，之后的请求将不再记录上文记录");
-
-  for (let i = activeContactor.value.messageChain.length - 1; i >= 0; i--) {
-    const message = activeContactor.value.messageChain[i];
-    if (
-      message.role === "mio_system" &&
-      message.content[0].type === "text" &&
-      message.content[0].data.text === clearMessageTip
-    ) {
-      activeContactor.value.messageChain.splice(i, 1);
-    }
-  }
-  activeContactor.value.makeSystemMessage(clearMessageTip);
-  client.setLocalStorage();
-};
-
-const delSystemMessage = (index) => {
-  const chain = activeContactor.value?.messageChain || [];
-  const renderedCountVal = renderedCount.value;
-  const realIndex =
-    chain.length > renderedCountVal
-      ? chain.length - renderedCountVal + index
-      : index;
-
-  const message = chain[realIndex];
-  if (!message) return;
-  if (
-    message.content[0].type === "text" &&
-    message.content[0].data.text === clearMessageTip
-  ) {
-    activeContactor.value.firstMessageIndex = 0;
-  }
-  activeContactor.value.messageChain.splice(realIndex, 1);
-  client.setLocalStorage();
 };
 
 const isValidInput = (input) => {
@@ -1115,7 +599,6 @@ const share = async () => {
   if (shareResult && shareResult.shareUrl) {
     const { shareUrl } = shareResult;
     const { success, message } = await shareOrCopy(shareUrl);
-    // 空 message = 用户取消分享，不弹任何提示
     if (!message) return;
     if (success) {
       ElMessage.success(message);
@@ -1237,82 +720,6 @@ const getReplyText = (id) => {
   }
 };
 
-const getRetryTargetIndex = (chain, index) => {
-  const clickedMsg = chain[index];
-  if (!clickedMsg) return -1;
-
-  if (clickedMsg.role === "other") {
-    // Assistant message: must be chat source
-    if (clickedMsg.triggerType === "task") return -1;
-    return index;
-  }
-
-  if (clickedMsg.role === "user") {
-    // User message: skip tasks until we find a chat message or end of chain
-    let targetIdx = index + 1;
-    while (
-      targetIdx < chain.length &&
-      chain[targetIdx].triggerType === "task"
-    ) {
-      targetIdx++;
-    }
-    return targetIdx;
-  }
-};
-const showMessageMenu = (event, messageIndex) => {
-  if (
-    event.target &&
-    event.target.tagName &&
-    event.target.tagName.toLowerCase() === "img"
-  ) {
-    const imgElement = event.target;
-    seletedImage.value = imgElement.src;
-  }
-
-  const chain = activeContactor.value?.messageChain || [];
-  const renderedCountVal = renderedCount.value;
-  const realIndex =
-    chain.length > renderedCountVal
-      ? chain.length - renderedCountVal + messageIndex
-      : messageIndex;
-
-  validMessageIndex.value = realIndex;
-  canRetry.value = getRetryTargetIndex(chain, realIndex) !== -1;
-  if (event.preventDefault) event.preventDefault();
-  showMenu.value = true;
-  menuTop.value = event.clientY;
-  menuLeft.value = event.clientX;
-
-  const currentSelectedText = window.getSelection().toString();
-  if (currentSelectedText) {
-    seletedText.value = currentSelectedText;
-  } else {
-    seletedText.value = "";
-  }
-};
-
-const handleTouchStart = (event, index) => {
-  const now = Date.now();
-  const delay = now - lastClickTime.value;
-
-  if (delay < 300 && delay > 0) {
-    if (event.cancelable) event.preventDefault();
-    const touch = event.touches[0];
-    const syntheticEvent = {
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      target: event.target,
-      preventDefault: () => {
-        if (event.preventDefault) event.preventDefault();
-      },
-    };
-    showMessageMenu(syntheticEvent, index);
-    lastClickTime.value = 0;
-  } else {
-    lastClickTime.value = now;
-  }
-};
-
 const toProfile = (memberId = null) => {
   if (
     activeContactor.value?.platform === "group" &&
@@ -1336,423 +743,11 @@ const toProfile = (memberId = null) => {
   }
 };
 
-/**
- * 重试前检查消息中是否有 blob:/data: 本地图片 URL，
- * 若有则从浏览器缓存取回 Blob 后重新上传为远程 URL。
- * 上传失败则移除该图片元素并提示用户。
- */
-const reuploadBlobImages = async (message) => {
-  if (!message || !Array.isArray(message.content)) return;
-  const uploadFn = inputEditor.value?.compressAndUploadImage;
-
-  for (const elm of message.content) {
-    if (elm.type !== "image") continue;
-    const url = elm.data?.file || "";
-    if (!url.startsWith("blob:") && !url.startsWith("data:")) continue;
-
-    try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const filename = "retry-image." + (blob.type.split("/")[1] || "png");
-      const file = new File([blob], filename, { type: blob.type });
-
-      if (uploadFn) {
-        elm.data.file = await uploadFn(file);
-      } else {
-        // InputEditor 未挂载（如多选模式）时直接走 client 上传，避免 blob URL 被原样发出
-        const formData = new FormData();
-        formData.append("image", file, filename);
-        const upload = await client.uploadImage(formData);
-        elm.data.file = upload.data.url;
-      }
-    } catch (e) {
-      console.error("重试时重新上传图片失败:", e);
-      // 上传失败则移除该图片元素，并告知用户
-      elm._remove = true;
-    }
-  }
-
-  // 清理标记为移除的元素
-  const before = message.content.length;
-  message.content = message.content.filter((elm) => !elm._remove);
-  if (message.content.length < before) {
-    ElMessage.warning("部分图片无法重新上传，已从消息中移除");
-  }
-};
-
-const handleRetryMessage = async (item) => {
-  const contactor = activeContactor.value;
-  if (!contactor) return;
-
-  if (item.triggerType === "task") {
-    ElMessage.warning("非聊天来源的消息不支持重试");
-    return;
-  }
-
-  if (contactor.platform === "onebot") {
-    item.status = "pending";
-    item.time = Date.now();
-    client.setLocalStorage();
-    try {
-      // 重试前重新上传本地图片（blob: / data: URL），避免 blob URL 被原样发给后端
-      await reuploadBlobImages(item);
-      await contactor.webSend(item);
-      ElMessage.success("消息已重新发送");
-    } catch (e) {
-      // Error handled in sendMessage
-    }
-  } else {
-    // OpenAI platform retry
-    const idx = contactor.messageChain.findIndex((m) => m.id === item.id);
-    if (idx === -1) return;
-
-    item.status = "pending";
-    item.time = Date.now();
-
-    const targetIndex = idx + 1;
-    let assistantMsg = contactor.messageChain[targetIndex];
-    if (!assistantMsg || assistantMsg.role !== "other") {
-      assistantMsg = {
-        role: "other",
-        time: Date.now(),
-        content: [{ type: "blank", data: {} }],
-        id: numberString(16),
-        status: "pending",
-        triggerType: "chat",
-      };
-      contactor.messageChain.splice(targetIndex, 0, assistantMsg);
-    } else {
-      assistantMsg.content = [{ type: "blank", data: {} }];
-      assistantMsg.time = Date.now();
-      assistantMsg.status = "pending";
-    }
-
-    client.setLocalStorage();
-    autoScroll.value = false;
-    toButtom();
-
-    // 重试前重新上传本地图片（blob: / data: URL）
-    await reuploadBlobImages(item);
-
-    try {
-      await gateway.send(
-        contactor.platform,
-        contactor.id,
-        contactor.messageChain,
-        assistantMsg.id,
-        contactor.options,
-      );
-      item.status = "completed";
-      client.setLocalStorage();
-    } catch (error) {
-      ElMessage.error(error.message || "重试失败");
-      item.status = "failed";
-      assistantMsg.status = "failed";
-      client.setLocalStorage();
-    }
-  }
-};
-
-const handleDeleteMessage = (item) => {
-  activeContactor.value.delMessage(item.id);
-  client.setLocalStorage();
-  ElMessage.success("消息已删除");
-};
-
 const scrollHandler = () => {
-  const elm = chatWindow.value;
-  if (!elm) return;
-
-  const currentScrollTop = elm.scrollTop;
-  const isScrollingUp = currentScrollTop < prevScrollTop.value;
-  prevScrollTop.value = currentScrollTop;
-
-  showMenu.value = false;
-  if (showemoji.value) showemoji.value = false;
-
-  const distanceFromBottom =
-    elm.scrollHeight - currentScrollTop - elm.clientHeight;
-  const isAtBottom = distanceFromBottom <= 15;
-
-  if (isAtBottom) {
-    autoScroll.value = true;
-    showRollDown.value = false;
-  } else {
-    if (isScrollingUp) {
-      autoScroll.value = false;
-      showRollDown.value = true;
-    }
-  }
-
-  if (
-    currentScrollTop === 0 &&
-    !isLoadingHistory.value &&
-    !isLocatingMessage.value
-  ) {
-    const chain = activeContactor.value?.messageChain || [];
-    if (renderedCount.value < chain.length) {
-      isLoadingHistory.value = true;
-
-      const currentElm = chatWindow.value;
-      if (!currentElm) {
-        isLoadingHistory.value = false;
-        return;
-      }
-
-      // Calculate how many and which messages will be loaded
-      const nextCount = Math.min(chain.length, renderedCount.value + 20);
-      const numToLoad = nextCount - renderedCount.value;
-      const startIndex = chain.length - nextCount;
-      const endIndex = chain.length - renderedCount.value;
-      const messagesToLoad = chain.slice(startIndex, endIndex);
-
-      // Extract all image URLs (Markdown, HTML tag, and Tool extra renders)
-      const imageUrls = [];
-      const mdImageRegex = /!\[.*?\]\((.*?)\)/g;
-      const htmlImgRegex = /<img[^>]+src=["']([^"']+)["']/g;
-
-      for (const msg of messagesToLoad) {
-        if (!msg || !msg.content) continue;
-        for (const element of msg.content) {
-          if (element.type === "image" && element.data && element.data.file) {
-            imageUrls.push(element.data.file);
-          } else if (
-            element.type === "text" &&
-            element.data &&
-            element.data.text
-          ) {
-            let match;
-            while ((match = mdImageRegex.exec(element.data.text)) !== null) {
-              imageUrls.push(match[1]);
-            }
-            let htmlMatch;
-            while (
-              (htmlMatch = htmlImgRegex.exec(element.data.text)) !== null
-            ) {
-              imageUrls.push(htmlMatch[1]);
-            }
-          } else if (
-            element.type === "tool_call" &&
-            element.data &&
-            element.data.extraRender
-          ) {
-            const extra = element.data.extraRender || [];
-            for (const r of extra) {
-              if (r.placement === "outer" && r.type === "image" && r.url) {
-                imageUrls.push(r.url);
-              }
-            }
-          }
-        }
-      }
-
-      // Preload images function in javascript memory
-      const preloadImages = (urls) => {
-        const promises = urls.map((url) => {
-          return new Promise((resolve) => {
-            const img = new Image();
-            img.src = url;
-            const timer = setTimeout(() => {
-              resolve({ url, success: false, timeout: true });
-            }, 6000); // 6 seconds timeout limit per image load
-            img.onload = () => {
-              clearTimeout(timer);
-              resolve({ url, success: true });
-            };
-            img.onerror = () => {
-              clearTimeout(timer);
-              resolve({ url, success: false });
-            };
-          });
-        });
-        return Promise.all(promises);
-      };
-
-      // Combine image preload with a minimum spinner delay of 500ms for smooth UX
-      const delayPromise = new Promise((resolve) => setTimeout(resolve, 500));
-
-      Promise.all([preloadImages(imageUrls), delayPromise])
-        .then(() => {
-          const currentElmAfterLoad = chatWindow.value;
-          if (!currentElmAfterLoad) {
-            isLoadingHistory.value = false;
-            return;
-          }
-
-          // Save height difference base before rendering new messages
-          const prevScrollPosFromBottom =
-            currentElmAfterLoad.scrollHeight - currentElmAfterLoad.scrollTop;
-
-          renderedCount.value = nextCount;
-          isLoadingHistory.value = false;
-
-          nextTick(() => {
-            currentElmAfterLoad.scrollTop =
-              currentElmAfterLoad.scrollHeight - prevScrollPosFromBottom;
-
-            if (messagesInner.value) {
-              oldInnerHeight = messagesInner.value.offsetHeight;
-              isObservingResize = true;
-              if (observeTimer) clearTimeout(observeTimer);
-              observeTimer = setTimeout(() => {
-                isObservingResize = false;
-              }, 4000);
-            }
-          });
-        })
-        .catch((err) => {
-          console.error("History image preload error:", err);
-          // Fallback update in case of failure
-          const currentElmFallback = chatWindow.value;
-          if (currentElmFallback) {
-            const prevScrollPosFromBottom =
-              currentElmFallback.scrollHeight - currentElmFallback.scrollTop;
-            renderedCount.value = nextCount;
-            nextTick(() => {
-              currentElmFallback.scrollTop =
-                currentElmFallback.scrollHeight - prevScrollPosFromBottom;
-
-              if (messagesInner.value) {
-                oldInnerHeight = messagesInner.value.offsetHeight;
-                isObservingResize = true;
-                if (observeTimer) clearTimeout(observeTimer);
-                observeTimer = setTimeout(() => {
-                  isObservingResize = false;
-                }, 4000);
-              }
-            });
-          }
-          isLoadingHistory.value = false;
-        });
-    }
-  }
-
-  if (isMultiSelect.value) {
-    updateVisibilitySelectionState();
-  }
-};
-
-const getseletedMessage = () => {
-  return activeContactor.value.messageChain[validMessageIndex.value];
-};
-
-const handleMessageOption = async (option) => {
-  const message = getseletedMessage();
-  switch (option) {
-    case "multi-select":
-      isMultiSelect.value = true;
-      if (message && message.id) {
-        selectedMessages.value.push(message.id);
-      }
-      break;
-    case "retry":
-      if (activeContactor.value.platform === "onebot") {
-        const msgToSend = {
-          ...message,
-          role: "user",
-          id: numberString(16),
-          status: "pending",
-          time: Date.now(),
-        };
-        // 重试前重新上传本地图片（blob: / data: URL），避免 blob URL 被原样发给后端
-        await reuploadBlobImages(msgToSend);
-        activeContactor.value.webSend(msgToSend);
-        ElMessage.success("消息已重新发送");
-      } else {
-        const contactor = contactorsStore.activeContactor;
-        const targetIndex = getRetryTargetIndex(
-          contactor.messageChain,
-          validMessageIndex.value,
-        );
-
-        if (targetIndex === -1) {
-          ElMessage.warning("非聊天来源的消息不支持重试");
-          return;
-        }
-
-        let validMessage = contactor.messageChain[targetIndex];
-        if (!validMessage || validMessage.role !== "other") {
-          // Insert a fresh assistant placeholder at the target index
-          validMessage = {
-            role: "other",
-            time: Date.now(),
-            content: [{ type: "blank", data: {} }],
-            id: numberString(16),
-            status: "pending",
-          };
-          contactor.messageChain.splice(targetIndex, 0, validMessage);
-          client.setLocalStorage();
-        } else {
-          // make the existing assistant message editable and reset its content
-          validMessage.content = [{ type: "blank", data: {} }];
-          validMessage.time = Date.now();
-        }
-        if (validMessage.status === "retrying") {
-          ElMessage.warning("该消息正在重试中");
-          return;
-        }
-        validMessage.status = "retrying";
-        retryList.value.push(validMessage.id);
-
-        // 重试前重新上传用户消息中残留的本地图片
-        const userMsg = message.role === "user"
-          ? message
-          : contactor.messageChain[validMessageIndex.value - 1];
-        if (userMsg?.role === "user") {
-          await reuploadBlobImages(userMsg);
-        }
-
-        try {
-          await gateway.send(
-            contactor.platform,
-            contactor.id,
-            contactor.messageChain,
-            validMessage.id,
-            contactor.options,
-          );
-          client.saveNow();
-        } catch (error) {
-          ElMessage.error(error.message || "重试失败");
-          validMessage.status = "failed";
-          return;
-        }
-      }
-      autoScroll.value = false;
-      toButtom();
-      break;
-    case "reply":
-      if (inputEditor.value) {
-        inputEditor.value.insertReplyBadge(message);
-        ElMessage.success("已引用该消息");
-      }
-      break;
-    case "mention": {
-      const name = message?.senderName || message?.sender_name;
-      const memberId = message?.senderMemberId || message?.sender_id;
-      if (inputEditor.value && name) {
-        inputEditor.value.insertMention(name, memberId);
-      }
-      break;
-    }
-    case "delete":
-      activeContactor.value.delMessage(message.id);
-      client.setLocalStorage();
-      break;
-    case "stop":
-      activeContactor.value.interruptMessage(message.id);
-      break;
-    case "toggle-pin":
-      if (message) {
-        message.isPinned = !message.isPinned;
-        client.setLocalStorage();
-        ElMessage.success(message.isPinned ? "消息已钉住" : "已取消钉住");
-      }
-      break;
-    case "read-aloud":
-      speakMessage(message);
-      break;
-  }
-  showMenu.value = false;
+  handleChatScroll(() => {
+    showMenu.value = false;
+    if (showemoji.value) showemoji.value = false;
+  });
 };
 
 const handleMessageClick = (item) => {
