@@ -202,6 +202,19 @@ const selectedOption = ref(null);
 const fullScreen = ref(false);
 const inputBarTop = ref(0);
 const inputEditor = ref(null);
+const imagePreview = ref({ visible: false, url: "" });
+/** UI 白名单接口：Shadow DOM 内的内联 onclick 通过它驱动主页面输入框 */
+window.__mio = window.__mio || {};
+window.__mio.sendText = (text) => {
+  inputEditor.value?.setText(text);
+  setTimeout(() => inputEditor.value?.send(), 30);
+};
+window.__mio.setInput = (text) => {
+  inputEditor.value?.setText(text);
+};
+window.__mio.previewImage = (url) => {
+  imagePreview.value = { visible: true, url };
+};
 
 let resizeObserver = null;
 let isObservingResize = false;
@@ -1144,6 +1157,20 @@ onBeforeUnmount(() => {
       @qr-code-change="onQRCodeChange"
     />
   </div>
+
+  <!-- anyui 全屏图片预览（Teleport 到 body，脱离 Shadow DOM/消息气泡定位上下文） -->
+  <Teleport to="body">
+    <transition name="mio-img-preview-fade">
+      <div
+        v-if="imagePreview.visible"
+        class="mio-img-preview-overlay"
+        @click.self="imagePreview.visible = false"
+      >
+        <img :src="imagePreview.url" class="mio-img-preview-img" alt="preview" />
+        <button class="mio-img-preview-close" @click="imagePreview.visible = false">×</button>
+      </div>
+    </transition>
+  </Teleport>
 </template>
 
 <style lang="sass" scoped>
@@ -1601,4 +1628,43 @@ $mobile: 768px
     40%
         transform: translateY(-6px)
         opacity: 0.85
+
+/* anyui 全屏图片预览（Teleport 到 body，不受 Shadow DOM 定位上下文限制） */
+.mio-img-preview-overlay
+    position: fixed
+    top: 0
+    left: 0
+    right: 0
+    bottom: 0
+    z-index: 10000
+    background: rgba(0, 0, 0, 0.95)
+    display: flex
+    align-items: center
+    justify-content: center
+
+.mio-img-preview-img
+    max-width: 100%
+    max-height: 100%
+    object-fit: contain
+
+.mio-img-preview-close
+    position: absolute
+    top: 14px
+    right: 18px
+    z-index: 1
+    color: #fff
+    font-size: 34px
+    line-height: 1
+    cursor: pointer
+    background: none
+    border: none
+    padding: 4px 10px
+
+.mio-img-preview-fade-enter-active,
+.mio-img-preview-fade-leave-active
+    transition: opacity 0.2s ease
+
+.mio-img-preview-fade-enter-from,
+.mio-img-preview-fade-leave-to
+    opacity: 0
 </style>

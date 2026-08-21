@@ -69,14 +69,8 @@
             {{ item.text || "查看链接" }}
           </el-link>
         </template>
-        <template v-else-if="item.type === 'iframe'">
-          <iframe
-            :srcdoc="wrapIframeDoc(item.html)"
-            :style="{ height: (item.height || 480) + 'px' }"
-            class="extra-render-iframe"
-            sandbox="allow-scripts"
-            frameborder="0"
-          ></iframe>
+        <template v-else-if="item.type === 'iframe' || item.type === 'html'">
+          <ShadowHtml :html="item.html" />
         </template>
       </div>
     </div>
@@ -86,13 +80,15 @@
 <script>
 import ActionBlock from "./ActionBlock.vue";
 import MdRenderer from "mio-previewer";
+import ShadowHtml from "./ShadowHtml.vue";
 import { client } from "@/lib/runtime.js";
-import { wrapIframeDoc as wrapIframeDocUtil, setupIframeAutoResize } from "@/utils/iframeAutoResize.js";
+import { setupIframeAutoResize } from "@/utils/iframeAutoResize.js";
 
 export default {
   components: {
     ActionBlock,
     MdRenderer,
+    ShadowHtml,
   },
   props: {
     toolCall: {
@@ -153,10 +149,6 @@ export default {
     innerItems() {
       const extra = this.toolCall.extraRender || [];
       return extra.filter((r) => r.placement !== "outer");
-    },
-    // Options API 模板需要 methods 方法：转发到 util（注入高度自适应脚本）
-    wrapIframeDoc(html) {
-      return wrapIframeDocUtil(html);
     },
     toolTitle() {
       if (this.toolCall.displayName) {
