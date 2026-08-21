@@ -455,7 +455,11 @@ const handleFriendOption = async (option, friendOverride) => {
     case "share": {
       const shareResult = await client.shareContactor(friend.id);
       if (shareResult?.shareUrl) {
-        const { success, message } = await shareOrCopy(shareResult.shareUrl);
+        const { success, message } = await shareOrCopy({
+          title: `分享智能体: ${friend.name || "MioChat Agent"}`,
+          text: shareResult.shareUrl,
+          url: shareResult.shareUrl,
+        });
         // 空 message = 用户取消分享，不弹任何提示
         if (message) {
           proxy.$message({ message, type: success ? "success" : "error" });

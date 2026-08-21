@@ -31,15 +31,37 @@ export function useChatScroll({ activeContactor, scrollDefault = true }) {
   });
 
   const toBottom = (behavior = "instant") => {
-    nextTick(() => {
-      const elm = chatWindow.value;
+    let scrollBehavior = "instant";
+    if (behavior === true || behavior === "smooth") {
+      scrollBehavior = "smooth";
+    } else if (
+      typeof behavior === "string" &&
+      ["auto", "instant", "smooth"].includes(behavior)
+    ) {
+      scrollBehavior = behavior;
+    }
+
+    const doScroll = () => {
+      const elm =
+        chatWindow.value || document.getElementById("main-messages-window");
       if (elm) {
-        elm.scrollTo({
-          top: elm.scrollHeight,
-          behavior,
-        });
+        try {
+          elm.scrollTo({
+            top: elm.scrollHeight,
+            behavior: scrollBehavior,
+          });
+        } catch {
+          elm.scrollTop = elm.scrollHeight;
+        }
         autoScroll.value = true;
         showRollDown.value = false;
+      }
+    };
+
+    nextTick(() => {
+      doScroll();
+      if (scrollBehavior === "smooth") {
+        setTimeout(doScroll, 120);
       }
     });
   };
@@ -219,13 +241,13 @@ export function useChatScroll({ activeContactor, scrollDefault = true }) {
 
     const distanceFromBottom =
       elm.scrollHeight - currentScrollTop - elm.clientHeight;
-    const isAtBottom = distanceFromBottom <= 15;
+    const isAtBottom = distanceFromBottom <= 30;
 
     if (isAtBottom) {
       autoScroll.value = true;
       showRollDown.value = false;
     } else {
-      if (isScrollingUp) {
+      if (isScrollingUp || distanceFromBottom > 150) {
         autoScroll.value = false;
         showRollDown.value = true;
       }

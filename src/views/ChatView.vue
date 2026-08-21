@@ -608,7 +608,11 @@ const share = async () => {
   const shareResult = await client.shareContactor(activeContactor.value.id);
   if (shareResult && shareResult.shareUrl) {
     const { shareUrl } = shareResult;
-    const { success, message } = await shareOrCopy(shareUrl);
+    const { success, message } = await shareOrCopy({
+      title: `分享智能体: ${activeContactor.value?.name || "MioChat Agent"}`,
+      text: shareUrl,
+      url: shareUrl,
+    });
     if (!message) return;
     if (success) {
       ElMessage.success(message);
@@ -975,7 +979,7 @@ onBeforeUnmount(() => {
         class="mio-chat-window__scroll-down-btn"
         id="roll-buttom-button"
         :style="{ bottom: inputBarTop + 24 + 'px' }"
-        @click="toButtom(true)"
+        @click.stop="toButtom('smooth')"
       >
         <i class="iconfont down1"></i>
       </div>
