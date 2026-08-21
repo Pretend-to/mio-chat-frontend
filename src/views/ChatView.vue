@@ -203,15 +203,32 @@ const fullScreen = ref(false);
 const inputBarTop = ref(0);
 const inputEditor = ref(null);
 const imagePreview = ref({ visible: false, url: "" });
-/** UI 白名单接口：Shadow DOM 内的内联 onclick 通过它驱动主页面输入框 */
+/** UI 白名单接口：Shadow DOM 内的内联 onclick 交互能力 */
 window.__mio = window.__mio || {};
-window.__mio.sendText = (text) => {
-  inputEditor.value?.setText(text);
-  setTimeout(() => inputEditor.value?.send(), 30);
+/** 点击选项直接发送：走底层 webSend 管线，不碰输入框，不弹键盘，保护当前未发送的草稿 */
+window.__mio.sendText = async (text) => {
+  if (!text || !activeContactor.value) return;
+  const strText = String(text).trim();
+  if (!strText) return;
+
+  const container = activeContactor.value.getBaseUserContainer();
+  container.content.push({
+    type: "text",
+    data: { text: strText },
+  });
+
+  toButtom("smooth");
+  try {
+    await activeContactor.value.webSend(container);
+  } catch (err) {
+    console.error("Direct send failed:", err);
+  }
 };
+/** 填入输入框（供需要二次编辑的场景使用） */
 window.__mio.setInput = (text) => {
   inputEditor.value?.setText(text);
 };
+/** 全屏大图预览 */
 window.__mio.previewImage = (url) => {
   imagePreview.value = { visible: true, url };
 };
