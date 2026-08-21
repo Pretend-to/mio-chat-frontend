@@ -57,7 +57,7 @@ app.mount("#app");
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
-      .register("/service-worker.v4.js")
+      .register("/service-worker.v5.js")
       .then((registration) => {
         console.log("Service Worker registered: ", registration);
 

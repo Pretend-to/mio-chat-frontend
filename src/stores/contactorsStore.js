@@ -80,7 +80,8 @@ export function getShownTime(timestamp) {
 }
 export function getAvatarByModel(model, provider = null) {
   if (model) {
-    return `/p/mava?model=${encodeURIComponent(model)}&provider=${encodeURIComponent(provider || "")}`;
+    // v=2: cache-bust，旧 301 缓存失效，确保头像映射更新后客户端无需手动清缓存
+    return `/p/mava?model=${encodeURIComponent(model)}&provider=${encodeURIComponent(provider || "")}&v=2`;
   }
   if (provider) {
     const providers = config.baseConfig?.llm_providers || [];
