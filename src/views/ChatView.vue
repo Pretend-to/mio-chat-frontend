@@ -202,6 +202,15 @@ const selectedOption = ref(null);
 const fullScreen = ref(false);
 const inputBarTop = ref(0);
 const inputEditor = ref(null);
+/** UI 白名单接口：Shadow DOM 内的内联 onclick 通过它驱动主页面输入框 */
+window.__mio = window.__mio || {};
+window.__mio.sendText = (text) => {
+  inputEditor.value?.setText(text);
+  setTimeout(() => inputEditor.value?.send(), 30);
+};
+window.__mio.setInput = (text) => {
+  inputEditor.value?.setText(text);
+};
 
 let resizeObserver = null;
 let isObservingResize = false;

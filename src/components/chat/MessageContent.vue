@@ -187,14 +187,8 @@
                 </el-link>
               </div>
             </template>
-            <template v-else-if="item.type === 'iframe'">
-              <iframe
-                :srcdoc="wrapIframeDoc(item.html)"
-                :style="{ height: (item.height || 480) + 'px' }"
-                class="extra-render-iframe"
-                sandbox="allow-scripts"
-                frameborder="0"
-              ></iframe>
+            <template v-else-if="item.type === 'iframe' || item.type === 'html'">
+              <ShadowHtml :html="item.html" />
             </template>
           </div>
         </div>
@@ -221,7 +215,8 @@
 <script setup>
 import { computed, ref, defineAsyncComponent, onMounted, onUnmounted } from "vue";
 import { client } from "@/lib/runtime.js";
-import { wrapIframeDoc, setupIframeAutoResize } from "@/utils/iframeAutoResize.js";
+import { setupIframeAutoResize } from "@/utils/iframeAutoResize.js";
+import ShadowHtml from "@/components/ShadowHtml.vue";
 import ToolCallBar from "@/components/ToolCallBar.vue";
 import ReasonBlock from "@/components/ReasonBlock.vue";
 import ActionBlock from "@/components/ActionBlock.vue";

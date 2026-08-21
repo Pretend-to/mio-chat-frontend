@@ -630,6 +630,8 @@ defineExpose({
   insertMention,
   saveDraft,
   compressAndUploadImage,
+  send,
+  setText,
 });
 
 const currentChange = (data, event) => {
@@ -666,6 +668,14 @@ const currentChange = (data, event) => {
 
 const cleanScreen = () => {
   emit("cleanScreen");
+};
+/** UI 白名单接口用：向编辑器写入纯文本并保存草稿 */
+const setText = (text) => {
+  if (!textarea.value) return;
+  textarea.value.focus();
+  updateEditorText(String(text ?? ""));
+  saveDraft();
+  adjustTextareaHeight();
 };
 
 const clickOutsideHandler = ref(null);
