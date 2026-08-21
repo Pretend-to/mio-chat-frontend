@@ -242,7 +242,7 @@ export default {
                 this.activeContactor.avatarPolicy === 0 ||
                 this.activeContactor.avatarPolicy === "MODEL"
               ) {
-                this.activeContactor.avatar = this.activeContactor.loadAvatar();
+                useContactorsStore().loadContactorAvatar(this.activeContactor);
                 if (this.basicInfo) this.basicInfo.avatar = this.activeContactor.avatar;
               }
               if (
@@ -494,7 +494,7 @@ export default {
       // This event is specifically for actions parent needs to take,
       // like reloading avatar, that are outside the 'options' object.
       // title 同步已统一归口到 options watcher（provider 切换同样走 emitUpdate）
-      this.activeContactor.loadAvatar();
+      useContactorsStore().loadContactorAvatar(this.activeContactor);
     },
 
     updateContactorName() {
@@ -507,7 +507,8 @@ export default {
       if (!this.activeContactor) return;
       const { avatarPolicy } = this.basicInfo;
       this.activeContactor.avatarPolicy = avatarPolicy;
-      this.basicInfo.avatar = this.activeContactor.loadAvatar();
+      useContactorsStore().loadContactorAvatar(this.activeContactor);
+      this.basicInfo.avatar = this.activeContactor.avatar;
     },
   },
 };
