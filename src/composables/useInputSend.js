@@ -33,9 +33,11 @@ export function useInputSend({
     );
   });
 
-  const presend = () => {
+  const presend = (focusInput = true) => {
     if (!textareaRef.value) return null;
-    textareaRef.value.focus();
+    if (focusInput) {
+      textareaRef.value.focus();
+    }
     const images = textareaRef.value.querySelectorAll("img");
     const ImageSrcs = Array.from(images).map((img) => img.src);
 
@@ -335,20 +337,12 @@ export function useInputSend({
     }
     return container;
   };
-
-  const send = async () => {
-    if (!hasInput()) return;
-    emit("toButtom");
-
-    const container = presend();
+  const send = async (focusInput = true) => {
     if (!container) return;
-
     const localImageElements = container.content.filter(
       (elm) => elm.type === "image" && elm.data.file.startsWith("blob:"),
     );
-
     const hasLocalImages = localImageElements.length > 0;
-
     container.status = hasLocalImages ? "uploading" : "pending";
     activeContactor.value.messageChain.push(container);
     clearDraft();
