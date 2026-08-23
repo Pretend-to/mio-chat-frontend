@@ -114,6 +114,25 @@ const router = createRouter({
           meta: { title: "模型适配器" },
         },
         {
+          path: "image-adapters",
+          name: "settings_image_adapters",
+          component: () => import("../views/settings/ImageAdaptersView.vue"),
+          meta: { title: "生图服务" },
+        },
+        {
+          path: "search-adapters",
+          name: "settings_search_adapters",
+          component: () => import("../views/settings/SearchAdaptersView.vue"),
+          meta: { title: "搜索服务" },
+        },
+        {
+          path: "vision-adapters",
+          name: "settings_vision_adapters",
+          component: () => import("../views/settings/VisionAdaptersView.vue"),
+          meta: { title: "识图服务" },
+        },
+
+        {
           path: "automation",
           name: "settings_automation",
           component: () => import("../views/settings/AutomationView.vue"),

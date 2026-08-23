@@ -353,6 +353,9 @@ import {
   ArrowRight,
   User,
   Setting,
+  Picture,
+  Search,
+  View,
 } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
@@ -396,6 +399,9 @@ const systemStatusText = computed(() => {
 const allMenuItems = [
   { index: "overview", label: "概览", icon: Menu },
   { index: "llm-adapters", label: "LLM 适配器", icon: Connection },
+  { index: "image-adapters", label: "生图服务", icon: Picture },
+  { index: "search-adapters", label: "搜索服务", icon: Search },
+  { index: "vision-adapters", label: "识图服务", icon: View },
   { index: "automation", label: "系统任务", icon: Connection },
   { index: "server", label: "服务器配置", icon: Monitor },
   { index: "web", label: "Web 配置", icon: ChromeFilled },
@@ -436,17 +442,11 @@ const checkMobile = () => {
 // 当前激活的菜单项
 const activeMenu = computed(() => {
   const path = route.path;
-  if (path.includes("llm-adapters")) return "llm-adapters";
-  if (path.includes("automation")) return "automation";
-  if (path.includes("server")) return "server";
-  if (path.includes("webhook")) return "webhook";
-  if (path.includes("web")) return "web";
-  if (path.includes("onebot")) return "onebot";
-  if (path.includes("plugins")) return "plugins";
-  if (path.includes("presets")) return "presets";
-  if (path.includes("storage")) return "storage";
-  if (path.includes("logs")) return "logs";
-  if (path.includes("client")) return "client";
+  for (const item of allMenuItems) {
+    if (item.index !== "overview" && path.includes(item.index)) {
+      return item.index;
+    }
+  }
   return "overview";
 });
 
@@ -865,20 +865,44 @@ onUnmounted(() => {
 
 .admin-panel-sidebar {
   width: 220px;
+  height: 100%;
   background: transparent; // 侧边栏背景透明
   border-right: none; // 去掉分割线
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden; // 侧边栏整体不滚动，由上下子部分各自控制
   position: relative;
   z-index: 30;
   padding-right: 8px;
+  flex-shrink: 0;
 }
 
 .admin-panel-menu {
   flex: 1;
+  min-height: 0; // 关键：允许 flex 子项收缩触发内部滚动条
+  overflow-y: auto;
+  overflow-x: hidden;
   border: none;
   background: transparent;
+  padding-right: 4px;
+
+  // 独立滚动条美化
+  scrollbar-width: thin;
+  scrollbar-color: var(--mio-border-color-light) transparent;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--mio-border-color-light);
+    border-radius: 4px;
+    &:hover {
+      background-color: var(--mio-text-placeholder);
+    }
+  }
 
   :deep(.el-menu-item) {
     height: 50px;
@@ -905,7 +929,9 @@ onUnmounted(() => {
 }
 
 .quick-actions {
-  padding: 12px 0;
+  flex-shrink: 0; // 底部快捷操作永不被压缩
+  padding: 12px 0 0 0;
+  margin-top: 8px;
   border-top: 1px solid var(--mio-border-color-light);
   display: flex;
   flex-direction: column;

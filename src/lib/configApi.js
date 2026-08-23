@@ -578,3 +578,4 @@ export const configAPI = new ConfigAPI();
 export const pluginAPI = new PluginAPI(configAPI);
 export const skillAPI = new SkillAPI(configAPI);
 export const taskAPI = new TaskAPI(configAPI);
+export default configAPI;
