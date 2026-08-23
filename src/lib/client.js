@@ -618,7 +618,7 @@ export default class Client extends EventEmitter {
    * @param {object} client User information
    */
   async loadLocalStorage(client) {
-    this.id = client.id;
+    this.id = client.id || this.id || this.genFakeId();
     this.code = client.code;
 
     const store = getStore();
