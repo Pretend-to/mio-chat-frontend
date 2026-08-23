@@ -24,7 +24,7 @@ const AUTO_RESIZE_SCRIPT = `<script>
   window.addEventListener('load', report)
   report()
 })()
-<\/script>`
+</script>`
 
 /**
  * 将 HTML 包装为完整文档，注入自适应脚本

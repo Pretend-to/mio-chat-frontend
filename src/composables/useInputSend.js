@@ -338,6 +338,11 @@ export function useInputSend({
     return container;
   };
   const send = async (focusInput = true) => {
+    if (!hasInput()) return;
+    emit("toButtom");
+
+    const shouldFocus = typeof focusInput === "boolean" ? focusInput : true;
+    const container = presend(shouldFocus);
     if (!container) return;
     const localImageElements = container.content.filter(
       (elm) => elm.type === "image" && elm.data.file.startsWith("blob:"),
