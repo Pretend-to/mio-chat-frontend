@@ -129,11 +129,10 @@ export function useChatScreenshot({ chatWindowRef, selectedMessages }) {
       messageWindow.style.paddingTop = "1.25rem";
       exportEl.appendChild(messageWindow);
 
-      // Clone selected message DOM nodes (preserving real styles)
       const containerEls = Array.from(
         chatWindowRef.value.querySelectorAll(".message-container"),
+      );
       for (const el of containerEls) {
-        const itemId = el.getAttribute("data-id");
         const isSelected = selectedMessages.value.some(
           (id) => String(id) === itemId,
         );
