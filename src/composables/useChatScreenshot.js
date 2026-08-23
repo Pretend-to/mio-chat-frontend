@@ -132,7 +132,6 @@ export function useChatScreenshot({ chatWindowRef, selectedMessages }) {
       // Clone selected message DOM nodes (preserving real styles)
       const containerEls = Array.from(
         chatWindowRef.value.querySelectorAll(".message-container"),
-      );
       for (const el of containerEls) {
         const itemId = el.getAttribute("data-id");
         const isSelected = selectedMessages.value.some(
@@ -140,14 +139,24 @@ export function useChatScreenshot({ chatWindowRef, selectedMessages }) {
         );
         if (!isSelected) continue;
         const clone = el.cloneNode(true);
-        // Remove multi-select UI artifacts
+        // Remove multi-selectUI artifacts
         clone.querySelector(".multi-select-box")?.remove();
         const wrapper = clone.querySelector(".message-flex-wrapper");
         if (wrapper) wrapper.classList.remove("is-multi-select", "is-selected");
 
+        // 穿透展开 Shadow DOM：cloneNode(true) 不会克隆 shadowRoot 内部内容
+        // 这里主动将每个 shadowRoot 内部的 HTML（含卡片自包含 style 与 DOM）注入到克隆节点中，使 snapdom 能够完整绘制
+        const origHosts = el.querySelectorAll(".shadow-html-host");
+        const cloneHosts = clone.querySelectorAll(".shadow-html-host");
+        origHosts.forEach((origHost, i) => {
+          const cloneHost = cloneHosts[i];
+          if (cloneHost && origHost.shadowRoot) {
+            cloneHost.innerHTML = origHost.shadowRoot.innerHTML;
+          }
+        });
+
         messageWindow.appendChild(clone);
       }
-
       // Footer with QR code in a premium card style
       if (showQRCode.value) {
         const footer = document.createElement("div");
