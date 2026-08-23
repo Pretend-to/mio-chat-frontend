@@ -188,7 +188,10 @@
               </div>
             </template>
             <template v-else-if="item.type === 'iframe' || item.type === 'html'">
-              <ShadowHtml :html="item.html" />
+              <ShadowHtml
+                :html="item.html"
+                @update:html="handleShadowHtmlUpdate(item, $event)"
+              />
             </template>
           </div>
         </div>
@@ -341,6 +344,13 @@ function outerItems(data) {
   const extra = data.extraRender || [];
   return extra.filter((r) => r.placement === "outer");
 }
+
+const handleShadowHtmlUpdate = (item, newHtml) => {
+  if (item && newHtml && item.html !== newHtml) {
+    item.html = newHtml;
+    client.config?._saveStrogeConfig?.();
+  }
+};
 
 // iframe 高度自适应：内容变化时自动贴合（ResizeObserver + postMessage）
 const { enable: enableIframeResize, disable: disableIframeResize } = setupIframeAutoResize();
