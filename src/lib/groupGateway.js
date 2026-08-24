@@ -685,6 +685,7 @@ export async function sendGroupCompletions(group, assistantMsgId, targetMemberId
       memberCrystal?.tokenWatermark ?? 'auto';
     settings.previous_summary = memberCrystal?.latestSummary || "";
     settings.crystallization_keep_turns = 1;
+    settings.pending_memory_events = memberCrystal?.pendingMemoryEvents || [];
     // opening 已经并进 system message（见 formatGroupMessagesForMember），
     // 这里清掉避免后端重复注入人格
     if (settings.presetSettings) {

@@ -130,6 +130,15 @@
               压缩内容已保存并生效
             </span>
             <span class="last-updated" v-else> 暂无已保存的压缩内容 </span>
+            <el-tag
+              v-if="pendingEventsCount > 0"
+              size="small"
+              type="warning"
+              effect="plain"
+              style="margin-left: 8px;"
+            >
+              {{ pendingEventsCount }} 条记忆待结晶
+            </el-tag>
           </div>
           <div class="row-actions">
             <el-button size="small" type="danger" plain @click="clearSummary">
@@ -275,6 +284,11 @@ const lastUpdatedTime = computed(() => {
 const hasCrystallizationContent = computed(() => {
   const summary = crystallization.value?.latestSummary || "";
   return summary.trim().length > 0;
+});
+
+const pendingEventsCount = computed(() => {
+  const events = crystallization.value?.pendingMemoryEvents;
+  return Array.isArray(events) ? events.length : 0;
 });
 
 // Re-parse zones when latestSummary changes externally
