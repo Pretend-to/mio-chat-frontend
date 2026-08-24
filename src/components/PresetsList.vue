@@ -126,7 +126,7 @@
         class="add-btn user-btn"
         @click="addPresetMessage('user')"
       >
-        <el-icon style="margin-right: 4px"><User /></el-icon> + 用户消息 (User)
+        <el-icon style="margin-right: 4px"><User /></el-icon> + 用户消息
       </el-button>
       <el-button
         size="small"
@@ -134,7 +134,7 @@
         class="add-btn assistant-btn"
         @click="addPresetMessage('assistant')"
       >
-        <el-icon style="margin-right: 4px"><Service /></el-icon> + 助手回复 (Assistant)
+        <el-icon style="margin-right: 4px"><Service /></el-icon> + 助手回复
       </el-button>
       <el-button
         size="small"
@@ -142,7 +142,7 @@
         class="add-btn system-btn"
         @click="addPresetMessage('system')"
       >
-        <el-icon style="margin-right: 4px"><Setting /></el-icon> + 系统设定 (System)
+        <el-icon style="margin-right: 4px"><Setting /></el-icon> + 系统设定
       </el-button>
     </div>
   </div>
@@ -372,6 +372,7 @@ const clearAll = async () => {
   border-color: var(--mio-border-color-lighter);
   color: var(--mio-text-regular);
   background: var(--mio-bg-card);
+  white-space: nowrap;
 }
 
 .add-btn:hover {

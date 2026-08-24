@@ -133,8 +133,9 @@ export function useChatScreenshot({ chatWindowRef, selectedMessages }) {
         chatWindowRef.value.querySelectorAll(".message-container"),
       );
       for (const el of containerEls) {
+        const itemId = el.getAttribute("data-id") || el.dataset?.id;
         const isSelected = selectedMessages.value.some(
-          (id) => String(id) === itemId,
+          (id) => String(id) === String(itemId),
         );
         if (!isSelected) continue;
         const clone = el.cloneNode(true);
