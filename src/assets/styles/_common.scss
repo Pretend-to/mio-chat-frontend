@@ -948,12 +948,12 @@ figure {
     }
   }
 
-  // Touch adaptations
-  .el-button,
+  // Touch adaptations (exclude small/circle icon buttons)
+  .el-button:not(.is-circle):not(.action-btn):not(.el-button--small):not(.el-button--mini),
   .el-checkbox,
   .el-radio,
   .el-switch {
-    min-height: 44px !important;
+    min-height: 44px;
   }
 
   .el-table {

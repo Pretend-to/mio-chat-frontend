@@ -545,7 +545,14 @@ onBeforeUnmount(() => {
 }
 
 .presets-card {
-  padding: 16px 24px;
+  padding: 16px 20px;
+}
+
+@media (max-width: 768px) {
+  .presets-card {
+    padding: 12px 10px;
+    margin: 0 10px 12px;
+  }
 }
 
 .no-skills {

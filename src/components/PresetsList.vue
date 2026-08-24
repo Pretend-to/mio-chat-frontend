@@ -46,14 +46,14 @@
               class="role-select"
               @change="notifyUpdate"
             >
-              <el-option label="系统设定 (System)" value="system">
-                <span class="role-opt system">⚙️ System</span>
+              <el-option label="系统设定" value="system">
+                <span class="role-opt system">⚙️ 系统设定</span>
               </el-option>
-              <el-option label="用户示范 (User)" value="user">
-                <span class="role-opt user">👤 User</span>
+              <el-option label="用户示范" value="user">
+                <span class="role-opt user">👤 用户示范</span>
               </el-option>
-              <el-option label="助手回复 (Assistant)" value="assistant">
-                <span class="role-opt assistant">🤖 Assistant</span>
+              <el-option label="助手回复" value="assistant">
+                <span class="role-opt assistant">🤖 助手回复</span>
               </el-option>
             </el-select>
             <span class="index-badge">#{{ index + 1 }}</span>
@@ -63,7 +63,6 @@
             <el-button
               :disabled="index === 0"
               size="small"
-              circle
               plain
               title="上移"
               class="action-btn"
@@ -74,7 +73,6 @@
             <el-button
               :disabled="index === presetMessages.length - 1"
               size="small"
-              circle
               plain
               title="下移"
               class="action-btn"
@@ -84,7 +82,6 @@
             </el-button>
             <el-button
               size="small"
-              circle
               plain
               title="复制"
               class="action-btn"
@@ -94,7 +91,6 @@
             </el-button>
             <el-button
               size="small"
-              circle
               type="danger"
               plain
               title="删除"
@@ -322,22 +318,31 @@ const clearAll = async () => {
 }
 
 .action-btn {
-  width: 24px !important;
-  height: 24px !important;
-  padding: 0 !important;
-  font-size: 11px;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  max-width: 26px;
+  padding: 0;
+  font-size: 12px;
   color: var(--mio-text-secondary);
   border-color: var(--mio-border-color-lighter);
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .action-btn:hover {
   color: var(--mio-color-primary);
   border-color: var(--mio-color-primary);
+  background-color: var(--mio-bg-hover);
 }
 
 .action-btn.delete:hover {
   color: var(--mio-color-danger);
   border-color: var(--mio-color-danger);
+  background-color: rgba(245, 108, 108, 0.1);
 }
 
 .card-body :deep(.el-textarea__inner) {
@@ -358,26 +363,57 @@ const clearAll = async () => {
 }
 
 .add-buttons-bar {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  justify-content: flex-start;
+  width: 100%;
   padding-top: 4px;
+  box-sizing: border-box;
 }
 
 .add-btn {
+  width: 100%;
+  padding: 8px 4px !important;
+  margin: 0 !important;
   font-size: 12px;
   font-weight: 500;
-  border-radius: 6px;
+  border-radius: 8px;
   border-color: var(--mio-border-color-lighter);
   color: var(--mio-text-regular);
   background: var(--mio-bg-card);
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .add-btn:hover {
   color: var(--mio-color-primary);
   border-color: var(--mio-color-primary);
   background: var(--mio-bg-hover);
+}
+
+@media (max-width: 768px) {
+  .role-select {
+    width: 110px;
+  }
+
+  .role-selector-wrap {
+    gap: 4px;
+  }
+
+  .card-actions {
+    gap: 2px;
+  }
+
+  .add-buttons-bar {
+    gap: 6px;
+  }
+
+  .add-btn {
+    font-size: 11px;
+    padding: 7px 2px !important;
+  }
 }
 </style>
