@@ -646,7 +646,8 @@ const availableGroupMembers = computed(() => {
       avatar: p.avatar || getAvatarByModel(p.model) || "/static/icons/512x512.png",
       title: p.title || "本地预设",
       namePolicy: p.namePolicy !== undefined ? p.namePolicy : 0,
-      avatarPolicy: p.avatarPolicy !== undefined ? p.avatarPolicy : 0,
+      avatarPolicy:
+        p.avatarPolicy !== undefined ? p.avatarPolicy : p.avatar ? 1 : 0,
       options: {
         base: { model: p.model || "gpt-4o", stream: true },
         presetSettings: { opening: p.opening || "", history: p.history || [] },
@@ -1229,7 +1230,7 @@ onUnmounted(() => {
   display: flex;
   position: relative;
   width: 100%;
-  background-color: var(--el-bg-color-page);
+  background-color: var(--mio-bg-page, var(--el-bg-color-page));
   border-radius: 8px;
   padding: 4px;
   box-sizing: border-box;
@@ -1249,11 +1250,11 @@ onUnmounted(() => {
     position: relative;
     z-index: 2;
     transition: color 0.3s;
-    color: var(--el-text-color-regular);
+    color: var(--mio-text-regular, var(--el-text-color-regular));
     font-size: 14px;
 
     &.active {
-      color: var(--el-color-primary);
+      color: var(--mio-color-primary, var(--el-color-primary));
     }
 
     @media (max-width: 768px) {
@@ -1269,9 +1270,9 @@ onUnmounted(() => {
   height: calc(100% - 8px);
   top: 4px;
   left: 4px;
-  background-color: var(--el-color-white);
+  background-color: var(--mio-bg-card, var(--el-color-white));
   border-radius: 6px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
   transition: left 0.3s;
   z-index: 1;
 }

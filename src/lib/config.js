@@ -303,6 +303,7 @@ export default class Config {
       },
       crystallization: {
         enabled: true,
+        globalMemoryEnabled: true,
         latestSummary: "",
         tokenWatermark: 'auto',
       },
@@ -342,6 +343,15 @@ export default class Config {
       this.LLMDefaultConfig,
       defaultConfigStructure,
     );
+
+    // 历史迁移保护：早期版本或 localStorage 中若存有旧的数值型或缺失的 tokenWatermark，强制迁移为 'auto'
+    if (
+      this.LLMDefaultConfig.crystallization &&
+      typeof this.LLMDefaultConfig.crystallization.tokenWatermark === 'number'
+    ) {
+      this.LLMDefaultConfig.crystallization.tokenWatermark = 'auto';
+    }
+
     console.log(
       "合并 LLM 默认配置（之后）:",
       JSON.stringify(this.LLMDefaultConfig),
@@ -656,6 +666,40 @@ export default class Config {
         // 保持 copiedConfig 不变或进行其他处理
       }
     }
+
+    // 智能模式默认启用：如果没有设置激活工具，默认挂载 ai-plugin 的所有工具
+    if (
+      copiedConfig.toolCallSettings &&
+      (!copiedConfig.toolCallSettings.tools ||
+        copiedConfig.toolCallSettings.tools.length === 0)
+    ) {
+      let aiPluginTools = [];
+      if (typeof this.llmTools === "object" && this.llmTools !== null) {
+        const aiGroup = this.llmTools["ai-plugin"] || this.llmTools["ai"];
+        if (aiGroup && typeof aiGroup === "object") {
+          aiPluginTools = Object.keys(aiGroup);
+        }
+      }
+      if (aiPluginTools.length === 0) {
+        aiPluginTools = [
+          "search",
+          "draw",
+          "memory",
+          "cron",
+          "toolsmanager",
+          "parse",
+          "vision",
+        ];
+      }
+      copiedConfig.toolCallSettings.tools = aiPluginTools;
+      if (
+        !copiedConfig.toolCallSettings.mode ||
+        copiedConfig.toolCallSettings.mode === "NONE"
+      ) {
+        copiedConfig.toolCallSettings.mode = "AUTO";
+      }
+    }
+
     return copiedConfig;
   }
 

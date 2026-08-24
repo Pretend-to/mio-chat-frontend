@@ -30,6 +30,7 @@ const DEFAULTS = {
   agentDefault: {
     presetId: null,
   },
+  globalMemory: [],
 };
 
 // ==================== 工具函数 ====================
@@ -204,6 +205,102 @@ export function buildUserProfileXml(profile) {
   return lines.join("\n");
 }
 
+/**
+ * 构建 <global_long_term_memory> SML 字符串
+ * @param {Array} memories - GlobalMemoryItem[]
+ * @returns {string}
+ */
+export function buildGlobalMemoryXml(memories) {
+  if (!Array.isArray(memories) || memories.length === 0) return "";
+  const validItems = memories.filter((m) => m && m.content && m.content.trim());
+  if (validItems.length === 0) return "";
+
+  const lines = [
+    "<global_long_term_memory>",
+    ...validItems.map((m) => {
+      const idStr = m.id ? `[#${m.id}] ` : "";
+      return `  ${idStr}${m.content.trim()}`;
+    }),
+    "</global_long_term_memory>",
+  ];
+  return lines.join("\n");
+}
+
+/**
+ * 获取全局记忆条目列表
+ * @returns {Promise<Array>}
+ */
+export async function getGlobalMemory() {
+  const settings = await getClientSettings();
+  return Array.isArray(settings.globalMemory) ? settings.globalMemory : [];
+}
+
+/**
+ * 原子添加全局记忆条目
+ * @param {Object} item { content, category }
+ * @returns {Promise<Array>}
+ */
+export async function addGlobalMemoryItem({ content, category = "general" }) {
+  const settings = await getClientSettings();
+  if (!Array.isArray(settings.globalMemory)) settings.globalMemory = [];
+  
+  const newItem = {
+    id: `mem_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    content: content.trim(),
+    category,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+  settings.globalMemory.unshift(newItem);
+  await setClientSettings(settings);
+  return settings.globalMemory;
+}
+
+/**
+ * 原子更新全局记忆条目
+ * @param {string} id
+ * @param {Object} patch { content, category }
+ * @returns {Promise<Array>}
+ */
+export async function updateGlobalMemoryItem(id, patch) {
+  const settings = await getClientSettings();
+  if (!Array.isArray(settings.globalMemory)) return [];
+  const idx = settings.globalMemory.findIndex((m) => m.id === id);
+  if (idx !== -1) {
+    settings.globalMemory[idx] = {
+      ...settings.globalMemory[idx],
+      ...patch,
+      updatedAt: Date.now(),
+    };
+    await setClientSettings(settings);
+  }
+  return settings.globalMemory;
+}
+
+/**
+ * 原子删除全局记忆条目
+ * @param {string} id
+ * @returns {Promise<Array>}
+ */
+export async function deleteGlobalMemoryItem(id) {
+  const settings = await getClientSettings();
+  if (!Array.isArray(settings.globalMemory)) return [];
+  settings.globalMemory = settings.globalMemory.filter((m) => m.id !== id);
+  await setClientSettings(settings);
+  return settings.globalMemory;
+}
+
+/**
+ * 清空全局记忆
+ * @returns {Promise<Array>}
+ */
+export async function clearGlobalMemory() {
+  const settings = await getClientSettings();
+  settings.globalMemory = [];
+  await setClientSettings(settings);
+  return [];
+}
+
 /** XML 转义 */
 function escapeXml(str) {
   return str
@@ -212,3 +309,4 @@ function escapeXml(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 }
+

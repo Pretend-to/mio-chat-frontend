@@ -32,7 +32,23 @@
       </el-button>
     </div>
     <div class="skills-scroll-container" style="margin-top: 12px">
-      <div class="skills-grid">
+      <!-- 骨架屏占位 -->
+      <div v-if="loadingSkills && availableSkills.length === 0" class="skills-grid">
+        <div v-for="i in 6" :key="i" class="skill-item skeleton-item">
+          <el-skeleton animated style="display: flex; align-items: center; gap: 16px; width: 100%;">
+            <template #template>
+              <el-skeleton-item variant="circle" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 10px;" />
+              <div style="flex: 1; min-width: 0;">
+                <el-skeleton-item variant="h3" style="width: 45%; height: 16px; margin-bottom: 8px;" />
+                <el-skeleton-item variant="text" style="width: 85%; height: 12px;" />
+              </div>
+            </template>
+          </el-skeleton>
+        </div>
+      </div>
+
+      <!-- 实际技能卡片列表 -->
+      <div v-else class="skills-grid">
         <div v-if="availableSkills.length === 0" class="no-skills">
           <p>暂无可用技能，点击同步刷新</p>
         </div>
@@ -57,8 +73,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
-import { skillAPI } from "@/lib/configApi.js";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { useConfigStore } from "@/stores/configStore.js";
 import { client } from "@/lib/runtime.js";
 import { ElMessage } from "element-plus";
 
@@ -69,28 +85,27 @@ defineProps({
   },
 });
 
-const availableSkills = ref([]);
+const configStore = useConfigStore();
+const availableSkills = computed(() => configStore.skills);
 const reloadingSkills = ref(false);
+const loadingSkills = ref(false);
 
-const fetchSkills = async () => {
+const loadSkills = async (force = false) => {
+  if (!configStore.skillsLoaded || force) {
+    loadingSkills.value = true;
+  }
   try {
-    const res = await skillAPI.getSkills();
-    if (res.success) {
-      availableSkills.value = res.data;
-    }
-  } catch (err) {
-    console.error("获取技能列表失败:", err);
+    await configStore.fetchSkills(force);
+  } finally {
+    loadingSkills.value = false;
   }
 };
 
 const handleReloadSkills = async () => {
   reloadingSkills.value = true;
   try {
-    const res = await skillAPI.reloadSkills();
-    if (res.success) {
-      availableSkills.value = res.data;
-      ElMessage.success("技能库已同步");
-    }
+    await configStore.reloadSkills();
+    ElMessage.success("技能库已同步");
   } catch (err) {
     ElMessage.error("同步失败: " + err.message);
   } finally {
@@ -100,11 +115,11 @@ const handleReloadSkills = async () => {
 
 const handlePluginsUpdated = () => {
   console.log("[ContactorSkillsTab] 检测到后端插件更新，正在刷新技能列表...");
-  fetchSkills();
+  loadSkills(true);
 };
 
 onMounted(() => {
-  fetchSkills();
+  loadSkills();
   client.on("plugins_updated", handlePluginsUpdated);
 });
 

@@ -24,6 +24,10 @@
           :class="{ 'tab-item': true, active: activeTab === 'agent' }"
           @click="activeTab = 'agent'"
         >默认 Agent</div>
+        <div
+          :class="{ 'tab-item': true, active: activeTab === 'memory' }"
+          @click="activeTab = 'memory'"
+        >全局记忆</div>
       </div>
     </div>
 
@@ -259,7 +263,170 @@
           </div>
         </div>
       </div>
+
+      <!-- ========== 全局长期记忆 ========== -->
+      <div v-if="activeTab === 'memory'" class="tab-pane">
+        <div class="settings-card memory-manage-card">
+          <div class="memory-header-bar">
+            <div class="memory-intro">
+              <span class="memory-title">跨会话事实库</span>
+              <p class="memory-desc">
+                记录在所有 Agent 和群聊中共享的核心用户事实与偏好。系统会自动将以下事实条目以
+                <code>&lt;global_long_term_memory&gt;</code> 注入 System 提示词。
+              </p>
+            </div>
+            <div class="memory-actions">
+              <el-button
+                type="primary"
+                size="small"
+                @click="openAddMemoryDialog"
+              >
+                + 添加事实条目
+              </el-button>
+              <el-button
+                v-if="globalMemories.length > 0"
+                type="danger"
+                plain
+                size="small"
+                @click="handleClearAllMemories"
+              >
+                清空全部
+              </el-button>
+            </div>
+          </div>
+
+          <!-- 搜索与筛选工具栏 -->
+          <div v-if="globalMemories.length > 0" class="memory-filter-row">
+            <el-input
+              v-model="memorySearchKey"
+              placeholder="搜索记忆事实内容或 ID..."
+              clearable
+              size="small"
+              style="width: 260px"
+            />
+            <div class="memory-stats">
+              共 <strong>{{ filteredMemories.length }}</strong> 条事实条目
+            </div>
+          </div>
+
+          <!-- 空状态 -->
+          <div v-if="globalMemories.length === 0" class="memory-empty-state">
+            <el-empty description="暂无全局长期记忆条目" :image-size="80">
+              <template #description>
+                <p style="font-size: 13px; color: var(--mio-text-secondary); margin-bottom: 10px;">
+                  你可以手动添加如“用户操作系统”、“开发技术栈”、“沟通偏好”等跨 Agent 通用事实，或者由开启智能模式的 Agent 在对话中自发沉淀。
+                </p>
+                <el-button type="primary" size="small" @click="openAddMemoryDialog">
+                  立即添加第一条
+                </el-button>
+              </template>
+            </el-empty>
+          </div>
+
+          <!-- 事实条目列表 -->
+          <div v-else class="memory-items-list">
+            <div
+              v-for="item in filteredMemories"
+              :key="item.id"
+              class="memory-item-card"
+            >
+              <div class="memory-item-header">
+                <div class="item-meta-wrap">
+                  <span class="memory-id-badge">#{{ item.id }}</span>
+                  <el-tag size="small" effect="plain" class="category-tag">
+                    {{ getCategoryLabel(item.category) }}
+                  </el-tag>
+                  <span class="memory-time">{{ formatMemoryTime(item.updatedAt || item.createdAt) }}</span>
+                </div>
+                <div class="item-actions">
+                  <el-button
+                    v-if="editingMemoryId !== item.id"
+                    size="small"
+                    text
+                    type="primary"
+                    @click="startEditMemory(item)"
+                  >
+                    编辑
+                  </el-button>
+                  <el-button
+                    size="small"
+                    text
+                    type="danger"
+                    @click="handleDeleteMemory(item.id)"
+                  >
+                    删除
+                  </el-button>
+                </div>
+              </div>
+
+              <div class="memory-item-body">
+                <div v-if="editingMemoryId === item.id" class="inline-edit-box">
+                  <el-input
+                    v-model="editForm.content"
+                    type="textarea"
+                    :autosize="{ minRows: 2, maxRows: 6 }"
+                    placeholder="请输入事实内容..."
+                  />
+                  <div class="inline-edit-footer">
+                    <el-select v-model="editForm.category" size="small" style="width: 140px">
+                      <el-option label="通用事实" value="general" />
+                      <el-option label="用户画像" value="user_profile" />
+                      <el-option label="技术栈/偏好" value="tech_stack" />
+                      <el-option label="项目规范" value="project_fact" />
+                    </el-select>
+                    <div style="display: flex; gap: 8px">
+                      <el-button size="small" @click="editingMemoryId = null">取消</el-button>
+                      <el-button size="small" type="primary" @click="saveEditMemory(item.id)">保存</el-button>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="memory-content-text">
+                  {{ item.content }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <!-- ========== 添加全局记忆条目对话框 ========== -->
+    <el-dialog
+      v-model="addMemoryDialogVisible"
+      title="添加全局长期事实条目"
+      width="480px"
+      append-to-body
+    >
+      <div class="add-memory-dialog-form">
+        <div class="setting-field" style="flex-direction: column; align-items: stretch; gap: 6px;">
+          <span class="field-label" style="font-weight: 600;">分类标签</span>
+          <el-select v-model="newMemoryForm.category" style="width: 100%">
+            <el-option label="通用事实 (General)" value="general" />
+            <el-option label="用户画像 (User Profile)" value="user_profile" />
+            <el-option label="技术栈/开发偏好 (Tech Stack)" value="tech_stack" />
+            <el-option label="项目与环境规范 (Project Fact)" value="project_fact" />
+          </el-select>
+        </div>
+
+        <div class="setting-field" style="flex-direction: column; align-items: stretch; gap: 6px; margin-top: 14px;">
+          <span class="field-label" style="font-weight: 600;">事实内容</span>
+          <el-input
+            v-model="newMemoryForm.content"
+            type="textarea"
+            :autosize="{ minRows: 3, maxRows: 8 }"
+            placeholder="例如：用户偏好使用 Vue 3 Composition API 与 Sass；项目默认路径位于 /Users/krumio/Code..."
+          />
+        </div>
+      </div>
+      <template #footer>
+        <div style="display: flex; justify-content: flex-end; gap: 8px">
+          <el-button @click="addMemoryDialogVisible = false">取消</el-button>
+          <el-button type="primary" :disabled="!newMemoryForm.content.trim()" @click="confirmAddMemory">
+            保存条目
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
 
     <!-- ========== 头像设置对话框 ========== -->
     <el-dialog
@@ -362,6 +529,10 @@ import {
   setClientSettings,
   getLocalPresets,
   deleteLocalPreset as removePreset,
+  addGlobalMemoryItem,
+  updateGlobalMemoryItem,
+  deleteGlobalMemoryItem,
+  clearGlobalMemory,
 } from "@/lib/clientSettings.js";
 import { client } from "@/lib/runtime.js";
 import { getAdminAvatarUrl } from "@/utils/avatar.js";
@@ -551,6 +722,8 @@ onMounted(async () => {
   } catch (e) {
     console.warn("加载本地预设失败:", e);
   }
+
+  await loadGlobalMemories();
 });
 
 // ========== 保存 ==========
@@ -629,6 +802,139 @@ const deletePreset = async (preset) => {
       ElMessage.error("删除失败: " + e.message);
     }
   }
+};
+
+// ========== 全局长期记忆管理 ==========
+const globalMemories = ref([]);
+const memorySearchKey = ref("");
+const addMemoryDialogVisible = ref(false);
+const editingMemoryId = ref(null);
+
+const newMemoryForm = reactive({
+  category: "general",
+  content: "",
+});
+
+const editForm = reactive({
+  category: "general",
+  content: "",
+});
+
+const loadGlobalMemories = async () => {
+  try {
+    const settings = await getClientSettings();
+    globalMemories.value = Array.isArray(settings.globalMemory)
+      ? settings.globalMemory
+      : [];
+  } catch (e) {
+    console.warn("加载全局记忆失败:", e);
+  }
+};
+
+const filteredMemories = computed(() => {
+  const kw = (memorySearchKey.value || "").trim().toLowerCase();
+  if (!kw) return globalMemories.value;
+  return globalMemories.value.filter(
+    (m) =>
+      (m.content && m.content.toLowerCase().includes(kw)) ||
+      (m.id && m.id.toLowerCase().includes(kw)) ||
+      (m.category && m.category.toLowerCase().includes(kw)),
+  );
+});
+
+const getCategoryLabel = (category) => {
+  const map = {
+    general: "通用事实",
+    user_profile: "用户画像",
+    tech_stack: "技术栈偏好",
+    project_fact: "项目规范",
+  };
+  return map[category] || category || "通用";
+};
+
+const formatMemoryTime = (ts) => {
+  if (!ts) return "";
+  const d = new Date(ts);
+  return `${d.getMonth() + 1}月${d.getDate()}日 ${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+};
+
+const openAddMemoryDialog = () => {
+  newMemoryForm.category = "general";
+  newMemoryForm.content = "";
+  addMemoryDialogVisible.value = true;
+};
+
+const confirmAddMemory = async () => {
+  if (!newMemoryForm.content.trim()) return;
+  try {
+    const updated = await addGlobalMemoryItem({
+      content: newMemoryForm.content,
+      category: newMemoryForm.category,
+    });
+    globalMemories.value = updated;
+    if (client._clientSettings) client._clientSettings.globalMemory = updated;
+    addMemoryDialogVisible.value = false;
+    ElMessage.success("事实条目已添加");
+  } catch (e) {
+    ElMessage.error("添加失败: " + e.message);
+  }
+};
+
+const startEditMemory = (item) => {
+  editingMemoryId.value = item.id;
+  editForm.category = item.category || "general";
+  editForm.content = item.content || "";
+};
+
+const saveEditMemory = async (id) => {
+  if (!editForm.content.trim()) {
+    ElMessage.warning("事实内容不能为空");
+    return;
+  }
+  try {
+    const updated = await updateGlobalMemoryItem(id, {
+      content: editForm.content,
+      category: editForm.category,
+    });
+    globalMemories.value = updated;
+    if (client._clientSettings) client._clientSettings.globalMemory = updated;
+    editingMemoryId.value = null;
+    ElMessage.success("事实条目已修改");
+  } catch (e) {
+    ElMessage.error("保存失败: " + e.message);
+  }
+};
+
+const handleDeleteMemory = async (id) => {
+  try {
+    await ElMessageBox.confirm("确定删除此条记忆事实？", "删除确认", {
+      confirmButtonText: "删除",
+      cancelButtonText: "取消",
+      type: "warning",
+    });
+    const updated = await deleteGlobalMemoryItem(id);
+    globalMemories.value = updated;
+    if (client._clientSettings) client._clientSettings.globalMemory = updated;
+    ElMessage.success("已删除该条记忆");
+  } catch (e) {}
+};
+
+const handleClearAllMemories = async () => {
+  try {
+    await ElMessageBox.confirm(
+      "确定清空所有全局长期记忆条目吗？此操作不可逆！",
+      "危险操作",
+      {
+        confirmButtonText: "清空",
+        cancelButtonText: "取消",
+        type: "danger",
+      },
+    );
+    const updated = await clearGlobalMemory();
+    globalMemories.value = updated;
+    if (client._clientSettings) client._clientSettings.globalMemory = updated;
+    ElMessage.success("全局长期记忆已清空");
+  } catch (e) {}
 };
 </script>
 
@@ -936,6 +1242,135 @@ const deletePreset = async (preset) => {
 .system-tag {
   flex-shrink: 0;
   margin-left: 8px;
+}
+
+/* Global Memory Card Styles */
+.memory-manage-card {
+  padding: 16px !important;
+}
+
+.memory-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.memory-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--mio-text-primary);
+}
+
+.memory-desc {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--mio-text-secondary);
+  line-height: 1.45;
+}
+
+.memory-desc code {
+  background: var(--mio-bg-page);
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.memory-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.memory-filter-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--mio-border-color-lighter);
+}
+
+.memory-stats {
+  font-size: 12px;
+  color: var(--mio-text-secondary);
+}
+
+.memory-empty-state {
+  padding: 16px 0;
+}
+
+.memory-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.memory-item-card {
+  background: var(--mio-bg-page);
+  border-radius: 8px;
+  border: 1px solid var(--mio-border-color-lighter);
+  padding: 10px 12px;
+  transition: all 0.2s;
+}
+
+.memory-item-card:hover {
+  border-color: var(--mio-border-color);
+  box-shadow: var(--mio-shadow-light);
+}
+
+.memory-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.item-meta-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.memory-id-badge {
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mio-text-placeholder);
+}
+
+.category-tag {
+  font-size: 11px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 4px;
+}
+
+.memory-time {
+  font-size: 11px;
+  color: var(--mio-text-placeholder);
+}
+
+.memory-content-text {
+  font-size: 13px;
+  color: var(--mio-text-primary);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.inline-edit-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inline-edit-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 /* Tab animation */

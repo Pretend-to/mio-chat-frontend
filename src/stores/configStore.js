@@ -4,7 +4,7 @@
  * 使用 Composition API 风格
  */
 
-import { configAPI } from "@/lib/configApi.js";
+import { configAPI, skillAPI } from "@/lib/configApi.js";
 import { getClientSettings, setClientSettings } from "@/lib/clientSettings.js";
 import { getAdminAvatarUrl } from "@/utils/avatar.js";
 import { defineStore } from "pinia";
@@ -25,6 +25,10 @@ export const useConfigStore = defineStore("config", () => {
 
   // LLM 适配器
   const adapters = ref({});
+
+  // 技能列表 (Pinia 级持久缓存，避免切 Tab 重复 loading)
+  const skills = ref([]);
+  const skillsLoaded = ref(false);
 
   // 模型列表 { provider: [{ owner, models }] }
   const models = ref({});
@@ -244,6 +248,43 @@ export const useConfigStore = defineStore("config", () => {
       return response.data;
     } catch (error) {
       console.error(`获取配置节点 ${section} 失败:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取技能列表（带内存缓存）
+   */
+  async function fetchSkills(force = false) {
+    if (!force && skillsLoaded.value && skills.value.length > 0) {
+      return skills.value;
+    }
+    try {
+      const res = await skillAPI.getSkills();
+      if (res.success) {
+        skills.value = res.data || [];
+        skillsLoaded.value = true;
+      }
+      return skills.value;
+    } catch (error) {
+      console.error("获取技能列表失败:", error);
+      return skills.value;
+    }
+  }
+
+  /**
+   * 重新同步技能库
+   */
+  async function reloadSkills() {
+    try {
+      const res = await skillAPI.reloadSkills();
+      if (res.success) {
+        skills.value = res.data || [];
+        skillsLoaded.value = true;
+      }
+      return res;
+    } catch (error) {
+      console.error("同步技能库失败:", error);
       throw error;
     }
   }
@@ -636,6 +677,8 @@ export const useConfigStore = defineStore("config", () => {
     models,
     modelsMeta,
     plugins,
+    skills,
+    skillsLoaded,
     loading,
     needRestart,
     adminCode,
@@ -661,6 +704,8 @@ export const useConfigStore = defineStore("config", () => {
     fetchModelMetadata,
     setModelsMeta,
     fetchPlugins,
+    fetchSkills,
+    reloadSkills,
     updateConfig,
     updateConfigSection,
     fetchStorageConfig,

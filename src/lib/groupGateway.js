@@ -113,9 +113,12 @@ export function formatGroupMessagesForMember(group, member) {
   // 群聊强制开启结晶，不提供关闭开关：群消息链是所有成员共享且只增不减的，
   // 没有压缩的话每个成员的上下文都会无限膨胀，比单聊更早撞上限。
   const crystal = member.options?.crystallization;
+  const isGlobalMemOn = crystal?.globalMemoryEnabled !== false;
+  const globalMem = isGlobalMemOn ? (client._clientSettings?.globalMemory || []) : [];
   const systemPrompt = assembleSystemPrompt(
     groupPrompt,
     crystal?.latestSummary || "",
+    globalMem,
   );
 
   const finalMessages = [{ role: "system", content: systemPrompt }];

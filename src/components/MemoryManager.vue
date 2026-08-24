@@ -94,6 +94,26 @@
             />
           </div>
         </div>
+
+        <!-- Global Long-Term Memory Switch -->
+        <div class="setting-field">
+          <div class="field-label">
+            全局长期记忆
+            <el-tooltip
+              placement="top"
+              popper-class="mio-hint-popper"
+              content="开启后自动注入跨 Agent、跨会话沉淀的核心事实与用户偏好（<global_long_term_memory>）。关闭后屏蔽所有全局记忆提示词。"
+            >
+              <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
+            </el-tooltip>
+          </div>
+          <div class="field-value">
+            <el-switch
+              :model-value="globalMemoryEnabled"
+              @update:model-value="onToggleGlobalMemory"
+            />
+          </div>
+        </div>
       </template>
     </div>
 
@@ -176,7 +196,13 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  modelValue: {
+    type: Object,
+    default: null,
+  },
 });
+
+const emit = defineEmits(["update:modelValue"]);
 
 const contactorStore = useContactorsStore();
 const configStore = useConfigStore();
@@ -186,7 +212,7 @@ const crystalHost = computed(() =>
   contactorStore.getCrystalHost(props.contactorId, props.memberId),
 );
 const crystallization = computed(
-  () => crystalHost.value?.options?.crystallization,
+  () => props.modelValue?.crystallization || crystalHost.value?.options?.crystallization,
 );
 
 // 上下文管理模式: "crystal" | "window"，默认上下文压缩
@@ -201,6 +227,10 @@ const crystallizationEnabled = computed(
   () => isForcedOn.value || crystallization.value?.enabled === true,
 );
 
+const globalMemoryEnabled = computed(
+  () => crystallization.value?.globalMemoryEnabled ?? true,
+);
+
 // 自动模式下的动态上限值：取自 Registry 元数据（后端按模型规格算好的 80%）
 const autoWatermark = computed(() => {
   const host = crystalHost.value;
@@ -212,14 +242,16 @@ const autoWatermark = computed(() => {
 });
 
 // 压缩上限：'auto'（按模型规格动态计算 80%）或手动数值
-const watermarkMode = ref(
-  typeof crystallization.value?.tokenWatermark === 'number' ? 'custom' : 'auto',
-);
-const watermarkValue = ref(
-  typeof crystallization.value?.tokenWatermark === 'number'
-    ? crystallization.value.tokenWatermark
-    : null,
-);
+const watermarkMode = computed(() => {
+  const tw = crystallization.value?.tokenWatermark;
+  return typeof tw === 'number' ? 'custom' : 'auto';
+});
+
+const watermarkValue = computed(() => {
+  const tw = crystallization.value?.tokenWatermark;
+  return typeof tw === 'number' ? tw : null;
+});
+
 const localMaxMessages = ref(
   crystalHost.value?.options?.base?.max_messages_num ?? 20,
 );
@@ -255,23 +287,6 @@ watch(
   },
 );
 
-watch(
-  () => crystallization.value?.tokenWatermark,
-  (newVal) => {
-    if (newVal != null) {
-      watermarkMode.value = typeof newVal === 'number' ? 'custom' : 'auto';
-      if (typeof newVal === 'number') watermarkValue.value = newVal;
-    }
-  },
-);
-
-watch(
-  () => crystalHost.value?.options?.base?.max_messages_num,
-  (newVal) => {
-    if (newVal != null) localMaxMessages.value = newVal;
-  },
-);
-
 function onContextModeChange(val) {
   contactorStore.updateContactorOption(
     props.contactorId,
@@ -290,48 +305,53 @@ function onMaxMessagesChange(val) {
   );
 }
 
+function syncModelValue(patch) {
+  if (props.modelValue) {
+    const updated = JSON.parse(JSON.stringify(props.modelValue));
+    if (!updated.crystallization) updated.crystallization = {};
+    Object.assign(updated.crystallization, patch);
+    emit("update:modelValue", updated);
+  }
+}
+
 function onToggle(val) {
   if (isForcedOn.value) return;
-  contactorStore.updateCrystallization(
-    props.contactorId,
-    {
-      enabled: val,
-      latestSummary: crystallization.value?.latestSummary ?? "",
-      tokenWatermark:
-        watermarkMode.value === 'auto'
-          ? 'auto'
-          : (watermarkValue.value ?? 'auto'),
-    },
-    props.memberId,
-  );
+  const patch = {
+    enabled: val,
+    latestSummary: crystallization.value?.latestSummary ?? "",
+    tokenWatermark:
+      watermarkMode.value === 'auto'
+        ? 'auto'
+        : (watermarkValue.value ?? 100000),
+  };
+  contactorStore.updateCrystallization(props.contactorId, patch, props.memberId);
+  syncModelValue(patch);
+}
+
+function onToggleGlobalMemory(val) {
+  const patch = { globalMemoryEnabled: val };
+  contactorStore.updateCrystallization(props.contactorId, patch, props.memberId);
+  syncModelValue(patch);
 }
 
 function onWatermarkModeChange(mode) {
-  watermarkMode.value = mode;
   if (mode === 'auto') {
-    contactorStore.updateCrystallization(
-      props.contactorId,
-      { tokenWatermark: 'auto' },
-      props.memberId,
-    );
+    const patch = { tokenWatermark: 'auto' };
+    contactorStore.updateCrystallization(props.contactorId, patch, props.memberId);
+    syncModelValue(patch);
     return;
   }
   // 切到手动：尚无数值时给默认值并立即保存，确保 UI 与 store 同步
-  const val = watermarkValue.value ?? 100000;
-  watermarkValue.value = val;
-  contactorStore.updateCrystallization(
-    props.contactorId,
-    { tokenWatermark: val },
-    props.memberId,
-  );
+  const val = typeof autoWatermark.value === 'number' ? autoWatermark.value : 100000;
+  const patch = { tokenWatermark: val };
+  contactorStore.updateCrystallization(props.contactorId, patch, props.memberId);
+  syncModelValue(patch);
 }
 
 function onWatermarkChange(val) {
-  contactorStore.updateCrystallization(
-    props.contactorId,
-    { tokenWatermark: val },
-    props.memberId,
-  );
+  const patch = { tokenWatermark: val };
+  contactorStore.updateCrystallization(props.contactorId, patch, props.memberId);
+  syncModelValue(patch);
 }
 
 function onZoneInput() {

@@ -102,7 +102,6 @@
           v-if="
             [
               'model',
-              'stream',
               'reasoning_effort',
             ].includes(key)
           "
@@ -127,11 +126,6 @@
                 :value="m"
               />
             </el-select>
-            <el-switch
-              v-else-if="['stream'].includes(key)"
-              v-model="localLlmGeneralKeys[key]"
-              @change="updateGeneralSettings"
-            />
             <el-slider
               v-else-if="['reasoning_effort'].includes(key)"
               v-model="localLlmGeneralKeys[key]"
@@ -144,6 +138,29 @@
           </div>
         </div>
       </template>
+
+
+      <!-- 智能模式 (一键启用 ai-plugin 核心智能工具集) -->
+      <div class="setting-field">
+        <div class="field-label">
+          智能模式
+          <el-tooltip
+            placement="top"
+            popper-class="mio-hint-popper"
+            content="一键启用包含搜索、绘图、视觉分析、记忆和定时任务等核心智能工具集"
+          >
+            <el-icon class="label-hint-icon">
+              <InfoFilled />
+            </el-icon>
+          </el-tooltip>
+        </div>
+        <div class="field-value">
+          <el-switch
+            :model-value="isAiPluginEnabled"
+            @change="handleToggleAiPlugin"
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -151,6 +168,10 @@
 <script setup>
 import { ref, reactive, computed, watch } from "vue";
 import { config } from "@/lib/runtime.js";
+import { useConfigStore } from "@/stores/configStore.js";
+import { InfoFilled } from "@element-plus/icons-vue";
+
+const configStore = useConfigStore();
 
 const props = defineProps({
   modelValue: {
@@ -181,6 +202,10 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  allLlmToolsData: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 const emit = defineEmits([
@@ -188,6 +213,62 @@ const emit = defineEmits([
   "update:basicInfo",
   "provider-changed",
 ]);
+
+// 智能模式 (一键启用 ai-plugin 核心智能工具集)
+const isAiPluginEnabled = computed(() => {
+  const currentTools = props.modelValue?.toolCallSettings?.tools || [];
+  if (currentTools.length === 0) return false;
+
+  const aiPlugin = (props.allLlmToolsData || []).find((p) =>
+    p.name?.toLowerCase().includes("ai-plugin") || p.name?.toLowerCase().includes("ai"),
+  );
+  if (aiPlugin && aiPlugin.tools && aiPlugin.tools.length > 0) {
+    return aiPlugin.tools.every((t) => currentTools.includes(t.name));
+  }
+
+  // 兜底：检查当前启用的工具中是否包含常见 ai-plugin 工具
+  const aiTools = ["search", "draw", "memory", "cron", "toolsmanager", "parse", "vision"];
+  return aiTools.every((t) => currentTools.some((ct) => ct === t || ct.startsWith(t + "_mid_")));
+});
+
+const handleToggleAiPlugin = (enable) => {
+  const newOptions = JSON.parse(JSON.stringify(props.modelValue || {}));
+  if (!newOptions.toolCallSettings) newOptions.toolCallSettings = {};
+  let currentTools = [...(newOptions.toolCallSettings.tools || [])];
+
+  const aiPlugin = (props.allLlmToolsData || []).find((p) =>
+    p.name?.toLowerCase().includes("ai-plugin") || p.name?.toLowerCase().includes("ai"),
+  );
+
+  let targetToolNames = [];
+  if (aiPlugin && aiPlugin.tools && aiPlugin.tools.length > 0) {
+    targetToolNames = aiPlugin.tools.map((t) => t.name);
+  } else {
+    // 如果还没加载到 allLlmToolsData，用系统已知工具名
+    const allToolsDict = config.llmTools || {};
+    const aiPluginTools = allToolsDict["ai-plugin"] || allToolsDict["ai"] || {};
+    targetToolNames = Object.keys(aiPluginTools);
+    if (targetToolNames.length === 0) {
+      targetToolNames = ["search", "draw", "memory", "cron", "toolsmanager", "parse", "vision"];
+    }
+  }
+
+  if (enable) {
+    targetToolNames.forEach((name) => {
+      if (!currentTools.includes(name)) {
+        currentTools.push(name);
+      }
+    });
+    if (!newOptions.toolCallSettings.mode || newOptions.toolCallSettings.mode === "NONE") {
+      newOptions.toolCallSettings.mode = "AUTO";
+    }
+  } else {
+    currentTools = currentTools.filter((name) => !targetToolNames.includes(name));
+  }
+
+  newOptions.toolCallSettings.tools = currentTools;
+  emit("update:modelValue", newOptions);
+};
 
 // Copy basicInfo reactively
 const basicInfo = reactive({ ...props.basicInfo });
@@ -252,14 +333,13 @@ const getShownKey = (key) => {
 // Emit option updates
 const emitUpdate = () => {
   const newOptions = JSON.parse(JSON.stringify(props.modelValue || {}));
-  const { model, stream, max_messages_num, temperature, reasoning_effort } =
+  const { model, max_messages_num, temperature, reasoning_effort } =
     localLlmGeneralKeys.value;
 
   newOptions.base = {
     ...newOptions.base,
     model,
     max_messages_num,
-    stream,
   };
   if (!newOptions.chatParams) newOptions.chatParams = {};
   Object.assign(newOptions.chatParams, {
@@ -296,6 +376,7 @@ watch(
         ...(newVal.base || {}),
         ...(newVal.chatParams || {}),
       };
+      localVisionSetting.value = getInitialVisionSetting();
     }
   },
   { deep: true },
@@ -311,3 +392,28 @@ watch(
   { deep: true },
 );
 </script>
+
+<style scoped>
+.field-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.label-hint-icon {
+  font-size: 14px;
+  color: var(--mio-text-placeholder, #a8abb2);
+  cursor: help;
+  vertical-align: middle;
+  margin-left: 4px;
+  transition: color 0.15s;
+}
+
+.label-hint-icon:hover {
+  color: var(--mio-color-primary, #409eff);
+}
+
+.label-hint-icon.is-supported {
+  color: var(--el-color-success, #67c23a);
+}
+</style>

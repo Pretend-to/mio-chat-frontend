@@ -291,7 +291,12 @@ const addPresetContactor = async (preset) => {
   const contactor = {
     id: genFakeId(),
     namePolicy: preset.namePolicy !== undefined ? preset.namePolicy : 2,
-    avatarPolicy: preset.avatarPolicy !== undefined ? preset.avatarPolicy : 0,
+    avatarPolicy:
+      preset.avatarPolicy !== undefined
+        ? preset.avatarPolicy
+        : preset.avatar
+          ? 1
+          : 0,
     avatar: preset.avatar || undefined,
     name: preset.name,
     title: preset.title,
@@ -325,7 +330,8 @@ const genBotByProvider = async (provider) => {
         }
         if (preset.avatar) {
           avatar = preset.avatar;
-          avatarPolicy = preset.avatarPolicy !== undefined ? preset.avatarPolicy : 0;
+          avatarPolicy =
+            preset.avatarPolicy !== undefined ? preset.avatarPolicy : 1;
         } else if (preset.avatarPolicy !== undefined) {
           avatarPolicy = preset.avatarPolicy;
         }

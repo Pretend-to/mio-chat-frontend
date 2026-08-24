@@ -647,12 +647,15 @@ export const gateway = {
           keepTurns,
         );
 
-        // 在消息链头部注入组装好的 system 消息（全局人格 + memory_crystal XML）
+        // 在消息链头部注入组装好的 system 消息（全局人格 + 全局长期记忆 + memory_crystal XML）
         const baseSystemPrompt = options?.presetSettings?.opening || "";
         const latestSummary = crystallization.latestSummary || "";
+        const isGlobalMemOn = crystallization.globalMemoryEnabled !== false;
+        const globalMem = isGlobalMemOn ? (client._clientSettings?.globalMemory || []) : [];
         const assembledSystem = assembleSystemPrompt(
           baseSystemPrompt,
           latestSummary,
+          globalMem,
         );
 
         if (assembledSystem) {
@@ -672,6 +675,34 @@ export const gateway = {
           contactor?.firstMessageIndex || 0,
           contactor?.options?.base?.max_messages_num || 20,
         );
+
+        const isGlobalMemOn = contactor?.options?.crystallization?.globalMemoryEnabled !== false;
+        const globalMem = isGlobalMemOn ? (client._clientSettings?.globalMemory || []) : [];
+        if (Array.isArray(globalMem) && globalMem.length > 0) {
+          const hasGlobalMem = finalMessages.some(
+            (m) =>
+              m.role === "system" &&
+              typeof m.content === "string" &&
+              m.content.includes("<global_long_term_memory>"),
+          );
+          if (!hasGlobalMem) {
+            const validItems = globalMem.filter((m) => m && m.content && m.content.trim());
+            if (validItems.length > 0) {
+              const memXml = [
+                "<global_long_term_memory>",
+                ...validItems.map((m) => {
+                  const idStr = m.id ? `[#${m.id}] ` : "";
+                  return `  ${idStr}${m.content.trim()}`;
+                }),
+                "</global_long_term_memory>",
+              ].join("\n");
+              finalMessages.unshift({
+                role: "system",
+                content: memXml,
+              });
+            }
+          }
+        }
       }
 
       const metaData = {

@@ -88,7 +88,7 @@
 
       <!-- Tab: Basic -->
       <ContactorBasicTab
-        v-else-if="activeTab === 'basic'"
+        v-if="!(activeContactorPlatform === 'group' && !isGroupMember) && activeTab === 'basic'"
         :model-value="modelValue"
         @update:model-value="(val) => $emit('update:modelValue', val)"
         :basic-info="basicInfo"
@@ -98,12 +98,13 @@
         :avatar-policy-list="avatarPolicyListForShow"
         :name-policy-list="namePolicyListForShow"
         :adapter-metadata="adapterMetadata"
+        :all-llm-tools-data="allLlmToolsData"
         @provider-changed="(p) => $emit('provider-changed', p)"
       />
 
       <!-- Tab: Tools -->
       <ContactorToolsTab
-        v-if="activeTab === 'tools'"
+        v-if="!(activeContactorPlatform === 'group' && !isGroupMember) && activeTab === 'tools'"
         :model-value="modelValue"
         @update:model-value="(val) => $emit('update:modelValue', val)"
         :tool-call-modes-list="toolCallModesList"
@@ -111,10 +112,16 @@
       />
 
       <!-- Tab: Skills -->
-      <ContactorSkillsTab v-if="activeTab === 'skills'" :is-mobile="isMobile" />
+      <ContactorSkillsTab
+        v-if="!(activeContactorPlatform === 'group' && !isGroupMember) && activeTab === 'skills'"
+        :is-mobile="isMobile"
+      />
 
       <!-- Tab: Presets -->
-      <div v-if="activeTab === 'presets'" class="tab-pane">
+      <div
+        v-if="!(activeContactorPlatform === 'group' && !isGroupMember) && activeTab === 'presets'"
+        class="tab-pane"
+      >
         <div class="group-title">历史预设</div>
         <div class="settings-card presets-card">
           <PresetsList
@@ -125,11 +132,16 @@
       </div>
 
       <!-- Tab: Memory Crystallization -->
-      <div v-if="activeTab === 'memory'" class="tab-pane">
+      <div
+        v-if="!(activeContactorPlatform === 'group' && !isGroupMember) && activeTab === 'memory'"
+        class="tab-pane"
+      >
         <MemoryManager
           v-if="contactorId"
           :contactor-id="contactorId"
           :member-id="groupMemberId"
+          :model-value="modelValue"
+          @update:model-value="(val) => $emit('update:modelValue', val)"
         />
         <div v-else class="no-skills" style="padding: 20px; text-align: center">
           <p>无法获取联系人信息</p>
@@ -138,7 +150,7 @@
 
       <!-- Tab: Automation (定时任务) -->
       <ContactorAutomationTab
-        v-if="activeTab === 'automation'"
+        v-if="!(activeContactorPlatform === 'group' && !isGroupMember) && activeTab === 'automation'"
         :name="name"
         :contactor-id="contactorId"
         :is-mobile="isMobile"
@@ -146,7 +158,7 @@
 
       <!-- Tab: Advanced -->
       <ContactorAdvancedTab
-        v-if="activeTab === 'advanced'"
+        v-if="!(activeContactorPlatform === 'group' && !isGroupMember) && activeTab === 'advanced'"
         :model-value="modelValue"
         @update:model-value="(val) => $emit('update:modelValue', val)"
         :adapter-metadata="adapterMetadata"

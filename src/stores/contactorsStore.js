@@ -4,6 +4,11 @@ import { getAvatarByAdapterType } from "@/utils/avatar.js";
 import { numberString } from "@/utils/generate.js";
 import { config, client } from "@/lib/runtime.js";
 import { resolveUnhandledMentions } from "@/lib/groupGateway.js";
+import {
+  addGlobalMemoryItem,
+  updateGlobalMemoryItem,
+  deleteGlobalMemoryItem,
+} from "@/lib/clientSettings.js";
 
 const avatarPolicy = ["MODEL", "CUSTOM"];
 const namePolicy = ["MODEL", "CUSTOM", "SUMMARY"];
@@ -616,6 +621,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     if (!host.options.crystallization) {
       host.options.crystallization = {
         enabled: true,
+        globalMemoryEnabled: true,
         latestSummary: "",
         tokenWatermark: 'auto',
       };
@@ -623,28 +629,13 @@ export const useContactorsStore = defineStore("contactors", () => {
     return host.options.crystallization;
   }
 
-  function recordMemory(
+  async function recordMemory(
     contactorId,
     parameters,
     result = null,
     memberId = null,
   ) {
-    const contactor = contactors.value[contactorId];
-    if (!contactor || !parameters) return;
-
-    // 群聊里 memory 工具是某个成员调用的，必须写进该成员自己的结晶，
-    // 否则所有成员的记忆会串到一起。解析不到宿主就直接放弃，不要退化成写群对象。
-    const host = getCrystalHost(contactorId, memberId);
-    if (!host) return;
-
-    // 1. 如果有后端返回的全新 summary，直接覆盖！(最优、最干净的 CRUD 同步路径)
-    if (result && result.summary !== undefined) {
-      const crystal = ensureCrystallization(host);
-      crystal.latestSummary = result.summary;
-      crystal.lastUpdatedAt = Date.now();
-      client.setLocalStorage();
-      return;
-    }
+    if (!parameters) return;
 
     let params = parameters;
     if (typeof params === "string") {
@@ -655,27 +646,73 @@ export const useContactorsStore = defineStore("contactors", () => {
         return;
       }
     }
-    const { question, answer } = params;
-    if (!question || !answer) return;
 
-    // 开启结晶时，将记忆追加到 latestSummary 的 <long_term_profile>
-    if (
-      host.options?.crystallization?.enabled &&
-      host.options.crystallization.latestSummary !== undefined
-    ) {
-      const fact = `Q: ${question}\nA: ${answer}`;
-      const summary = host.options.crystallization.latestSummary || "";
-      host.options.crystallization.latestSummary = appendToXmlZone(
-        summary,
-        "long_term_profile",
-        fact,
-      );
-      host.options.crystallization.lastUpdatedAt = Date.now();
+    // ==================== 1. 全局长期记忆 (scope: 'global') ====================
+    if (params.scope === "global" || result?.scope === "global") {
+      const action = params.action || result?.action || "add";
+      const content = params.content || result?.content || "";
+      const target = params.target || result?.target || "";
+      const category = params.category || result?.category || "general";
+
+      try {
+        if (action === "add" && content) {
+          await addGlobalMemoryItem({ content, category });
+        } else if (action === "delete") {
+          // target 可以是 id（如 mem_xxx）或匹配内容
+          const currentMem = client._clientSettings?.globalMemory || [];
+          const matched = currentMem.find((m) => m.id === target || m.content.includes(target));
+          if (matched) {
+            await deleteGlobalMemoryItem(matched.id);
+          }
+        } else if (action === "update") {
+          const currentMem = client._clientSettings?.globalMemory || [];
+          const matched = currentMem.find((m) => m.id === target || m.content.includes(target));
+          if (matched) {
+            await updateGlobalMemoryItem(matched.id, { content, category });
+          } else if (content) {
+            await addGlobalMemoryItem({ content, category });
+          }
+        }
+        // 同步内存中的 client._clientSettings.globalMemory
+        if (client._clientSettings) {
+          const { getClientSettings } = await import("@/lib/clientSettings.js");
+          client._clientSettings = await getClientSettings();
+        }
+      } catch (err) {
+        console.error("[Memory] 全局长期记忆处理异常:", err);
+      }
+      return;
+    }
+
+    const contactor = contactors.value[contactorId];
+    if (!contactor) return;
+
+    // 群聊里 memory 工具是某个成员调用的，必须写进该成员自己的结晶，
+    // 否则所有成员的记忆会串到一起。解析不到宿主就直接放弃，不要退化成写群对象。
+    const host = getCrystalHost(contactorId, memberId);
+    if (!host) return;
+
+    // 1. 如果开启了记忆结晶功能：
+    // 为了保护大模型 Prompt Cache 输入缓存的稳定性，单次对话内的局部记忆变动（add/update/delete）
+    // 不直接修改 latestSummary，而是先缓存进 pendingMemoryEvents。
+    // 等到后续真正触发「上下文记忆压缩」时，由压缩服务全量提炼并统一覆盖，实现零缓存抖动！
+    if (host.options?.crystallization?.enabled) {
+      const crystal = ensureCrystallization(host);
+      if (!Array.isArray(crystal.pendingMemoryEvents)) {
+        crystal.pendingMemoryEvents = [];
+      }
+      crystal.pendingMemoryEvents.push({
+        action: params.action || "add",
+        zone: params.zone || "long_term_profile",
+        content: params.content || answer || "",
+        target: params.target || question || "",
+        time: Date.now(),
+      });
       client.setLocalStorage();
       return;
     }
 
-    // 未开启结晶时，使用原始的 history 追加方式
+    // 2. 如果未开启结晶功能，使用原始的 history 键值对追加
     if (!host.options) host.options = {};
     if (!host.options.presetSettings) {
       host.options.presetSettings = { opening: "", history: [] };
@@ -776,6 +813,7 @@ export const useContactorsStore = defineStore("contactors", () => {
       if (host) {
         const crystal = ensureCrystallization(host);
         crystal.latestSummary = displaySummary;
+        crystal.pendingMemoryEvents = []; // 压缩已将所有历史事实全量整合，清空待处理队列
         crystal.lastUpdatedAt = Date.now();
 
         if (contactor.platform === "group" && msgIndex !== -1) {

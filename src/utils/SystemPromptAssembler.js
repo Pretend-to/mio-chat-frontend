@@ -17,26 +17,46 @@ export const CRYSTAL_ZONES = [
 ];
 
 /**
- * 将联系人的系统 prompt 与结晶数据组装为单条 system message 内容
+ * 将联系人的系统 prompt、全局长期记忆与结晶数据组装为单条 system message 内容
  *
  * @param {string} baseSystemPrompt - 联系人原始的系统 prompt（全局人格）
  * @param {string|null} latestSummary - 最近的结晶 XML 字符串（或 null/空字符串）
+ * @param {string|Array|null} globalMemory - 全局长期记忆条目数组或已构建好的 XML 字符串
  * @returns {string} 组装好的单条 system message 内容
  */
-export function assembleSystemPrompt(baseSystemPrompt, latestSummary) {
-  const hasCrystal = latestSummary && latestSummary.trim().length > 0;
-
-  if (!hasCrystal) {
-    // 即使没有结晶内容，也注入空模板，让后端有准备压缩的基础
-    if (!baseSystemPrompt) return "";
-    return baseSystemPrompt;
-  }
-
+export function assembleSystemPrompt(baseSystemPrompt, latestSummary, globalMemory = null) {
   const parts = [];
+
+  // 1. 基础人格设定
   if (baseSystemPrompt && baseSystemPrompt.trim()) {
     parts.push(baseSystemPrompt.trim());
   }
-  parts.push(`<memory_crystal>\n${latestSummary.trim()}\n</memory_crystal>`);
+
+  // 2. 全局长期记忆注入 (<global_long_term_memory>)
+  if (globalMemory) {
+    if (typeof globalMemory === "string" && globalMemory.trim()) {
+      parts.push(globalMemory.trim());
+    } else if (Array.isArray(globalMemory) && globalMemory.length > 0) {
+      const validItems = globalMemory.filter((m) => m && m.content && m.content.trim());
+      if (validItems.length > 0) {
+        const memLines = [
+          "<global_long_term_memory>",
+          ...validItems.map((m) => {
+            const idStr = m.id ? `[#${m.id}] ` : "";
+            return `  ${idStr}${m.content.trim()}`;
+          }),
+          "</global_long_term_memory>",
+        ];
+        parts.push(memLines.join("\n"));
+      }
+    }
+  }
+
+  // 3. 当前会话短期结晶 (<memory_crystal>)
+  const hasCrystal = latestSummary && latestSummary.trim().length > 0;
+  if (hasCrystal) {
+    parts.push(`<memory_crystal>\n${latestSummary.trim()}\n</memory_crystal>`);
+  }
 
   return parts.join("\n\n");
 }
