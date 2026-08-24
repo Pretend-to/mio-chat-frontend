@@ -16,6 +16,7 @@ export function useChatScreenshot({ chatWindowRef, selectedMessages }) {
   const exportWidthMode = ref("narrow");
   const qrUrl = ref("");
   const showQRCode = ref(true);
+  let currentGenId = 0;
 
   const handleMultiShareImage = async (activeContactor) => {
     if (selectedMessages.value.length === 0) return;
@@ -49,8 +50,8 @@ export function useChatScreenshot({ chatWindowRef, selectedMessages }) {
   };
 
   const generateScreenshot = async () => {
+    const thisGenId = ++currentGenId;
     generatingImage.value = true;
-    previewImageUrl.value = ""; // clear old preview
     let exportEl = null;
     const blobUrls = [];
     const imgBlobPromises = [];
@@ -244,6 +245,10 @@ export function useChatScreenshot({ chatWindowRef, selectedMessages }) {
       // 先等所有图片完成 CORS 拉取并替换为 blob URL
       await Promise.all(imgBlobPromises);
 
+      if (thisGenId !== currentGenId) {
+        return;
+      }
+
       // Wait for images to load
       const loadImgs = Array.from(exportEl.querySelectorAll("img"));
       const imgPromises = loadImgs.map((img) => {
@@ -287,18 +292,31 @@ export function useChatScreenshot({ chatWindowRef, selectedMessages }) {
         width: exportEl.offsetWidth,
         height: actualHeight,
       });
+
+      // 竞态保护：如果在此次绘制期间用户又触发了新的切换（宽窄/二维码），丢弃旧结果
+      if (thisGenId !== currentGenId) {
+        return;
+      }
+
       const img = await result.toPng();
+      if (thisGenId !== currentGenId) {
+        return;
+      }
+
       previewImageUrl.value = img.src;
-      ElMessage.success("图片预览生成成功");
     } catch (err) {
-      console.error("生成图片失败", err);
-      ElMessage.error("生成图片预览失败");
+      if (thisGenId === currentGenId) {
+        console.error("生成图片失败", err);
+        ElMessage.error("生成图片预览失败");
+      }
     } finally {
       // snapdom 绘制完成后统一释放 blob URL，避免内存泄漏
       blobUrls.forEach((url) => URL.revokeObjectURL(url));
       blobUrls.length = 0;
       exportEl?.remove();
-      generatingImage.value = false;
+      if (thisGenId === currentGenId) {
+        generatingImage.value = false;
+      }
     }
   };
 
