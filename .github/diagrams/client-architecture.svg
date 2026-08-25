@@ -1,0 +1,57 @@
+<?xml version="1.0" ?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">
+  <rect x="0" y="0" width="960" height="560" rx="0" fill="#f6f7f9" stroke="none" stroke-width="1"/>
+  <defs>
+    <marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#2563eb"/>
+    </marker>
+  </defs>
+  <text x="480" y="42" font-size="20" fill="#0f172a" font-weight="700" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">MioChat Frontend — Render Layer</text>
+  <text x="480" y="64" font-size="12" fill="#64748b" font-weight="500" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">F1 · Client dataflow — Socket.io to UI, crash-safe persistence &amp; hand-written PWA</text>
+  <rect x="40" y="110" width="180" height="120" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="40" y="110" width="180" height="26" rx="10" fill="#2563eb" stroke="none" stroke-width="1"/>
+  <text x="130.0" y="127" font-size="11" fill="#ffffff" font-weight="700" text-anchor="middle" font-family="'JetBrains Mono', Menlo, Consolas, monospace">SOCKET.IO</text>
+  <text x="130.0" y="158" font-size="9.5" fill="#0f172a" font-weight="500" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">update / sync</text>
+  <text x="130.0" y="176" font-size="9.5" fill="#0f172a" font-weight="500" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">complete / failed</text>
+  <text x="130.0" y="194" font-size="9.5" fill="#0f172a" font-weight="500" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">reconnect</text>
+  <text x="130.0" y="212" font-size="9.5" fill="#0f172a" font-weight="500" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">streamCache replay</text>
+  <rect x="250" y="110" width="190" height="120" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="250" y="110" width="190" height="26" rx="10" fill="#16a34a" stroke="none" stroke-width="1"/>
+  <text x="345.0" y="127" font-size="11" fill="#ffffff" font-weight="700" text-anchor="middle" font-family="'JetBrains Mono', Menlo, Consolas, monospace">gateway.js</text>
+  <text x="345.0" y="158" font-size="9.5" fill="#0f172a" font-weight="500" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">StreamBuffer 80ms</text>
+  <text x="345.0" y="176" font-size="9.5" fill="#0f172a" font-weight="500" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">group-context isolation</text>
+  <text x="345.0" y="194" font-size="9.5" fill="#0f172a" font-weight="500" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">@ by-ID routing</text>
+  <text x="345.0" y="212" font-size="9.5" fill="#0f172a" font-weight="500" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">dispatch → Pinia</text>
+  <line x1="228" y1="170" x2="242" y2="170" stroke="#2563eb" stroke-width="2" marker-end="url(#ar)"/>
+  <rect x="470" y="110" width="200" height="120" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="470" y="110" width="200" height="26" rx="10" fill="#d97706" stroke="none" stroke-width="1"/>
+  <text x="570.0" y="127" font-size="11" fill="#ffffff" font-weight="700" text-anchor="middle" font-family="'JetBrains Mono', Menlo, Consolas, monospace">PINIA STORES</text>
+  <text x="570.0" y="158" font-size="9.5" fill="#0f172a" font-weight="500" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">contactorsStore</text>
+  <text x="570.0" y="176" font-size="9.5" fill="#0f172a" font-weight="500" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">interactionStore</text>
+  <text x="570.0" y="194" font-size="9.5" fill="#0f172a" font-weight="500" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">connectionStore</text>
+  <text x="570.0" y="212" font-size="9.5" fill="#0f172a" font-weight="500" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">drafts · message chain</text>
+  <line x1="448" y1="170" x2="462" y2="170" stroke="#2563eb" stroke-width="2" marker-end="url(#ar)"/>
+  <rect x="700" y="110" width="220" height="120" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="700" y="110" width="220" height="26" rx="10" fill="#7c3aed" stroke="none" stroke-width="1"/>
+  <text x="810.0" y="127" font-size="11" fill="#ffffff" font-weight="700" text-anchor="middle" font-family="'JetBrains Mono', Menlo, Consolas, monospace">VUE 3 UI</text>
+  <text x="810.0" y="158" font-size="9.5" fill="#0f172a" font-weight="500" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">ChatView timeline</text>
+  <text x="810.0" y="176" font-size="9.5" fill="#0f172a" font-weight="500" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">ReasonBlock · ToolCallBar</text>
+  <text x="810.0" y="194" font-size="9.5" fill="#0f172a" font-weight="500" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">AnyUI · MemoryManager</text>
+  <text x="810.0" y="212" font-size="9.5" fill="#0f172a" font-weight="500" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">in-place confirmations</text>
+  <line x1="678" y1="170" x2="692" y2="170" stroke="#2563eb" stroke-width="2" marker-end="url(#ar)"/>
+  <rect x="40" y="270" width="420" height="90" rx="12" fill="#fff7ed" stroke="#fdba74" stroke-width="1"/>
+  <rect x="40" y="270" width="420" height="24" rx="10" fill="#ea580c" stroke="none" stroke-width="1"/>
+  <text x="250" y="286" font-size="10.5" fill="#ffffff" font-weight="700" text-anchor="middle" font-family="'JetBrains Mono', Menlo, Consolas, monospace">localforage — IndexedDB</text>
+  <text x="250" y="316" font-size="9.5" fill="#0f172a" font-weight="500" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">persist-then-ACK: write first, then notify server</text>
+  <text x="250" y="336" font-size="9" fill="#64748b" font-weight="400" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">500ms debounce · saveNow immediate</text>
+  <line x1="520" y1="220" x2="520" y2="266" stroke="#ea580c" stroke-width="2" marker-end="url(#ar)"/>
+  <text x="600" y="240" font-size="9" fill="#64748b" font-weight="400" text-anchor="start" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">persist → ACK → clear server streamCache</text>
+  <rect x="480" y="270" width="440" height="90" rx="12" fill="#ecfeff" stroke="#67e8f9" stroke-width="1"/>
+  <rect x="480" y="270" width="440" height="24" rx="10" fill="#0891b2" stroke="none" stroke-width="1"/>
+  <text x="700" y="286" font-size="10.5" fill="#ffffff" font-weight="700" text-anchor="middle" font-family="'JetBrains Mono', Menlo, Consolas, monospace">SERVICE WORKER — hand-written</text>
+  <text x="700" y="316" font-size="9.5" fill="#0f172a" font-weight="500" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">IndexedDB response cache · TTL 7d</text>
+  <text x="700" y="336" font-size="9" fill="#64748b" font-weight="400" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">daily cleanup · CACHE_VERSION=17 · dev handshake</text>
+  <rect x="40" y="380" width="880" height="74" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="480" y="406" font-size="10.5" fill="#0f172a" font-weight="500" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">Web Worker chunked MD5 uploads (non-blocking) · Vite hand-tuned code splitting (8 groups)</text>
+  <text x="480" y="432" font-size="9" fill="#64748b" font-weight="400" text-anchor="middle" font-family="-apple-system, 'Segoe UI', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">gzip+brotli · no eager preload · 1MB echarts isolated from the startup path</text>
+</svg>

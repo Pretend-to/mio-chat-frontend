@@ -32,19 +32,8 @@ This is the frontend half of **MioChat**. Not a chat skin: it carries half of th
 
 ## Client architecture
 
-```mermaid
-flowchart LR
-    WS["Socket.io client<br/>update / sync / complete / failed"] --> GW["gateway.js"]
-    subgraph ST["Pinia stores"]
-        CO["contactorsStore"]
-        IT["interactionStore"]
-    end
-    GW --> |"80ms StreamBuffer throttle"| CO
-    GW --> IT
-    CO --> PERSIST["localforage (IndexedDB)<br/>msg ACKed only AFTER persist"]
-    CO --> UI["Vue 3 components<br/>chat timeline · tool calls · MemoryManager · AnyUI"]
-    SW["Service Worker (hand-written)<br/>IndexedDB response cache · TTL · versioned"] -.-> UI
-```
+
+<img src="./.github/diagrams/client-architecture.svg" width="860" alt="MioChat Frontend — client dataflow / render layer" />
 
 ## What makes it interesting
 

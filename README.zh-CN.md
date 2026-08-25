@@ -32,19 +32,8 @@
 
 ## 客户端架构
 
-```mermaid
-flowchart LR
-    WS["Socket.io client<br/>update / sync / complete / failed"] --> GW["gateway.js"]
-    subgraph ST["Pinia stores"]
-        CO["contactorsStore"]
-        IT["interactionStore"]
-    end
-    GW --> |"80ms StreamBuffer 节流"| CO
-    GW --> IT
-    CO --> PERSIST["localforage (IndexedDB)<br/>消息落盘后才 ACK"]
-    CO --> UI["Vue 3 components<br/>聊天时间线 · 工具调用 · MemoryManager · AnyUI"]
-    SW["手写 Service Worker<br/>IndexedDB 响应缓存 · TTL · 版本化"] -.-> UI
-```
+
+<img src="./.github/diagrams/client-architecture-zh.svg" width="860" alt="MioChat Frontend — client dataflow / render layer" />
 
 ## 技术亮点
 
