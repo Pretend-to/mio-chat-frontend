@@ -1,17 +1,48 @@
-# MioChat 前端 —— 渲染层（render layer）
+<div align="center">
 
-> 这是 **MioChat** 的前端半壁（完整叙事见 `mio-chat-backend` 仓库）。它不是聊天皮肤——harness 的上下文工程，有一半发生在浏览器里。
+# 🦞 MioChat 前端
 
-**MioChat 前端** 是一个 Vue 3 / Vite 8 的实时 Agent 工作台：流式对话、工具调用时间线、可视化记忆编辑、Agent 自产 UI 动态渲染（AnyUI）、群聊上下文隔离，以及一套手写的 PWA 层。
+[English](README.md) · **中文**
+
+[![License](https://img.shields.io/badge/License-MIT-green)](#license)
+[![Vue](https://img.shields.io/badge/Vue-3.5-42b883)](https://vuejs.org/)
+[![Vite](https://img.shields.io/badge/Vite-8-646cff)](https://vite.dev/)
+[![PWA](https://img.shields.io/badge/PWA-handwritten-yellow)](#技术亮点)
+
+**自托管 Agent harness 的渲染层。** 另一半在 [**mio-chat-backend**](https://github.com/Pretend-to/mio-chat-backend)。
+
+</div>
+
+这是 **MioChat** 的前端半壁。它不是聊天皮肤——harness 的上下文工程有一半发生在浏览器里：崩溃安全的流式链路、群聊上下文隔离、客户端记忆组装、Agent 自产 UI，以及一套手写的 PWA 层。
+
+## 演示
+
+<!-- 回填：演示 GIF → docs/assets/demo/demo.gif -->
+<img src="./docs/assets/demo/demo.gif" width="720" alt="MioChat 前端演示" />
 
 ## 截图
 
-<!-- 图片回填清单：将下列 img src 指向 docs/assets/screenshots/ 下你的实际截图即可。
-     已预留桌面端聊天、移动端聊天两个槽位。 -->
+<!-- 回填：截图 → docs/assets/screenshots/ -->
 
 <img src="./docs/assets/screenshots/desktop-chat.png" width="720" alt="桌面端 · 聊天界面（流式输出与工具调用时间线）" />
 
 <img src="./docs/assets/screenshots/mobile-chat.png" width="360" alt="移动端 · 聊天界面" />
+
+## 客户端架构
+
+```mermaid
+flowchart LR
+    WS["Socket.io client<br/>update / sync / complete / failed"] --> GW["gateway.js"]
+    subgraph ST["Pinia stores"]
+        CO["contactorsStore"]
+        IT["interactionStore"]
+    end
+    GW --> |"80ms StreamBuffer 节流"| CO
+    GW --> IT
+    CO --> PERSIST["localforage (IndexedDB)<br/>消息落盘后才 ACK"]
+    CO --> UI["Vue 3 components<br/>聊天时间线 · 工具调用 · MemoryManager · AnyUI"]
+    SW["手写 Service Worker<br/>IndexedDB 响应缓存 · TTL · 版本化"] -.-> UI
+```
 
 ## 技术亮点
 
@@ -28,12 +59,19 @@ Vue 3.5 · Vite 8 · Pinia · Element Plus · Socket.io-client · localforage（
 ## 快速开始
 
 ```bash
+git clone git@github.com:Pretend-to/mio-chat-frontend.git && cd mio-chat-frontend
 pnpm install
 pnpm dev        # http://localhost:1314，代理 /socket.io 与 /api 到后端 (:3080)
 ```
 
-> 后端 + 架构 + 完整 README（双语）见 `mio-chat-backend` 仓库。
+> 后端、架构图与完整双语 README：[**mio-chat-backend**](https://github.com/Pretend-to/mio-chat-backend)。
+
+## 🙏 致谢
+
+本项目使用 JetBrains **开源项目开发许可证**进行开发——感谢 JetBrains 为本开源项目提供的免费专业 IDE 许可证。
+
+[![JetBrains](https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg)](https://www.jetbrains.com/)
 
 ## 许可证
 
-待定稿——与后端仓库在首个公开版本发布前统一（见后端 README）。
+[MIT](LICENSE) —— © 2026 MioChat contributors

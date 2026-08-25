@@ -1,17 +1,48 @@
-# MioChat Frontend — the render layer
+<div align="center">
 
-> This is the frontend half of **MioChat** (repo: `mio-chat-backend` for the full story). Not a chat skin: it carries half of the harness's context engineering in the browser.
+# 🦞 MioChat Frontend
 
-**MioChat Frontend** is a Vue 3 / Vite 8 real-time agent workspace: streaming conversation, tool-call timelines, edit-in-place agent memory, dynamic agent-authored UI (AnyUI), group-context isolation, and a hand-written PWA layer.
+**English** · [中文](README.zh-CN.md)
+
+[![License](https://img.shields.io/badge/License-MIT-green)](#license)
+[![Vue](https://img.shields.io/badge/Vue-3.5-42b883)](https://vuejs.org/)
+[![Vite](https://img.shields.io/badge/Vite-8-646cff)](https://vite.dev/)
+[![PWA](https://img.shields.io/badge/PWA-handwritten-yellow)](#what-makes-it-interesting)
+
+**The render layer of a self-hosted agent harness.** The other half lives in [**mio-chat-backend**](https://github.com/Pretend-to/mio-chat-backend).
+
+</div>
+
+This is the frontend half of **MioChat**. Not a chat skin: it carries half of the harness's context engineering in the browser — crash-safe streaming, group-context isolation, client-side memory assembly, agent-authored UI, and a hand-written PWA layer.
+
+## Demo
+
+<!-- 回填：演示 GIF → docs/assets/demo/demo.gif -->
+<img src="./docs/assets/demo/demo.gif" width="720" alt="MioChat Frontend demo" />
 
 ## Screenshots
 
-<!-- 图片回填清单：将下列 img src 指向 docs/assets/screenshots/ 下你的实际截图即可。
-     已预留桌面端聊天、移动端聊天两个槽位。 -->
+<!-- 回填：截图 → docs/assets/screenshots/ -->
 
 <img src="./docs/assets/screenshots/desktop-chat.png" width="720" alt="Desktop chat — streaming output with a tool-call timeline" />
 
 <img src="./docs/assets/screenshots/mobile-chat.png" width="360" alt="Mobile chat interface" />
+
+## Client architecture
+
+```mermaid
+flowchart LR
+    WS["Socket.io client<br/>update / sync / complete / failed"] --> GW["gateway.js"]
+    subgraph ST["Pinia stores"]
+        CO["contactorsStore"]
+        IT["interactionStore"]
+    end
+    GW --> |"80ms StreamBuffer throttle"| CO
+    GW --> IT
+    CO --> PERSIST["localforage (IndexedDB)<br/>msg ACKed only AFTER persist"]
+    CO --> UI["Vue 3 components<br/>chat timeline · tool calls · MemoryManager · AnyUI"]
+    SW["Service Worker (hand-written)<br/>IndexedDB response cache · TTL · versioned"] -.-> UI
+```
 
 ## What makes it interesting
 
@@ -28,12 +59,19 @@ Vue 3.5 · Vite 8 · Pinia · Element Plus · Socket.io-client · localforage (I
 ## Quick start
 
 ```bash
+git clone git@github.com:Pretend-to/mio-chat-frontend.git && cd mio-chat-frontend
 pnpm install
 pnpm dev        # http://localhost:1314, proxies /socket.io & /api to the backend (:3080)
 ```
 
-> Backend + architecture + full README (bilingual): see the `mio-chat-backend` repository.
+> Backend, architecture diagram and the full bilingual README: [**mio-chat-backend**](https://github.com/Pretend-to/mio-chat-backend).
+
+## 🙏 Acknowledgements
+
+Developed with JetBrains' **Open Source Development License** — free professional JetBrains IDE licenses provided for this open-source project.
+
+[![JetBrains](https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg)](https://www.jetbrains.com/)
 
 ## License
 
-Pending — unified with the backend repo before the first public release (see the backend README).
+[MIT](LICENSE) — © 2026 MioChat contributors
