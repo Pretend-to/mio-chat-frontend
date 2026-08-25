@@ -11,6 +11,8 @@
 
 **自托管 Agent harness 的渲染层。** 另一半在 [**mio-chat-backend**](https://github.com/Pretend-to/mio-chat-backend)。
 
+🖥️ [后端（Agent OS）](https://github.com/Pretend-to/mio-chat-backend) · 🎨 [Mio-Previewer (MD 渲染器)](https://github.com/Pretend-to/mio-previewer) · 🔌 [插件市场](https://github.com/Pretend-to/awesome-miochat-plugins)
+
 </div>
 
 这是 **MioChat** 的前端半壁。它不是聊天皮肤——harness 的上下文工程有一半发生在浏览器里：崩溃安全的流式链路、群聊上下文隔离、客户端记忆组装、Agent 自产 UI，以及一套手写的 PWA 层。
