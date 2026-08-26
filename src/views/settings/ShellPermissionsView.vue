@@ -119,7 +119,8 @@ const loadRules = async () => {
   loading.value = true;
   try {
     const res = await configAPI.request("/api/shell/policy");
-    rules.value = res?.rules || [];
+    const data = res.data || res;
+    rules.value = data?.rules || [];
   } catch (e) {
     ElMessage.error(`加载失败: ${e?.message || e}`);
   } finally {
