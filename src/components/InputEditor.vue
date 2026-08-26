@@ -44,9 +44,26 @@
           >
             授权执行
           </button>
-
-
-          <div class="reject-reason-container">
+          <template
+            v-if="
+              activeInteraction.meta?.command &&
+              activeInteraction.meta?.rememberable !== false
+            "
+          >
+            <button
+              class="interaction-btn approve-once-btn"
+              @click="submitResponse({ approved: true, rememberType: 'specific' })"
+            >
+              授权并记住此命令
+            </button>
+            <button
+              class="interaction-btn approve-once-btn"
+              @click="submitResponse({ approved: true, rememberType: 'prefix' })"
+            >
+              授权并记住此命令前缀
+            </button>
+          </template>
+<div class="reject-reason-container">
             <button
               class="interaction-btn reject-btn"
               @click="
