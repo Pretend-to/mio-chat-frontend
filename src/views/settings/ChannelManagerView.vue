@@ -108,19 +108,20 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import { Plus, Refresh } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import QRCode from "qrcode";
 import { configAPI } from "@/lib/configApi.js";
 
 const channels = ref([]);
 const loading = ref(false);
-const bindVisible = ref(false);
+const bindVisible= ref(false);
 const editVisible = ref(false);
 const channelId = ref(null);
 const current = ref(null);
 const bound = ref(false);
-const qrImg = ref("");
+const qrSrc = ref("");
 const qrCode = ref("");
 const addForm = ref({ name: "", agentId: "wechat-master" });
 const editForm = ref({ name: "", avatar: "", agentId: "" });
@@ -128,10 +129,6 @@ const creating = ref(false);
 const saving = ref(false);
 const pollTimer = ref(null);
 const pollStatus = ref("wait");
-
-const qrSrc = computed(() =>
-  qrImg.value ? (qrImg.value.startsWith("data:") ? qrImg.value : `data:image/png;base64,${qrImg.value}`) : ""
-);
 
 const isBound = (row) => !!row.userId && row.status !== "unbound";
 const statusText = (s) => ({ running: "运行中", stopped: "已停止", bound: "已绑定", unbound: "未绑定", expired: "已过期" }[s] || s || "—");
@@ -155,7 +152,7 @@ const resetBind = () => {
   channelId.value = null;
   current.value = null;
   bound.value = false;
-  qrImg.value = "";
+  qrSrc.value = "";
   qrCode.value = "";
   pollStatus.value = "wait";
 };
@@ -190,8 +187,18 @@ const createAndGetQr = async () => {
       });
     }
     const qrRes = await configAPI.request(`/api/channels/${id}/qrcode`, { method: "POST" });
-    qrImg.value = qrRes.data?.img || qrRes.img || "";
+    const rawContent = qrRes.data?.img || qrRes.img || "";
     qrCode.value = qrRes.data?.qrcode || "";
+    if (rawContent) {
+      if (rawContent.startsWith("data:image")) {
+        qrSrc.value = rawContent;
+      } else {
+        // 扫码文本/URL/base64内容通过 qrcode 库在前端本地直接转为 Canvas DataURL
+        qrSrc.value = await QRCode.toDataURL(rawContent, { width: 200, margin: 2 });
+      }
+    } else {
+      qrSrc.value = "";
+    }
     startPoll(id, qrCode.value);
   } catch (e) {
     ElMessage.error(`生成二维码失败: ${e?.message || e}`);
