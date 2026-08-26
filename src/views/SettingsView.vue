@@ -402,6 +402,7 @@ const allMenuItems = [
   { index: "image-adapters", label: "生图服务", icon: Picture },
   { index: "search-adapters", label: "搜索服务", icon: Search },
   { index: "vision-adapters", label: "识图服务", icon: View },
+  { index: "shell-policy", label: "Shell 权限", icon: Lock },
   { index: "automation", label: "系统任务", icon: Connection },
   { index: "server", label: "服务器配置", icon: Monitor },
   { index: "web", label: "Web 配置", icon: ChromeFilled },

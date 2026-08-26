@@ -131,6 +131,12 @@ const router = createRouter({
           component: () => import("../views/settings/VisionAdaptersView.vue"),
           meta: { title: "识图服务" },
         },
+        {
+          path: "shell-policy",
+          name: "settings_shell_policy",
+          component: () => import("../views/settings/ShellPermissionsView.vue"),
+          meta: { title: "Shell 权限" },
+        },
 
         {
           path: "automation",

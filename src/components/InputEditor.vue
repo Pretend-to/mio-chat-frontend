@@ -45,28 +45,6 @@
             授权执行
           </button>
 
-          <template
-            v-if="
-              activeInteraction.meta?.command &&
-              !isHighRiskCommand(activeInteraction.meta.command)
-            "
-          >
-            <button
-              class="interaction-btn approve-once-btn"
-              @click="handleApproveAndRememberSpecific"
-            >
-              记住此具体命令免确认
-            </button>
-
-            <button
-              class="interaction-btn approve-once-btn"
-              @click="handleApproveAndRememberPrefix"
-            >
-              记住命令前缀 [{{
-                getCommandPrefix(activeInteraction.meta.command)
-              }}] 免确认
-            </button>
-          </template>
 
           <div class="reject-reason-container">
             <button
@@ -451,10 +429,6 @@ const {
   hasActiveInteraction,
   submitResponse,
   rejectReasonText,
-  isHighRiskCommand,
-  getCommandPrefix,
-  handleApproveAndRememberSpecific,
-  handleApproveAndRememberPrefix,
 } = useInputInteractions({ activeContactor });
 
 // 7. Message Format and Sending Logic
