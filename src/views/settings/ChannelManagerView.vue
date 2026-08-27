@@ -116,7 +116,7 @@
         </div>
       </div>
       <!-- 内容 3: 绑定成功 -->
-      <el-result v-else icon="success" title="微信渠道已绑定">
+      <el-result v-else icon="success" title="微信渠道已绑定并已自动启动 🚀">
         <template #sub-title>
           <div class="bound-info">
             <div>名称：{{ current?.name }}</div>
@@ -124,6 +124,9 @@
             <div>绑定微信：{{ current?.userId }}</div>
             <div>归属 agent：{{ current?.agentId }}</div>
             <div v-if="current?.model">模型：{{ current?.provider ? current.provider + '/' : '' }}{{ current?.model }}</div>
+            <div style="margin-top: 8px; color: var(--el-color-success); font-weight: 500;">
+              ✨ 渠道服务已在后台自动拉起运行，现在可以直接在微信中向 Bot 发送消息啦！
+            </div>
           </div>
         </template>
       </el-result>
