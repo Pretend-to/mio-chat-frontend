@@ -22,7 +22,9 @@ jobs:
             **/node_modules
           key: ${{ runner.os }}-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
       - name: Install pnpm
-        run: npm install -g pnpm
+        # 固定 pnpm 10.34.x：不固定会漂移到 v11+，其 removed onlyBuiltDependencies /
+        # strictDepBuilds=true 会导致 ERR_PNPM_IGNORED_BUILDS。node 20 下也无法跑 pnpm 11。
+        run: npm install -g pnpm@10.34.5
       - name: Install dependencies
         run: |
           pnpm install

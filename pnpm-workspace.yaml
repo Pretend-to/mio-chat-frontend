@@ -1,16 +1,15 @@
 packages:
   - '.'
-
-onlyBuiltDependencies:
-  - '@parcel/watcher'
-  - cwebp-bin
-  - esbuild
-  - gifsicle
-  - jpegtran-bin
-  - mozjpeg
-  - optipng-bin
-  - pngquant-bin
-  - vue-demi
-  - sharp
-
+# 构建脚本白名单：pnpm 10.32+/11 采用 allowBuilds（v11 已移除旧 onlyBuiltDependencies key）
+allowBuilds:
+  '@parcel/watcher': true
+  cwebp-bin: true
+  esbuild: true
+  gifsicle: true
+  jpegtran-bin: true
+  mozjpeg: true
+  optipng-bin: true
+  pngquant-bin: true
+  vue-demi: true
+  sharp: true
 overrides: {}
