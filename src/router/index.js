@@ -137,6 +137,12 @@ const router = createRouter({
           component: () => import("../views/settings/ShellPermissionsView.vue"),
           meta: { title: "Shell 权限" },
         },
+        {
+          path: "channels",
+          name: "settings_channels",
+          component: () => import("../views/settings/ChannelManagerView.vue"),
+          meta: { title: "渠道管理" },
+        },
 
         {
           path: "automation",
