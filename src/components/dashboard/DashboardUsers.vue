@@ -1,5 +1,92 @@
 <template>
   <div class="users-view-container">
+    <!-- User Rankings (Primary Content) -->
+    <div class="rankings-row">
+      <!-- Token Heavy Users -->
+      <div class="ranking-col">
+        <div class="saas-card">
+          <div class="card-header">
+            <span class="card-title">Token 消耗排行 Top 10</span>
+          </div>
+          <div class="card-body p-none">
+            <div class="table-responsive-wrapper">
+              <el-table
+                :data="store.tokenTopUsers"
+                style="width: 100%"
+                class="saas-table"
+              >
+                <el-table-column label="排名" width="70" align="center">
+                  <template #default="scope">
+                    <span
+                      class="rank-badge"
+                      :class="'rank-' + (scope.$index + 1)"
+                    >
+                      {{ scope.$index + 1 }}
+                    </span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="userId" label="用户 ID"></el-table-column>
+                <el-table-column prop="calls" label="调用次数" width="110" align="right"></el-table-column>
+                <el-table-column prop="tokens" label="消耗 Token" align="right">
+                  <template #default="scope">
+                    <span class="token-value-text">{{
+                      formatNumber(scope.row.tokens)
+                    }}</span>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Frequency Heavy Users -->
+      <div class="ranking-col">
+        <div class="saas-card">
+          <div class="card-header">
+            <span class="card-title">高频请求用户 Top 10</span>
+          </div>
+          <div class="card-body p-none">
+            <div class="table-responsive-wrapper">
+              <el-table
+                :data="store.callsTopUsers"
+                style="width: 100%"
+                class="saas-table"
+              >
+                <el-table-column label="排名" width="70" align="center">
+                  <template #default="scope">
+                    <span
+                      class="rank-badge"
+                      :class="'rank-' + (scope.$index + 1)"
+                    >
+                      {{ scope.$index + 1 }}
+                    </span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="userId" label="用户 ID"></el-table-column>
+                <el-table-column prop="calls" label="调用次数" width="110" align="right"></el-table-column>
+                <el-table-column prop="tokens" label="消耗 Token" align="right">
+                  <template #default="scope">
+                    <span class="token-value-text">{{
+                      formatNumber(scope.row.tokens)
+                    }}</span>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Model Usage Drilldown Section -->
+    <div class="saas-card mt-lg section-title-card">
+      <div class="section-label">
+        <i class="fa-solid fa-layer-group"></i>
+        模型用量下钻分析
+      </div>
+    </div>
+
     <!-- Provider and Model Distribution Row -->
     <div class="row-flex">
       <div class="left-col-4">
@@ -53,14 +140,12 @@
             >
           </div>
           <div class="card-body-chart">
-            <el-skeleton :loading="store.loadingOverview && !store.historicalData" animated :rows="6" style="padding: 20px;">
-              <template #default>
-                <div
-                  id="provider-models-chart"
-                  class="chart-container-models"
-                ></div>
-              </template>
-            </el-skeleton>
+            <el-skeleton v-if="store.loadingOverview && !store.historicalData" animated :rows="6" style="padding: 20px;" />
+            <div
+              id="provider-models-chart"
+              class="chart-container-models"
+              :style="{ display: store.loadingOverview && !store.historicalData ? 'none' : 'block' }"
+            ></div>
           </div>
         </div>
       </div>
@@ -90,13 +175,14 @@
             <el-table-column
               prop="provider"
               label="提供商"
-              width="120"
+              min-width="140"
               align="center"
             >
               <template #default="scope">
                 <el-tag
                   size="small"
                   :type="getProviderTagType(scope.row.provider)"
+                  class="provider-tag"
                 >
                   {{ scope.row.provider }}
                 </el-tag>
@@ -139,10 +225,13 @@
               align="right"
             >
               <template #default="scope">
-                <span v-if="scope.row.cacheHitTokens > 0" class="text-green">{{
-                  formatTokens(scope.row.cacheHitTokens)
-                }}</span>
-                <span v-else class="text-muted">-</span>
+                <span
+                  :class="
+                    scope.row.cacheHitTokens > 0 ? 'text-green' : 'text-muted'
+                  "
+                >
+                  {{ formatTokens(scope.row.cacheHitTokens) }}
+                </span>
               </template>
             </el-table-column>
             <el-table-column
@@ -158,54 +247,6 @@
               </template>
             </el-table-column>
           </el-table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Rankings Row -->
-    <div class="rankings-row mt-lg">
-      <div class="ranking-col">
-        <div class="saas-card">
-          <div class="card-header">
-            <span class="card-title">活跃用户排行 (Top 10)</span>
-          </div>
-          <div class="card-body p-none">
-            <div class="table-responsive-wrapper">
-              <el-table
-                :data="store.userRankings"
-                size="default"
-                class="saas-table"
-              >
-                <el-table-column label="排名" width="80" align="center">
-                  <template #default="scope">
-                    <span
-                      class="rank-badge"
-                      :class="'rank-' + (scope.$index + 1)"
-                    >
-                      {{ scope.$index + 1 }}
-                    </span>
-                  </template>
-                </el-table-column>
-                <el-table-column
-                  prop="userId"
-                  label="用户 ID"
-                ></el-table-column>
-                <el-table-column
-                  prop="calls"
-                  label="调用次数"
-                  width="120"
-                  align="right"
-                ></el-table-column>
-                <el-table-column prop="tokens" label="消耗 Token" align="right">
-                  <template #default="scope">
-                    <span class="token-value-text">{{
-                      formatNumber(scope.row.tokens)
-                    }}</span>
-                  </template>
-                </el-table-column>
-              </el-table>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -263,6 +304,7 @@ function getProviderTagType(prov) {
 }
 
 let modelsChart = null;
+let themeObserver = null;
 
 function formatTokens(t) {
   if (!t && t !== 0) return "0";
@@ -276,39 +318,48 @@ function formatNumber(num) {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-const lightChartTheme = {
-  backgroundColor: "transparent",
-  textStyle: { color: "#64748b", fontFamily: "Plus Jakarta Sans, sans-serif" },
-  grid: {
-    left: "3%",
-    right: "4%",
-    bottom: "3%",
-    containLabel: true,
-    borderColor: "#f1f5f9",
-  },
-  tooltip: {
-    backgroundColor: "#ffffff",
-    borderColor: "#e2e8f0",
-    borderWidth: 1,
-    textStyle: {
-      color: "#0f172a",
-      fontFamily: "Plus Jakarta Sans, sans-serif",
+function getChartTheme() {
+  const isDark = typeof document !== "undefined" && (document.documentElement.getAttribute("data-theme") === "dark" || document.documentElement.classList.contains("dark"));
+  return {
+    isDark,
+    backgroundColor: "transparent",
+    textStyle: { color: isDark ? "#94a3b8" : "#64748b", fontFamily: "Plus Jakarta Sans, sans-serif" },
+    grid: {
+      left: "3%",
+      right: "4%",
+      bottom: "3%",
+      containLabel: true,
+      borderColor: isDark ? "#334155" : "#f1f5f9",
     },
-    borderRadius: 8,
-    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
-  },
-};
+    tooltip: {
+      backgroundColor: isDark ? "#1e293b" : "#ffffff",
+      borderColor: isDark ? "#334155" : "#e2e8f0",
+      borderWidth: 1,
+      textStyle: {
+        color: isDark ? "#f8fafc" : "#0f172a",
+        fontFamily: "Plus Jakarta Sans, sans-serif",
+      },
+      borderRadius: 8,
+      boxShadow: isDark ? "0 4px 12px rgba(0, 0, 0, 0.4)" : "0 4px 12px rgba(0, 0, 0, 0.05)",
+    },
+  };
+}
 
 function initChart() {
   const el = document.getElementById("provider-models-chart");
-  if (el && !modelsChart) {
-    modelsChart = echarts.init(el);
+  if (el && el.clientWidth > 0 && el.clientHeight > 0) {
+    if (!modelsChart || modelsChart.isDisposed()) {
+      modelsChart = echarts.init(el);
+    }
   }
-  renderChart();
 }
 
 function renderChart() {
-  if (!modelsChart || !store.rawModelDistribution) return;
+  if (!store.rawModelDistribution) return;
+  initChart();
+  if (!modelsChart) return;
+
+  const theme = getChartTheme();
 
   // Filter models
   const filtered =
@@ -334,9 +385,10 @@ function renderChart() {
 
   modelsChart.setOption(
     {
-      ...lightChartTheme,
+      backgroundColor: theme.backgroundColor,
+      textStyle: theme.textStyle,
       tooltip: {
-        ...lightChartTheme.tooltip,
+        ...theme.tooltip,
         trigger: "item",
         formatter: "{b}: {c} ({d}%)",
       },
@@ -348,12 +400,12 @@ function renderChart() {
           avoidLabelOverlap: false,
           itemStyle: {
             borderRadius: 6,
-            borderColor: "#ffffff",
+            borderColor: theme.isDark ? "#1e293b" : "#ffffff",
             borderWidth: 2,
           },
           label: {
             show: true,
-            color: "#475569",
+            color: theme.isDark ? "#cbd5e1" : "#475569",
             formatter: "{b}\n{d}%",
             fontFamily: "Plus Jakarta Sans, sans-serif",
           },
@@ -369,30 +421,84 @@ function renderChart() {
 
 function selectProvider(name) {
   store.selectedProvider = name;
-  nextTick(renderChart);
+  nextTick(() => {
+    initChart();
+    renderChart();
+  });
 }
 
 watch(
   () => store.historicalData,
   () => {
-    nextTick(renderChart);
+    nextTick(() => {
+      initChart();
+      renderChart();
+    });
   },
   { deep: true },
 );
 
+watch(
+  () => store.loadingOverview,
+  (loading) => {
+    if (!loading) {
+      nextTick(() => {
+        initChart();
+        renderChart();
+        handleResize();
+      });
+    }
+  }
+);
+
 function handleResize() {
-  modelsChart?.resize();
+  const el = document.getElementById("provider-models-chart");
+  if (el && el.clientWidth > 0 && el.clientHeight > 0) {
+    if (!modelsChart || modelsChart.isDisposed()) {
+      initChart();
+      renderChart();
+    } else {
+      modelsChart.resize();
+    }
+  }
 }
+
+let resizeObserver = null;
 
 onMounted(() => {
   nextTick(() => {
     initChart();
-    window.addEventListener("resize", handleResize);
+    renderChart();
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", handleResize);
+    }
+
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => {
+        handleResize();
+      });
+      const el = document.getElementById("provider-models-chart");
+      if (el) resizeObserver.observe(el);
+    }
+
+    if (typeof document !== "undefined") {
+      themeObserver = new MutationObserver(() => {
+        renderChart();
+      });
+      themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["data-theme", "class"],
+      });
+    }
   });
 });
 
 onUnmounted(() => {
-  window.removeEventListener("resize", handleResize);
+  if (typeof window !== "undefined") {
+    window.removeEventListener("resize", handleResize);
+  }
+  resizeObserver?.disconnect();
+  themeObserver?.disconnect();
   modelsChart?.dispose();
   modelsChart = null;
 });
@@ -429,8 +535,8 @@ onUnmounted(() => {
 }
 
 .saas-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--mio-bg-card, #ffffff);
+  border: 1px solid var(--mio-border-color-light, #e2e8f0);
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   display: flex;
@@ -447,7 +553,7 @@ onUnmounted(() => {
 
 .card-header {
   padding: 16px 20px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--mio-border-color-light, #f1f5f9);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -456,7 +562,7 @@ onUnmounted(() => {
 .card-title {
   font-size: 15px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--mio-text-primary, #0f172a);
 }
 
 .provider-list-scroll {
@@ -479,12 +585,12 @@ onUnmounted(() => {
 }
 
 .provider-item:hover {
-  background: #f8fafc;
+  background: var(--mio-bg-hover, #f8fafc);
 }
 
 .provider-item.active {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  background: var(--mio-bg-active, #eff6ff);
+  border: 1px solid var(--mio-color-primary, #bfdbfe);
 }
 
 .provider-item.active::before {
@@ -494,19 +600,19 @@ onUnmounted(() => {
   top: 25%;
   height: 50%;
   width: 3px;
-  background: #3b82f6;
+  background: var(--mio-color-primary, #3b82f6);
   border-radius: 0 4px 4px 0;
 }
 
 .provider-name {
   font-weight: 600;
   font-size: 13px;
-  color: #334155;
+  color: var(--mio-text-regular, #334155);
 }
 
 .provider-tokens {
   font-size: 12px;
-  color: #2563eb;
+  color: var(--mio-color-primary, #2563eb);
   font-weight: 600;
   font-family: "JetBrains Mono", monospace;
 }
@@ -541,6 +647,22 @@ onUnmounted(() => {
   margin-top: 10px;
 }
 
+.section-title-card {
+  background: var(--mio-bg-hover, #f8fafc);
+  border: 1px dashed var(--mio-border-color-light, #e2e8f0);
+  box-shadow: none;
+}
+
+.section-label {
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mio-text-secondary, #64748b);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .p-none {
   padding: 0;
 }
@@ -548,7 +670,7 @@ onUnmounted(() => {
 .token-value-text {
   font-family: "JetBrains Mono", monospace;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--mio-text-primary, #0f172a);
 }
 
 /* Rank Badges */
@@ -561,8 +683,8 @@ onUnmounted(() => {
   border-radius: 50%;
   font-size: 12px;
   font-weight: 700;
-  color: #64748b;
-  background: #f1f5f9;
+  color: var(--mio-text-secondary, #64748b);
+  background: var(--mio-bg-hover, #f1f5f9);
 }
 
 .rank-1 {
@@ -581,12 +703,12 @@ onUnmounted(() => {
 }
 
 :deep(.saas-table) {
-  --el-table-bg-color: #ffffff !important;
-  --el-table-tr-bg-color: #ffffff !important;
-  --el-table-header-bg-color: #f8fafc !important;
-  --el-table-border-color: #f1f5f9 !important;
-  --el-table-text-color: #334155 !important;
-  --el-table-header-text-color: #475569 !important;
+  --el-table-bg-color: var(--mio-bg-card, #ffffff) !important;
+  --el-table-tr-bg-color: var(--mio-bg-card, #ffffff) !important;
+  --el-table-header-bg-color: var(--mio-bg-hover, #f8fafc) !important;
+  --el-table-border-color: var(--mio-border-color-light, #f1f5f9) !important;
+  --el-table-text-color: var(--mio-text-regular, #334155) !important;
+  --el-table-header-text-color: var(--mio-text-primary, #475569) !important;
   border: none !important;
 }
 
@@ -598,11 +720,11 @@ onUnmounted(() => {
 .model-name-badge {
   font-family: "JetBrains Mono", monospace;
   font-weight: 500;
-  color: #1e293b;
-  background: #f8fafc;
+  color: var(--mio-text-primary, #1e293b);
+  background: var(--mio-bg-hover, #f8fafc);
   padding: 2px 6px;
   border-radius: 4px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--mio-border-color-light, #e2e8f0);
 }
 
 .text-green {

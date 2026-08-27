@@ -82,9 +82,9 @@
             class="saas-radio"
             @change="store.refreshData"
           >
-            <el-radio-button label="24h">24小时</el-radio-button>
-            <el-radio-button label="7d">近7天</el-radio-button>
-            <el-radio-button label="30d">近30天</el-radio-button>
+            <el-radio-button value="24h">24小时</el-radio-button>
+            <el-radio-button value="7d">近7天</el-radio-button>
+            <el-radio-button value="30d">近30天</el-radio-button>
           </el-radio-group>
 
           <el-button
@@ -251,8 +251,8 @@ onUnmounted(() => {
 /* Sidebar Styling */
 .sidebar {
   width: 250px;
-  background-color: #ffffff;
-  border-right: 1px solid #e2e8f0;
+  background-color: var(--mio-bg-card, #ffffff);
+  border-right: 1px solid var(--mio-border-color-light, #e2e8f0);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -266,12 +266,12 @@ onUnmounted(() => {
   gap: 10px;
   font-size: 16px;
   font-weight: 700;
-  color: #0f172a;
-  border-bottom: 1px solid #f1f5f9;
+  color: var(--mio-text-primary, #0f172a);
+  border-bottom: 1px solid var(--mio-border-color-light, #f1f5f9);
 }
 
 .logo-icon {
-  color: #2563eb;
+  color: var(--mio-color-primary, #2563eb);
   font-size: 18px;
 }
 
@@ -292,18 +292,18 @@ onUnmounted(() => {
   gap: 12px;
   font-size: 14px;
   font-weight: 500;
-  color: #475569;
+  color: var(--mio-text-regular, #475569);
   transition: all 0.2s ease;
 }
 
 .menu-item:hover {
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: var(--mio-bg-hover, #f8fafc);
+  color: var(--mio-text-primary, #0f172a);
 }
 
 .menu-item.active {
-  background-color: #eff6ff;
-  color: #2563eb;
+  background-color: var(--mio-bg-active, #eff6ff);
+  color: var(--mio-color-primary, #2563eb);
   font-weight: 600;
 }
 
@@ -315,9 +315,9 @@ onUnmounted(() => {
 
 .sidebar-footer {
   padding: 16px 20px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--mio-border-color-light, #f1f5f9);
   font-size: 12px;
-  color: #64748b;
+  color: var(--mio-text-secondary, #64748b);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -331,14 +331,14 @@ onUnmounted(() => {
   margin-bottom: 12px;
   font-size: 13px;
   font-weight: 500;
-  color: #475569;
+  color: var(--mio-text-regular, #475569);
   cursor: pointer;
   transition: color 0.2s ease;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--mio-border-color-light, #f1f5f9);
 }
 
 .back-to-app:hover {
-  color: #2563eb;
+  color: var(--mio-color-primary, #2563eb);
 }
 
 .back-to-app i {
@@ -375,6 +375,7 @@ onUnmounted(() => {
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
+  background-color: var(--mio-bg-page, #f8fafc);
 }
 
 .title-area {
@@ -387,7 +388,7 @@ onUnmounted(() => {
   background: transparent;
   border: none;
   font-size: 20px;
-  color: #475569;
+  color: var(--mio-text-regular, #475569);
   cursor: pointer;
   padding: 8px;
   margin-right: 14px;
@@ -398,13 +399,13 @@ onUnmounted(() => {
 }
 
 .burger-btn:hover {
-  background-color: #f1f5f9;
-  color: #0f172a;
+  background-color: var(--mio-bg-hover, #f1f5f9);
+  color: var(--mio-text-primary, #0f172a);
 }
 
 .header-bar {
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--mio-bg-card, #ffffff);
+  border-bottom: 1px solid var(--mio-border-color-light, #e2e8f0);
   padding: 18px 30px;
   display: flex;
   justify-content: space-between;
@@ -416,13 +417,13 @@ onUnmounted(() => {
   margin: 0 0 2px 0;
   font-size: 18px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--mio-text-primary, #0f172a);
 }
 
 .subtitle {
   margin: 0;
   font-size: 12px;
-  color: #64748b;
+  color: var(--mio-text-secondary, #64748b);
 }
 
 .header-actions {
@@ -433,13 +434,13 @@ onUnmounted(() => {
 
 .cost-btn {
   font-weight: 600;
-  background-color: #2563eb;
-  border-color: #2563eb;
+  background-color: var(--mio-color-primary, #2563eb);
+  border-color: var(--mio-color-primary, #2563eb);
 }
 
 .cost-btn:hover {
-  background-color: #1d4ed8;
-  border-color: #1d4ed8;
+  background-color: var(--mio-color-primary-hover, #1d4ed8);
+  border-color: var(--mio-color-primary-hover, #1d4ed8);
 }
 
 .btn-icon {
@@ -489,7 +490,9 @@ onUnmounted(() => {
 /* Custom element style overrides */
 :deep(.saas-radio .el-radio-button__inner) {
   border-radius: 6px !important;
-  border: 1px solid #d1d5db !important;
+  border: 1px solid var(--mio-border-color-light, #d1d5db) !important;
+  background: var(--mio-bg-card, #ffffff) !important;
+  color: var(--mio-text-regular, #374151) !important;
   margin: 0 2px;
   box-shadow: none !important;
 }
@@ -497,8 +500,8 @@ onUnmounted(() => {
 :deep(
   .saas-radio .el-radio-button__orig-radio:checked + .el-radio-button__inner
 ) {
-  background-color: #2563eb !important;
-  border-color: #2563eb !important;
+  background-color: var(--mio-color-primary, #2563eb) !important;
+  border-color: var(--mio-color-primary, #2563eb) !important;
   color: #ffffff !important;
 }
 

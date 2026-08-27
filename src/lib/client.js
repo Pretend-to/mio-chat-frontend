@@ -84,8 +84,10 @@ export default class Client extends EventEmitter {
     this._nameRef = ref(initialName);
     this._titleRef = ref(initialTitle);
 
-    this.saveNow = this._setLocalStorage.bind(this); // 立即持久化，用于关键节点
-    this.setLocalStorage = debounce(this.saveNow, 500); // 防抖版本，用于高频更新
+    this.saveNow = this._setLocalStorage.bind(this); // 立即持久化元数据
+    this.setLocalStorage = debounce(this.saveNow, 500); // 防抖版本持久化元数据
+    this.saveContactorMessagesNow = this._saveContactorMessagesNow.bind(this);
+    this.saveContactorMessages = debounce(this.saveContactorMessagesNow, 300);
   }
 
   get avatar() {
@@ -539,16 +541,24 @@ export default class Client extends EventEmitter {
   }
 
   everLogin() {
-    const stroge = localStorage.getItem("everLogin");
-    if (stroge) {
-      return true;
-    } else {
+    if (typeof localStorage === "undefined") {
+      return false;
+    }
+    try {
+      const stroge = localStorage.getItem("everLogin");
+      return Boolean(stroge);
+    } catch {
       return false;
     }
   }
 
   setEverLogin() {
-    localStorage.setItem("everLogin", true);
+    if (typeof localStorage === "undefined") {
+      return;
+    }
+    try {
+      localStorage.setItem("everLogin", "true");
+    } catch {}
   }
 
   async init() {
@@ -603,7 +613,7 @@ export default class Client extends EventEmitter {
   async getLocalStorage() {
     const client = await localforage.getItem("client");
     if (client) {
-      const localConfig = JSON.parse(client);
+      const localConfig = typeof client === "string" ? JSON.parse(client) : client;
       return localConfig;
     } else {
       // First-time user
@@ -627,26 +637,45 @@ export default class Client extends EventEmitter {
       this._pendingContactList = client.contactList || [];
       return;
     }
-    if (client.contactList && client.contactList.length != 0) {
-      // 兼容懒加载版本：如果消息链已被拆到 IndexedDB，先恢复回旧格式内存结构。
-      // 不删除 mio_msg_*，恢复成功后由正常保存流程继续保留副本。
+    if (client.contactList && client.contactList.length !== 0) {
+      let needsMigration = false;
       const contactList = await Promise.all(
         client.contactList.map(async (item) => {
+          // 1. 如果旧版数据中内嵌了 messageChain，无感自动迁移至独立分片 mio_msg_*
           if (Array.isArray(item.messageChain) && item.messageChain.length > 0) {
+            needsMigration = true;
+            try {
+              await localforage.setItem(
+                `mio_msg_${item.id}`,
+                JSON.stringify(item.messageChain),
+              );
+            } catch (e) {
+              console.error(`[Client] 自动迁移会话 ${item.id} 消息失败:`, e);
+            }
             return item;
           }
+          // 2. 如果是新版分片存储，从 mio_msg_* 并发读取独立消息链
           try {
-            const splitChain = await localforage.getItem(`mio_msg_${item.id}`);
-            if (Array.isArray(splitChain) && splitChain.length > 0) {
-              return { ...item, messageChain: splitChain };
+            const splitRaw = await localforage.getItem(`mio_msg_${item.id}`);
+            if (splitRaw) {
+              const splitChain =
+                typeof splitRaw === "string" ? JSON.parse(splitRaw) : splitRaw;
+              if (Array.isArray(splitChain)) {
+                return { ...item, messageChain: splitChain };
+              }
             }
           } catch (e) {
-            console.error("[Client] 恢复拆分消息链失败:", e);
+            console.error(`[Client] 加载分片消息失败 (${item.id}):`, e);
           }
-          return item;
+          return { ...item, messageChain: [] };
         }),
       );
       store.loadContactors(contactList);
+
+      if (needsMigration) {
+        console.log("[Client] 自动完成历史会话消息分片迁移，正在同步瘦身元数据...");
+        this._setLocalStorage();
+      }
     } else {
       store.loadContactors([]);
     }
@@ -691,7 +720,41 @@ export default class Client extends EventEmitter {
   }
 
   /**
-   * Save user information to localStorage
+   * 独立持久化单个联系人的消息链（轻量安全，体积小，零 OOM 风险）
+   * @param {string} contactorId
+   */
+  async _saveContactorMessagesNow(contactorId) {
+    const store = getStore();
+    if (!store || !contactorId) return;
+
+    try {
+      const messages = store.toMessagesJSON(contactorId);
+      if (messages !== null && messages !== undefined) {
+        await localforage.setItem(
+          `mio_msg_${contactorId}`,
+          JSON.stringify(messages),
+        );
+      }
+    } catch (err) {
+      console.error(`[Client] 保存会话 ${contactorId} 消息失败:`, err);
+    }
+  }
+
+  /**
+   * 删除某个联系人的独立消息链分片
+   * @param {string} contactorId
+   */
+  async removeContactorMessages(contactorId) {
+    if (!contactorId) return;
+    try {
+      await localforage.removeItem(`mio_msg_${contactorId}`);
+    } catch (err) {
+      console.error(`[Client] 删除会话 ${contactorId} 消息失败:`, err);
+    }
+  }
+
+  /**
+   * Save user information to localStorage (仅持久化元数据，不含巨型 messageChain)
    */
   async _setLocalStorage() {
     const store = getStore();
@@ -706,11 +769,11 @@ export default class Client extends EventEmitter {
     const client = {
       id: this.id,
       code: this.code,
-      contactList: store.toJSON(),
+      contactList: typeof store.toMetadataJSON === "function" ? store.toMetadataJSON() : store.toJSON(),
     };
     await localforage.setItem("client", JSON.stringify(client));
     await localforage.setItem("mio_boot_id", this._bootId || "");
-    console.log("Client saved");
+    console.log("Client metadata saved");
   }
 
   /**
@@ -951,12 +1014,18 @@ export default class Client extends EventEmitter {
    * @returns {Promise} Base information
    */
   async loadOriginBaseInfo() {
-    const res = await fetch("/api/base_info");
-    const { data } = await res.json();
-    this.config.setBaseConfig(data);
-    this.loadBaseInfo(data);
-
-    return data;
+    try {
+      const res = await fetch("/api/base_info");
+      const { data } = await res.json();
+      if (data) {
+        this.config.setBaseConfig(data);
+        this.loadBaseInfo(data);
+      }
+      return data;
+    } catch (e) {
+      console.warn("[Client] 加载基础信息失败:", e.message);
+      return null;
+    }
   }
 
   loadBaseInfo(data) {

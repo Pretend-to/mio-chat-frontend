@@ -26,16 +26,11 @@ export const useDashboardStore = defineStore("dashboard", () => {
   // Historical data cache
   const historicalData = ref(null);
 
-  // Provider metrics
-  const providerStats = ref([]);
+  // Provider selection
   const selectedProvider = ref("All");
-  const groupedProviders = ref([]);
-  const totalAllTokens = ref(0);
-  const rawModelDistribution = ref([]);
 
   // Rankings
   const userRankings = ref([]);
-  const windowRankings = ref([]);
 
   // Tool Call turns list & active trace details
   const toolCallTurns = ref([]);
@@ -55,8 +50,72 @@ export const useDashboardStore = defineStore("dashboard", () => {
     cachePrice: 0.075,
   });
 
-  // Computed Values
+  // --- Computed Derived Models (Single Source of Truth) ---
+  const modelDistribution = computed(() => {
+    return historicalData.value?.modelDistribution || [];
+  });
+
+  const rawModelDistribution = modelDistribution; // Alias for backward compatibility
+
+  const totalAllTokens = computed(() => {
+    return stats.value.totalTokens || 0;
+  });
+
+  const providerStats = computed(() => {
+    return modelDistribution.value.reduce((acc, curr) => {
+      const provName = curr.provider || "openai";
+      let existing = acc.find((item) => item.name === provName);
+      if (!existing) {
+        existing = {
+          name: provName,
+          hitTokens: 0,
+          missTokens: 0,
+          calls: 0,
+          promptTokens: 0,
+          compTokens: 0,
+        };
+        acc.push(existing);
+      }
+      existing.calls += curr.callCount || 0;
+      existing.promptTokens += curr.promptTokens || 0;
+      existing.compTokens += curr.candidatesTokens || 0;
+      existing.hitTokens += curr.cacheHitTokens || 0;
+      existing.missTokens +=
+        curr.cacheMissTokens ||
+        (curr.promptTokens || 0) +
+          (curr.candidatesTokens || 0) -
+          (curr.cacheHitTokens || 0);
+
+      const total = existing.hitTokens + existing.missTokens;
+      existing.cacheHitRate =
+        total > 0 ? Math.round((existing.hitTokens / total) * 100) : 0;
+      return acc;
+    }, []);
+  });
+
+  const groupedProviders = computed(() => {
+    const providerGroups = modelDistribution.value.reduce((acc, curr) => {
+      const name = curr.provider || "openai";
+      acc[name] = (acc[name] || 0) + (curr.totalTokens || 0);
+      return acc;
+    }, {});
+    return Object.entries(providerGroups)
+      .map(([name, totalTokens]) => ({
+        name,
+        totalTokens,
+      }))
+      .sort((a, b) => b.totalTokens - a.totalTokens);
+  });
+
   const providers = computed(() => providerStats.value.map((p) => p.name));
+
+  const tokenTopUsers = computed(() => {
+    return [...userRankings.value].sort((a, b) => b.tokens - a.tokens).slice(0, 10);
+  });
+
+  const callsTopUsers = computed(() => {
+    return [...userRankings.value].sort((a, b) => b.calls - a.calls).slice(0, 10);
+  });
 
   const calculatedCost = computed(() => {
     const pStat = providerStats.value.find(
@@ -121,76 +180,17 @@ export const useDashboardStore = defineStore("dashboard", () => {
         stats.value.promptTokens = data.summary.promptTokens;
         stats.value.compTokens = data.summary.candidatesTokens;
 
-        // 1. Process Provider and Cache Stats
-        providerStats.value = data.modelDistribution.reduce((acc, curr) => {
-          const provName = curr.provider || "openai";
-          let existing = acc.find((item) => item.name === provName);
-          if (!existing) {
-            existing = {
-              name: provName,
-              hitTokens: 0,
-              missTokens: 0,
-              calls: 0,
-              promptTokens: 0,
-              compTokens: 0,
-            };
-            acc.push(existing);
-          }
-          existing.calls += curr.callCount;
-          existing.promptTokens += curr.promptTokens;
-          existing.compTokens += curr.candidatesTokens;
-          existing.hitTokens += curr.cacheHitTokens || 0;
-          existing.missTokens +=
-            curr.cacheMissTokens ||
-            curr.promptTokens +
-              curr.candidatesTokens -
-              (curr.cacheHitTokens || 0);
-
-          const total = existing.hitTokens + existing.missTokens;
-          existing.cacheHitRate =
-            total > 0 ? Math.round((existing.hitTokens / total) * 100) : 0;
-          return acc;
-        }, []);
-
         // Set default cost calculation provider if empty
         if (!costCalc.value.provider && providerStats.value.length > 0) {
           costCalc.value.provider = providerStats.value[0].name;
         }
 
-        // 2. Process Rankings
-        userRankings.value = data.userRanking.map((item) => ({
+        // Process Rankings
+        userRankings.value = (data.userRanking || []).map((item) => ({
           userId: item.userId,
           calls: item.callCount,
           tokens: item.totalTokens,
         }));
-
-        windowRankings.value = data.sessionRanking.map((item) => ({
-          contactorId: item.contactorId,
-          calls: item.callCount,
-          tokens: item.totalTokens,
-        }));
-
-        // 3. Process Provider Lists and Model Breakdowns
-        rawModelDistribution.value = data.modelDistribution || [];
-        totalAllTokens.value = rawModelDistribution.value.reduce(
-          (sum, item) => sum + (item.totalTokens || 0),
-          0,
-        );
-
-        const providerGroups = rawModelDistribution.value.reduce(
-          (acc, curr) => {
-            const name = curr.provider || "openai";
-            acc[name] = (acc[name] || 0) + (curr.totalTokens || 0);
-            return acc;
-          },
-          {},
-        );
-        groupedProviders.value = Object.entries(providerGroups)
-          .map(([name, totalTokens]) => ({
-            name,
-            totalTokens,
-          }))
-          .sort((a, b) => b.totalTokens - a.totalTokens);
       }
     } catch (err) {
       if (curSeq === statsSeq) {
@@ -335,13 +335,8 @@ export const useDashboardStore = defineStore("dashboard", () => {
     slaMetric,
     stats,
     historicalData,
-    providerStats,
     selectedProvider,
-    groupedProviders,
-    totalAllTokens,
-    rawModelDistribution,
     userRankings,
-    windowRankings,
     toolCallTurns,
     activeTurn,
     failures,
@@ -352,8 +347,15 @@ export const useDashboardStore = defineStore("dashboard", () => {
     loadingTrace,
     loadingFailures,
 
-    // Computed
+    // Computed / Derived
+    modelDistribution,
+    rawModelDistribution,
+    providerStats,
+    groupedProviders,
+    totalAllTokens,
     providers,
+    tokenTopUsers,
+    callsTopUsers,
     calculatedCost,
 
     // Actions

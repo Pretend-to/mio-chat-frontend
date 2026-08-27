@@ -93,7 +93,7 @@
 
     <!-- Charts Row -->
     <div class="charts-row">
-      <div class="chart-card-col col-8">
+      <div class="chart-card-col col-6">
         <div class="saas-card">
           <div class="card-header">
             <span class="card-title">大模型性能 SLA</span>
@@ -108,26 +108,20 @@
             </el-select>
           </div>
           <div class="card-body">
-            <el-skeleton :loading="store.loadingOverview && !store.historicalData" animated :rows="6">
-              <template #default>
-                <div id="sla-chart" class="chart-container"></div>
-              </template>
-            </el-skeleton>
+            <el-skeleton v-if="store.loadingOverview && !store.historicalData" animated :rows="6" />
+            <div id="sla-chart" class="chart-container" :style="{ display: store.loadingOverview && !store.historicalData ? 'none' : 'block' }"></div>
           </div>
         </div>
       </div>
 
-      <div class="chart-card-col col-4">
+      <div class="chart-card-col col-6">
         <div class="saas-card">
           <div class="card-header">
-            <span class="card-title">模型调用占比</span>
+            <span class="card-title">请求吞吐与 Token 时序走势</span>
           </div>
           <div class="card-body">
-            <el-skeleton :loading="store.loadingOverview && !store.historicalData" animated :rows="6">
-              <template #default>
-                <div id="share-chart" class="chart-container"></div>
-              </template>
-            </el-skeleton>
+            <el-skeleton v-if="store.loadingOverview && !store.historicalData" animated :rows="6" />
+            <div id="trend-chart" class="chart-container" :style="{ display: store.loadingOverview && !store.historicalData ? 'none' : 'block' }"></div>
           </div>
         </div>
       </div>
@@ -139,52 +133,49 @@
         <span class="card-title">模型服务提供商及缓存命中审计</span>
       </div>
       <div class="card-body p-none">
-        <el-skeleton :loading="store.loadingOverview && store.providerStats.length === 0" animated :rows="5" style="padding: 20px;">
-          <template #default>
-            <div class="table-responsive-wrapper">
-              <el-table
-                :data="store.providerStats"
-                style="width: 100%"
-                class="saas-table"
-              >
-                <el-table-column
-                  prop="name"
-                  label="Provider / 实例"
-                ></el-table-column>
-                <el-table-column label="缓存命中率" min-width="120">
-                  <template #default="scope">
-                    <div class="progress-wrapper">
-                      <span class="progress-num"
-                        >{{ scope.row.cacheHitRate }}%</span
-                      >
-                      <el-progress
-                        :percentage="scope.row.cacheHitRate"
-                        :stroke-width="6"
-                        :color="scope.row.cacheHitRate > 50 ? '#10b981' : '#3b82f6'"
-                        :show-text="false"
-                      />
-                    </div>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="hitTokens" label="命中 Token 数">
-                  <template #default="scope">{{
-                    formatNumber(scope.row.hitTokens)
-                  }}</template>
-                </el-table-column>
-                <el-table-column prop="missTokens" label="未命中 Token 数">
-                  <template #default="scope">{{
-                    formatNumber(scope.row.missTokens)
-                  }}</template>
-                </el-table-column>
-                <el-table-column prop="calls" label="总调用次数">
-                  <template #default="scope">{{
-                    scope.row.calls
-                  }}</template>
-                </el-table-column>
-              </el-table>
-            </div>
-          </template>
-        </el-skeleton>
+        <el-skeleton v-if="store.loadingOverview && store.providerStats.length === 0" animated :rows="5" style="padding: 20px;" />
+        <div v-show="!store.loadingOverview || store.providerStats.length > 0" class="table-responsive-wrapper">
+          <el-table
+            :data="store.providerStats"
+            style="width: 100%"
+            class="saas-table"
+          >
+            <el-table-column
+              prop="name"
+              label="Provider / 实例"
+            ></el-table-column>
+            <el-table-column label="缓存命中率" min-width="120">
+              <template #default="scope">
+                <div class="progress-wrapper">
+                  <span class="progress-num"
+                    >{{ scope.row.cacheHitRate }}%</span
+                  >
+                  <el-progress
+                    :percentage="scope.row.cacheHitRate"
+                    :stroke-width="6"
+                    :color="scope.row.cacheHitRate > 50 ? '#10b981' : '#3b82f6'"
+                    :show-text="false"
+                  />
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column prop="hitTokens" label="命中 Token 数">
+              <template #default="scope">{{
+                formatNumber(scope.row.hitTokens)
+              }}</template>
+            </el-table-column>
+            <el-table-column prop="missTokens" label="未命中 Token 数">
+              <template #default="scope">{{
+                formatNumber(scope.row.missTokens)
+              }}</template>
+            </el-table-column>
+            <el-table-column prop="calls" label="总调用次数">
+              <template #default="scope">{{
+                scope.row.calls
+              }}</template>
+            </el-table-column>
+          </el-table>
+        </div>
       </div>
     </div>
   </div>
@@ -198,7 +189,8 @@ import * as echarts from "echarts";
 const store = useDashboardStore();
 
 let slaChart = null;
-let shareChart = null;
+let trendChart = null;
+let themeObserver = null;
 
 // Helper formatters
 function formatTokens(t) {
@@ -213,50 +205,61 @@ function formatNumber(num) {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-// ECharts Light Theme Settings
-const lightChartTheme = {
-  backgroundColor: "transparent",
-  textStyle: { color: "#64748b", fontFamily: "Plus Jakarta Sans, sans-serif" },
-  grid: {
-    left: "3%",
-    right: "4%",
-    bottom: "3%",
-    containLabel: true,
-    borderColor: "#f1f5f9",
-  },
-  tooltip: {
-    backgroundColor: "#ffffff",
-    borderColor: "#e2e8f0",
-    borderWidth: 1,
-    textStyle: {
-      color: "#0f172a",
-      fontFamily: "Plus Jakarta Sans, sans-serif",
+// 动态根据系统/用户主题生成 ECharts 配置
+function getChartTheme() {
+  const isDark = typeof document !== "undefined" && (document.documentElement.getAttribute("data-theme") === "dark" || document.documentElement.classList.contains("dark"));
+  return {
+    isDark,
+    backgroundColor: "transparent",
+    textStyle: { 
+      color: isDark ? "#94a3b8" : "#64748b", 
+      fontFamily: "Plus Jakarta Sans, sans-serif" 
     },
-    borderRadius: 8,
-    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
-  },
-};
+    grid: {
+      left: "3%",
+      right: "4%",
+      bottom: "3%",
+      containLabel: true,
+      borderColor: isDark ? "#334155" : "#f1f5f9",
+    },
+    tooltip: {
+      backgroundColor: isDark ? "#1e293b" : "#ffffff",
+      borderColor: isDark ? "#334155" : "#e2e8f0",
+      borderWidth: 1,
+      textStyle: {
+        color: isDark ? "#f8fafc" : "#0f172a",
+        fontFamily: "Plus Jakarta Sans, sans-serif",
+      },
+      borderRadius: 8,
+      boxShadow: isDark ? "0 4px 12px rgba(0, 0, 0, 0.4)" : "0 4px 12px rgba(0, 0, 0, 0.05)",
+    },
+  };
+}
 
 function initCharts() {
   const slaEl = document.getElementById("sla-chart");
-  const shareEl = document.getElementById("share-chart");
+  const trendEl = document.getElementById("trend-chart");
 
-  if (slaEl && !slaChart) {
-    slaChart = echarts.init(slaEl);
+  if (slaEl && slaEl.clientWidth > 0 && slaEl.clientHeight > 0) {
+    if (!slaChart || slaChart.isDisposed()) {
+      slaChart = echarts.init(slaEl);
+    }
   }
-  if (shareEl && !shareChart) {
-    shareChart = echarts.init(shareEl);
+  if (trendEl && trendEl.clientWidth > 0 && trendEl.clientHeight > 0) {
+    if (!trendChart || trendChart.isDisposed()) {
+      trendChart = echarts.init(trendEl);
+    }
   }
-
-  renderCharts();
 }
 
 function renderCharts() {
   if (!store.historicalData) return;
+  initCharts();
 
-  // 1. SLA Chart 重构为柱状图
+  const theme = getChartTheme();
+
+  // 1. SLA Chart
   if (slaChart) {
-    // 过滤发生过请求的模型，并按调用次数排序
     const modelList = (store.historicalData.modelDistribution || [])
       .filter((m) => m.callCount > 0)
       .sort((a, b) => b.callCount - a.callCount);
@@ -272,28 +275,28 @@ function renderCharts() {
 
     slaChart.setOption(
       {
-        ...lightChartTheme,
+        backgroundColor: theme.backgroundColor,
+        textStyle: theme.textStyle,
         grid: {
-          ...lightChartTheme.grid,
-          bottom: hasZoom ? "24%" : "14%", // 留出空间给 dataZoom 滚动条与倾斜的 X 轴标签
+          ...theme.grid,
+          bottom: hasZoom ? "24%" : "14%",
           containLabel: true,
         },
         tooltip: {
-          ...lightChartTheme.tooltip,
+          ...theme.tooltip,
           trigger: "axis",
           axisPointer: { type: "shadow" },
         },
         xAxis: {
           type: "category",
           data: modelLabels,
-          axisLine: { lineStyle: { color: "#cbd5e1" } },
+          axisLine: { lineStyle: { color: theme.isDark ? "#475569" : "#cbd5e1" } },
           axisLabel: {
             interval: 0,
-            rotate: 30, // 标签倾斜，避免重叠
+            rotate: 30,
             fontSize: 10,
-            color: "#64748b",
+            color: theme.isDark ? "#94a3b8" : "#64748b",
             formatter: function (value) {
-              // 超长文本截断处理，保证 UI 美观
               return value.length > 25 ? value.substring(0, 22) + "..." : value;
             },
           },
@@ -304,8 +307,8 @@ function renderCharts() {
             store.slaMetric === "ttft"
               ? "平均首字延迟 (ms)"
               : "平均生成速率 (TPS)",
-          splitLine: { lineStyle: { color: "#f1f5f9" } },
-          axisLine: { lineStyle: { color: "#cbd5e1" } },
+          splitLine: { lineStyle: { color: theme.isDark ? "#334155" : "#f1f5f9" } },
+          axisLine: { lineStyle: { color: theme.isDark ? "#475569" : "#cbd5e1" } },
         },
         dataZoom: hasZoom
           ? [
@@ -313,12 +316,12 @@ function renderCharts() {
                 type: "slider",
                 show: true,
                 startValue: 0,
-                endValue: 6, // 默认每页显示 7 个模型
+                endValue: 6,
                 height: 8,
                 bottom: 5,
                 borderColor: "transparent",
-                backgroundColor: "#f1f5f9",
-                fillerColor: "#cbd5e1",
+                backgroundColor: theme.isDark ? "#1e293b" : "#f1f5f9",
+                fillerColor: theme.isDark ? "#475569" : "#cbd5e1",
                 handleSize: 0,
                 showDetail: false,
                 moveHandleSize: 0,
@@ -327,7 +330,7 @@ function renderCharts() {
                 type: "inside",
                 startValue: 0,
                 endValue: 6,
-                zoomOnMouseWheel: false, // 禁用鼠标滚轮缩放，保留平滑横向移动
+                zoomOnMouseWheel: false,
                 moveOnMouseMove: true,
                 moveOnMouseWheel: true,
               },
@@ -340,12 +343,11 @@ function renderCharts() {
             barWidth: "35%",
             data: modelValues,
             itemStyle: {
-              // 极具现代科技感的渐变蓝柱体
               color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                 { offset: 0, color: "#3b82f6" },
                 { offset: 1, color: "#2563eb" },
               ]),
-              borderRadius: [4, 4, 0, 0], // 顶部圆角
+              borderRadius: [4, 4, 0, 0],
             },
           },
         ],
@@ -354,44 +356,90 @@ function renderCharts() {
     );
   }
 
-  // 2. Share Chart
-  if (shareChart && store.historicalData.modelDistribution) {
-    const pieData = store.historicalData.modelDistribution.map((m) => ({
-      name: `${m.provider}/${m.model}`,
-      value: m.totalTokens,
-    }));
+  // 2. Trend Chart (时序趋势走势)
+  if (trendChart) {
+    const rawTrends = store.historicalData.trends || [];
+    const timeMap = {};
+    rawTrends.forEach((t) => {
+      const tb = t.timeBucket || "未知";
+      if (!timeMap[tb]) {
+        timeMap[tb] = { calls: 0, tokens: 0 };
+      }
+      timeMap[tb].calls += t.callCount || 0;
+      timeMap[tb].tokens += t.tokenCount || 0;
+    });
 
-    shareChart.setOption(
+    const timeLabels = Object.keys(timeMap).map((k) => {
+      return k.length > 10 ? k.substring(5, 16) : k.substring(5);
+    });
+    const callData = Object.values(timeMap).map((v) => v.calls);
+    const tokenData = Object.values(timeMap).map((v) => v.tokens);
+
+    trendChart.setOption(
       {
-        ...lightChartTheme,
+        backgroundColor: theme.backgroundColor,
+        textStyle: theme.textStyle,
         tooltip: {
-          ...lightChartTheme.tooltip,
-          trigger: "item",
-          formatter: "{b}: {c} ({d}%)",
+          ...theme.tooltip,
+          trigger: "axis",
         },
-        color: [
-          "#2563eb",
-          "#10b981",
-          "#6366f1",
-          "#f59e0b",
-          "#ec4899",
-          "#94a3b8",
+        legend: {
+          data: ["调用频次 (次)", "Token 消耗 (Tokens)"],
+          textStyle: { color: theme.isDark ? "#cbd5e1" : "#475569" },
+          top: 0,
+          right: 10,
+        },
+        grid: {
+          ...theme.grid,
+          bottom: "14%",
+          containLabel: true,
+        },
+        xAxis: {
+          type: "category",
+          data: timeLabels,
+          axisLine: { lineStyle: { color: theme.isDark ? "#475569" : "#cbd5e1" } },
+          axisLabel: {
+            color: theme.isDark ? "#94a3b8" : "#64748b",
+            rotate: 25,
+            fontSize: 10,
+          },
+        },
+        yAxis: [
+          {
+            type: "value",
+            name: "调用次数",
+            splitLine: { lineStyle: { color: theme.isDark ? "#334155" : "#f1f5f9" } },
+            axisLine: { lineStyle: { color: theme.isDark ? "#475569" : "#cbd5e1" } },
+          },
+          {
+            type: "value",
+            name: "Tokens",
+            splitLine: { show: false },
+            axisLine: { lineStyle: { color: theme.isDark ? "#475569" : "#cbd5e1" } },
+          },
         ],
         series: [
           {
-            type: "pie",
-            radius: ["45%", "70%"],
-            avoidLabelOverlap: false,
-            itemStyle: {
-              borderRadius: 6,
-              borderColor: "#ffffff",
-              borderWidth: 2,
+            name: "调用频次 (次)",
+            type: "bar",
+            data: callData,
+            itemStyle: { color: "#3b82f6", borderRadius: [3, 3, 0, 0] },
+            barWidth: "30%",
+          },
+          {
+            name: "Token 消耗 (Tokens)",
+            type: "line",
+            yAxisIndex: 1,
+            data: tokenData,
+            smooth: true,
+            showSymbol: false,
+            itemStyle: { color: "#10b981" },
+            areaStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: "rgba(16, 185, 129, 0.28)" },
+                { offset: 1, color: "rgba(16, 185, 129, 0.01)" },
+              ]),
             },
-            label: { show: false },
-            emphasis: {
-              label: { show: true, fontSize: 13, fontWeight: "bold" },
-            },
-            data: pieData,
           },
         ],
       },
@@ -404,7 +452,10 @@ function renderCharts() {
 watch(
   () => store.historicalData,
   () => {
-    nextTick(renderCharts);
+    nextTick(() => {
+      initCharts();
+      renderCharts();
+    });
   },
   { deep: true },
 );
@@ -412,28 +463,90 @@ watch(
 watch(
   () => store.slaMetric,
   () => {
-    nextTick(renderCharts);
+    nextTick(() => {
+      initCharts();
+      renderCharts();
+    });
   },
 );
 
+watch(
+  () => store.loadingOverview,
+  (loading) => {
+    if (!loading) {
+      nextTick(() => {
+        initCharts();
+        renderCharts();
+      });
+    }
+  }
+);
+
 function handleResize() {
-  slaChart?.resize();
-  shareChart?.resize();
+  const slaEl = document.getElementById("sla-chart");
+  const trendEl = document.getElementById("trend-chart");
+
+  if (slaEl && slaEl.clientWidth > 0 && slaEl.clientHeight > 0) {
+    if (!slaChart || slaChart.isDisposed()) {
+      initCharts();
+      renderCharts();
+    } else {
+      slaChart.resize();
+    }
+  }
+
+  if (trendEl && trendEl.clientWidth > 0 && trendEl.clientHeight > 0) {
+    if (!trendChart || trendChart.isDisposed()) {
+      initCharts();
+      renderCharts();
+    } else {
+      trendChart.resize();
+    }
+  }
 }
+
+let resizeObserver = null;
 
 onMounted(() => {
   nextTick(() => {
     initCharts();
-    window.addEventListener("resize", handleResize);
+    renderCharts();
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", handleResize);
+    }
+
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => {
+        handleResize();
+      });
+      const slaEl = document.getElementById("sla-chart");
+      const trendEl = document.getElementById("trend-chart");
+      if (slaEl) resizeObserver.observe(slaEl);
+      if (trendEl) resizeObserver.observe(trendEl);
+    }
+
+    if (typeof document !== "undefined") {
+      themeObserver = new MutationObserver(() => {
+        renderCharts();
+      });
+      themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["data-theme", "class"],
+      });
+    }
   });
 });
 
 onUnmounted(() => {
-  window.removeEventListener("resize", handleResize);
+  if (typeof window !== "undefined") {
+    window.removeEventListener("resize", handleResize);
+  }
+  resizeObserver?.disconnect();
+  themeObserver?.disconnect();
   slaChart?.dispose();
-  shareChart?.dispose();
+  trendChart?.dispose();
   slaChart = null;
-  shareChart = null;
+  trendChart = null;
 });
 </script>
 
@@ -452,8 +565,8 @@ onUnmounted(() => {
 }
 
 .stat-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--mio-bg-card, #ffffff);
+  border: 1px solid var(--mio-border-color-light, #e2e8f0);
   border-radius: 12px;
   padding: 20px;
   display: flex;
@@ -469,7 +582,7 @@ onUnmounted(() => {
 
 .stat-title {
   font-size: 13px;
-  color: #64748b;
+  color: var(--mio-text-secondary, #64748b);
   font-weight: 500;
   margin-bottom: 4px;
 }
@@ -478,12 +591,12 @@ onUnmounted(() => {
   font-size: 24px;
   font-weight: 700;
   font-family: "Plus Jakarta Sans", sans-serif;
-  color: #0f172a;
+  color: var(--mio-text-primary, #0f172a);
 }
 
 .stat-sub {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--mio-text-placeholder, #94a3b8);
   margin-top: 4px;
 }
 
@@ -499,7 +612,7 @@ onUnmounted(() => {
 
 /* Accent state colors */
 .bg-green {
-  background: #f0fdf4;
+  background: rgba(16, 185, 129, 0.12);
   color: #10b981;
 }
 .text-green {
@@ -507,7 +620,7 @@ onUnmounted(() => {
 }
 
 .bg-blue {
-  background: #eff6ff;
+  background: rgba(59, 130, 246, 0.12);
   color: #3b82f6;
 }
 .text-blue {
@@ -515,7 +628,7 @@ onUnmounted(() => {
 }
 
 .bg-amber {
-  background: #fffbeb;
+  background: rgba(245, 158, 11, 0.12);
   color: #f59e0b;
 }
 .text-amber {
@@ -523,11 +636,11 @@ onUnmounted(() => {
 }
 
 .bg-indigo {
-  background: #eef2ff;
+  background: rgba(99, 102, 241, 0.12);
   color: #6366f1;
 }
 .text-indigo {
-  color: #4f46e5;
+  color: #6366f1;
 }
 
 /* Charts Layout */
@@ -543,6 +656,9 @@ onUnmounted(() => {
   box-sizing: border-box;
 }
 
+.col-6 {
+  width: 50%;
+}
 .col-8 {
   width: 66.666%;
 }
@@ -551,6 +667,7 @@ onUnmounted(() => {
 }
 
 @media (max-width: 992px) {
+  .col-6,
   .col-8,
   .col-4 {
     width: 100%;
@@ -558,8 +675,8 @@ onUnmounted(() => {
 }
 
 .saas-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--mio-bg-card, #ffffff);
+  border: 1px solid var(--mio-border-color-light, #e2e8f0);
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   display: flex;
@@ -568,7 +685,7 @@ onUnmounted(() => {
 
 .card-header {
   padding: 16px 20px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--mio-border-color-light, #f1f5f9);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -577,7 +694,7 @@ onUnmounted(() => {
 .card-title {
   font-size: 15px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--mio-text-primary, #0f172a);
 }
 
 .card-body {
@@ -610,16 +727,16 @@ onUnmounted(() => {
   font-size: 13px;
   font-weight: 600;
   width: 36px;
-  color: #334155;
+  color: var(--mio-text-primary, #334155);
 }
 
 :deep(.saas-table) {
-  --el-table-bg-color: #ffffff !important;
-  --el-table-tr-bg-color: #ffffff !important;
-  --el-table-header-bg-color: #f8fafc !important;
-  --el-table-border-color: #f1f5f9 !important;
-  --el-table-text-color: #334155 !important;
-  --el-table-header-text-color: #475569 !important;
+  --el-table-bg-color: var(--mio-bg-card, #ffffff) !important;
+  --el-table-tr-bg-color: var(--mio-bg-card, #ffffff) !important;
+  --el-table-header-bg-color: var(--mio-bg-hover, #f8fafc) !important;
+  --el-table-border-color: var(--mio-border-color-light, #f1f5f9) !important;
+  --el-table-text-color: var(--mio-text-regular, #334155) !important;
+  --el-table-header-text-color: var(--mio-text-primary, #475569) !important;
   border: none !important;
 }
 

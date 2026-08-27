@@ -81,6 +81,9 @@ export default class Config {
    * @param {any} data - 需要存储的数据
    */
   _setLocalStorage(key, data) {
+    if (typeof localStorage === "undefined") {
+      return;
+    }
     try {
       localStorage.setItem(key, JSON.stringify(data));
     } catch (error) {
@@ -95,6 +98,9 @@ export default class Config {
    * @returns {any | null} - 解析后的数据，如果不存在或解析失败则返回 null
    */
   _getLocalStorage(key) {
+    if (typeof localStorage === "undefined") {
+      return null;
+    }
     try {
       const storedValue = localStorage.getItem(key);
       if (storedValue === null || storedValue === undefined) {
@@ -104,7 +110,9 @@ export default class Config {
     } catch (error) {
       console.error(`从 localStorage 读取或解析时出错 (Key: ${key}):`, error);
       // 清除可能已损坏的数据
-      localStorage.removeItem(key);
+      try {
+        localStorage.removeItem(key);
+      } catch {}
       return null;
     }
   }

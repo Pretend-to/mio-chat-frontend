@@ -222,9 +222,9 @@
       <el-form :model="exportForm" label-width="100px">
         <el-form-item label="导出格式">
           <el-radio-group v-model="exportForm.format">
-            <el-radio label="json">JSON</el-radio>
-            <el-radio label="csv">CSV</el-radio>
-            <el-radio label="txt">TXT</el-radio>
+            <el-radio value="json">JSON</el-radio>
+            <el-radio value="csv">CSV</el-radio>
+            <el-radio value="txt">TXT</el-radio>
           </el-radio-group>
         </el-form-item>
 

@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { ref, computed, markRaw } from "vue";
 import { getAvatarByAdapterType } from "@/utils/avatar.js";
 import { numberString } from "@/utils/generate.js";
 import { config, client } from "@/lib/runtime.js";
@@ -227,7 +227,13 @@ export const useContactorsStore = defineStore("contactors", () => {
         members: item.members ?? [],
         priority: item.priority === true ? 0 : item.priority === false ? 1 : (item.priority ?? 1),
         firstMessageIndex: item.firstMessageIndex ?? 0,
-        messageChain: item.messageChain ?? [],
+        messageChain: Array.isArray(item.messageChain)
+          ? item.messageChain.map((m) =>
+              m && (m.status === "completed" || m.status === "failed")
+                ? markRaw(m)
+                : m,
+            )
+          : [],
         active: false,
         lastUpdate: item.lastUpdate ?? Date.now(),
         createTime: item.createTime ?? Date.now(),
@@ -344,6 +350,9 @@ export const useContactorsStore = defineStore("contactors", () => {
       delete contactors.value[id];
       if (activeContactorId.value === id) {
         activeContactorId.value = null;
+      }
+      if (client.removeContactorMessages) {
+        client.removeContactorMessages(id);
       }
       client.setLocalStorage();
     }
@@ -1041,6 +1050,10 @@ export const useContactorsStore = defineStore("contactors", () => {
 
     contactor.lastUpdate = Date.now();
     updateContactorSummary(contactor);
+    markRaw(message);
+    if (client.saveContactorMessages) {
+      client.saveContactorMessages(contactorId);
+    }
     client.setLocalStorage();
 
     // 群聊 Agent 连锁唤起：仅在 Agent 回复首次自然完成时触发。
@@ -1088,6 +1101,10 @@ export const useContactorsStore = defineStore("contactors", () => {
 
     contactor.lastUpdate = Date.now();
     updateContactorSummary(contactor);
+    markRaw(message);
+    if (client.saveContactorMessages) {
+      client.saveContactorMessages(contactorId);
+    }
     client.setLocalStorage();
   }
 
@@ -1134,6 +1151,9 @@ export const useContactorsStore = defineStore("contactors", () => {
       }
 
       updateContactorSummary(contactor);
+      if (client.saveContactorMessages) {
+        client.saveContactorMessages(contactorId);
+      }
       client.setLocalStorage();
     }
   }
@@ -1208,6 +1228,9 @@ export const useContactorsStore = defineStore("contactors", () => {
       }
 
       updateContactorSummary(contactor);
+      if (client.saveContactorMessages) {
+        client.saveContactorMessages(contactorId);
+      }
       client.setLocalStorage();
     }
   }
@@ -1231,6 +1254,9 @@ export const useContactorsStore = defineStore("contactors", () => {
     contactor.messageChain.push(systemMsg);
     contactor.lastUpdate = Date.now();
     updateContactorSummary(contactor);
+    if (client.saveContactorMessages) {
+      client.saveContactorMessages(contactorId);
+    }
     client.setLocalStorage();
   }
 
@@ -1248,7 +1274,10 @@ export const useContactorsStore = defineStore("contactors", () => {
     client.setLocalStorage();
   }
 
-  function toJSON() {
+  /**
+   * 仅提取联系人纯元数据（不含巨型 messageChain，体积通常仅 1~5 KB）
+   */
+  function toMetadataJSON() {
     return Object.values(contactors.value).map((item) => ({
       platform: item.platform,
       id: item.id,
@@ -1265,14 +1294,28 @@ export const useContactorsStore = defineStore("contactors", () => {
       toolCallContextMode: item.toolCallContextMode || "full",
       members: item.members,
       priority: item.priority,
-      messageChain: item.messageChain,
       active: item.active,
       lastUpdate: item.lastUpdate,
       createTime: item.createTime,
       hasPendingTask: item.hasPendingTask,
       firstMessageIndex: item.firstMessageIndex,
       draft: item.draft,
+      lastMessageSummary: item.lastMessageSummary,
     }));
+  }
+
+  /**
+   * 提取指定联系人的纯消息链数据
+   * @param {string} contactorId
+   */
+  function toMessagesJSON(contactorId) {
+    const contactor = contactors.value[contactorId];
+    if (!contactor || !Array.isArray(contactor.messageChain)) return [];
+    return contactor.messageChain;
+  }
+
+  function toJSON() {
+    return toMetadataJSON();
   }
 
   return {
@@ -1307,6 +1350,8 @@ export const useContactorsStore = defineStore("contactors", () => {
     clearHistory,
     insertSystemMessage,
     toJSON,
+    toMetadataJSON,
+    toMessagesJSON,
     // Crystallization
     handleCrystallizeEvent,
     updateCrystallization,    updateContactorOption,

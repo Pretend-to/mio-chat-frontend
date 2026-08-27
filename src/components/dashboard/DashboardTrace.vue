@@ -708,14 +708,12 @@ function formatTime(timestamp) {
 }
 
 .saas-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--mio-bg-card, #ffffff);
+  border: 1px solid var(--mio-border-color-light, #e2e8f0);
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 0;
 }
 
 .list-card {
@@ -750,7 +748,7 @@ function formatTime(timestamp) {
 }
 
 .border-b {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--mio-border-color-light, #f1f5f9);
 }
 
 /* Turns list scroll styling */
@@ -765,28 +763,28 @@ function formatTime(timestamp) {
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #94a3b8;
+  color: var(--mio-text-secondary, #94a3b8);
   font-size: 14px;
 }
 
 .turn-item {
   padding: 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--mio-border-color-light, #e2e8f0);
   border-radius: 10px;
   cursor: pointer;
   margin-bottom: 10px;
   transition: all 0.2s ease;
-  background: #ffffff;
+  background: var(--mio-bg-card, #ffffff);
 }
 
 .turn-item:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+  background: var(--mio-bg-hover, #f8fafc);
+  border-color: var(--mio-border-color, #cbd5e1);
 }
 
 .turn-item.active {
-  background: #eff6ff;
-  border-color: #bfdbfe;
+  background: var(--mio-bg-active, #eff6ff);
+  border-color: var(--mio-color-primary, #bfdbfe);
 }
 
 .turn-header {
@@ -799,7 +797,7 @@ function formatTime(timestamp) {
 .turn-id {
   font-weight: 600;
   font-size: 13px;
-  color: #1e293b;
+  color: var(--mio-text-primary, #1e293b);
   font-family: "JetBrains Mono", monospace;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -813,14 +811,14 @@ function formatTime(timestamp) {
 
 .turn-meta {
   font-size: 12px;
-  color: #64748b;
+  color: var(--mio-text-regular, #64748b);
   display: flex;
   gap: 12px;
   margin-bottom: 8px;
 }
 
 .turn-meta i {
-  color: #94a3b8;
+  color: var(--mio-text-placeholder, #94a3b8);
 }
 
 .turn-footer {
@@ -828,13 +826,13 @@ function formatTime(timestamp) {
   justify-content: space-between;
   align-items: center;
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--mio-text-secondary, #94a3b8);
 }
 
 .turn-tokens {
   font-family: "JetBrains Mono", monospace;
   font-weight: 600;
-  color: #2563eb;
+  color: var(--mio-color-primary, #2563eb);
   font-size: 12px;
 }
 
@@ -845,13 +843,13 @@ function formatTime(timestamp) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
+  color: var(--mio-text-secondary, #94a3b8);
 }
 
 .empty-icon {
   font-size: 40px;
   margin-bottom: 12px;
-  color: #cbd5e1;
+  color: var(--mio-border-color, #cbd5e1);
 }
 
 .empty-text {
@@ -862,7 +860,7 @@ function formatTime(timestamp) {
   flex: 1;
   overflow-y: auto;
   padding: 24px;
-  background: #f8fafc;
+  background: var(--mio-bg-page, #f8fafc);
 }
 
 .timeline-container {
@@ -905,14 +903,14 @@ function formatTime(timestamp) {
 .node-line {
   width: 2px;
   flex-grow: 1;
-  background: #e2e8f0;
+  background: var(--mio-border-color-light, #e2e8f0);
   margin: 4px 0;
 }
 
 .node-content-card {
   flex-grow: 1;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--mio-bg-card, #ffffff);
+  border: 1px solid var(--mio-border-color-light, #e2e8f0);
   border-radius: 10px;
   margin-bottom: 24px;
   padding: 16px;
@@ -929,7 +927,7 @@ function formatTime(timestamp) {
 
 .step-time {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--mio-text-placeholder, #94a3b8);
 }
 
 .step-badge {
@@ -940,19 +938,19 @@ function formatTime(timestamp) {
 }
 
 .step-badge.llm {
-  background: #eff6ff;
-  color: #2563eb;
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
 }
 
 .step-badge.tool {
-  background: #fffbeb;
+  background: rgba(245, 158, 11, 0.12);
   color: #d97706;
 }
 
 .step-model-tag {
   font-size: 11px;
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--mio-bg-hover, #f1f5f9);
+  color: var(--mio-text-regular, #475569);
   padding: 2px 6px;
   border-radius: 4px;
   font-family: "JetBrains Mono", monospace;
@@ -962,7 +960,7 @@ function formatTime(timestamp) {
   margin: 0 0 10px 0;
   font-size: 14px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--mio-text-primary, #0f172a);
 }
 
 .llm-fields {
@@ -975,12 +973,12 @@ function formatTime(timestamp) {
   display: flex;
   gap: 16px;
   font-size: 12px;
-  color: #64748b;
+  color: var(--mio-text-secondary, #64748b);
   flex-wrap: wrap;
 }
 
 .metric-item strong {
-  color: #334155;
+  color: var(--mio-text-primary, #334155);
 }
 
 .metric-item.latency strong {
@@ -988,8 +986,8 @@ function formatTime(timestamp) {
 }
 
 .tools-called-box {
-  background: #fafafa;
-  border: 1px dashed #e2e8f0;
+  background: var(--mio-bg-hover, #fafafa);
+  border: 1px dashed var(--mio-border-color-light, #e2e8f0);
   border-radius: 6px;
   padding: 10px;
   margin-top: 4px;
@@ -997,7 +995,7 @@ function formatTime(timestamp) {
 
 .box-label {
   font-size: 11px;
-  color: #64748b;
+  color: var(--mio-text-secondary, #64748b);
   display: block;
   margin-bottom: 6px;
 }
@@ -1013,27 +1011,27 @@ function formatTime(timestamp) {
 }
 
 .code-editor-box {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--mio-border-color-light, #e2e8f0);
   border-radius: 8px;
   overflow: hidden;
 }
 
 .code-box-header {
-  background: #f8fafc;
+  background: var(--mio-bg-hover, #f8fafc);
   padding: 8px 12px;
   font-size: 11px;
-  color: #64748b;
-  border-bottom: 1px solid #e2e8f0;
+  color: var(--mio-text-secondary, #64748b);
+  border-bottom: 1px solid var(--mio-border-color-light, #e2e8f0);
   font-weight: 600;
 }
 
 .code-box-content {
   margin: 0;
   padding: 12px;
-  background: #fafafa;
+  background: var(--mio-bg-hover, #fafafa);
   font-family: "JetBrains Mono", monospace;
   font-size: 12px;
-  color: #334155;
+  color: var(--mio-text-regular, #334155);
   white-space: pre-wrap;
   word-break: break-all;
   max-height: 200px;
@@ -1043,7 +1041,7 @@ function formatTime(timestamp) {
 /* Custom Added Styles for Filtering and Dialog details */
 .filter-bar {
   padding: 12px 14px;
-  background: #f8fafc;
+  background: var(--mio-bg-hover, #f8fafc);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1058,8 +1056,8 @@ function formatTime(timestamp) {
 }
 
 :deep(.saas-filter-select .el-select__wrapper) {
-  background-color: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
+  background-color: var(--mio-bg-card, #ffffff) !important;
+  border: 1px solid var(--mio-border-color-light, #e2e8f0) !important;
   box-shadow: none !important;
   border-radius: 8px !important;
   height: 36px !important;
