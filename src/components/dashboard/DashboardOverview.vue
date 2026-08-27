@@ -2,53 +2,93 @@
   <div class="overview-container">
     <!-- Stats Cards Grid -->
     <div class="stats-grid">
-      <div class="stat-card connections">
-        <div class="stat-info">
-          <span class="stat-title">在线 WebSocket 连接</span>
-          <span class="stat-value text-green">{{
-            store.stats.connections
-          }}</span>
-        </div>
-        <div class="stat-icon bg-green">
-          <i class="fa-solid fa-plug"></i>
-        </div>
-      </div>
+      <el-skeleton :loading="store.loadingOverview && !store.stats.connections && !store.stats.totalTokens" animated :rows="2">
+        <template #template>
+          <div class="stat-card">
+            <el-skeleton-item variant="text" style="width: 50%" />
+            <el-skeleton-item variant="h3" style="width: 80%; margin-top: 8px;" />
+          </div>
+        </template>
+        <template #default>
+          <div class="stat-card connections">
+            <div class="stat-info">
+              <span class="stat-title">在线 WebSocket 连接</span>
+              <span class="stat-value text-green">{{
+                store.stats.connections
+              }}</span>
+            </div>
+            <div class="stat-icon bg-green">
+              <i class="fa-solid fa-plug"></i>
+            </div>
+          </div>
+        </template>
+      </el-skeleton>
 
-      <div class="stat-card active-users">
-        <div class="stat-info">
-          <span class="stat-title">活跃用户数</span>
-          <span class="stat-value text-blue">{{ store.stats.users }}</span>
-        </div>
-        <div class="stat-icon bg-blue">
-          <i class="fa-solid fa-user-check"></i>
-        </div>
-      </div>
+      <el-skeleton :loading="store.loadingOverview && !store.stats.users && !store.stats.totalTokens" animated :rows="2">
+        <template #template>
+          <div class="stat-card">
+            <el-skeleton-item variant="text" style="width: 50%" />
+            <el-skeleton-item variant="h3" style="width: 80%; margin-top: 8px;" />
+          </div>
+        </template>
+        <template #default>
+          <div class="stat-card active-users">
+            <div class="stat-info">
+              <span class="stat-title">活跃用户数</span>
+              <span class="stat-value text-blue">{{ store.stats.users }}</span>
+            </div>
+            <div class="stat-icon bg-blue">
+              <i class="fa-solid fa-user-check"></i>
+            </div>
+          </div>
+        </template>
+      </el-skeleton>
 
-      <div class="stat-card pending-reqs">
-        <div class="stat-info">
-          <span class="stat-title">执行中流式请求</span>
-          <span class="stat-value text-amber">{{ store.stats.pending }}</span>
-        </div>
-        <div class="stat-icon bg-amber">
-          <i class="fa-solid fa-spinner fa-spin-slow"></i>
-        </div>
-      </div>
+      <el-skeleton :loading="store.loadingOverview && !store.stats.pending && !store.stats.totalTokens" animated :rows="2">
+        <template #template>
+          <div class="stat-card">
+            <el-skeleton-item variant="text" style="width: 50%" />
+            <el-skeleton-item variant="h3" style="width: 80%; margin-top: 8px;" />
+          </div>
+        </template>
+        <template #default>
+          <div class="stat-card pending-reqs">
+            <div class="stat-info">
+              <span class="stat-title">执行中流式请求</span>
+              <span class="stat-value text-amber">{{ store.stats.pending }}</span>
+            </div>
+            <div class="stat-icon bg-amber">
+              <i class="fa-solid fa-spinner fa-spin-slow"></i>
+            </div>
+          </div>
+        </template>
+      </el-skeleton>
 
-      <div class="stat-card token-metrics">
-        <div class="stat-info">
-          <span class="stat-title">聚合 Token 消耗</span>
-          <span class="stat-value text-indigo">{{
-            formatTokens(store.stats.totalTokens)
-          }}</span>
-          <span class="stat-sub">
-            入: {{ formatTokens(store.stats.promptTokens) }} | 出:
-            {{ formatTokens(store.stats.compTokens) }}
-          </span>
-        </div>
-        <div class="stat-icon bg-indigo">
-          <i class="fa-solid fa-chart-simple"></i>
-        </div>
-      </div>
+      <el-skeleton :loading="store.loadingOverview && !store.stats.totalTokens" animated :rows="2">
+        <template #template>
+          <div class="stat-card">
+            <el-skeleton-item variant="text" style="width: 50%" />
+            <el-skeleton-item variant="h3" style="width: 80%; margin-top: 8px;" />
+          </div>
+        </template>
+        <template #default>
+          <div class="stat-card token-metrics">
+            <div class="stat-info">
+              <span class="stat-title">聚合 Token 消耗</span>
+              <span class="stat-value text-indigo">{{
+                formatTokens(store.stats.totalTokens)
+              }}</span>
+              <span class="stat-sub">
+                入: {{ formatTokens(store.stats.promptTokens) }} | 出:
+                {{ formatTokens(store.stats.compTokens) }}
+              </span>
+            </div>
+            <div class="stat-icon bg-indigo">
+              <i class="fa-solid fa-chart-simple"></i>
+            </div>
+          </div>
+        </template>
+      </el-skeleton>
     </div>
 
     <!-- Charts Row -->
@@ -68,7 +108,11 @@
             </el-select>
           </div>
           <div class="card-body">
-            <div id="sla-chart" class="chart-container"></div>
+            <el-skeleton :loading="store.loadingOverview && !store.historicalData" animated :rows="6">
+              <template #default>
+                <div id="sla-chart" class="chart-container"></div>
+              </template>
+            </el-skeleton>
           </div>
         </div>
       </div>
@@ -79,7 +123,11 @@
             <span class="card-title">模型调用占比</span>
           </div>
           <div class="card-body">
-            <div id="share-chart" class="chart-container"></div>
+            <el-skeleton :loading="store.loadingOverview && !store.historicalData" animated :rows="6">
+              <template #default>
+                <div id="share-chart" class="chart-container"></div>
+              </template>
+            </el-skeleton>
           </div>
         </div>
       </div>
@@ -91,48 +139,52 @@
         <span class="card-title">模型服务提供商及缓存命中审计</span>
       </div>
       <div class="card-body p-none">
-        <div class="table-responsive-wrapper">
-          <el-table
-            :data="store.providerStats"
-            style="width: 100%"
-            class="saas-table"
-          >
-            <el-table-column
-              prop="name"
-              label="Provider / 实例"
-            ></el-table-column>
-            <el-table-column label="缓存命中率" min-width="120">
-              <template #default="scope">
-                <div class="progress-wrapper">
-                  <span class="progress-num"
-                    >{{ scope.row.cacheHitRate }}%</span
-                  >
-                  <el-progress
-                    :percentage="scope.row.cacheHitRate"
-                    :stroke-width="6"
-                    :color="scope.row.cacheHitRate > 50 ? '#10b981' : '#3b82f6'"
-                    :show-text="false"
-                  />
-                </div>
-              </template>
-            </el-table-column>
-            <el-table-column prop="hitTokens" label="命中 Token 数">
-              <template #default="scope">{{
-                formatNumber(scope.row.hitTokens)
-              }}</template>
-            </el-table-column>
-            <el-table-column prop="missTokens" label="未命中 Token 数">
-              <template #default="scope">{{
-                formatNumber(scope.row.missTokens)
-              }}</template>
-            </el-table-column>
-            <el-table-column prop="calls" label="总调用次数">
-              <template #default="scope">{{
-                formatNumber(scope.row.calls)
-              }}</template>
-            </el-table-column>
-          </el-table>
-        </div>
+        <el-skeleton :loading="store.loadingOverview && store.providerStats.length === 0" animated :rows="5" style="padding: 20px;">
+          <template #default>
+            <div class="table-responsive-wrapper">
+              <el-table
+                :data="store.providerStats"
+                style="width: 100%"
+                class="saas-table"
+              >
+                <el-table-column
+                  prop="name"
+                  label="Provider / 实例"
+                ></el-table-column>
+                <el-table-column label="缓存命中率" min-width="120">
+                  <template #default="scope">
+                    <div class="progress-wrapper">
+                      <span class="progress-num"
+                        >{{ scope.row.cacheHitRate }}%</span
+                      >
+                      <el-progress
+                        :percentage="scope.row.cacheHitRate"
+                        :stroke-width="6"
+                        :color="scope.row.cacheHitRate > 50 ? '#10b981' : '#3b82f6'"
+                        :show-text="false"
+                      />
+                    </div>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="hitTokens" label="命中 Token 数">
+                  <template #default="scope">{{
+                    formatNumber(scope.row.hitTokens)
+                  }}</template>
+                </el-table-column>
+                <el-table-column prop="missTokens" label="未命中 Token 数">
+                  <template #default="scope">{{
+                    formatNumber(scope.row.missTokens)
+                  }}</template>
+                </el-table-column>
+                <el-table-column prop="calls" label="总调用次数">
+                  <template #default="scope">{{
+                    scope.row.calls
+                  }}</template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </template>
+        </el-skeleton>
       </div>
     </div>
   </div>

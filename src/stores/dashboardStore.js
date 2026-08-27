@@ -70,8 +70,24 @@ export const useDashboardStore = defineStore("dashboard", () => {
     );
   });
 
+  // Loading States for Skeleton Screens
+  const loadingOverview = ref(false);
+  const loadingTurns = ref(false);
+  const loadingTrace = ref(false);
+  const loadingFailures = ref(false);
+
+  // In-flight sequence IDs for Race Condition elimination
+  let statsSeq = 0;
+  let turnsSeq = 0;
+  let traceSeq = 0;
+  let failuresSeq = 0;
+  let isFetchingRealtime = false;
+
   // Actions
   async function fetchRealtimeStats() {
+    // 在途请求去重，防止轮询堆积并发风暴
+    if (isFetchingRealtime) return;
+    isFetchingRealtime = true;
     try {
       const res = await configAPI.request("/api/admin/dashboard/realtime");
       if (res.success) {
@@ -81,14 +97,21 @@ export const useDashboardStore = defineStore("dashboard", () => {
       }
     } catch (err) {
       console.error("获取实时数据失败:", err);
+    } finally {
+      isFetchingRealtime = false;
     }
   }
 
   async function fetchHistoricalStats() {
+    const curSeq = ++statsSeq;
+    loadingOverview.value = true;
     try {
       const res = await configAPI.request(
         `/api/admin/dashboard/stats?range=${timeRange.value}`,
       );
+      // 竞态丢弃：若已有更新的请求发出，丢弃当前滞后响应
+      if (curSeq !== statsSeq) return;
+
       if (res.success) {
         const data = res.data;
         historicalData.value = data;
@@ -170,30 +193,49 @@ export const useDashboardStore = defineStore("dashboard", () => {
           .sort((a, b) => b.totalTokens - a.totalTokens);
       }
     } catch (err) {
-      console.error("获取历史大盘数据失败:", err);
-      ElMessage.error("无法连接服务或管理员验证失败");
+      if (curSeq === statsSeq) {
+        console.error("获取历史大盘数据失败:", err);
+        ElMessage.error("无法连接服务或管理员验证失败");
+      }
+    } finally {
+      if (curSeq === statsSeq) {
+        loadingOverview.value = false;
+      }
     }
   }
 
   async function fetchFailures() {
+    const curSeq = ++failuresSeq;
+    loadingFailures.value = true;
     try {
       const res = await configAPI.request(
         "/api/admin/dashboard/failures?limit=50&offset=0",
       );
+      if (curSeq !== failuresSeq) return;
       if (res.success) {
         failures.value = res.data.logs;
       }
     } catch (err) {
-      console.error("获取故障日志失败:", err);
+      if (curSeq === failuresSeq) {
+        console.error("获取故障日志失败:", err);
+      }
+    } finally {
+      if (curSeq === failuresSeq) {
+        loadingFailures.value = false;
+      }
     }
   }
 
   async function fetchTurns(search = "") {
+    const curSeq = ++turnsSeq;
+    loadingTurns.value = true;
     try {
       const url = search
         ? `/api/admin/dashboard/turns?limit=50&offset=0&search=${encodeURIComponent(search)}`
         : "/api/admin/dashboard/turns?limit=50&offset=0";
       const res = await configAPI.request(url);
+      if (curSeq !== turnsSeq) return;
+
       if (res.success) {
         toolCallTurns.value = res.data.turns.map((t) => ({
           requestId: t.requestId,
@@ -208,13 +250,28 @@ export const useDashboardStore = defineStore("dashboard", () => {
           steps: [],
         }));
 
-        // Auto-select first turn if none active
-        if (toolCallTurns.value.length > 0 && !activeTurn.value) {
-          selectTurn(toolCallTurns.value[0]);
+        // Auto-select first turn if none active or previously selected is gone
+        if (toolCallTurns.value.length > 0) {
+          const matched = toolCallTurns.value.find(
+            (t) => t.requestId === activeTurn.value?.requestId,
+          );
+          if (matched) {
+            selectTurn(matched);
+          } else {
+            selectTurn(toolCallTurns.value[0]);
+          }
+        } else {
+          activeTurn.value = null;
         }
       }
     } catch (err) {
-      console.error("获取最近活跃对话失败:", err);
+      if (curSeq === turnsSeq) {
+        console.error("获取最近活跃对话失败:", err);
+      }
+    } finally {
+      if (curSeq === turnsSeq) {
+        loadingTurns.value = false;
+      }
     }
   }
 
@@ -234,17 +291,30 @@ export const useDashboardStore = defineStore("dashboard", () => {
   }
 
   async function selectTurn(turn) {
+    if (!turn) {
+      activeTurn.value = null;
+      return;
+    }
     activeTurn.value = turn;
+    const curSeq = ++traceSeq;
+    loadingTrace.value = true;
     try {
       const res = await configAPI.request(
         `/api/admin/dashboard/trace/${turn.requestId}`,
       );
-      if (res.success) {
+      if (curSeq !== traceSeq) return;
+      if (res.success && activeTurn.value && activeTurn.value.requestId === turn.requestId) {
         activeTurn.value.steps = res.data.steps;
       }
     } catch (err) {
-      console.error("获取链路 Trace 失败:", err);
-      ElMessage.error("获取调用链 Trace 失败");
+      if (curSeq === traceSeq) {
+        console.error("获取链路 Trace 失败:", err);
+        ElMessage.error("获取调用链 Trace 失败");
+      }
+    } finally {
+      if (curSeq === traceSeq) {
+        loadingTrace.value = false;
+      }
     }
   }
 
@@ -277,6 +347,10 @@ export const useDashboardStore = defineStore("dashboard", () => {
     failures,
     costCalc,
     currency,
+    loadingOverview,
+    loadingTurns,
+    loadingTrace,
+    loadingFailures,
 
     // Computed
     providers,

@@ -8,7 +8,11 @@
             <span class="card-title">异常故障分布</span>
           </div>
           <div class="card-body">
-            <div id="error-chart" class="chart-container"></div>
+            <el-skeleton :loading="store.loadingFailures && store.failures.length === 0" animated :rows="6">
+              <template #default>
+                <div id="error-chart" class="chart-container"></div>
+              </template>
+            </el-skeleton>
           </div>
         </div>
       </div>
@@ -20,66 +24,70 @@
             <span class="card-title">异常诊断控制台</span>
           </div>
           <div class="card-body p-none">
-            <div class="table-responsive-wrapper">
-              <el-table
-                :data="store.failures"
-                size="default"
-                class="saas-table"
-                height="340"
-              >
-                <el-table-column label="发生时间" width="160">
-                  <template #default="scope">{{
-                    formatTime(scope.row.createdAt)
-                  }}</template>
-                </el-table-column>
-                <el-table-column
-                  prop="requestId"
-                  label="请求 ID"
-                  min-width="140"
-                  show-overflow-tooltip
-                >
-                  <template #default="scope">
-                    <span class="mono-text">{{ scope.row.requestId }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column
-                  prop="model"
-                  label="模型"
-                  width="130"
-                  show-overflow-tooltip
-                >
-                  <template #default="scope">
-                    <el-tag size="small" type="danger" effect="plain">{{
-                      scope.row.model
-                    }}</el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column
-                  prop="errorMessage"
-                  label="错误信息"
-                  min-width="200"
-                  show-overflow-tooltip
-                ></el-table-column>
-                <el-table-column
-                  label="诊断"
-                  width="90"
-                  align="center"
-                  fixed="right"
-                >
-                  <template #default="scope">
-                    <el-button
-                      size="small"
-                      type="danger"
-                      plain
-                      class="trace-btn"
-                      @click="showTrace(scope.row)"
+            <el-skeleton :loading="store.loadingFailures && store.failures.length === 0" animated :rows="6" style="padding: 20px;">
+              <template #default>
+                <div class="table-responsive-wrapper">
+                  <el-table
+                    :data="store.failures"
+                    size="default"
+                    class="saas-table"
+                    height="340"
+                  >
+                    <el-table-column label="发生时间" width="160">
+                      <template #default="scope">{{
+                        formatTime(scope.row.createdAt)
+                      }}</template>
+                    </el-table-column>
+                    <el-table-column
+                      prop="requestId"
+                      label="请求 ID"
+                      min-width="140"
+                      show-overflow-tooltip
                     >
-                      Trace
-                    </el-button>
-                  </template>
-                </el-table-column>
-              </el-table>
-            </div>
+                      <template #default="scope">
+                        <span class="mono-text">{{ scope.row.requestId }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column
+                      prop="model"
+                      label="模型"
+                      width="130"
+                      show-overflow-tooltip
+                    >
+                      <template #default="scope">
+                        <el-tag size="small" type="danger" effect="plain">{{
+                          scope.row.model
+                        }}</el-tag>
+                      </template>
+                    </el-table-column>
+                    <el-table-column
+                      prop="errorMessage"
+                      label="错误信息"
+                      min-width="200"
+                      show-overflow-tooltip
+                    ></el-table-column>
+                    <el-table-column
+                      label="诊断"
+                      width="90"
+                      align="center"
+                      fixed="right"
+                    >
+                      <template #default="scope">
+                        <el-button
+                          size="small"
+                          type="danger"
+                          plain
+                          class="trace-btn"
+                          @click="showTrace(scope.row)"
+                        >
+                          Trace
+                        </el-button>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+              </template>
+            </el-skeleton>
           </div>
         </div>
       </div>

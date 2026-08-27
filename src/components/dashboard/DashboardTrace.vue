@@ -45,63 +45,67 @@
           </div>
 
           <div class="turns-list-scroll">
-            <div v-if="store.toolCallTurns.length === 0" class="empty-state">
-              暂无对话记录
-            </div>
+            <el-skeleton :loading="store.loadingTurns && store.toolCallTurns.length === 0" animated :rows="6" style="padding: 10px;">
+              <template #default>
+                <div v-if="store.toolCallTurns.length === 0" class="empty-state">
+                  暂无对话记录
+                </div>
 
-            <div
-              v-for="turn in store.toolCallTurns"
-              :key="turn.requestId"
-              @click="store.selectTurn(turn)"
-              class="turn-item"
-              :class="{
-                active: store.activeTurn?.requestId === turn.requestId,
-              }"
-            >
-              <div class="turn-header">
-                <span class="turn-id" :title="turn.requestId">
-                  {{ getTurnTitle(turn) }}
-                </span>
-                <el-tag
-                  size="small"
-                  :type="turn.stepsCount > 1 ? 'danger' : 'info'"
-                  class="turn-tag"
-                  effect="plain"
+                <div
+                  v-for="turn in store.toolCallTurns"
+                  :key="turn.requestId"
+                  @click="store.selectTurn(turn)"
+                  class="turn-item"
+                  :class="{
+                    active: store.activeTurn?.requestId === turn.requestId,
+                  }"
                 >
-                  {{ turn.stepsCount > 1 ? "递归多步" : "单步" }}
-                </el-tag>
-              </div>
-              <div class="turn-meta">
-                <span>
-                  <i class="fa-solid fa-user"></i>
-                  <a
-                    href="#"
-                    class="user-profile-link"
-                    :class="{ 'disabled-link': !isRealUser(turn.user) }"
-                    @click.stop="openUserDetail(turn.user)"
-                  >
-                    {{ turn.user }}
-                  </a>
-                </span>
-                <span>
-                  <i class="fa-solid fa-cube"></i> {{ turn.presetName }}
-                </span>
-              </div>
-              <div class="turn-footer">
-                <span>
-                  <i class="fa-regular fa-clock"></i>
-                  {{ formatTime(turn.createdAt) }}
-                </span>
-                <span class="turn-ip-meta">
-                  <i class="fa-solid fa-earth-asia"></i>
-                  {{ turn.userIp || "未知" }}
-                </span>
-                <span class="turn-tokens">
-                  <i class="fa-solid fa-coins"></i>
-                  {{ formatNumber(turn.totalTokens) }}
-                </span>
-              </div>
-            </div>
+                  <div class="turn-header">
+                    <span class="turn-id" :title="turn.requestId">
+                      {{ getTurnTitle(turn) }}
+                    </span>
+                    <el-tag
+                      size="small"
+                      :type="turn.stepsCount > 1 ? 'danger' : 'info'"
+                      class="turn-tag"
+                      effect="plain"
+                    >
+                      {{ turn.stepsCount > 1 ? "递归多步" : "单步" }}
+                    </el-tag>
+                  </div>
+                  <div class="turn-meta">
+                    <span>
+                      <i class="fa-solid fa-user"></i>
+                      <a
+                        href="#"
+                        class="user-profile-link"
+                        :class="{ 'disabled-link': !isRealUser(turn.user) }"
+                        @click.stop="openUserDetail(turn.user)"
+                      >
+                        {{ turn.user }}
+                      </a>
+                    </span>
+                    <span>
+                      <i class="fa-solid fa-cube"></i> {{ turn.presetName }}
+                    </span>
+                  </div>
+                  <div class="turn-footer">
+                    <span>
+                      <i class="fa-regular fa-clock"></i>
+                      {{ formatTime(turn.createdAt) }}
+                    </span>
+                    <span class="turn-ip-meta">
+                      <i class="fa-solid fa-earth-asia"></i>
+                      {{ turn.userIp || "未知" }}
+                    </span>
+                    <span class="turn-tokens">
+                      <i class="fa-solid fa-coins"></i>
+                      {{ formatNumber(turn.totalTokens) }}
+                    </span>
+                  </div>
+                </div>
+              </template>
+            </el-skeleton>
           </div>
         </div>
       </div>
@@ -124,11 +128,10 @@
               }}</span>
             </div>
             <span class="total-tokens-badge" v-if="store.activeTurn">
-              {{ isMobile ? "" : "累计: "
+              {{ isMobile ? "" : "总 Token: "
               }}<strong>{{
-                formatNumber(store.activeTurn.totalTokens)
+                formatNumber(activeTurnFinalTokens)
               }}</strong>
-              Tokens
             </span>
           </div>
 
@@ -138,12 +141,14 @@
           </div>
 
           <div v-else class="trace-timeline-scroll">
-            <div class="timeline-container">
-              <div
-                v-for="(step, index) in store.activeTurn.steps"
-                :key="index"
-                class="timeline-node"
-              >
+            <el-skeleton :loading="store.loadingTrace && (!store.activeTurn.steps || store.activeTurn.steps.length === 0)" animated :rows="6" style="padding: 16px;">
+              <template #default>
+                <div class="timeline-container">
+                  <div
+                    v-for="(step, index) in store.activeTurn.steps"
+                    :key="index"
+                    class="timeline-node"
+                  >
                 <!-- Timeline indicator column -->
                 <div class="node-indicator">
                   <div class="node-dot" :class="step.type">
@@ -294,8 +299,10 @@
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </template>
+        </el-skeleton>
+      </div>
+    </div>
       </div>
     </div>
   </div>
@@ -412,6 +419,24 @@ const activeUsersList = computed(() => {
     });
   }
   return Array.from(list);
+});
+
+// 计算当前活跃会话最后一轮的真实 Token 总量（输入+输出）
+const activeTurnFinalTokens = computed(() => {
+  if (!store.activeTurn) return 0;
+  const steps = store.activeTurn.steps;
+  if (steps && steps.length > 0) {
+    for (let i = steps.length - 1; i >= 0; i--) {
+      if (steps[i].type === "llm") {
+        const s = steps[i];
+        if (s.totalTokens) return s.totalTokens;
+        if (s.promptTokens !== undefined || s.candidatesTokens !== undefined) {
+          return (s.promptTokens || 0) + (s.candidatesTokens || 0);
+        }
+      }
+    }
+  }
+  return store.activeTurn.totalTokens || 0;
 });
 
 let searchTimer = null;

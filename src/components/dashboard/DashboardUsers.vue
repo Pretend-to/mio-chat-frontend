@@ -8,31 +8,35 @@
             <span class="card-title">服务提供商 (Provider)</span>
           </div>
           <div class="provider-list-scroll">
-            <div
-              class="provider-item"
-              :class="{ active: store.selectedProvider === 'All' }"
-              @click="selectProvider('All')"
-            >
-              <span class="provider-name">全部提供商 (All)</span>
-              <span class="provider-tokens">
-                <i class="fa-solid fa-coins"></i>
-                {{ formatTokens(store.totalAllTokens) }}
-              </span>
-            </div>
+            <el-skeleton :loading="store.loadingOverview && store.groupedProviders.length === 0" animated :rows="5" style="padding: 10px;">
+              <template #default>
+                <div
+                  class="provider-item"
+                  :class="{ active: store.selectedProvider === 'All' }"
+                  @click="selectProvider('All')"
+                >
+                  <span class="provider-name">全部提供商 (All)</span>
+                  <span class="provider-tokens">
+                    <i class="fa-solid fa-coins"></i>
+                    {{ formatTokens(store.totalAllTokens) }}
+                  </span>
+                </div>
 
-            <div
-              v-for="p in store.groupedProviders"
-              :key="p.name"
-              class="provider-item"
-              :class="{ active: store.selectedProvider === p.name }"
-              @click="selectProvider(p.name)"
-            >
-              <span class="provider-name">{{ p.name }}</span>
-              <span class="provider-tokens">
-                <i class="fa-solid fa-coins"></i>
-                {{ formatTokens(p.totalTokens) }}
-              </span>
-            </div>
+                <div
+                  v-for="p in store.groupedProviders"
+                  :key="p.name"
+                  class="provider-item"
+                  :class="{ active: store.selectedProvider === p.name }"
+                  @click="selectProvider(p.name)"
+                >
+                  <span class="provider-name">{{ p.name }}</span>
+                  <span class="provider-tokens">
+                    <i class="fa-solid fa-coins"></i>
+                    {{ formatTokens(p.totalTokens) }}
+                  </span>
+                </div>
+              </template>
+            </el-skeleton>
           </div>
         </div>
       </div>
@@ -49,10 +53,14 @@
             >
           </div>
           <div class="card-body-chart">
-            <div
-              id="provider-models-chart"
-              class="chart-container-models"
-            ></div>
+            <el-skeleton :loading="store.loadingOverview && !store.historicalData" animated :rows="6" style="padding: 20px;">
+              <template #default>
+                <div
+                  id="provider-models-chart"
+                  class="chart-container-models"
+                ></div>
+              </template>
+            </el-skeleton>
           </div>
         </div>
       </div>
