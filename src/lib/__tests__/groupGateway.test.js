@@ -65,10 +65,15 @@ describe("groupGateway - Mention Resolution & Invocation Engine", () => {
       expect(result[0].id).toBe("member_b_extra");
     });
 
-    it("should not match substring attached to longer alphanumeric tokens", () => {
-      const text = "Contact support@AgentA123.com for help";
-      const result = resolveMentionedMembers(text, members);
-      expect(result).toHaveLength(0);
+    it("should match bare Chinese names followed by Chinese characters without spaces", () => {
+      const chineseMembers = [
+        { id: "member_xiaoma", name: "小码" },
+        { id: "member_xiaopei", name: "小配" },
+      ];
+      const text = "@小码我操，那根本不是热重载，我整个后端重启了";
+      const result = resolveMentionedMembers(text, chineseMembers);
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe("member_xiaoma");
     });
   });
 

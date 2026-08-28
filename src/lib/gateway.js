@@ -833,6 +833,20 @@ export const gateway = {
       if (metaData?.timestamp) {
         message.time = metaData.timestamp;
       }
+      if (metaData?.memberId || metaData?.memberName) {
+        if (metaData.memberId) {
+          message.sender_id = metaData.memberId;
+          message.senderMemberId = metaData.memberId;
+        }
+        if (metaData.memberName) {
+          message.sender_name = metaData.memberName;
+          message.senderName = metaData.memberName;
+        }
+        if (metaData.memberAvatar) {
+          message.sender_avatar = metaData.memberAvatar;
+          message.senderAvatar = metaData.memberAvatar;
+        }
+      }
     }
 
     if (["update", "sync"].includes(e.message)) {

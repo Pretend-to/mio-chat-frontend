@@ -528,10 +528,16 @@ export function resolveMentionedMembers(text, members) {
 
     let idx = rest.indexOf(`@${name}`);
     while (idx !== -1) {
+      const before = idx > 0 ? rest.charAt(idx - 1) : "";
       const after = rest.charAt(idx + 1 + name.length);
-      // 右边界为空（结尾）、空白或常见标点才算完整的一次 @；
-      // 否则说明它只是某个更长名字的前缀，跳过。
-      if (after === "" || /[\s,，.。!！?？:：;；、)）\]】"'"']/.test(after)) {
+
+      // 前边界：如果是英文字母/数字紧挨着 @（如 email@xxx），不属于 @ 提及
+      const isEmail = /[a-zA-Z0-9_]/.test(before);
+
+      // 后边界：如果是字母/数字紧挨着名字（如 @AgentA123），属于更长的英文标识符，不属于 @ 提及
+      const isAlphanumericTail = /[a-zA-Z0-9_]/.test(after);
+
+      if (!isEmail && !isAlphanumericTail) {
         found.set(member.id, member);
         rest =
           rest.slice(0, idx) +

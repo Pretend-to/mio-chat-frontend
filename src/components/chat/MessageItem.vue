@@ -263,11 +263,15 @@ const replyingMember = computed(() => {
   // 消息上的 sender_* 只是发送当时的快照，改名改模型后不会更新，
   // 因此绝不能让快照优先，否则设置改了界面纹丝不动。
   // 按 ID 定位，不用名字 —— 重名或改名都会错配。
-  const member = sId
+  let member = sId
     ? props.activeContactor.members?.find(
         (m) => String(m.id) === String(sId) || String(m.agentId) === String(sId),
       )
     : null;
+
+  if (!member && sName) {
+    member = props.activeContactor.members?.find((m) => m.name === sName);
+  }
 
   if (member) {
     return {
