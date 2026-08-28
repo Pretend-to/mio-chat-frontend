@@ -933,6 +933,12 @@ export const gateway = {
               });
             },
           );
+        } else if (data.type === "usage" && data.content) {
+          contactorStore.updateMessageUsage(
+            contactorId,
+            messageId,
+            data.content,
+          );
         }
       }
     } else if (["complete", "failed"].includes(e.message)) {

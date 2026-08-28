@@ -992,6 +992,63 @@ export default class Client extends EventEmitter {
           return;
         }
 
+        // 处理 Agent 自主更新自身人设、头衔、职责与 System Prompt
+        if (e.type === "agent_profile_updated" && e.data) {
+          const { contactorId, memberId, prompt, opening, title, intro } = e.data;
+          const newOpening = prompt !== undefined ? prompt : opening;
+          const store = getStore();
+          const contactor = store.contactors[contactorId];
+          if (contactor) {
+            if (memberId && Array.isArray(contactor.members)) {
+              const member = contactor.members.find(
+                (m) =>
+                  String(m.id) === String(memberId) ||
+                  String(m.agentId) === String(memberId),
+              );
+              if (member) {
+                if (!member.options) member.options = {};
+                if (!member.options.presetSettings) {
+                  member.options.presetSettings = {};
+                }
+                if (newOpening !== undefined) {
+                  member.options.presetSettings.opening = newOpening;
+                }
+                if (title !== undefined) {
+                  member.title = title;
+                }
+                if (intro !== undefined) {
+                  member.intro = intro;
+                }
+                store.updateContactor(contactor.id, {
+                  members: [...contactor.members],
+                });
+                console.log(
+                  `[System] 群成员 [${member.name}] 设定与职责已自主更新:`,
+                  { title, intro, newOpening },
+                );
+              }
+            } else {
+              if (!contactor.options) contactor.options = {};
+              if (!contactor.options.presetSettings) {
+                contactor.options.presetSettings = {};
+              }
+              if (newOpening !== undefined) {
+                contactor.options.presetSettings.opening = newOpening;
+              }
+              if (title !== undefined) {
+                contactor.title = title;
+              }
+              store.updateContactorSummary(contactor);
+              console.log(
+                `[System] Agent [${contactor.name}] 设定已自主更新:`,
+                newOpening,
+              );
+            }
+            this.setLocalStorage();
+          }
+          return;
+        }
+
         console.log("System message received:", e);
       } catch (err) {
         console.error("Error handling system_message:", err, e);

@@ -640,6 +640,24 @@ export default class Config {
   }
 
   /**
+   * 动态获取 ai-plugin 分组下的所有工具全名（带 hash）
+   */
+  getAiPluginToolNames() {
+    if (!this.llmTools || typeof this.llmTools !== "object") return [];
+    for (const [groupName, toolsObj] of Object.entries(this.llmTools)) {
+      if (
+        groupName.toLowerCase() === "ai-plugin" ||
+        groupName.toLowerCase() === "ai"
+      ) {
+        if (toolsObj && typeof toolsObj === "object") {
+          return Object.keys(toolsObj);
+        }
+      }
+    }
+    return [];
+  }
+
+  /**
    * 获取 LLM 默认配置。可以指定 provider 来获取针对该 provider 调整后的配置副本。
    * @param {string} [provider] - 可选。如果提供，会尝试将返回的配置副本调整为使用此 provider 及其默认模型。
    * @returns {object} - LLM 配置的深拷贝副本。
@@ -675,31 +693,16 @@ export default class Config {
       }
     }
 
-    // 智能模式默认启用：如果没有设置激活工具，默认挂载 ai-plugin 的所有工具
+    // 智能模式默认启用：如果没有设置激活工具，默认认准并挂载 ai-plugin 分组的当前全部工具
     if (
       copiedConfig.toolCallSettings &&
       (!copiedConfig.toolCallSettings.tools ||
         copiedConfig.toolCallSettings.tools.length === 0)
     ) {
-      let aiPluginTools = [];
-      if (typeof this.llmTools === "object" && this.llmTools !== null) {
-        const aiGroup = this.llmTools["ai-plugin"] || this.llmTools["ai"];
-        if (aiGroup && typeof aiGroup === "object") {
-          aiPluginTools = Object.keys(aiGroup);
-        }
+      const aiPluginTools = this.getAiPluginToolNames();
+      if (aiPluginTools.length > 0) {
+        copiedConfig.toolCallSettings.tools = [...aiPluginTools];
       }
-      if (aiPluginTools.length === 0) {
-        aiPluginTools = [
-          "search",
-          "draw",
-          "memory",
-          "cron",
-          "toolsmanager",
-          "parse",
-          "vision",
-        ];
-      }
-      copiedConfig.toolCallSettings.tools = aiPluginTools;
       if (
         !copiedConfig.toolCallSettings.mode ||
         copiedConfig.toolCallSettings.mode === "NONE"

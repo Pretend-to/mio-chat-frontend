@@ -141,46 +141,40 @@ export function getLastMessageSummary(messageChain, message = null) {
 function formatErrorMessage(error) {
   if (!error) return "未知错误";
 
-  let errorMsg = "";
-  let isJson = false;
-
+  let raw = error;
   if (typeof error === "object") {
     if (error instanceof Error) {
-      errorMsg = error.stack || error.message;
+      raw = error.message || error.stack || String(error);
+    } else if (error.message) {
+      raw = error.message;
+    } else if (error.error?.message) {
+      raw = error.error.message;
     } else {
       try {
-        errorMsg = JSON.stringify(error, null, 2);
-        isJson = true;
-        if (errorMsg === "{}") {
-          if (error.message) {
-            errorMsg = error.message;
-            isJson = false;
-          } else if (error.toString && error.toString() !== "[object Object]") {
-            errorMsg = error.toString();
-            isJson = false;
-          }
-        }
+        raw = JSON.stringify(error, null, 2);
       } catch {
-        errorMsg = String(error);
+        raw = String(error);
       }
-    }
-  } else {
-    const trimmed = String(error).trim();
-    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-      try {
-        const parsed = JSON.parse(trimmed);
-        errorMsg = JSON.stringify(parsed, null, 2);
-        isJson = true;
-      } catch {
-        errorMsg = trimmed;
-}
-    } else {
-      errorMsg = trimmed;
     }
   }
 
-  const lang = isJson ? "json" : "";
-  return `\n\`\`\`${lang}\n${errorMsg}\n\`\`\``;
+  let errorMsg = String(raw).trim();
+  let isJson = false;
+
+  if (errorMsg.startsWith("{") || errorMsg.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(errorMsg);
+      errorMsg = JSON.stringify(parsed, null, 2);
+      isJson = true;
+    } catch {
+      // keep raw
+    }
+  }
+
+  if (isJson) {
+    return `\n\`\`\`json\n${errorMsg}\n\`\`\``;
+  }
+  return `⚠️ 请求失败: ${errorMsg}`;
 }
 
 export const useContactorsStore = defineStore("contactors", () => {
@@ -533,6 +527,16 @@ export const useContactorsStore = defineStore("contactors", () => {
     }
 
     updateContactorSummary(contactor);
+  }
+
+  function updateMessageUsage(contactorId, messageId, usage) {
+    if (!usage) return;
+    const contactor = contactors.value[contactorId];
+    if (!contactor) return;
+    const message = getOrCreateMessage(contactorId, messageId);
+    if (!message) return;
+    message.usage = { ...(message.usage || {}), ...usage };
+    client.setLocalStorage();
   }
 
   function replaceBlankOrAppend(content, element) {
@@ -972,6 +976,8 @@ export const useContactorsStore = defineStore("contactors", () => {
               summary: chunk.content?.summary || "",
             },
           });
+        } else if (chunk.type === "usage" && chunk.content) {
+          message.usage = { ...(message.usage || {}), ...chunk.content };
         }
       });
     }
@@ -1340,6 +1346,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     updateContactorSummary,
     updateContactor,
     appendOrUpdateMessage,
+    updateMessageUsage,
     getOrCreateMessage,
     syncMessage,
     completeMessage,
