@@ -20,6 +20,7 @@ import MessageItem from "@/components/chat/MessageItem.vue";
 import ScreenshotPreview from "@/components/chat/ScreenshotPreview.vue";
 import InputEditor from "@/components/InputEditor.vue";
 import ContextMenu from "@/components/ContextMenu.vue";
+import MessageDetailDialog from "@/components/chat/MessageDetailDialog.vue";
 import GroupSidebar from "@/components/chat/GroupSidebar.vue";
 
 // Composables
@@ -367,6 +368,8 @@ const {
   canRetry,
   seletedText,
   seletedImage,
+  showDetailDialog,
+  detailTargetMessage,
   showMessageMenu,
   handleTouchStart,
   handleMessageOption,
@@ -991,15 +994,6 @@ onBeforeUnmount(() => {
         'is-dragging': dragSelect.active,
       }"
     >
-      <div
-        v-if="showRollDown"
-        class="mio-chat-window__scroll-down-btn"
-        id="roll-buttom-button"
-        :style="{ bottom: inputBarTop + 24 + 'px' }"
-        @click.stop="toButtom('smooth')"
-      >
-        <i class="iconfont down1"></i>
-      </div>
       <ContextMenu
         v-if="showMenu"
         type="message"
@@ -1013,6 +1007,12 @@ onBeforeUnmount(() => {
         :is-group="activeContactor?.platform === 'group'"
         @message-option="handleMessageOption"
         @close="showMenu = false"
+      />
+
+      <MessageDetailDialog
+        v-model="showDetailDialog"
+        :message="detailTargetMessage"
+        :contactor="activeContactor"
       />
 
       <div
@@ -1089,6 +1089,17 @@ onBeforeUnmount(() => {
           height: dragSelect.height + 'px',
         }"
       ></div>
+    </div>
+
+    <!-- 滚动到底部快捷按钮 (基于 chat-main-area 定位，适配右侧 Sidebar) -->
+    <div
+      v-if="showRollDown"
+      class="mio-chat-window__scroll-down-btn"
+      id="roll-buttom-button"
+      :style="{ bottom: inputBarTop + 24 + 'px' }"
+      @click.stop="toButtom('smooth')"
+    >
+      <i class="iconfont down1"></i>
     </div>
 
     <InputEditor
@@ -1222,6 +1233,7 @@ $mobile: 768px
     flex-direction: column
     height: 100%
     min-width: 0
+    position: relative
 
 .multi-select-action-bar
     flex-shrink: 0
@@ -1327,27 +1339,27 @@ $mobile: 768px
     z-index: 1001
 
 .mio-chat-window__scroll-down-btn
-    position: fixed
-    right: 0.5rem
+    position: absolute
+    right: 1.25rem
     cursor: pointer
     display: flex
-    z-index: 1000
+    z-index: 100
     background-color: var(--mio-bg-card)
-    width: 4rem
-    height: 1.5rem
-    border-radius: 0.75rem
+    width: 3.5rem
+    height: 1.6rem
+    border-radius: 0.8rem
     align-items: center
     justify-content: center
-    box-shadow: 0 0 0.25rem rgba(0, 0, 0, 0.2)
-    transition: background-color 0.3s ease, transform 0.3s ease
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15)
+    border: 1px solid var(--mio-border-color-lighter)
+    transition: background-color 0.2s ease, transform 0.2s ease
     &:hover
         background-color: var(--mio-bg-hover)
-        transform: scale(1.1)
-
-    &:hover
+        transform: scale(1.05)
         color: var(--mio-color-primary)
+
     i
-        font-size: 1rem
+        font-size: 0.95rem
 
 #theimg
     position: fixed

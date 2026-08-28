@@ -68,6 +68,10 @@
           <el-icon class="iconfont-el"><CollectionTag /></el-icon>
           <span>{{ message.isPinned ? "取消钉住" : "钉住消息" }}</span>
         </div>
+        <div v-if="!isStreaming" @click.stop="viewDetail">
+          <i class="mio-icon mio-icon-info"></i>
+          <span>消息详情</span>
+        </div>
         <div v-if="!isStreaming" @click.stop="multiSelect">
           <i class="iconfont xuanze"></i>
           <span>多选</span>
@@ -225,6 +229,10 @@ export default {
     },
     togglePin() {
       this.$emit("message-option", "toggle-pin");
+      this.$emit("close");
+    },
+    viewDetail() {
+      this.$emit("message-option", "view-detail");
       this.$emit("close");
     },
     deleteMessage() {

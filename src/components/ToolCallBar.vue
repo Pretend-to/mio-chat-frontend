@@ -112,6 +112,8 @@ export default {
         this.toolCall.action === "pending" ||
         this.toolCall.action === "started",
       wasManuallyToggled: false,
+      currentTime: Date.now(),
+      timer: null,
     };
   },
   computed: {
@@ -163,6 +165,24 @@ export default {
       }
       return name.split("_mid_")[0] || "未知工具";
     },
+    durationFormatted() {
+      const dur =
+        this.toolCall.duration ||
+        (this.toolCall.endTime && this.toolCall.startTime
+          ? this.toolCall.endTime - this.toolCall.startTime
+          : 0);
+      if (dur > 0) {
+        if (dur < 1000) {
+          return `${dur}ms`;
+        }
+        return `${(dur / 1000).toFixed(1)}s`;
+      }
+      if (this.isLoading && this.toolCall.startTime) {
+        const elapsed = Math.max(0, this.currentTime - this.toolCall.startTime);
+        return `${(elapsed / 1000).toFixed(1)}s`;
+      }
+      return "";
+    },
     statusText() {
       const name = this.toolCall.name || "";
       if (name.startsWith("Skill_mid_") || name === "Skill") {
@@ -190,9 +210,15 @@ export default {
     call_status() {
       if (this.toolCall.action == "started") return "就绪";
       if (this.toolCall.action == "pending") return "准备中";
-      if (this.toolCall.action == "running") return "执行中";
-      if (this.toolCallSuccess) return "完成";
-      if (this.toolCallFail) return "失败";
+      if (this.toolCall.action == "running") {
+        return this.durationFormatted ? `(${this.durationFormatted})` : "执行中";
+      }
+      if (this.toolCallSuccess) {
+        return this.durationFormatted ? `(${this.durationFormatted})` : "完成";
+      }
+      if (this.toolCallFail) {
+        return this.durationFormatted ? `失败 (${this.durationFormatted})` : "失败";
+      }
       return "未知";
     },
     formattedParameters() {
@@ -218,22 +244,30 @@ export default {
       }
     },
     skill_status_text() {
-      if (this.toolCall.action === "finished") return "已激活";
-      if (this.toolCall.action === "failed") return "失败";
-      if (this.toolCall.action === "running") return "执行中";
+      if (this.toolCall.action === "finished") {
+        return this.durationFormatted
+          ? `(${this.durationFormatted})`
+          : "已激活";
+      }
+      if (this.toolCall.action === "failed") {
+        return this.durationFormatted
+          ? `失败 (${this.durationFormatted})`
+          : "失败";
+      }
+      if (this.toolCall.action === "running") {
+        return this.durationFormatted ? `(${this.durationFormatted})` : "执行中";
+      }
       return "准备中";
     },
   },
   watch: {
     "toolCall.action"(newVal) {
-      // 当工具执行结束或失败时，自动收起
-      if (newVal === "finished" || newVal === "failed") {
+      if (newVal === "running" && !this.timer) {
+        this.startTimer();
+      } else if (newVal === "finished" || newVal === "failed") {
+        this.stopTimer();
         this.handleAutoCollapse();
-      } else if (
-        newVal === "running" ||
-        newVal === "pending" ||
-        newVal === "started"
-      ) {
+      } else if (newVal === "pending" || newVal === "started") {
         if (!this.wasManuallyToggled) {
           this.showExtraInfo = true;
         }
@@ -244,6 +278,9 @@ export default {
     // iframe 高度自适应监听
     this._iframeAutoResize = setupIframeAutoResize();
     this._iframeAutoResize.enable();
+    if (this.isLoading) {
+      this.startTimer();
+    }
     // 如果挂载时就在运行，且是实时消息，强制展开一次
     if (
       this.toolCall.action === "running" ||
@@ -254,9 +291,23 @@ export default {
     }
   },
   beforeUnmount() {
+    this.stopTimer();
     this._iframeAutoResize?.disable();
   },
   methods: {
+    startTimer() {
+      this.stopTimer();
+      this.currentTime = Date.now();
+      this.timer = setInterval(() => {
+        this.currentTime = Date.now();
+      }, 100);
+    },
+    stopTimer() {
+      if (this.timer) {
+        clearInterval(this.timer);
+        this.timer = null;
+      }
+    },
     toggleExtraInfo(expanded) {
       this.showExtraInfo = expanded;
       this.wasManuallyToggled = true;

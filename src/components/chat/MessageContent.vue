@@ -289,6 +289,18 @@ const getToolName = (toolCall) => {
 };
 
 const getToolsManagerStatus = (toolCall) => {
+  const dur =
+    toolCall.duration ||
+    (toolCall.endTime && toolCall.startTime
+      ? toolCall.endTime - toolCall.startTime
+      : 0);
+  const durStr =
+    dur > 0
+      ? dur < 1000
+        ? `(${dur}ms)`
+        : `(${(dur / 1000).toFixed(1)}s)`
+      : "";
+
   if (
     toolCall.action === "running" ||
     toolCall.action === "pending" ||
@@ -300,9 +312,9 @@ const getToolsManagerStatus = (toolCall) => {
     toolCall.status === "failed" ||
     (toolCall.result && toolCall.result.success === false)
   ) {
-    return "失败";
+    return durStr ? `失败 ${durStr}` : "失败";
   }
-  return "完成";
+  return durStr ? durStr : "完成";
 };
 
 const expandedToolsManagerEvents = ref({});

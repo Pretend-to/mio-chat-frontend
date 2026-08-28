@@ -134,9 +134,16 @@ export function useChatMessageMenu({
           speakMessage(message);
         }
         break;
+      case "view-detail":
+        detailTargetMessage.value = message;
+        showDetailDialog.value = true;
+        break;
     }
     showMenu.value = false;
   };
+
+  const showDetailDialog = ref(false);
+  const detailTargetMessage = ref(null);
 
   return {
     showMenu,
@@ -146,6 +153,8 @@ export function useChatMessageMenu({
     canRetry,
     seletedText,
     seletedImage,
+    showDetailDialog,
+    detailTargetMessage,
     getseletedMessage,
     showMessageMenu,
     handleTouchStart,
