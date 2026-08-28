@@ -166,6 +166,8 @@ let timeClockTimer = null;
 
 function switchTab(tab) {
   store.activeTab = tab;
+  // 切到 Trace 页时清掉残留选中会话，移动端默认回到会话列表，而非直接进级联详情
+  if (tab === "toolcalls") store.activeTurn = null;
   isSidebarOpen.value = false; // Close drawer on mobile upon tab selection
   nextTick(() => {
     store.refreshData();

@@ -1283,35 +1283,20 @@ function formatTime(timestamp) {
 }
 /* 移动端级联覆盖（置于文件末尾：同优先级规则后者胜，确保不被后置基础规则覆盖） */
 @media (max-width: 900px) {
-  /* 面板直接占满 header 下区域、不留悬浮框边距，去多余框层级 */
-  .list-card,
-  .timeline-card {
-    border: none;
-    box-shadow: none;
-    border-radius: 0;
-    background: var(--mio-bg-card, #ffffff);
-  }
-  /* 级联与会话流滚动区贴满，去左右白边 */
+  /* 面板/列表项/节点项保留圆角卡片层次（白面板浮灰背景、内部小圆角卡），避免“灰底白条”割裂 */
   .trace-timeline-scroll,
   .turns-list-scroll {
-    padding: 0;
+    padding: 12px;
+  }
+  /* 级联去掉面板内灰底填充层，避免三层框视觉；会话流维持默认 */
+  .trace-timeline-scroll {
     background: transparent;
   }
   .node-content-card {
-    border: none;
-    box-shadow: none;
-    background: transparent;
-    padding: 6px 0 14px;
-  }
-  /* 会话流列表项去框平铺，不再“面板内套卡片” */
-  .turn-item {
-    border: none;
-    box-shadow: none;
-    background: transparent;
-    border-radius: 0;
+    padding: 12px;
   }
   .card-header {
-    padding: 12px 8px;
+    padding: 12px 16px;
   }
 }
 </style>
