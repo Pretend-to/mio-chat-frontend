@@ -64,6 +64,31 @@
           </el-select>
         </div>
       </div>
+      <!-- 群成员专属头衔与职责配置 -->
+      <template v-if="isGroupMember">
+        <div class="setting-field">
+          <div class="field-label">群内头衔</div>
+          <div class="field-value">
+            <el-input
+              v-model="basicInfo.title"
+              placeholder="例如：系统架构师、前端开发专家、测试工程师"
+              @change="emitBasicInfoUpdate"
+            />
+          </div>
+        </div>
+        <div class="setting-field">
+          <div class="field-label">群内职责</div>
+          <div class="field-value">
+            <el-input
+              v-model="basicInfo.intro"
+              type="textarea"
+              :rows="2"
+              placeholder="例如：负责系统整体架构设计、技术选型与评审，协助团队排查疑难缺陷"
+              @change="emitBasicInfoUpdate"
+            />
+          </div>
+        </div>
+      </template>
       <div class="setting-field">
         <div class="field-label">会话置顶</div>
         <div class="field-value">
@@ -97,47 +122,43 @@
         </div>
       </div>
 
-      <template v-for="(_, key) in localLlmGeneralKeys" :key="key">
-        <div
-          v-if="
-            [
-              'model',
-              'reasoning_effort',
-            ].includes(key)
-          "
-          class="setting-field"
-        >
-          <div class="field-label">{{ getShownKey(key) }}</div>
-          <div class="field-value">
-            <el-select
-              v-if="key === 'model'"
-              v-model="localLlmGeneralKeys[key]"
-              filterable
-              allow-create
-              default-first-option
-              placeholder="选择或输入模型"
-              style="width: 100%"
-              @change="updateGeneralSettings"
-            >
-              <el-option
-                v-for="m in currentModelsList"
-                :key="m"
-                :label="m"
-                :value="m"
-              />
-            </el-select>
-            <el-slider
-              v-else-if="['reasoning_effort'].includes(key)"
-              v-model="localLlmGeneralKeys[key]"
-              :step="sliderTypes.d.step"
-              :min="sliderTypes.d.min"
-              :max="sliderTypes.d.max"
-              :format-tooltip="sliderTypes.d.formatter"
-              @change="updateGeneralSettings"
+      <!-- 模型选择 -->
+      <div class="setting-field">
+        <div class="field-label">模型</div>
+        <div class="field-value">
+          <el-select
+            v-model="localLlmModel"
+            filterable
+            allow-create
+            default-first-option
+            placeholder="选择或输入模型"
+            style="width: 100%"
+            @change="handleModelChange"
+          >
+            <el-option
+              v-for="m in currentModelsList"
+              :key="m"
+              :label="m"
+              :value="m"
             />
-          </div>
+          </el-select>
         </div>
-      </template>
+      </div>
+
+      <!-- 思考强度 -->
+      <div class="setting-field">
+        <div class="field-label">思考强度</div>
+        <div class="field-value">
+          <el-slider
+            v-model="localReasoningEffort"
+            :step="sliderTypes.d.step"
+            :min="sliderTypes.d.min"
+            :max="sliderTypes.d.max"
+            :format-tooltip="sliderTypes.d.formatter"
+            @change="handleReasoningEffortChange"
+          />
+        </div>
+      </div>
 
 
       <!-- 智能模式 (一键启用 ai-plugin 核心智能工具集) -->
@@ -198,6 +219,10 @@ const props = defineProps({
     type: Array,
     required: true,
   },
+  isGroupMember: {
+    type: Boolean,
+    default: false,
+  },
   adapterMetadata: {
     type: Array,
     default: () => [],
@@ -214,21 +239,24 @@ const emit = defineEmits([
   "provider-changed",
 ]);
 
-// 智能模式 (一键启用 ai-plugin 核心智能工具集)
+// 智能模式 (一键启用 ai-plugin 插件组全部工具)
 const isAiPluginEnabled = computed(() => {
   const currentTools = props.modelValue?.toolCallSettings?.tools || [];
   if (currentTools.length === 0) return false;
 
   const aiPlugin = (props.allLlmToolsData || []).find((p) =>
-    p.name?.toLowerCase().includes("ai-plugin") || p.name?.toLowerCase().includes("ai"),
+    p.name?.toLowerCase().includes("ai-plugin") || p.name?.toLowerCase() === "ai",
   );
   if (aiPlugin && aiPlugin.tools && aiPlugin.tools.length > 0) {
     return aiPlugin.tools.every((t) => currentTools.includes(t.name));
   }
 
-  // 兜底：检查当前启用的工具中是否包含常见 ai-plugin 工具
-  const aiTools = ["search", "draw", "memory", "cron", "toolsmanager", "parse", "vision"];
-  return aiTools.every((t) => currentTools.some((ct) => ct === t || ct.startsWith(t + "_mid_")));
+  const aiTools = typeof config.getAiPluginToolNames === "function" ? config.getAiPluginToolNames() : [];
+  if (aiTools.length > 0) {
+    return aiTools.every((t) => currentTools.includes(t));
+  }
+
+  return false;
 });
 
 const handleToggleAiPlugin = (enable) => {
@@ -237,20 +265,14 @@ const handleToggleAiPlugin = (enable) => {
   let currentTools = [...(newOptions.toolCallSettings.tools || [])];
 
   const aiPlugin = (props.allLlmToolsData || []).find((p) =>
-    p.name?.toLowerCase().includes("ai-plugin") || p.name?.toLowerCase().includes("ai"),
+    p.name?.toLowerCase().includes("ai-plugin") || p.name?.toLowerCase() === "ai",
   );
 
   let targetToolNames = [];
   if (aiPlugin && aiPlugin.tools && aiPlugin.tools.length > 0) {
     targetToolNames = aiPlugin.tools.map((t) => t.name);
-  } else {
-    // 如果还没加载到 allLlmToolsData，用系统已知工具名
-    const allToolsDict = config.llmTools || {};
-    const aiPluginTools = allToolsDict["ai-plugin"] || allToolsDict["ai"] || {};
-    targetToolNames = Object.keys(aiPluginTools);
-    if (targetToolNames.length === 0) {
-      targetToolNames = ["search", "draw", "memory", "cron", "toolsmanager", "parse", "vision"];
-    }
+  } else if (typeof config.getAiPluginToolNames === "function") {
+    targetToolNames = config.getAiPluginToolNames();
   }
 
   if (enable) {
@@ -279,11 +301,8 @@ const emitBasicInfoUpdate = () => {
 
 // LLM Options States
 const localLlmProvider = ref(props.modelValue?.provider || "");
-const localLlmGeneralKeys = ref({
-  reasoning_effort: -1,
-  ...(props.modelValue?.base || {}),
-  ...(props.modelValue?.chatParams || {}),
-});
+const localLlmModel = ref(props.modelValue?.base?.model || "");
+const localReasoningEffort = ref(props.modelValue?.chatParams?.reasoning_effort ?? -1);
 
 const sliderTypes = {
   a: { min: 0, max: 2, step: 0.1 },
@@ -321,37 +340,26 @@ const currentModelsList = computed(() => {
   return meta?.models || [];
 });
 
-const getShownKey = (key) => {
-  const shownNameMap = {
-    model: "模型",
-    stream: "流式响应",
-    reasoning_effort: "思考强度",
-  };
-  return shownNameMap[key] || key;
-};
-
 // Emit option updates
 const emitUpdate = () => {
   const newOptions = JSON.parse(JSON.stringify(props.modelValue || {}));
-  const { model, max_messages_num, temperature, reasoning_effort } =
-    localLlmGeneralKeys.value;
+  if (!newOptions.base) newOptions.base = {};
+  newOptions.base.model = localLlmModel.value;
 
-  newOptions.base = {
-    ...newOptions.base,
-    model,
-    max_messages_num,
-  };
   if (!newOptions.chatParams) newOptions.chatParams = {};
-  Object.assign(newOptions.chatParams, {
-    temperature,
-    reasoning_effort,
-  });
+  newOptions.chatParams.reasoning_effort = localReasoningEffort.value;
 
   newOptions.provider = localLlmProvider.value;
   emit("update:modelValue", newOptions);
 };
 
-const updateGeneralSettings = () => {
+const handleModelChange = (newModel) => {
+  localLlmModel.value = newModel;
+  emitUpdate();
+};
+
+const handleReasoningEffortChange = (newEffort) => {
+  localReasoningEffort.value = newEffort;
   emitUpdate();
 };
 
@@ -359,7 +367,7 @@ const handleProviderChange = (newProvider) => {
   localLlmProvider.value = newProvider;
   const defaultModel = config.getDefaultModel(newProvider);
   if (defaultModel) {
-    localLlmGeneralKeys.value.model = defaultModel;
+    localLlmModel.value = defaultModel;
   }
   emitUpdate();
   emit("provider-changed", newProvider);
@@ -370,13 +378,18 @@ watch(
   () => props.modelValue,
   (newVal) => {
     if (newVal) {
-      localLlmProvider.value = newVal.provider || "";
-      localLlmGeneralKeys.value = {
-        reasoning_effort: -1,
-        ...(newVal.base || {}),
-        ...(newVal.chatParams || {}),
-      };
-      localVisionSetting.value = getInitialVisionSetting();
+      const p = newVal.provider || "";
+      if (localLlmProvider.value !== p) {
+        localLlmProvider.value = p;
+      }
+      const m = newVal.base?.model || "";
+      if (localLlmModel.value !== m) {
+        localLlmModel.value = m;
+      }
+      const r = newVal.chatParams?.reasoning_effort ?? -1;
+      if (localReasoningEffort.value !== r) {
+        localReasoningEffort.value = r;
+      }
     }
   },
   { deep: true },
@@ -386,7 +399,11 @@ watch(
   () => props.basicInfo,
   (newVal) => {
     if (newVal) {
-      Object.assign(basicInfo, newVal);
+      for (const k in newVal) {
+        if (basicInfo[k] !== newVal[k]) {
+          basicInfo[k] = newVal[k];
+        }
+      }
     }
   },
   { deep: true },

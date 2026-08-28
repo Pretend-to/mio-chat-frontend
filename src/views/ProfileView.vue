@@ -2,7 +2,7 @@
   <div class="profile-body">
     <!-- Mobile Header -->
     <div class="mobile-nav" v-if="isMobile">
-      <div class="back-btn" @click="$router.push('/chat/' + $route.params.id)">
+      <div class="back-btn" @click="handleBack">
         <svg
           width="24"
           height="24"
@@ -44,6 +44,26 @@
 
     <div id="profile" class="profile-main">
       <div v-if="activeContactor" class="profile-container">
+        <!-- 桌面端从群成员设置返回群聊设置的导航条 -->
+        <div v-if="activeMember && !isMobile" class="desktop-member-header">
+          <button class="back-group-btn" @click="$router.push(`/profile/${activeContactor.id}`)">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            <span>返回「{{ activeContactor.name || '群聊' }}」设置</span>
+          </button>
+          <span class="member-badge">群成员专属配置</span>
+        </div>
+
         <div class="info-blocks">
           <ContactorSettings
             v-if="options && basicInfo"
@@ -72,6 +92,9 @@
       </div>
     </div>
     <div v-if="activeContactor" class="action-bar">
+      <el-button v-if="activeMember" plain @click="$router.push(`/profile/${activeContactor.id}`)">
+        返回群聊设置
+      </el-button>
       <el-button plain @click="$router.push(`/chat/${activeContactor.id}`)">
         发送消息
       </el-button>
@@ -133,15 +156,18 @@ export default {
     const allLLMTools = [];
     for (const key in config.llmTools) {
       const toolsObject = config.llmTools[key];
+      if (!toolsObject || typeof toolsObject !== "object") continue;
       const toolsList = Object.keys(toolsObject).map((toolKey) => ({
         enabled: false, // Initial state, child component will sync with options
         ...toolsObject[toolKey],
       }));
-      allLLMTools.push({
-        name: key,
-        tools: toolsList,
-        collapsed: true,
-      });
+      if (toolsList.length > 0) {
+        allLLMTools.push({
+          name: key,
+          tools: toolsList,
+          collapsed: true,
+        });
+      }
     }
     const avatarPolicyList = [
       { value: 0, label: "跟随模型" },
@@ -206,8 +232,6 @@ export default {
             // 群聊成员设置模式（this.activeContactor.platform 为 "group"）
             this.activeMember.options = JSON.parse(JSON.stringify(newOptions));
             if (model) {
-              this.activeMember.title = model;
-              if (this.basicInfo) this.basicInfo.title = model;
               if (
                 this.activeMember.avatarPolicy === 0 ||
                 this.activeMember.avatarPolicy === "MODEL"
@@ -236,8 +260,6 @@ export default {
               (this.activeContactor.platform === "openai" ||
                 this.activeContactor.platform === "llm")
             ) {
-              this.activeContactor.title = model;
-              if (this.basicInfo) this.basicInfo.title = model;
               if (
                 this.activeContactor.avatarPolicy === 0 ||
                 this.activeContactor.avatarPolicy === "MODEL"
@@ -301,6 +323,7 @@ export default {
             this.activeMember.name = newInfo.name;
             this.activeMember.avatar = newInfo.avatar;
             this.activeMember.title = newInfo.title;
+            this.activeMember.intro = newInfo.intro;
             this.activeMember.namePolicy = newInfo.namePolicy;
             this.activeMember.avatarPolicy = newInfo.avatarPolicy;
             this.activeMember.priority = newInfo.priority ? 0 : 1;
@@ -337,6 +360,13 @@ export default {
     client.off("loaded", this.handleClientLoaded);
   },
   methods: {
+    handleBack() {
+      if (this.activeMember) {
+        this.$router.push(`/profile/${this.activeContactor.id}`);
+      } else {
+        this.$router.push(`/chat/${this.activeContactor.id}`);
+      }
+    },
     handlePluginsUpdated() {
       console.log("[ProfileView] 检测到后端插件更新，正在刷新工具数据...");
       this.refreshAllLLMTools();
@@ -382,13 +412,14 @@ export default {
           if (!this.activeMember.options) this.activeMember.options = {};
           this.options = JSON.parse(JSON.stringify(this.activeMember.options));
 
-          const { id, name, avatar, title, namePolicy, avatarPolicy, priority } =
+          const { id, name, avatar, title, intro, namePolicy, avatarPolicy, priority } =
             this.activeMember;
           this.basicInfo = {
             id,
             name: name || "Agent 成员",
             avatar: avatar || "/static/icons/512x512.png",
-            title: title || "Agent 成员",
+            title: title || "",
+            intro: intro || "",
             namePolicy: namePolicy ?? 0,
             avatarPolicy: avatarPolicy ?? 0,
             priority: priority === 1 ? false : true,
@@ -684,6 +715,45 @@ export default {
   display: flex;
   flex-direction: column;
   padding-bottom: 0;
+}
+
+.desktop-member-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding: 8px 14px;
+  background: var(--mio-bg-card);
+  border: 1px solid var(--mio-border-color-light);
+  border-radius: 8px;
+}
+
+.back-group-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: var(--mio-color-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.back-group-btn:hover {
+  background: var(--mio-bg-hover);
+  color: var(--mio-color-primary-hover, #007acd);
+}
+
+.member-badge {
+  font-size: 11px;
+  color: var(--mio-text-secondary);
+  background: var(--mio-bg-hover);
+  padding: 2px 8px;
+  border-radius: 12px;
 }
 
 .info-blocks {

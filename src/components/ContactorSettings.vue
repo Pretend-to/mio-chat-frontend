@@ -94,6 +94,7 @@
         :basic-info="basicInfo"
         @update:basic-info="(val) => $emit('update:basicInfo', val)"
         :active-contactor-platform="activeContactorPlatform"
+        :is-group-member="isGroupMember"
         :llm-providers-list="llmProvidersList"
         :avatar-policy-list="avatarPolicyListForShow"
         :name-policy-list="namePolicyListForShow"

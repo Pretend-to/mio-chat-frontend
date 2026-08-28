@@ -22,9 +22,9 @@
       </div>
     </div>
 
-    <div class="group-title">插件工具</div>
+    <div class="group-title" v-if="filteredAllLLMTools.length > 0">插件工具</div>
     <div
-      v-for="(plugin, index) in localAllLLMTools"
+      v-for="(plugin, index) in filteredAllLLMTools"
       :key="index"
       class="settings-card plugin-card"
     >
@@ -66,7 +66,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { ref, computed, watch } from "vue";
 
 const props = defineProps({
   modelValue: {
@@ -91,6 +91,13 @@ const localLlmToolCallMode = ref(
 const localAllLLMTools = ref(
   JSON.parse(JSON.stringify(props.allLlmToolsData || [])),
 );
+
+// 过滤掉无工具的空插件分组，不进行冗余渲染
+const filteredAllLLMTools = computed(() => {
+  return (localAllLLMTools.value || []).filter(
+    (plugin) => plugin.tools && plugin.tools.length > 0,
+  );
+});
 
 const updateEnabledTools = () => {
   const enabledTools = props.modelValue?.toolCallSettings?.tools || [];
