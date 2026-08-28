@@ -76,24 +76,17 @@
           </div>
         </div>
         <div class="header-actions">
-          <el-radio-group
+          <el-select
             v-model="store.timeRange"
             size="default"
-            class="saas-radio"
+            class="saas-time-select"
             @change="store.refreshData"
+            aria-label="时间范围"
           >
-            <el-radio-button value="24h">24小时</el-radio-button>
-            <el-radio-button value="7d">近7天</el-radio-button>
-            <el-radio-button value="30d">近30天</el-radio-button>
-          </el-radio-group>
-
-          <el-button
-            type="primary"
-            class="cost-btn"
-            @click="store.showCostModal = true"
-          >
-            <i class="fa-solid fa-calculator btn-icon"></i> 成本核算
-          </el-button>
+            <el-option label="24小时" value="24h" />
+            <el-option label="近7天" value="7d" />
+            <el-option label="近30天" value="30d" />
+          </el-select>
         </div>
       </div>
 
@@ -133,7 +126,6 @@
     </div>
 
     <!-- Modals -->
-    <CostCalculatorDialog />
     <TraceModal />
   </div>
 </template>
@@ -148,7 +140,6 @@ import DashboardOverview from "@/components/dashboard/DashboardOverview.vue";
 import DashboardUsers from "@/components/dashboard/DashboardUsers.vue";
 import DashboardTrace from "@/components/dashboard/DashboardTrace.vue";
 import DashboardFailures from "@/components/dashboard/DashboardFailures.vue";
-import CostCalculatorDialog from "@/components/dashboard/CostCalculatorDialog.vue";
 import TraceModal from "@/components/dashboard/TraceModal.vue";
 
 const store = useDashboardStore();
@@ -431,18 +422,6 @@ onUnmounted(() => {
   align-items: center;
   gap: 16px;
 }
-
-.cost-btn {
-  font-weight: 600;
-  background-color: var(--mio-color-primary, #2563eb);
-  border-color: var(--mio-color-primary, #2563eb);
-}
-
-.cost-btn:hover {
-  background-color: var(--mio-color-primary-hover, #1d4ed8);
-  border-color: var(--mio-color-primary-hover, #1d4ed8);
-}
-
 .btn-icon {
   margin-right: 6px;
 }
