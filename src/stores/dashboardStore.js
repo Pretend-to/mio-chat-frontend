@@ -250,8 +250,12 @@ export const useDashboardStore = defineStore("dashboard", () => {
           steps: [],
         }));
 
-        // Auto-select first turn if none active or previously selected is gone
-        if (toolCallTurns.value.length > 0) {
+        // 桌面端自动选中第一串展示右侧级联；移动端保持会话列表（由用户点选进入详情）
+        const isMobile =
+          typeof window !== "undefined" && window.innerWidth < 900;
+        if (isMobile) {
+          activeTurn.value = null;
+        } else if (toolCallTurns.value.length > 0) {
           const matched = toolCallTurns.value.find(
             (t) => t.requestId === activeTurn.value?.requestId,
           );
