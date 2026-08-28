@@ -100,7 +100,7 @@
                     </span>
                     <span class="turn-tokens">
                       <i class="fa-solid fa-coins"></i>
-                      {{ formatNumber(turn.totalTokens) }}
+                      {{ formatTokens(turn.totalTokens) }}
                     </span>
                   </div>
                 </div>
@@ -130,7 +130,7 @@
             <span class="total-tokens-badge" v-if="store.activeTurn">
               {{ isMobile ? "" : "总 Token: "
               }}<strong>{{
-                formatNumber(activeTurnFinalTokens)
+                formatTokens(activeTurnFinalTokens)
               }}</strong>
             </span>
           </div>
@@ -567,6 +567,18 @@ function truncateRequestId(id) {
 function formatNumber(num) {
   if (!num && num !== 0) return "0";
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+// 紧凑 token 显示：≥1k 显示小数 k，≥1M 显示小数 M，与详情右上角 badge 一致
+function formatTokens(num) {
+  if (!num && num !== 0) return "0";
+  const n = Number(num);
+  if (n >= 1000000) {
+    return `${(n / 1000000).toFixed(1).replace(/\.0$/, "")}M`;
+  }
+  if (n >= 1000) {
+    return `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k`;
+  }
+  return String(n);
 }
 
 function formatTime(timestamp) {
