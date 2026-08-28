@@ -79,9 +79,9 @@ function formatTime(timestamp) {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  background: #f8fafc;
+  background: var(--mio-bg-hover, #f8fafc);
   padding: 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--mio-border-color-light, #e2e8f0);
   border-radius: 10px;
 }
 
@@ -93,21 +93,21 @@ function formatTime(timestamp) {
 
 .info-label {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--mio-text-secondary, #94a3b8);
   text-transform: uppercase;
   font-weight: 600;
 }
 
 .info-value {
   font-size: 13px;
-  color: #334155;
+  color: var(--mio-text-primary, #334155);
   font-weight: 500;
 }
 
 .mono-text {
   font-family: "JetBrains Mono", monospace;
   font-size: 12px;
-  color: #2563eb;
+  color: var(--mio-color-primary, #2563eb);
 }
 
 .select-all {
@@ -115,8 +115,8 @@ function formatTime(timestamp) {
 }
 
 .error-summary-box {
-  background: #fff5f5;
-  border: 1px solid #fee2e2;
+  background: var(--mio-bg-danger-light, #fff5f5);
+  border: 1px solid rgba(245, 108, 108, 0.3);
   border-radius: 10px;
   padding: 16px;
 }
@@ -124,7 +124,7 @@ function formatTime(timestamp) {
 .box-title {
   font-size: 12px;
   font-weight: 600;
-  color: #b91c1c;
+  color: var(--mio-color-danger, #b91c1c);
   display: block;
   margin-bottom: 6px;
 }
@@ -132,33 +132,33 @@ function formatTime(timestamp) {
 .error-message {
   margin: 0;
   font-size: 13px;
-  color: #991b1b;
+  color: var(--mio-color-danger, #991b1b);
   line-height: 1.5;
   font-weight: 500;
 }
 
 .stack-trace-container {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--mio-border-color-light, #e2e8f0);
   border-radius: 10px;
   overflow: hidden;
 }
 
 .stack-header {
-  background: #f8fafc;
+  background: var(--mio-bg-hover, #f8fafc);
   padding: 10px 16px;
   font-size: 12px;
-  color: #475569;
+  color: var(--mio-text-secondary, #475569);
   font-weight: 600;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--mio-border-color-light, #e2e8f0);
 }
 
 .stack-content {
   margin: 0;
   padding: 16px;
-  background: #fafafa;
+  background: var(--mio-bg-page, #fafafa);
   font-family: "JetBrains Mono", monospace;
   font-size: 11.5px;
-  color: #334155;
+  color: var(--mio-text-regular, #334155);
   max-height: 240px;
   overflow-y: auto;
   white-space: pre-wrap;
@@ -167,23 +167,26 @@ function formatTime(timestamp) {
 
 :deep(.el-dialog) {
   border-radius: 12px !important;
+  background-color: var(--mio-bg-card, #ffffff) !important;
 }
 
 :deep(.el-dialog__header) {
   margin-right: 0px !important;
   padding-bottom: 12px !important;
-  border-bottom: 1px solid #f1f5f9 !important;
+  border-bottom: 1px solid var(--mio-border-color-lighter, #f1f5f9) !important;
+  background-color: var(--mio-bg-card, #ffffff) !important;
 }
 
 :deep(.el-dialog__title) {
   font-size: 16px !important;
   font-weight: 600 !important;
-  color: #0f172a !important;
+  color: var(--mio-text-primary, #0f172a) !important;
 }
 
 :deep(.el-dialog__body) {
   padding: 24px 20px !important;
   max-height: calc(100vh - 160px);
   overflow-y: auto;
+  background-color: var(--mio-bg-card, #ffffff) !important;
 }
 </style>

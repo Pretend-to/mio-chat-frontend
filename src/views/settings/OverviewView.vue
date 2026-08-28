@@ -18,7 +18,7 @@
             <h2>概览</h2>
             <span class="subtitle">系统运行状态与快捷入口</span>
           </div>
-          <!-- <div class="header-actions">
+          <div class="header-actions">
             <el-tooltip content="刷新模型列表" placement="bottom">
               <el-button
                 circle
@@ -47,12 +47,12 @@
                 @click="showCompare = true"
               />
             </el-tooltip>
-          </div> -->
+          </div>
         </div>
 
         <!-- 统计信息卡片 -->
         <div class="stats-grid">
-          <el-card class="stat-card">
+          <el-card class="stat-card" @click="navigateTo('llm-adapters')">
             <div class="stat-icon stat-icon--primary">
               <el-icon :size="32"><Connection /></el-icon>
             </div>
@@ -62,7 +62,7 @@
             </div>
           </el-card>
 
-          <el-card class="stat-card">
+          <el-card class="stat-card" @click="navigateTo('llm-adapters')">
             <div class="stat-icon stat-icon--success">
               <el-icon :size="32"><CircleCheck /></el-icon>
             </div>
@@ -74,7 +74,7 @@
             </div>
           </el-card>
 
-          <el-card class="stat-card">
+          <el-card class="stat-card" @click="navigateTo('llm-adapters')">
             <div class="stat-icon stat-icon--warning">
               <el-icon :size="32"><Grid /></el-icon>
             </div>
@@ -84,7 +84,7 @@
             </div>
           </el-card>
 
-          <el-card class="stat-card">
+          <el-card class="stat-card" @click="navigateTo('presets')">
             <div class="stat-icon stat-icon--danger">
               <el-icon :size="32"><Document /></el-icon>
             </div>
@@ -94,30 +94,45 @@
             </div>
           </el-card>
 
-          <el-card class="stat-card">
-            <div
-              class="stat-icon"
-              :class="
-                systemStatus === 'normal'
-                  ? 'stat-icon--success'
-                  : 'stat-icon--warning'
-              "
+          <el-tooltip :content="systemStatusTooltip" placement="top">
+            <el-card
+              class="stat-card"
+              :class="{ 'has-issues': systemStatus !== 'normal' }"
+              @click="scrollToPending"
             >
-              <el-icon :size="32">
-                <component
-                  :is="
-                    systemStatus === 'normal' ? SuccessFilled : WarningFilled
-                  "
-                />
-              </el-icon>
-            </div>
-            <div class="stat-content">
-              <div class="stat-value">{{ systemStatusText }}</div>
-              <div class="stat-label">系统状态</div>
-            </div>
-          </el-card>
+              <div
+                class="stat-icon"
+                :class="{
+                  'stat-icon--success': systemStatus === 'normal',
+                  'stat-icon--warning': systemStatus === 'warning',
+                  'stat-icon--danger': systemStatus === 'error'
+                }"
+              >
+                <el-icon :size="32">
+                  <component
+                    :is="
+                      systemStatus === 'normal'
+                        ? SuccessFilled
+                        : systemStatus === 'error'
+                        ? CircleCloseFilled
+                        : WarningFilled
+                    "
+                  />
+                </el-icon>
+              </div>
+              <div class="stat-content">
+                <div class="stat-value">{{ systemStatusText }}</div>
+                <div class="stat-label">
+                  系统状态
+                  <span v-if="systemStatusDetails.length > 0" class="status-hint-num">
+                    ({{ systemStatusDetails.length }})
+                  </span>
+                </div>
+              </div>
+            </el-card>
+          </el-tooltip>
 
-          <el-card class="stat-card">
+          <el-card class="stat-card" @click="navigateTo('logs')">
             <div class="stat-icon stat-icon--success">
               <el-icon :size="32"><Document /></el-icon>
             </div>
@@ -127,7 +142,7 @@
             </div>
           </el-card>
 
-          <el-card class="stat-card">
+          <el-card class="stat-card" @click="navigateTo('plugins')">
             <div class="stat-icon stat-icon--warning">
               <el-icon :size="32"><Grid /></el-icon>
             </div>
@@ -137,7 +152,7 @@
             </div>
           </el-card>
 
-          <el-card class="stat-card">
+          <el-card class="stat-card" @click="navigateTo('plugins')">
             <div class="stat-icon stat-icon--primary">
               <el-icon :size="32"><Grid /></el-icon>
             </div>
@@ -166,29 +181,12 @@
               </div>
               <div class="action-info">
                 <div class="action-title">LLM 适配器</div>
-                <div class="action-desc">管理模型与接口</div>
+                <div class="action-desc">管理模型与 API 密钥</div>
               </div>
               <el-icon class="action-arrow"><ArrowRight /></el-icon>
             </div>
 
-            <div class="action-item" @click="navigateTo('server')">
-              <div
-                class="action-icon"
-                style="
-                  background: var(--mio-bg-success-light);
-                  color: var(--mio-color-success);
-                "
-              >
-                <el-icon><Monitor /></el-icon>
-              </div>
-              <div class="action-info">
-                <div class="action-title">服务器配置</div>
-                <div class="action-desc">端口与网络设置</div>
-              </div>
-              <el-icon class="action-arrow"><ArrowRight /></el-icon>
-            </div>
-
-            <div class="action-item" @click="navigateTo('web')">
+            <div class="action-item" @click="navigateTo('image-adapters')">
               <div
                 class="action-icon"
                 style="
@@ -196,33 +194,33 @@
                   color: var(--mio-color-warning);
                 "
               >
-                <el-icon><ChromeFilled /></el-icon>
+                <el-icon><Picture /></el-icon>
               </div>
               <div class="action-info">
-                <div class="action-title">Web 配置</div>
-                <div class="action-desc">界面与显示选项</div>
+                <div class="action-title">生图服务</div>
+                <div class="action-desc">图像生成模型配置</div>
               </div>
               <el-icon class="action-arrow"><ArrowRight /></el-icon>
             </div>
 
-            <div class="action-item" @click="navigateTo('onebot')">
+            <div class="action-item" @click="navigateTo('search-adapters')">
               <div
                 class="action-icon"
                 style="
-                  background: var(--mio-bg-info-light);
-                  color: var(--mio-color-info);
+                  background: var(--mio-bg-success-light);
+                  color: var(--mio-color-success);
                 "
               >
-                <el-icon><ChatDotRound /></el-icon>
+                <el-icon><Search /></el-icon>
               </div>
               <div class="action-info">
-                <div class="action-title">OneBot 配置</div>
-                <div class="action-desc">QQ 机器人连接</div>
+                <div class="action-title">搜索服务</div>
+                <div class="action-desc">联网检索与内容摘要</div>
               </div>
               <el-icon class="action-arrow"><ArrowRight /></el-icon>
             </div>
 
-            <div class="action-item" @click="navigateTo('presets')">
+            <div class="action-item" @click="navigateTo('shell-policy')">
               <div
                 class="action-icon"
                 style="
@@ -230,28 +228,45 @@
                   color: var(--mio-color-danger);
                 "
               >
-                <el-icon><Document /></el-icon>
+                <el-icon><Lock /></el-icon>
               </div>
               <div class="action-info">
-                <div class="action-title">预设管理</div>
-                <div class="action-desc">对话预设与模板</div>
+                <div class="action-title">Shell 权限</div>
+                <div class="action-desc">终端安全与命令白名单</div>
               </div>
               <el-icon class="action-arrow"><ArrowRight /></el-icon>
             </div>
 
-            <div class="action-item" @click="navigateTo('logs')">
+            <div class="action-item" @click="navigateTo('channels')">
               <div
                 class="action-icon"
                 style="
-                  background: var(--mio-bg-info-light);
-                  color: var(--mio-color-info);
+                  background: var(--mio-bg-primary-light);
+                  color: var(--mio-color-primary);
                 "
               >
-                <el-icon><Document /></el-icon>
+                <el-icon><Share /></el-icon>
               </div>
               <div class="action-info">
-                <div class="action-title">日志管理</div>
-                <div class="action-desc">实时查看系统日志</div>
+                <div class="action-title">渠道管理</div>
+                <div class="action-desc">消息接入与渠道绑定</div>
+              </div>
+              <el-icon class="action-arrow"><ArrowRight /></el-icon>
+            </div>
+
+            <div class="action-item" @click="navigateTo('automation')">
+              <div
+                class="action-icon"
+                style="
+                  background: var(--mio-bg-warning-light);
+                  color: var(--mio-color-warning);
+                "
+              >
+                <el-icon><Operation /></el-icon>
+              </div>
+              <div class="action-info">
+                <div class="action-title">自动化任务</div>
+                <div class="action-desc">定时运行与自动化流</div>
               </div>
               <el-icon class="action-arrow"><ArrowRight /></el-icon>
             </div>
@@ -268,7 +283,109 @@
               </div>
               <div class="action-info">
                 <div class="action-title">插件管理</div>
-                <div class="action-desc">管理插件与工具</div>
+                <div class="action-desc">管理插件与 Function 工具</div>
+              </div>
+              <el-icon class="action-arrow"><ArrowRight /></el-icon>
+            </div>
+
+            <div class="action-item" @click="navigateTo('presets')">
+              <div
+                class="action-icon"
+                style="
+                  background: var(--mio-bg-danger-light);
+                  color: var(--mio-color-danger);
+                "
+              >
+                <el-icon><Document /></el-icon>
+              </div>
+              <div class="action-info">
+                <div class="action-title">预设管理</div>
+                <div class="action-desc">角色预设与系统模板</div>
+              </div>
+              <el-icon class="action-arrow"><ArrowRight /></el-icon>
+            </div>
+
+            <div class="action-item" @click="navigateTo('server')">
+              <div
+                class="action-icon"
+                style="
+                  background: var(--mio-bg-success-light);
+                  color: var(--mio-color-success);
+                "
+              >
+                <el-icon><Monitor /></el-icon>
+              </div>
+              <div class="action-info">
+                <div class="action-title">服务器配置</div>
+                <div class="action-desc">端口与网络监听设置</div>
+              </div>
+              <el-icon class="action-arrow"><ArrowRight /></el-icon>
+            </div>
+
+            <div class="action-item" @click="navigateTo('web')">
+              <div
+                class="action-icon"
+                style="
+                  background: var(--mio-bg-warning-light);
+                  color: var(--mio-color-warning);
+                "
+              >
+                <el-icon><ChromeFilled /></el-icon>
+              </div>
+              <div class="action-info">
+                <div class="action-title">Web 配置</div>
+                <div class="action-desc">界面、主题与显示选项</div>
+              </div>
+              <el-icon class="action-arrow"><ArrowRight /></el-icon>
+            </div>
+
+            <div class="action-item" @click="navigateTo('onebot')">
+              <div
+                class="action-icon"
+                style="
+                  background: var(--mio-bg-info-light);
+                  color: var(--mio-color-info);
+                "
+              >
+                <el-icon><ChatDotRound /></el-icon>
+              </div>
+              <div class="action-info">
+                <div class="action-title">OneBot 配置</div>
+                <div class="action-desc">QQ 机器人正反向 WS 接入</div>
+              </div>
+              <el-icon class="action-arrow"><ArrowRight /></el-icon>
+            </div>
+
+            <div class="action-item" @click="navigateTo('logs')">
+              <div
+                class="action-icon"
+                style="
+                  background: var(--mio-bg-info-light);
+                  color: var(--mio-color-info);
+                "
+              >
+                <el-icon><Document /></el-icon>
+              </div>
+              <div class="action-info">
+                <div class="action-title">系统日志</div>
+                <div class="action-desc">实时查看运行与错误日志</div>
+              </div>
+              <el-icon class="action-arrow"><ArrowRight /></el-icon>
+            </div>
+
+            <div class="action-item" @click="router.push('/dashboard')">
+              <div
+                class="action-icon"
+                style="
+                  background: var(--mio-bg-primary-light);
+                  color: var(--mio-color-primary);
+                "
+              >
+                <el-icon><DataAnalysis /></el-icon>
+              </div>
+              <div class="action-info">
+                <div class="action-title">数据审计大盘</div>
+                <div class="action-desc">调用链路与性能监控</div>
               </div>
               <el-icon class="action-arrow"><ArrowRight /></el-icon>
             </div>
@@ -285,7 +402,7 @@
               </div>
               <div class="action-info">
                 <div class="action-title">开始聊天</div>
-                <div class="action-desc">返回聊天界面</div>
+                <div class="action-desc">返回聊天主界面</div>
               </div>
               <el-icon class="action-arrow"><ArrowRight /></el-icon>
             </div>
@@ -392,13 +509,20 @@ import {
   ChatDotRound,
   ChromeFilled,
   CircleCheck,
+  CircleCloseFilled,
   Connection,
+  DataAnalysis,
   Document,
   DocumentCopy,
   Download,
   Grid,
+  Lock,
   Monitor,
+  Operation,
+  Picture,
   Refresh,
+  Search,
+  Share,
   SuccessFilled,
   Upload,
   Warning,
@@ -417,18 +541,91 @@ const loading = ref(true);
 const refreshing = ref(false);
 const showCompare = ref(false);
 
-// 系统状态
-const systemStatus = computed(() => {
-  // 检查是否有禁用的适配器
-  const hasDisabled = Object.values(configStore.adapters || {}).some(
-    (instances) => instances.some((adapter) => !adapter.enable),
-  );
+const scrollToPending = () => {
+  const el = document.getElementById("pending-items-card");
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth" });
+  } else {
+    router.push("/settings/llm-adapters");
+  }
+};
 
-  return hasDisabled ? "warning" : "normal";
+// 系统健康状态与诊断详情
+const systemStatusDetails = computed(() => {
+  const issues = [];
+
+  // 1. 检查是否有启用中的适配器模型列表为空
+  const emptyModelAdapters = [];
+  Object.entries(configStore.adapters || {}).forEach(([type, instances]) => {
+    instances.forEach((adapter, index) => {
+      if (adapter.enable) {
+        const providerName = adapter.name || `${type}-${index + 1}`;
+        const models = configStore.models[providerName];
+        if (!models || models.length === 0) {
+          emptyModelAdapters.push(providerName);
+        }
+      }
+    });
+  });
+
+  if (emptyModelAdapters.length > 0) {
+    issues.push({
+      level: "error",
+      message: `${emptyModelAdapters.join("、")} 适配器模型列表为空，请检查 API Key 或网络`,
+    });
+  }
+
+  // 2. 检查已启用适配器总数
+  if (configStore.enabledAdaptersCount === 0 && configStore.totalAdapters > 0) {
+    issues.push({
+      level: "warning",
+      message: "所有大模型适配器当前均处于禁用状态",
+    });
+  } else if (configStore.totalAdapters === 0) {
+    issues.push({
+      level: "warning",
+      message: "系统尚未添加任何大模型适配器",
+    });
+  }
+
+  // 3. 检查 OneBot 配置
+  if (configStore.config?.onebot?.enable) {
+    const onebotConfig = configStore.config.onebot;
+    if (!onebotConfig.reverse_ws_url || !onebotConfig.bot_qq) {
+      issues.push({
+        level: "warning",
+        message: "OneBot 已开启但配置参数不完整",
+      });
+    }
+  }
+
+  return issues;
+});
+
+const systemStatus = computed(() => {
+  const issues = systemStatusDetails.value;
+  if (issues.some((i) => i.level === "error")) return "error";
+  if (issues.some((i) => i.level === "warning")) return "warning";
+  return "normal";
 });
 
 const systemStatusText = computed(() => {
-  return systemStatus.value === "normal" ? "正常" : "有警告";
+  if (systemStatus.value === "error") return "配置异常";
+  if (systemStatus.value === "warning") return "需关注";
+  return "运行正常";
+});
+
+const systemStatusTooltip = computed(() => {
+  const issues = systemStatusDetails.value;
+  if (issues.length === 0) {
+    const disabledCount = Object.values(configStore.adapters || {})
+      .flat()
+      .filter((adapter) => !adapter.enable).length;
+    return disabledCount > 0
+      ? `所有已启用服务运行正常（另有 ${disabledCount} 个适配器已停用）`
+      : "所有已启用模型服务运行正常";
+  }
+  return issues.map((i) => i.message).join("；");
 });
 
 // 获取所有适配器类型（包括没有实例的类型）

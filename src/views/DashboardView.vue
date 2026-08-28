@@ -45,9 +45,9 @@
       </div>
 
       <div class="sidebar-footer">
-        <div class="back-to-app" @click="router.push('/')" title="返回主程序">
+        <div class="back-to-app" @click="router.push('/settings')" title="返回设置概览">
           <i class="fa-solid fa-arrow-left-long"></i>
-          <span>返回主程序</span>
+          <span>返回设置概览</span>
         </div>
         <div class="system-time">
           <i class="fa-regular fa-clock"></i> {{ store.currentTime }}

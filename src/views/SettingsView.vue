@@ -356,6 +356,8 @@ import {
   Picture,
   Search,
   View,
+  Share,
+  Operation,
 } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
@@ -382,17 +384,28 @@ const showMobileMenu = computed(() => {
 const systemStatus = computed(() => {
   if (configStore.needRestart) return "warning";
 
-  // 检查是否有禁用的适配器
-  const hasDisabled = Object.values(configStore.adapters || {}).some(
-    (instances) => instances.some((adapter) => !adapter.enable),
+  // 检查是否有启用中的适配器模型列表为空
+  const hasEmptyModel = Object.entries(configStore.adapters || {}).some(
+    ([type, instances]) =>
+      instances.some((adapter, index) => {
+        if (!adapter.enable) return false;
+        const providerName = adapter.name || `${type}-${index + 1}`;
+        const models = configStore.models?.[providerName];
+        return !models || models.length === 0;
+      }),
   );
+  if (hasEmptyModel) return "warning";
 
-  return hasDisabled ? "warning" : "normal";
+  if (configStore.enabledAdaptersCount === 0 && configStore.totalAdapters > 0) {
+    return "warning";
+  }
+
+  return "normal";
 });
 
 const systemStatusText = computed(() => {
   if (configStore.needRestart) return "需要重启";
-  return systemStatus.value === "normal" ? "正常" : "有警告";
+  return systemStatus.value === "normal" ? "正常" : "需关注";
 });
 
 // 全部菜单项（管理员可见全部，游客仅见「客户端设置」）
@@ -403,8 +416,8 @@ const allMenuItems = [
   { index: "search-adapters", label: "搜索服务", icon: Search },
   { index: "vision-adapters", label: "识图服务", icon: View },
   { index: "shell-policy", label: "Shell 权限", icon: Lock },
-  { index: "channels", label: "渠道管理", icon: Connection },
-  { index: "automation", label: "系统任务", icon: Connection },
+  { index: "channels", label: "渠道管理", icon: Share },
+  { index: "automation", label: "系统任务", icon: Operation },
   { index: "server", label: "服务器配置", icon: Monitor },
   { index: "web", label: "Web 配置", icon: ChromeFilled },
   { index: "onebot", label: "OneBot 配置", icon: ChatDotRound },

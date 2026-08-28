@@ -1,80 +1,76 @@
 <template>
   <div class="users-view-container">
-    <!-- User Rankings (Primary Content) -->
-    <div class="rankings-row">
-      <!-- Token Heavy Users -->
-      <div class="ranking-col">
-        <div class="saas-card">
-          <div class="card-header">
-            <span class="card-title">Token 消耗排行 Top 10</span>
-          </div>
-          <div class="card-body p-none">
-            <div class="table-responsive-wrapper">
-              <el-table
-                :data="store.tokenTopUsers"
-                style="width: 100%"
-                class="saas-table"
-              >
-                <el-table-column label="排名" width="70" align="center">
-                  <template #default="scope">
-                    <span
-                      class="rank-badge"
-                      :class="'rank-' + (scope.$index + 1)"
-                    >
-                      {{ scope.$index + 1 }}
-                    </span>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="userId" label="用户 ID"></el-table-column>
-                <el-table-column prop="calls" label="调用次数" width="110" align="right"></el-table-column>
-                <el-table-column prop="tokens" label="消耗 Token" align="right">
-                  <template #default="scope">
-                    <span class="token-value-text">{{
-                      formatNumber(scope.row.tokens)
-                    }}</span>
-                  </template>
-                </el-table-column>
-              </el-table>
-            </div>
+    <!-- User Rankings (Single Comprehensive Card) -->
+    <div class="saas-card user-ranking-card">
+      <div class="card-header">
+        <div class="header-left">
+          <span class="card-title">活跃用户用量排行 Top 10</span>
+          <span class="header-subtitle desktop-only-inline">会话频次与 Token 消耗统计</span>
+        </div>
+        <div class="header-right">
+          <div class="user-sort-toggle">
+            <button
+              class="sort-btn"
+              :class="{ active: userSortBy === 'tokens' }"
+              @click="userSortBy = 'tokens'"
+            >
+              按 Token 消耗
+            </button>
+            <button
+              class="sort-btn"
+              :class="{ active: userSortBy === 'calls' }"
+              @click="userSortBy = 'calls'"
+            >
+              按请求频次
+            </button>
           </div>
         </div>
       </div>
-
-      <!-- Frequency Heavy Users -->
-      <div class="ranking-col">
-        <div class="saas-card">
-          <div class="card-header">
-            <span class="card-title">高频请求用户 Top 10</span>
-          </div>
-          <div class="card-body p-none">
-            <div class="table-responsive-wrapper">
-              <el-table
-                :data="store.callsTopUsers"
-                style="width: 100%"
-                class="saas-table"
-              >
-                <el-table-column label="排名" width="70" align="center">
-                  <template #default="scope">
-                    <span
-                      class="rank-badge"
-                      :class="'rank-' + (scope.$index + 1)"
-                    >
-                      {{ scope.$index + 1 }}
-                    </span>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="userId" label="用户 ID"></el-table-column>
-                <el-table-column prop="calls" label="调用次数" width="110" align="right"></el-table-column>
-                <el-table-column prop="tokens" label="消耗 Token" align="right">
-                  <template #default="scope">
-                    <span class="token-value-text">{{
-                      formatNumber(scope.row.tokens)
-                    }}</span>
-                  </template>
-                </el-table-column>
-              </el-table>
-            </div>
-          </div>
+      <div class="card-body p-none">
+        <div class="table-responsive-wrapper">
+          <el-table
+            :data="userRankingsList"
+            style="width: 100%"
+            class="saas-table"
+          >
+            <el-table-column label="排名" width="80" align="center">
+              <template #default="scope">
+                <span
+                  class="rank-badge"
+                  :class="'rank-' + (scope.$index + 1)"
+                >
+                  {{ scope.$index + 1 }}
+                </span>
+              </template>
+            </el-table-column>
+            <el-table-column label="用户标识 / ID" min-width="260">
+              <template #default="scope">
+                <div class="user-id-cell" :title="scope.row.userId">
+                  <i class="fa-solid fa-user user-icon"></i>
+                  <span class="user-id-text">{{ scope.row.userId }}</span>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column prop="calls" label="调用次数" width="140" align="right">
+              <template #default="scope">
+                <span class="calls-value">{{ formatNumber(scope.row.calls) }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="tokens" label="消耗 Token" width="180" align="right">
+              <template #default="scope">
+                <span class="token-value-text">{{
+                  formatNumber(scope.row.tokens)
+                }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="平均单次消耗" width="160" align="right">
+              <template #default="scope">
+                <span class="avg-token-text">{{
+                  formatNumber(Math.round(scope.row.tokens / (scope.row.calls || 1)))
+                }}</span>
+              </template>
+            </el-table-column>
+          </el-table>
         </div>
       </div>
     </div>
@@ -254,11 +250,16 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, watch, nextTick, computed } from "vue";
+import { ref, onMounted, onUnmounted, watch, nextTick, computed } from "vue";
 import { useDashboardStore } from "@/stores/dashboardStore";
 import * as echarts from "echarts";
 
 const store = useDashboardStore();
+
+const userSortBy = ref("tokens");
+const userRankingsList = computed(() => {
+  return userSortBy.value === "tokens" ? store.tokenTopUsers : store.callsTopUsers;
+});
 
 const filteredModelsTable = computed(() => {
   if (!store.rawModelDistribution) return [];
@@ -631,20 +632,82 @@ onUnmounted(() => {
 }
 
 /* Rankings section */
-.rankings-row {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
+.user-ranking-card {
+  width: 100%;
 }
 
-.ranking-col {
-  width: calc(50% - 10px);
-  min-width: 300px;
-  flex-grow: 1;
+.header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.header-subtitle {
+  font-size: 12px;
+  color: var(--mio-text-secondary, #94a3b8);
+  font-weight: normal;
+}
+
+.user-sort-toggle {
+  display: inline-flex;
+  background: var(--mio-bg-hover, #f1f5f9);
+  padding: 2px;
+  border-radius: 6px;
+  border: 1px solid var(--mio-border-color-lighter, #e2e8f0);
+}
+
+.sort-btn {
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  color: var(--mio-text-secondary, #64748b);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sort-btn.active {
+  background: var(--mio-bg-card, #ffffff);
+  color: var(--mio-color-primary, #2563eb);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.user-id-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.user-icon {
+  color: var(--mio-text-placeholder, #94a3b8);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.user-id-text {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 500;
+  color: var(--mio-text-primary, #1e293b);
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.calls-value,
+.avg-token-text {
+  font-family: "JetBrains Mono", monospace;
+  color: var(--mio-text-regular, #475569);
+  font-size: 13px;
 }
 
 .mt-lg {
-  margin-top: 10px;
+  margin-top: 16px;
 }
 
 .section-title-card {
@@ -688,18 +751,28 @@ onUnmounted(() => {
 }
 
 .rank-1 {
-  background: #fef9c3;
-  color: #a16207;
+  background: rgba(234, 179, 8, 0.2);
+  color: #eab308;
 }
 
 .rank-2 {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--mio-bg-hover, #f1f5f9);
+  color: var(--mio-text-secondary, #475569);
 }
 
 .rank-3 {
-  background: #ffedd5;
-  color: #c2410c;
+  background: rgba(249, 115, 22, 0.2);
+  color: #f97316;
+}
+
+.desktop-only-inline {
+  display: inline;
+}
+
+@media (max-width: 600px) {
+  .desktop-only-inline {
+    display: none;
+  }
 }
 
 :deep(.saas-table) {
