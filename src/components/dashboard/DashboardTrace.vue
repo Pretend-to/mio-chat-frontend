@@ -716,12 +716,11 @@ function formatTime(timestamp) {
   flex-direction: column;
 }
 
-.list-card {
-  /* Flex height is handled by parent saas-card */
-}
-
+.list-card,
 .timeline-card {
-  /* Flex height is handled by parent saas-card */
+  /* 填满父列高，使内部 .*-scroll 的 flex:1 + overflow-y:auto 具备受限高度，恢复可滚动 */
+  height: 100%;
+  min-height: 0;
 }
 
 .card-header {
@@ -1281,5 +1280,13 @@ function formatTime(timestamp) {
   height: 150px;
   color: #64748b;
   font-size: 14px;
+}
+/* 移动端级联覆盖（置于文件末尾：同优先级规则后者胜，确保不被后置基础规则覆盖） */
+@media (max-width: 900px) {
+  .trace-timeline-scroll {
+    padding: 12px;
+    /* 去掉灰底填充层，避免“大卡套灰底套节点卡”三层框叠的无效UI */
+    background: transparent;
+  }
 }
 </style>
