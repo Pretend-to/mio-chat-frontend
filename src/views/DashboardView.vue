@@ -535,7 +535,12 @@ onUnmounted(() => {
   }
 }
 
-@keyframes fadeInOverlay {
+/* 移动端 toolcalls 页占满 header 下区域，四周保留合宜留白（不过度贴边） */
+@media (max-width: 900px) {
+  .view-body.flex-layout {
+    padding: 0 12px 12px;
+  }
+}@keyframes fadeInOverlay {
   from {
     opacity: 0;
   }

@@ -1303,6 +1303,13 @@ function formatTime(timestamp) {
     background: transparent;
     padding: 6px 0 14px;
   }
+  /* 会话流列表项去框平铺，不再“面板内套卡片” */
+  .turn-item {
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    border-radius: 0;
+  }
   .card-header {
     padding: 12px 8px;
   }
