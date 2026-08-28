@@ -186,6 +186,7 @@
 
 <script setup>
 import { ref, computed, watch } from "vue";
+import { ElMessage } from "element-plus";
 import { InfoFilled } from "@element-plus/icons-vue";
 import { useContactorsStore } from "@/stores/contactorsStore.js";
 import { useConfigStore } from "@/stores/configStore.js";
@@ -392,6 +393,7 @@ function saveZones() {
     props.memberId,
   );
   isDirty.value = false;
+  ElMessage.success("记忆结晶已保存并生效");
 }
 
 function clearSummary() {
@@ -404,6 +406,7 @@ function clearSummary() {
     props.memberId,
   );
   isDirty.value = false;
+  ElMessage.success("已清空记忆结晶内容");
 }
 </script>
 
