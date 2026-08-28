@@ -161,7 +161,7 @@
               v-model="zoneContents[zone.key]"
               type="textarea"
               :autosize="{ minRows: 6, maxRows: 15 }"
-              :placeholder="`在此处编辑「${zone.label}」内容...`"
+              :placeholder="getZonePlaceholder(zone.key)"
               resize="vertical"
               class="zone-textarea"
               @input="onZoneInput"
@@ -176,7 +176,7 @@
         <span class="lock-icon">🔒</span>
         <span class="hint-text"
           >自动压缩功能已关闭。开启自动压缩后，长对话中将自动启用 Token
-          上下文压缩控制，并在此处直观地进行用户画像、短期目标、开发约束等多分区记忆的
+          上下文压缩控制，并在此处直观地进行用户画像、行为准则、短期目标、开发约束等多分区记忆的
           CRUD 交互式管理与保存。</span
         >
       </div>
@@ -269,6 +269,18 @@ const localMaxMessages = ref(
 const zoneContents = ref(
   parseXmlZones(crystallization.value?.latestSummary || ""),
 );
+
+function getZonePlaceholder(key) {
+  const map = {
+    long_term_profile: "在此处编辑「用户画像」内容（如技术栈偏好、称谓、工作习惯等长期事实）...",
+    behavioral_guidelines: "在此处编辑「行为准则」内容（如交互规范、操作边界、禁止事项等长效偏好）...",
+    short_term_goals: "在此处编辑「短期目标」内容（如当前会话核心任务、期望达成的结果）...",
+    current_plan: "在此处编辑「运行计划」内容（如具体执行步骤、阶段性任务进度）...",
+    file_architecture_delta: "在此处编辑「文件变更」内容（如关键文件路径与功能摘要）...",
+    constraints: "在此处编辑「开发约束」内容（如技术限制条件、已知未解决的 bug 等）...",
+  };
+  return map[key] || "在此处编辑内容...";
+}
 
 const activeTab = ref(CRYSTAL_ZONES[0]?.key || "");
 

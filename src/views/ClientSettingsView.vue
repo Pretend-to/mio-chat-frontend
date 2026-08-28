@@ -371,6 +371,7 @@
                     <el-select v-model="editForm.category" size="small" style="width: 140px">
                       <el-option label="通用事实" value="general" />
                       <el-option label="用户画像" value="user_profile" />
+                      <el-option label="行为准则" value="behavioral_guidelines" />
                       <el-option label="技术栈/偏好" value="tech_stack" />
                       <el-option label="项目规范" value="project_fact" />
                     </el-select>
@@ -403,6 +404,7 @@
           <el-select v-model="newMemoryForm.category" style="width: 100%">
             <el-option label="通用事实 (General)" value="general" />
             <el-option label="用户画像 (User Profile)" value="user_profile" />
+            <el-option label="行为准则 (Behavioral Guidelines)" value="behavioral_guidelines" />
             <el-option label="技术栈/开发偏好 (Tech Stack)" value="tech_stack" />
             <el-option label="项目与环境规范 (Project Fact)" value="project_fact" />
           </el-select>
@@ -846,6 +848,7 @@ const getCategoryLabel = (category) => {
   const map = {
     general: "通用事实",
     user_profile: "用户画像",
+    behavioral_guidelines: "行为准则",
     tech_stack: "技术栈偏好",
     project_fact: "项目规范",
   };

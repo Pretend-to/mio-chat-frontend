@@ -7,9 +7,10 @@
  * 3. 从 5 个区块重新组合为 XML 字符串（用于 MemoryManager 编辑后回写）
  */
 
-// 结晶的 5 个分区标签
+// 结晶的 6 个分区标签
 export const CRYSTAL_ZONES = [
   { key: "long_term_profile", label: "用户画像", icon: "👤" },
+  { key: "behavioral_guidelines", label: "行为准则", icon: "📜" },
   { key: "short_term_goals", label: "短期目标", icon: "🎯" },
   { key: "current_plan", label: "运行计划", icon: "📋" },
   { key: "file_architecture_delta", label: "文件变更", icon: "📁" },
@@ -41,6 +42,7 @@ export function assembleSystemPrompt(baseSystemPrompt, latestSummary, globalMemo
       if (validItems.length > 0) {
         const memLines = [
           "<global_long_term_memory>",
+          "<!-- 跨会话全局长期记忆（仅用于记录用户长期画像、全局环境与稳定约束，请勿将局部单次会话任务与此混淆） -->",
           ...validItems.map((m) => {
             const idStr = m.id ? `[#${m.id}] ` : "";
             return `  ${idStr}${m.content.trim()}`;
