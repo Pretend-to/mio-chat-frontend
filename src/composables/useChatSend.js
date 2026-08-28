@@ -120,7 +120,7 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
       if (toBottom) toBottom();
 
       if (msgInChain) {
-        msgInChain.status = "pending";
+        msgInChain.status = "completed";
       }
 
       try {

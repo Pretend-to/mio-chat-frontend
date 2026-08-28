@@ -328,7 +328,7 @@ const groupForm = reactive({
   priority: false,
   maxInvocationDepth: 5,
   defaultResponderId: "",
-  toolCallContextMode: "full",
+  toolCallContextMode: "brief",
 });
 
 watch(
@@ -346,7 +346,7 @@ watch(
       groupForm.maxInvocationDepth =
         val.maxInvocationDepth !== undefined ? Number(val.maxInvocationDepth) : 5;
       groupForm.defaultResponderId = val.defaultResponderId || "";
-      groupForm.toolCallContextMode = val.toolCallContextMode || "full";
+      groupForm.toolCallContextMode = val.toolCallContextMode || "brief";
     }
   },
   { immediate: true, deep: true }
@@ -363,7 +363,7 @@ function saveGroupInfo() {
     priority: groupForm.priority ? 0 : 1,
     maxInvocationDepth: groupForm.maxInvocationDepth,
     defaultResponderId: groupForm.defaultResponderId || "",
-    toolCallContextMode: groupForm.toolCallContextMode || "full",
+    toolCallContextMode: groupForm.toolCallContextMode || "brief",
   });
   ElMessage.success("群聊基本配置已更新");
 }

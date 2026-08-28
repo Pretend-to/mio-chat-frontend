@@ -200,8 +200,8 @@ export function formatGroupMessagesForMember(group, member) {
           })
         : "";
 
-      if (msg.status === "pending") {
-        // 流式进行中的消息：向其他成员暴露「正在输入 + 已有片段」，
+      if (msg.status === "pending" && msg.role === "other") {
+        // 流式进行中的 Agent 消息：向其他成员暴露「正在输入 + 已有片段」，
         // 避免他们基于「对方完全没说话」的假象盲目互唤。
         pendingHistoryXml.push(
           formatTypingMessageXml(msg, senderId, senderName, timeText)
@@ -214,7 +214,7 @@ export function formatGroupMessagesForMember(group, member) {
         senderId,
         senderName,
         timeText,
-        group.toolCallContextMode || "full",
+        group.toolCallContextMode || "brief",
       );
       if (msgXml) {
         pendingHistoryXml.push(msgXml);
@@ -272,7 +272,7 @@ function escapeXml(str) {
  * @param {number} maxLen - 参数/结果最大长度
  * @param {string} [mode="full"] - "full" 完整（含参数与结果）| "brief" 简略（仅工具名）
  */
-function formatToolCallXml(toolCallData, maxLen = 1000, mode = "full") {
+function formatToolCallXml(toolCallData, maxLen = 1000, mode = "brief") {
   if (!toolCallData) return "";
   const name =
     toolCallData.name ||
@@ -376,7 +376,7 @@ function formatTypingMessageXml(msg, senderId, senderName, timeText) {
   );
 }
 
-function formatMessageXml(msg, senderId, senderName, timeText, toolCallMode = "full") {
+function formatMessageXml(msg, senderId, senderName, timeText, toolCallMode = "brief") {
   if (!msg || !Array.isArray(msg.content)) return "";
 
   const textParts = [];

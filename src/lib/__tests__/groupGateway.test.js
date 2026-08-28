@@ -429,6 +429,81 @@ describe("groupGateway - Mention Resolution & Invocation Engine", () => {
       expect(messages[0].role).toBe("system");
       expect(messages[1].role).toBe("user"); // 必须是 user 角色，不能直接是 assistant
     });
+
+    it("should format tool call in brief mode by default without exposing parameters/results", () => {
+      const memberA = { id: "member_a", name: "AgentA", lastCompressedIndex: 0, options: {} };
+      const memberB = { id: "member_b", name: "AgentB", lastCompressedIndex: 0, options: {} };
+
+      const group = {
+        platform: "group",
+        members: [memberA, memberB],
+        messageChain: [
+          {
+            id: "msg_1",
+            role: "other",
+            status: "completed",
+            senderMemberId: "member_b",
+            senderName: "AgentB",
+            content: [
+              {
+                type: "tool_call",
+                data: {
+                  name: "search_web",
+                  parameters: { query: "secret info" },
+                  result: { answer: "top secret data" },
+                },
+              },
+              { type: "text", data: { text: "我已经查好了" } },
+            ],
+          },
+        ],
+      };
+
+      const messages = formatGroupMessagesForMember(group, memberA, "System prompt");
+      const userMsg = messages.find((m) => m.role === "user" && m.content.includes("search_web"));
+      expect(userMsg).toBeDefined();
+      expect(userMsg.content).toContain('<tool_call name="search_web" />');
+      expect(userMsg.content).not.toContain("secret info");
+      expect(userMsg.content).not.toContain("top secret data");
+    });
+
+    it("should format tool call in full mode when toolCallContextMode is explicitly set to full", () => {
+      const memberA = { id: "member_a", name: "AgentA", lastCompressedIndex: 0, options: {} };
+      const memberB = { id: "member_b", name: "AgentB", lastCompressedIndex: 0, options: {} };
+
+      const group = {
+        platform: "group",
+        toolCallContextMode: "full",
+        members: [memberA, memberB],
+        messageChain: [
+          {
+            id: "msg_1",
+            role: "other",
+            status: "completed",
+            senderMemberId: "member_b",
+            senderName: "AgentB",
+            content: [
+              {
+                type: "tool_call",
+                data: {
+                  name: "search_web",
+                  parameters: { query: "vue 3" },
+                  result: { answer: "composition api" },
+                },
+              },
+              { type: "text", data: { text: "查询完毕" } },
+            ],
+          },
+        ],
+      };
+
+      const messages = formatGroupMessagesForMember(group, memberA, "System prompt");
+      const userMsg = messages.find((m) => m.role === "user" && m.content.includes("search_web"));
+      expect(userMsg).toBeDefined();
+      expect(userMsg.content).toContain("<parameters>");
+      expect(userMsg.content).toContain("<result>");
+      expect(userMsg.content).toContain("vue 3");
+    });
   });
 });
 
