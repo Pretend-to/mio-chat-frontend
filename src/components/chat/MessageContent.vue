@@ -163,7 +163,7 @@
               />
             </template>
             <template v-else-if="item.type === 'text'">
-              <div class="outer-render-text">{{ item.content }}</div>
+              <div class="outer-render-text">{{ item.content || item.text }}</div>
             </template>
             <template v-else-if="item.type === 'alert'">
               <el-alert
