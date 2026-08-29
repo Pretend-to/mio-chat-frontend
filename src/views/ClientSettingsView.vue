@@ -459,6 +459,18 @@
               </el-button>
             </div>
           </div>
+
+          <div class="setting-field">
+            <div class="field-info">
+              <span class="field-label">已注册设备管理</span>
+              <span class="field-desc">当前服务端登记的接收设备数: {{ deviceCount }} 台</span>
+            </div>
+            <div class="field-value">
+              <el-button size="small" type="danger" plain :loading="clearLoading" @click="handleClearDevices">
+                清空所有设备订阅
+              </el-button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -619,6 +631,8 @@ import {
   unsubscribePush,
   testPushNotification,
   showLocalTestNotification,
+  clearAllDeviceSubscriptions,
+  getDeviceSubscriptions,
 } from "@/lib/pushClient.js";
 
 const configStore = useConfigStore();
@@ -628,6 +642,8 @@ const activeTab = ref("profile");
 const pushSubscribed = ref(false);
 const pushLoading = ref(false);
 const testPushLoading = ref(false);
+const clearLoading = ref(false);
+const deviceCount = ref(0);
 
 const pushSupported = computed(() => isPushSupported());
 const isIOS = computed(() => isIOSDevice());
@@ -643,6 +659,15 @@ const platformSummary = computed(() => {
   return "现代浏览器网页端模式";
 });
 
+const refreshDeviceCount = async () => {
+  try {
+    const res = await getDeviceSubscriptions();
+    deviceCount.value = res?.data?.count || 0;
+  } catch {
+    deviceCount.value = 0;
+  }
+};
+
 const checkPushStatus = async () => {
   try {
     const sub = await getPushSubscription();
@@ -650,6 +675,7 @@ const checkPushStatus = async () => {
   } catch {
     pushSubscribed.value = false;
   }
+  await refreshDeviceCount();
 };
 
 const handleTogglePush = async (val) => {
@@ -664,6 +690,7 @@ const handleTogglePush = async (val) => {
       pushSubscribed.value = false;
       ElMessage.info("已关闭系统推送通知");
     }
+    await refreshDeviceCount();
   } catch (err) {
     pushSubscribed.value = !val;
     ElMessage.error(err.message || "设置推送通知失败");
@@ -694,6 +721,20 @@ const handleLocalTest = async () => {
     ElMessage.success("本地通知弹窗已触发！");
   } catch (err) {
     ElMessage.error(err.message || "本地弹窗测试失败");
+  }
+};
+
+const handleClearDevices = async () => {
+  clearLoading.value = true;
+  try {
+    await clearAllDeviceSubscriptions();
+    deviceCount.value = 0;
+    pushSubscribed.value = false;
+    ElMessage.success("已清空所有已登记的设备推送订阅！");
+  } catch (err) {
+    ElMessage.error(err.message || "清空失败");
+  } finally {
+    clearLoading.value = false;
   }
 };
 

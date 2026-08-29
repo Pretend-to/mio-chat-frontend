@@ -62,8 +62,21 @@ export async function subscribePush() {
     throw new Error('获取服务端 Push 公钥失败')
   }
 
-  // 2. 注册 Service Worker PushManager 订阅
+  // 1. 如果本地已有旧订阅，先彻底注销并通知服务端清理
   const reg = await navigator.serviceWorker.ready
+  const existingSub = await reg.pushManager.getSubscription().catch(() => null)
+  if (existingSub) {
+    const oldEndpoint = existingSub.endpoint
+    await existingSub.unsubscribe().catch(() => {})
+    if (oldEndpoint) {
+      await configAPI.request('/api/push/unsubscribe', {
+        body: { endpoint: oldEndpoint },
+        method: 'POST',
+      }).catch(() => {})
+    }
+  }
+
+  // 2. 注册 Service Worker PushManager 订阅
   const sub = await reg.pushManager.subscribe({
     applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
     userVisibleOnly: true,
@@ -93,6 +106,16 @@ export async function unsubscribePush() {
     }).catch(() => {})
   }
   return true
+}
+
+export async function clearAllDeviceSubscriptions() {
+  return await configAPI.request('/api/push/clear-all', {
+    method: 'POST',
+  })
+}
+
+export async function getDeviceSubscriptions() {
+  return await configAPI.request('/api/push/subscriptions')
 }
 
 export async function testPushNotification(title = 'Mio-Chat 测试提醒', body = '这是一条来自服务端的 Web Push 测试推送！') {
