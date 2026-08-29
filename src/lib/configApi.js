@@ -49,13 +49,35 @@ class ConfigAPI {
       ...options.headers,
     };
 
+    let body = options.body;
+    if (
+      body &&
+      typeof body === "object" &&
+      !(body instanceof FormData) &&
+      !(body instanceof Blob)
+    ) {
+      body = JSON.stringify(body);
+    }
+
     try {
       const response = await fetch(endpoint, {
         ...options,
         headers,
+        body,
       });
 
-      const data = await response.json();
+      let data;
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = { code: response.status, message: text || `HTTP ${response.status}` };
+        }
+      }
 
       // 检查响应状态
       if (!response.ok) {
@@ -73,7 +95,7 @@ class ConfigAPI {
             localStorage.removeItem("admin_code");
           }
         }
-        throw new Error(data.message || data.error || "请求失败");
+        throw new Error(data.message || data.error || `请求失败 (HTTP ${response.status})`);
       }
 
       // 检查业务错误码

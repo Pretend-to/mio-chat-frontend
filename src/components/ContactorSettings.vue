@@ -30,8 +30,8 @@
       </div>
     </div>
 
-    <!-- Top Tabs (non-onebot & non-group or isGroupMember) -->
-    <div class="tabs-container" v-if="activeContactorPlatform !== 'onebot' && (activeContactorPlatform !== 'group' || isGroupMember)">
+    <!-- Top Tabs (non-onebot & non-channel & non-group or isGroupMember) -->
+    <div class="tabs-container" v-if="activeContactorPlatform !== 'onebot' && activeContactorPlatform !== 'channel' && (activeContactorPlatform !== 'group' || isGroupMember)">
       <div class="segmented-tabs">
           <div
             :class="{ 'tab-item': true, active: activeTab === 'basic' }"
@@ -80,6 +80,12 @@
 
     <!-- Settings Content Area -->
     <div class="settings-content">
+      <!-- Channel Platform View -->
+      <ChannelSettingsView
+        v-if="activeContactorPlatform === 'channel'"
+        :contactor="currentContactor"
+      />
+
       <!-- Group Settings Platform View -->
       <GroupSettingsView
         v-if="activeContactorPlatform === 'group' && !isGroupMember"
@@ -88,7 +94,7 @@
 
       <!-- Tab: Basic -->
       <ContactorBasicTab
-        v-if="!(activeContactorPlatform === 'group' && !isGroupMember) && activeTab === 'basic'"
+        v-if="activeContactorPlatform !== 'channel' && !(activeContactorPlatform === 'group' && !isGroupMember) && activeTab === 'basic'"
         :model-value="modelValue"
         @update:model-value="(val) => $emit('update:modelValue', val)"
         :basic-info="basicInfo"
@@ -177,6 +183,7 @@ import ContactorToolsTab from "./profile/ContactorToolsTab.vue";
 import ContactorSkillsTab from "./profile/ContactorSkillsTab.vue";
 import ContactorAutomationTab from "./profile/ContactorAutomationTab.vue";
 import ContactorAdvancedTab from "./profile/ContactorAdvancedTab.vue";
+import ChannelSettingsView from "./profile/ChannelSettingsView.vue";
 import GroupSettingsView from "@/views/GroupSettingsView.vue";
 import GroupAvatar from "@/components/GroupAvatar.vue";
 import { useContactorsStore } from "@/stores/contactorsStore.js";

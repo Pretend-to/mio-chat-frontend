@@ -52,6 +52,7 @@ const login = async (code) => {
         // 如果是使用访问码且为管理员，保存到 store（并存 localStorage）
         if (code && result.is_admin) {
           configStore.setAdminCode(code);
+          client.syncChannelBots();
         }
 
         // 先看看url里有没有query

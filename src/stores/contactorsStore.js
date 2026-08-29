@@ -14,14 +14,22 @@ const avatarPolicy = ["MODEL", "CUSTOM"];
 const namePolicy = ["MODEL", "CUSTOM", "SUMMARY"];
 
 // Helper function to format timestamps for contact list view
-export function getContactorLastTime(messageChain) {
-  const last = messageChain?.[messageChain.length - 1];
-  if (!last) {
+export function getContactorLastTime(input) {
+  let timeVal = null;
+  if (typeof input === "number" && input > 0) {
+    timeVal = input;
+  } else if (Array.isArray(input)) {
+    const last = input[input.length - 1];
+    timeVal = last?.time || null;
+  } else if (input && typeof input === "object") {
+    timeVal = input.lastMessageTime || input.lastUpdate || input.time;
+  }
+  if (!timeVal) {
     return "";
   }
 
   const currentTime = Date.now();
-  const lastTime = new Date(last.time);
+  const lastTime = new Date(timeVal);
   const timeDiff = currentTime - lastTime.getTime();
 
   if (timeDiff < 24 * 60 * 60 * 1000) {
@@ -234,7 +242,7 @@ export const useContactorsStore = defineStore("contactors", () => {
         hasPendingTask: item.hasPendingTask ?? false,
         draft: item.draft ?? "",
         options: item.options || {},
-        lastMessageSummary: "",
+        lastMessageSummary: item.lastMessageSummary || "",
       };
 
       if (
@@ -339,6 +347,55 @@ export const useContactorsStore = defineStore("contactors", () => {
     return newGroup;
   }
 
+  async function addChannelContactor({
+    id,
+    channelId,
+    name,
+    avatar,
+    agentId,
+    model,
+    provider,
+    intro,
+    priority = 0,
+    lastMessageSummary = "",
+    lastUpdate = Date.now(),
+  }) {
+    const contactorId = id || channelId || `chn_${numberString(8)}`;
+    if (contactors.value[contactorId]) {
+      return contactors.value[contactorId];
+    }
+    const newChannel = {
+      platform: "channel",
+      id: contactorId,
+      channelId: channelId || contactorId,
+      agentId: agentId || "wechat-master",
+      name: name || "微信助手",
+      avatar: avatar || "/static/icons/512x512.png",
+      title: "channel",
+      namePolicy: 1,
+      avatarPolicy: 1,
+      intro: intro || "服务端持久化渠道 Bot",
+      notice: "",
+      priority: priority ?? 0,
+      firstMessageIndex: 0,
+      messageChain: [],
+      active: false,
+      lastUpdate: lastUpdate || Date.now(),
+      createTime: Date.now(),
+      hasPendingTask: false,
+      draft: "",
+      options: {
+        model: model || "",
+        provider: provider || "",
+      },
+      lastMessageSummary: lastMessageSummary || "",
+    };
+
+    contactors.value[contactorId] = newChannel;
+    client.setLocalStorage();
+    return newChannel;
+  }
+
   function removeContactor(id) {
     if (contactors.value[id]) {
       delete contactors.value[id];
@@ -395,6 +452,9 @@ export const useContactorsStore = defineStore("contactors", () => {
   }
 
   function loadContactorAvatar(contactor) {
+    if (contactor.platform === "channel") {
+      return;
+    }
     let avatar = "/static/icons/512x512.png";
     if (avatarPolicy[contactor.avatarPolicy] === "MODEL") {
       const model = contactor.options?.base?.model || contactor.options?.model;
@@ -411,6 +471,9 @@ export const useContactorsStore = defineStore("contactors", () => {
   }
 
   function loadContactorName(contactor) {
+    if (contactor.platform === "channel") {
+      return;
+    }
     let name = contactor.name ?? "未命名 Bot";
     if (namePolicy[contactor.namePolicy] === "MODEL") {
       const model = contactor.options?.base?.model || contactor.options?.model;
@@ -424,9 +487,14 @@ export const useContactorsStore = defineStore("contactors", () => {
   }
 
   function updateContactorSummary(contactor) {
-    contactor.lastMessageSummary = getLastMessageSummary(
+    const summary = getLastMessageSummary(
       contactor.messageChain,
     );
+    if (summary) {
+      contactor.lastMessageSummary = summary;
+    } else if (contactor.platform !== "channel") {
+      contactor.lastMessageSummary = "";
+    }
   }
 
   // Messaging operations
@@ -1287,6 +1355,8 @@ export const useContactorsStore = defineStore("contactors", () => {
     return Object.values(contactors.value).map((item) => ({
       platform: item.platform,
       id: item.id,
+      channelId: item.channelId,
+      agentId: item.agentId,
       options: item.options,
       namePolicy: item.namePolicy,
       avatarPolicy: item.avatarPolicy,
@@ -1316,7 +1386,8 @@ export const useContactorsStore = defineStore("contactors", () => {
    */
   function toMessagesJSON(contactorId) {
     const contactor = contactors.value[contactorId];
-    if (!contactor || !Array.isArray(contactor.messageChain)) return [];
+    // 零本地存储：渠道 Bot 绝不导出消息链用于持久化
+    if (!contactor || contactor.platform === "channel" || !Array.isArray(contactor.messageChain)) return [];
     return contactor.messageChain;
   }
 
@@ -1337,6 +1408,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     loadContactors,
     addContactor,
     addGroupContactor,
+    addChannelContactor,
     removeContactor,
     selectContactor,
     updateDraft,

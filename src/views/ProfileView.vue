@@ -308,7 +308,8 @@ export default {
 
           // 当名称策略被切换为「跟随模型」(0 / "MODEL") 时，立即同步模型名
           const isNameModelPolicy =
-            newInfo.namePolicy === 0 || newInfo.namePolicy === "MODEL";
+            (newInfo.namePolicy === 0 || newInfo.namePolicy === "MODEL") &&
+            this.activeContactor?.platform !== "channel";
           const wasNameModelPolicy =
             oldInfo &&
             (oldInfo.namePolicy === 0 || oldInfo.namePolicy === "MODEL");
@@ -388,10 +389,33 @@ export default {
       }
       this.allLLMTools = allLLMTools;
     },
-    handleClientLoaded() {
+    async handleClientLoaded() {
       console.log("[ProfileView] Client loaded, initializing contactor...");
-      const currentId = parseInt(this.$route.params.id);
+      const rawId = this.$route.params.id;
+      const currentId = isNaN(Number(rawId)) ? String(rawId) : Number(rawId);
       this.activeContactor = client.getContactor(currentId);
+      if (!this.activeContactor && String(rawId).startsWith("c_")) {
+        try {
+          const { configAPI } = await import("@/lib/configApi.js");
+          const res = await configAPI.request(`/api/channels/${rawId}`);
+          if (res?.data) {
+            const ch = res.data;
+            const store = useContactorsStore();
+            this.activeContactor = await store.addChannelContactor({
+              id: ch.id,
+              channelId: ch.id,
+              name: ch.name || "微信助手",
+              avatar: ch.avatar || "/static/icons/512x512.png",
+              agentId: ch.agentId || "wechat-master",
+              model: ch.model || "",
+              provider: ch.provider || "",
+              intro: `微信渠道 Bot (${ch.id})`,
+            });
+          }
+        } catch (e) {
+          console.warn("[ProfileView] 自动补录渠道联系人失败:", e);
+        }
+      }
       this.initContactor();
     },
     initContactor() {
@@ -437,8 +461,8 @@ export default {
         id,
         name,
         avatar,
-        namePolicy,
-        avatarPolicy,
+        namePolicy: namePolicy !== undefined ? namePolicy : (this.activeContactor.platform === "channel" ? 1 : 0),
+        avatarPolicy: avatarPolicy !== undefined ? avatarPolicy : (this.activeContactor.platform === "channel" ? 1 : 0),
         priority: priority === 1 ? false : true,
       };
 

@@ -25,12 +25,12 @@
           </button>
         </div>
 
-        <!-- B. 危险指令二次审批授权 -->
+        <!-- B. 危险指令 / 配置 / 全局记忆更新二次审批授权 -->
         <div
           v-else-if="activeInteraction.actionType === 'REQUEST_APPROVAL'"
           class="interaction-options"
         >
-          <!-- Command Code Block -->
+          <!-- 1. Command Code Block -->
           <div
             v-if="activeInteraction.meta?.command"
             class="command-preview-box"
@@ -38,11 +38,46 @@
             <code>{{ activeInteraction.meta.command }}</code>
           </div>
 
+          <!-- 2. Global Memory Preview Box -->
+          <div
+            v-else-if="
+              activeInteraction.meta?.type === 'global_memory' ||
+              activeInteraction.meta?.scope === 'global'
+            "
+            class="command-preview-box memory-preview-box"
+          >
+            <div class="preview-meta-header">
+              <span class="preview-tag">📁 全局长期记忆</span>
+              <span v-if="activeInteraction.meta?.category" class="preview-category">
+                分类: {{ activeInteraction.meta.category }}
+              </span>
+              <span v-if="activeInteraction.meta?.action" class="preview-action">
+                操作: {{ activeInteraction.meta.action }}
+              </span>
+            </div>
+            <code>{{ activeInteraction.meta.content || activeInteraction.meta.target }}</code>
+          </div>
+
+          <!-- 3. Plugin / System Config Preview Box -->
+          <div
+            v-else-if="activeInteraction.meta?.config"
+            class="command-preview-box"
+          >
+            <code>{{ typeof activeInteraction.meta.config === 'string' ? activeInteraction.meta.config : JSON.stringify(activeInteraction.meta.config, null, 2) }}</code>
+          </div>
+
           <button
             class="interaction-btn approve-btn"
             @click="submitResponse({ approved: true })"
           >
-            授权执行
+            {{
+              activeInteraction.meta?.type === "global_memory" ||
+              activeInteraction.meta?.scope === "global"
+                ? "授权写入"
+                : activeInteraction.meta?.command
+                  ? "授权执行"
+                  : "授权更新"
+            }}
           </button>
           <template
             v-if="
@@ -63,7 +98,7 @@
               授权并记住此命令前缀
             </button>
           </template>
-<div class="reject-reason-container">
+          <div class="reject-reason-container">
             <button
               class="interaction-btn reject-btn"
               @click="
@@ -122,7 +157,7 @@
                 v-else-if="cmd.type === 'skill'"
                 class="mio-icon mio-icon-skill"
               ></i>
-              {{ activeContactor.platform === "onebot" ? "/" : ""
+              {{ (activeContactor.platform === "onebot" || cmd.type === "channel_slash") ? "/" : ""
               }}{{ cmd.label }}
             </span>
             <span v-if="cmd.type === 'plugin'" class="command-preset-plugin"
@@ -131,6 +166,12 @@
             <span v-else-if="cmd.hash" class="command-preset">{{
               cmd.hash
             }}</span>
+            <span
+              v-else-if="cmd.description"
+              class="command-preset"
+              :title="cmd.description"
+              >{{ cmd.description }}</span
+            >
             <span
               v-else-if="activeContactor.platform === 'onebot'"
               class="command-preset"
@@ -936,7 +977,8 @@ i, .input-icon-btn
   position: absolute
   bottom: calc(100% + 4px)
   left: 1rem
-  width: 320px
+  width: 380px
+  max-width: calc(100vw - 2rem)
   max-height: 250px
   background-color: var(--mio-bg-card)
   border: 1px solid var(--mio-border-color-light)
@@ -1009,7 +1051,7 @@ i, .input-icon-btn
     color: var(--mio-text-primary)
     display: inline-flex
     align-items: center
-    max-width: 60%
+    max-width: 45%
     white-space: nowrap
     overflow: hidden
     text-overflow: ellipsis
@@ -1026,12 +1068,13 @@ i, .input-icon-btn
   .command-preset
     font-size: 0.75rem
     color: var(--mio-text-secondary)
-    max-width: 35%
+    flex: 1
+    max-width: 60%
     white-space: nowrap
     overflow: hidden
     text-overflow: ellipsis
     text-align: right
-    flex-shrink: 0
+    flex-shrink: 1
 
 .cmd-plugin-icon
   position: relative
@@ -1280,6 +1323,29 @@ i, .input-icon-btn
       margin: 2px 0 6px 0
       border: 1px solid #334155
       text-align: left
+
+      &.memory-preview-box
+        background: rgba(30, 41, 59, 0.95)
+        border-color: #3b82f6
+
+      .preview-meta-header
+        display: flex
+        align-items: center
+        gap: 8px
+        font-size: 10px
+        margin-bottom: 4px
+        padding-bottom: 4px
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1)
+
+        .preview-tag
+          color: #60a5fa
+          font-weight: 600
+
+        .preview-category
+          color: #94a3b8
+
+        .preview-action
+          color: #34d399
 
     .interaction-btn
       padding: 4px 10px

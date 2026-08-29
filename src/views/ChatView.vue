@@ -269,7 +269,62 @@ const {
   getSpeechText,
 } = useChatSpeech();
 
-// 2. Scroll & Virtual Load Composable
+// 2. Chat Scroll Composable
+const hasMoreServerHistory = ref(true);
+const isLoadingServerHistory = ref(false);
+
+const loadChannelHistory = async (options = {}) => {
+  const contactor = activeContactor.value;
+  if (!contactor || contactor.platform !== "channel") return;
+  if (!client.isConnected || !client.socket || isLoadingServerHistory.value) return;
+
+  const { before = null, limit = 20 } = options;
+  if (before && !hasMoreServerHistory.value) return;
+
+  isLoadingServerHistory.value = true;
+  try {
+    const targetChannelId = contactor.channelId || contactor.id;
+    const res = await client.socket.fetch(
+      `/api/channel/history/${targetChannelId}`,
+      { before, limit },
+    );
+
+    if (res && Array.isArray(res.messages)) {
+      hasMoreServerHistory.value = res.hasMore === true;
+      if (!before) {
+        // 首屏拉取
+        contactor.messageChain = res.messages;
+        renderedCount.value = Math.min(20, res.messages.length);
+        contactorsStore.updateContactorSummary(contactor);
+        client.setLocalStorage();
+        nextTick(() => {
+          toButtom("instant");
+        });
+      } else {
+        // 触顶向前翻页加载
+        const existingIds = new Set(contactor.messageChain.map((m) => m.id));
+        const newUniqueMsgs = res.messages.filter((m) => !existingIds.has(m.id));
+        if (newUniqueMsgs.length > 0) {
+          contactor.messageChain.unshift(...newUniqueMsgs);
+          renderedCount.value += newUniqueMsgs.length;
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[ChatView] 加载渠道历史失败:", err);
+  } finally {
+    isLoadingServerHistory.value = false;
+  }
+};
+
+const handleLoadMoreChannelHistory = async () => {
+  const contactor = activeContactor.value;
+  if (!contactor || contactor.platform !== "channel") return;
+  const earliestMsg = contactor.messageChain?.[0];
+  const before = earliestMsg?.time || null;
+  await loadChannelHistory({ before, limit: 20 });
+};
+
 const {
   chatWindow,
   messagesInner,
@@ -283,7 +338,11 @@ const {
   toBottom: toButtom,
   locateMessage: performScrollToMessage,
   scrollHandler: handleChatScroll,
-} = useChatScroll({ activeContactor, scrollDefault: scrollVal });
+} = useChatScroll({
+  activeContactor,
+  scrollDefault: scrollVal,
+  onLoadMoreChannelHistory: handleLoadMoreChannelHistory,
+});
 
 const prevScrollTop = ref(0);
 
@@ -474,6 +533,13 @@ watch(
     // Switch to new contactor in store
     contactorsStore.selectContactor(newVal);
 
+    if (activeContactor.value?.platform === "channel") {
+      hasMoreServerHistory.value = true;
+      if (!activeContactor.value.messageChain || activeContactor.value.messageChain.length === 0) {
+        loadChannelHistory({ limit: 20 });
+      }
+    }
+
     autoScroll.value = false;
     nextTick(() => {
       if (route.query.scrollTo) {
@@ -489,6 +555,18 @@ watch(
     // Sync with socket for the new contactor
     trySync();
   },
+);
+
+watch(
+  () => [activeContactor.value?.id, client.isConnected],
+  ([contactorId, isConnected]) => {
+    if (contactorId && isConnected && activeContactor.value?.platform === "channel") {
+      if (!activeContactor.value.messageChain || activeContactor.value.messageChain.length === 0) {
+        loadChannelHistory({ limit: 20 });
+      }
+    }
+  },
+  { immediate: true },
 );
 
 watch(
@@ -726,6 +804,13 @@ const trySync = () => {
   const contactor = activeContactor.value;
   if (!contactor) return;
 
+  if (contactor.platform === "channel") {
+    if (!contactor.messageChain || contactor.messageChain.length === 0) {
+      loadChannelHistory({ limit: 20 });
+    }
+    return;
+  }
+
   if (client.socket && client.socket.available) {
     client.socket.enterChat(contactor.id);
     if (contactor.hasPendingTask) {
@@ -870,6 +955,9 @@ onMounted(() => {
 
   // Sync with socket on mount
   trySync();
+  if (activeContactor.value?.platform === "channel" && (!activeContactor.value.messageChain || activeContactor.value.messageChain.length === 0)) {
+    loadChannelHistory({ limit: 20 });
+  }
   if (client.socket) {
     client.socket.on("connect", trySync);
   }
@@ -879,6 +967,12 @@ onMounted(() => {
   });
 
   fullScreen.value = client.socket?.fullScreen;
+
+  client.on("plugins_updated", handlePluginsUpdated);
+  client.on("scroll_to_message", performScrollToMessage);
+  client.on("channel_bots_synced", trySync);
+  client.on("connection_changed", trySync);
+  window.addEventListener("beforeunload", handleBeforeUnload);
 
   resizeHandler.value = () => {
     isMobileDevice.value = window.innerWidth < 768;
@@ -915,6 +1009,8 @@ onBeforeUnmount(() => {
 
   client.off("plugins_updated", handlePluginsUpdated);
   client.off("scroll_to_message", performScrollToMessage);
+  client.off("channel_bots_synced", trySync);
+  client.off("connection_changed", trySync);
   client.off("socket_ready");
   window.removeEventListener("beforeunload", handleBeforeUnload);
 
@@ -1005,6 +1101,7 @@ onBeforeUnmount(() => {
         :current-speaking-message-id="currentSpeakingMessageId"
         :can-retry="canRetry"
         :is-group="activeContactor?.platform === 'group'"
+        :is-channel="activeContactor?.platform === 'channel'"
         @message-option="handleMessageOption"
         @close="showMenu = false"
       />
@@ -1181,6 +1278,7 @@ onBeforeUnmount(() => {
       :qrUrl="qrUrl"
       :previewShareUrl="previewShareUrl"
       :isMobileDevice="isMobileDevice"
+      :is-channel="activeContactor?.platform === 'channel'"
       @close="cancelMultiSelect"
       @copy="copyPreviewImage"
       @download="downloadPreviewImage"

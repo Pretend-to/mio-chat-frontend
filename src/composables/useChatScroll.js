@@ -4,7 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 /**
  * 聊天界面滚动、自动吸底、分页加载与消息定位跳转
  */
-export function useChatScroll({ activeContactor, scrollDefault = true }) {
+export function useChatScroll({ activeContactor, scrollDefault = true, onLoadMoreChannelHistory }) {
   const route = useRoute();
   const router = useRouter();
 
@@ -363,6 +363,29 @@ export function useChatScroll({ activeContactor, scrollDefault = true }) {
             }
           });
         });
+      } else if (
+        activeContactor.value?.platform === "channel" &&
+        typeof onLoadMoreChannelHistory === "function"
+      ) {
+        isLoadingHistory.value = true;
+        const currentElm = chatWindow.value;
+        const prevScrollPosFromBottom = currentElm
+          ? currentElm.scrollHeight - currentElm.scrollTop
+          : 0;
+
+        Promise.resolve(onLoadMoreChannelHistory())
+          .then(() => {
+            nextTick(() => {
+              const currentElmAfterLoad = chatWindow.value;
+              if (currentElmAfterLoad) {
+                currentElmAfterLoad.scrollTop =
+                  currentElmAfterLoad.scrollHeight - prevScrollPosFromBottom;
+              }
+            });
+          })
+          .finally(() => {
+            isLoadingHistory.value = false;
+          });
       }
     }
   };

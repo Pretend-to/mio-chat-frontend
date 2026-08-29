@@ -74,7 +74,8 @@
           </div>
           <div class="card-actions">
             <template v-if="isBound(row)">
-              <el-button size="small" link type="primary" @click="openEdit(row)">编辑</el-button>
+              <el-button size="small" link type="primary" :icon="ChatDotRound" @click="enterChat(row)">进入对话</el-button>
+              <el-button size="small" link type="info" @click="openEdit(row)">编辑</el-button>
               <el-button v-if="row.status === 'running'" size="small" link type="warning" @click="toggle(row, 'stop')">停止</el-button>
               <el-button v-else size="small" link type="success" @click="toggle(row, 'start')">启动</el-button>
             </template>
@@ -173,12 +174,16 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
-import { Plus, Refresh } from "@element-plus/icons-vue";
+import { useRouter } from "vue-router";
+import { Plus, Refresh, ChatDotRound } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import QRCode from "qrcode";
 import { configAPI } from "@/lib/configApi.js";
 import { useConfigStore } from "@/stores/configStore.js";
+import { useContactorsStore } from "@/stores/contactorsStore.js";
 
+const router = useRouter();
+const contactorsStore = useContactorsStore();
 const configStore = useConfigStore();
 const channels = ref([]);
 const loading = ref(false);
@@ -410,6 +415,24 @@ const remove = async (row) => {
   } catch (e) {
     ElMessage.error(`删除失败: ${e?.message || e}`);
   }
+};
+
+const enterChat = async (row) => {
+  let contactor = contactorsStore.contactors[row.id];
+  if (!contactor) {
+    contactor = await contactorsStore.addChannelContactor({
+      id: row.id,
+      channelId: row.id,
+      name: row.name || "微信助手",
+      avatar: row.avatar || "/static/icons/512x512.png",
+      agentId: row.agentId || "wechat-master",
+      model: row.model || "",
+      provider: row.provider || "",
+      intro: `微信渠道 Bot (${row.id})`,
+    });
+  }
+  contactorsStore.selectContactor(contactor.id);
+  router.push(`/chat/${contactor.id}`);
 };
 
 onMounted(loadChannels);

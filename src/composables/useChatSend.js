@@ -139,6 +139,46 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
         }
         return msg.id;
       }
+    } else if (contactor.platform === "channel") {
+      if (toBottom) toBottom();
+
+      if (!toServer) {
+        contactorsStore.updateContactorSummary(contactor);
+        return msg.id;
+      }
+
+      const assistantMsgId = numberString(16);
+      contactorsStore.getOrCreateMessage(
+        contactor.id,
+        assistantMsgId,
+        {
+          role: "other",
+          status: "pending",
+          content: [{ type: "blank", data: {} }],
+        },
+      );
+
+      contactorsStore.updateContactorSummary(contactor);
+      if (toBottom) toBottom();
+
+      if (msgInChain) {
+        msgInChain.status = "completed";
+      }
+
+      try {
+        await gateway.send(
+          "channel",
+          contactor.id,
+          contactor.messageChain,
+          assistantMsgId,
+          contactor.options,
+        );
+        return msg.id;
+      } catch (e) {
+        ElMessage.error(e.message || "发送失败");
+        contactorsStore.failedMessage(contactor.id, assistantMsgId, e.message || "发送失败");
+        return msg.id;
+      }
     } else {
       // OpenAI platform
       if (toBottom) toBottom();

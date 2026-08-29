@@ -10,11 +10,11 @@
           <i class="iconfont star"></i>
           <span>{{ message.priority === 0 ? "取消置顶" : "置顶" }}</span>
         </div>
-        <div @click.stop="shareBot">
+        <div v-if="message.platform !== 'channel'" @click.stop="shareBot">
           <i class="iconfont icon-share"></i>
           <span>分享</span>
         </div>
-        <div @click.stop="deleteBot">
+        <div v-if="message.platform !== 'channel'" @click.stop="deleteBot">
           <i class="iconfont shanchu"></i>
           <span>删除</span>
         </div>
@@ -76,7 +76,7 @@
           <i class="iconfont xuanze"></i>
           <span>多选</span>
         </div>
-        <div @click.stop="deleteMessage">
+        <div v-if="!isChannel" @click.stop="deleteMessage">
           <i class="iconfont shanchu"></i>
           <span>删除</span>
         </div>
@@ -93,6 +93,10 @@ export default {
     CollectionTag,
   },
   props: {
+    isChannel: {
+      type: Boolean,
+      default: false,
+    },
     type: {
       type: String,
       default: "message",

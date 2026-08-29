@@ -114,6 +114,7 @@
       </div>
       <div class="mobile-preview-footer">
         <el-button
+          v-if="!isChannel"
           @click="$emit('share-link')"
           size="large"
           style="flex: 1; border-radius: 12px; font-weight: bold"
@@ -163,6 +164,10 @@ const props = defineProps({
     default: true,
   },
   isMobileDevice: {
+    type: Boolean,
+    default: false,
+  },
+  isChannel: {
     type: Boolean,
     default: false,
   },

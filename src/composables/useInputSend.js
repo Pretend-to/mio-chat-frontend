@@ -83,6 +83,39 @@ export function useInputSend({
           msg = remainingText ? `${preset} ${remainingText}` : preset;
         }
         isCommand = true;
+      } else if (activeContactor.value.platform === "channel") {
+        const badge = badges[0];
+        const type = badge.getAttribute("data-type");
+        const preset = badge.getAttribute("data-preset");
+        if (type === "channel_slash") {
+          msg = remainingText ? `${preset} ${remainingText}` : preset;
+          isCommand = true;
+        } else {
+          badges.forEach((b) => {
+            const bPreset = b.getAttribute("data-preset");
+            const bType = b.getAttribute("data-type");
+            const bLabel = b.getAttribute("data-label") || bPreset;
+            if (bType === "tool") {
+              openaiCmdElements.push({
+                type: "prompt_hint",
+                data: {
+                  subtype: "tool",
+                  name: bLabel,
+                  prompt: `please call tool ${bPreset}`,
+                },
+              });
+            } else if (bType === "skill") {
+              openaiCmdElements.push({
+                type: "prompt_hint",
+                data: {
+                  subtype: "skill",
+                  name: bLabel,
+                  prompt: `please use skill ${bPreset}`,
+                },
+              });
+            }
+          });
+        }
       } else if (
         activeContactor.value.platform === "openai" ||
         activeContactor.value.platform === "group"

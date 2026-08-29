@@ -620,6 +620,45 @@ export const gateway = {
       const targetMemberId =
         targetMsg?.sender_id || targetMsg?.senderMemberId || null;
       await sendGroupCompletions(contactor, messageId, targetMemberId);
+    } else if (platform === "channel") {
+      if (!client.isConnected || !client.socket) {
+        throw new Error("连接已断开，请检查网络或刷新页面");
+      }
+      const contactorStore = useContactorsStore();
+      const contactor = contactorStore.contactors[contactorId];
+      if (!contactor) {
+        throw new Error("渠道联系人未找到");
+      }
+
+      // 获取当前用户发送的最新一条消息（极轻量纯净当前轮输入，零上下文拼接）
+      const lastUserMsg = (messagesChain || []).filter((m) => m.role === "user").pop();
+      const text = lastUserMsg?.content?.find((c) => c.type === "text")?.data?.text || lastUserMsg?.text || "";
+      const images = [];
+      const files = [];
+
+      if (Array.isArray(lastUserMsg?.content)) {
+        for (const c of lastUserMsg.content) {
+          if (c.type === "image" && (c.data?.file || c.data?.url)) {
+            images.push(c.data.file || c.data.url);
+          }
+          if (c.type === "file" && c.data?.url) {
+            files.push({ name: c.data.name || "file", url: c.data.url });
+          }
+        }
+      }
+
+      // 预先建立 StreamBuffer 确保实时流上屏
+      getOrCreateBuffer(contactorId, messageId, contactorStore);
+
+      const targetChannelId = contactor.channelId || contactor.id;
+      const res = await client.socket.fetch(`/api/channel/message/${targetChannelId}`, {
+        text,
+        images,
+        files,
+        messageId,
+      });
+
+      return res?.messageId || messageId;
     } else {
       // OpenAI 平台
       if (!client.isConnected) {

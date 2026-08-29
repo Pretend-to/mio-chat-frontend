@@ -19,7 +19,7 @@
       <StatusDot size="0.8rem" class="status-dot-chat" />
     </div>
     <ul class="options">
-      <li class="share" @click="$emit('share')">
+      <li v-if="activeContactor.platform !== 'channel'" class="share" @click="$emit('share')">
         <svg
           class="lucide lucide-share-2 header-icon-btn"
           xmlns="http://www.w3.org/2000/svg"

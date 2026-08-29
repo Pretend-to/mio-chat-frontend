@@ -641,6 +641,10 @@ export default class Client extends EventEmitter {
       let needsMigration = false;
       const contactList = await Promise.all(
         client.contactList.map(async (item) => {
+          // 渠道 Bot 本地绝对不存储任何历史消息，保持空链等待进入会话时由 Socket 实时拉取
+          if (item.platform === "channel") {
+            return { ...item, messageChain: [] };
+          }
           // 1. 如果旧版数据中内嵌了 messageChain，无感自动迁移至独立分片 mio_msg_*
           if (Array.isArray(item.messageChain) && item.messageChain.length > 0) {
             needsMigration = true;
@@ -726,6 +730,12 @@ export default class Client extends EventEmitter {
   async _saveContactorMessagesNow(contactorId) {
     const store = getStore();
     if (!store || !contactorId) return;
+
+    // 零本地历史原则：渠道 Bot 历史由服务端 MemoryStore 单一真实源管理，前端绝不写入 localforage
+    const contactor = store.contactors[contactorId];
+    if (contactor?.platform === "channel") {
+      return;
+    }
 
     try {
       const messages = store.toMessagesJSON(contactorId);
@@ -849,6 +859,9 @@ export default class Client extends EventEmitter {
             this.addConcator("onebot", onebotConfig);
           }
         }
+        // 自动同步服务端常驻的渠道 Bot
+        this.syncChannelBots();
+
         if (info.pendingTasks && Array.isArray(info.pendingTasks)) {
           console.log("[Login] 待同步任务 (pendingTasks):", info.pendingTasks);
           console.log(
@@ -1082,6 +1095,61 @@ export default class Client extends EventEmitter {
         console.error("Error handling system_message:", err, e);
       }
     });
+  }
+
+  async syncChannelBots() {
+    try {
+      const { useConfigStore } = await import("@/stores/configStore.js");
+      const configStore = useConfigStore();
+      const hasAdmin = configStore.isAuthenticated || !!localStorage.getItem("admin_code") || this.isAdmin;
+      if (!hasAdmin) return;
+
+      const store = getStore();
+      if (!store) return;
+      const { configAPI } = await import("@/lib/configApi.js");
+      const res = await configAPI.request("/api/channels");
+      const channels = res?.data?.channels || [];
+
+      for (const ch of channels) {
+        let existing = store.contactors[ch.id];
+        if (!existing) {
+          existing = await store.addChannelContactor({
+            id: ch.id,
+            channelId: ch.id,
+            name: ch.name || "微信助手",
+            avatar: ch.avatar || "/static/icons/512x512.png",
+            agentId: ch.agentId || "wechat-master",
+            model: ch.model || "",
+            provider: ch.provider || "",
+            intro: `微信渠道 Bot (${ch.id})`,
+            priority: 0,
+            lastMessageSummary: ch.lastMessage || "",
+            lastUpdate: ch.lastActive || Date.now(),
+          });
+        } else {
+          existing.namePolicy = 1;
+          existing.avatarPolicy = 1;
+          if (ch.name) existing.name = ch.name;
+          if (ch.avatar) existing.avatar = ch.avatar;
+          if (existing.priority === undefined) existing.priority = 0;
+          if (ch.lastMessage) {
+            existing.lastMessageSummary = ch.lastMessage;
+          }
+          if (ch.lastActive) {
+            existing.lastUpdate = ch.lastActive;
+            existing.lastMessageTime = ch.lastActive;
+          }
+          if (existing.options) {
+            if (ch.model) existing.options.model = ch.model;
+            if (ch.provider) existing.options.provider = ch.provider;
+          }
+        }
+      }
+      this.setLocalStorage();
+      this.emit("channel_bots_synced", channels);
+    } catch (err) {
+      console.warn("[Client] 自动同步渠道 Bot 失败:", err.message);
+    }
   }
 
   /**

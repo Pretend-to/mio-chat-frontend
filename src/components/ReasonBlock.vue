@@ -64,14 +64,21 @@ export default {
         return `已深度思考 (${(timeDiff / 1000).toFixed(1)}s)`;
       }
 
-      // 3. 正在思考中，显示实时计时器
+      // 3. 历史遗留且无结束时间时，避免显示数百秒倒计时
+      if (this.startTime && Date.now() - this.startTime > 180000) {
+        return `已深度思考`;
+      }
+
+      // 4. 正在思考中，显示实时计时器
       const liveDiff = this.currentTime - this.startTime;
       const seconds = Math.max(0, liveDiff / 1000).toFixed(1);
       return `深度思考 (${seconds}s)`;
     },
     isThinking() {
-      // 只有既没有 endTime 也没有正数 duration 时，才认为正在思考
-      return !this.endTime && !(this.duration > 0);
+      // 只有既没有 endTime 也没有正数 duration，且非远古历史时，才认为正在实时思考
+      if (this.endTime || this.duration > 0) return false;
+      if (this.startTime && Date.now() - this.startTime > 180000) return false;
+      return true;
     },
   },
   watch: {
