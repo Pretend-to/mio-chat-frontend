@@ -929,6 +929,10 @@ export default class Client extends EventEmitter {
       gateway.handleLlmMessageEvent(e);
     });
 
+    this.socket.on("channel_message", (e) => {
+      gateway.handleChannelMessageEvent(e);
+    });
+
     this.socket.on("system_message", (e) => {
       try {
         if (!e) return;

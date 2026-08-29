@@ -1077,6 +1077,55 @@ export const gateway = {
     }
   },
 
+  handleChannelMessageEvent(e) {
+    if (e.type === "channel_user_message") {
+      const { contactorId, userMessage, assistantMessageId } = e.data || {};
+      if (!contactorId || !userMessage) return;
+
+      const contactorStore = useContactorsStore();
+      let contactor = contactorStore.contactors[contactorId];
+      if (!contactor) {
+        const rawId = String(contactorId).startsWith("c_") ? contactorId : `c_${contactorId}`;
+        contactor = contactorStore.contactors[rawId];
+      }
+      if (!contactor) return;
+
+      // 1. 检查并追加用户在渠道（微信等）端发送的消息
+      const existsUser = contactor.messageChain.some((m) => m.id === userMessage.id);
+      if (!existsUser) {
+        const userContainer = {
+          role: "user",
+          id: userMessage.id || `msg_u_${Date.now()}`,
+          time: userMessage.time || Date.now(),
+          status: "completed",
+          content: userMessage.content || [{ type: "text", data: { text: userMessage.text || "" } }],
+          text: userMessage.text || "",
+        };
+        contactor.messageChain.push(userContainer);
+      }
+
+      // 2. 检查并创建 AI 回复的 Blank 占位及 StreamBuffer
+      if (assistantMessageId) {
+        const existsAi = contactor.messageChain.some((m) => m.id === assistantMessageId);
+        if (!existsAi) {
+          const aiContainer = {
+            role: "assistant",
+            id: assistantMessageId,
+            time: Date.now(),
+            status: "running",
+            content: [{ type: "blank", data: {} }],
+          };
+          contactor.messageChain.push(aiContainer);
+          getOrCreateBuffer(contactor.id, assistantMessageId, contactorStore);
+        }
+      }
+
+      contactor.lastUpdate = Date.now();
+      contactorStore.updateContactorSummary(contactor);
+      client.setLocalStorage();
+    }
+  },
+
   flushAllBuffers() {
     for (const [, buffer] of streamBuffers.entries()) {
       buffer.flush();
