@@ -28,6 +28,10 @@
           :class="{ 'tab-item': true, active: activeTab === 'memory' }"
           @click="activeTab = 'memory'"
         >全局记忆</div>
+        <div
+          :class="{ 'tab-item': true, active: activeTab === 'notification' }"
+          @click="activeTab = 'notification'"
+        >推送通知</div>
       </div>
     </div>
 
@@ -389,6 +393,71 @@
           </div>
         </div>
       </div>
+
+      <!-- ========== 推送通知 ========== -->
+      <div v-if="activeTab === 'notification'" class="tab-pane">
+        <div class="settings-card">
+          <div class="section-title">
+            <span>Web Push 离线推送与 PWA 提醒</span>
+          </div>
+          <div class="section-intro">
+            开启后，后台定时任务（Cron）执行完成或触发 Channel 预警时，可在已订阅的手机与电脑设备上接收实时推送通知。
+          </div>
+
+          <div class="setting-field">
+            <div class="field-info">
+              <span class="field-label">启用系统推送通知</span>
+              <span class="field-desc">
+                {{ pushSubscribed ? '当前设备已启用 Web Push 离线通知' : '允许 Mio-Chat 向此设备推送后台任务提醒与重要通知' }}
+              </span>
+            </div>
+            <div class="field-value">
+              <el-switch
+                v-model="pushSubscribed"
+                :loading="pushLoading"
+                @change="handleTogglePush"
+              />
+            </div>
+          </div>
+
+          <div class="setting-field">
+            <div class="field-info">
+              <span class="field-label">当前运行环境</span>
+              <span class="field-desc">
+                {{ platformSummary }}
+              </span>
+            </div>
+            <div class="field-value">
+              <el-tag :type="pushSupported ? 'success' : 'info'" size="small">
+                {{ pushSupported ? '支持 Push API' : '环境受限' }}
+              </el-tag>
+            </div>
+          </div>
+
+          <!-- iOS 专用提示 -->
+          <div v-if="isIOS && !isStandalone" class="ios-pwa-tip">
+            <div class="tip-icon">💡</div>
+            <div class="tip-body">
+              <div class="tip-title">iOS 用户须知 (iOS ≥ 16.4)</div>
+              <div class="tip-desc">
+                苹果系统限制：必须在 Safari 中点击<strong>「分享」→「添加到主屏幕」</strong>，并在主屏幕以独立 App (PWA) 方式打开，才能接收系统离线推送。
+              </div>
+            </div>
+          </div>
+
+          <div v-if="pushSubscribed" class="setting-field">
+            <div class="field-info">
+              <span class="field-label">测试通知</span>
+              <span class="field-desc">向当前已订阅的所有设备发送一条即时测试通知</span>
+            </div>
+            <div class="field-value">
+              <el-button size="small" type="primary" plain :loading="testPushLoading" @click="handleTestPush">
+                发送测试通知
+              </el-button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ========== 添加全局记忆条目对话框 ========== -->
@@ -538,9 +607,82 @@ import {
 } from "@/lib/clientSettings.js";
 import { client } from "@/lib/runtime.js";
 import { getAdminAvatarUrl } from "@/utils/avatar.js";
+import {
+  isIOSDevice,
+  isPWAStandalone,
+  isPushSupported,
+  getPushSubscription,
+  subscribePush,
+  unsubscribePush,
+  testPushNotification,
+} from "@/lib/pushClient.js";
 
 const configStore = useConfigStore();
 const activeTab = ref("profile");
+
+// ========== Web Push 状态 ==========
+const pushSubscribed = ref(false);
+const pushLoading = ref(false);
+const testPushLoading = ref(false);
+
+const pushSupported = computed(() => isPushSupported());
+const isIOS = computed(() => isIOSDevice());
+const isStandalone = computed(() => isPWAStandalone());
+
+const platformSummary = computed(() => {
+  if (isIOS.value) {
+    return isStandalone.value ? "iOS (PWA 独立主屏幕模式)" : "iOS Safari (网页标签页模式)";
+  }
+  if (isStandalone.value) {
+    return "已安装为桌面/移动端独立 PWA 应用";
+  }
+  return "现代浏览器网页端模式";
+});
+
+const checkPushStatus = async () => {
+  try {
+    const sub = await getPushSubscription();
+    pushSubscribed.value = Boolean(sub);
+  } catch {
+    pushSubscribed.value = false;
+  }
+};
+
+const handleTogglePush = async (val) => {
+  pushLoading.value = true;
+  try {
+    if (val) {
+      await subscribePush();
+      pushSubscribed.value = true;
+      ElMessage.success("已成功启用系统推送通知！");
+    } else {
+      await unsubscribePush();
+      pushSubscribed.value = false;
+      ElMessage.info("已关闭系统推送通知");
+    }
+  } catch (err) {
+    pushSubscribed.value = !val;
+    ElMessage.error(err.message || "设置推送通知失败");
+  } finally {
+    pushLoading.value = false;
+  }
+};
+
+const handleTestPush = async () => {
+  testPushLoading.value = true;
+  try {
+    const res = await testPushNotification("Mio-Chat 提醒", "这是一条测试推送通知，表明 Web Push 配置完全正常！");
+    if (res?.data?.delivered > 0) {
+      ElMessage.success(`测试通知已成功推送到 ${res.data.delivered} 台设备！`);
+    } else {
+      ElMessage.warning("通知已发送，但未找到活跃的设备订阅");
+    }
+  } catch (err) {
+    ElMessage.error(err.message || "发送测试通知失败");
+  } finally {
+    testPushLoading.value = false;
+  }
+};
 
 const form = reactive({
   profile: {
@@ -726,6 +868,7 @@ onMounted(async () => {
   }
 
   await loadGlobalMemories();
+  await checkPushStatus();
 });
 
 // ========== 保存 ==========
@@ -1401,5 +1544,30 @@ const handleClearAllMemories = async () => {
   .setting-field {
     padding: 12px 0;
   }
+}
+
+.ios-pwa-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--el-color-warning-light-9, #fdf6ec);
+  border: 1px solid var(--el-color-warning-light-5, #faecd8);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 12px 0;
+}
+.ios-pwa-tip .tip-icon {
+  font-size: 18px;
+}
+.ios-pwa-tip .tip-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--el-color-warning-dark-2, #b88230);
+  margin-bottom: 4px;
+}
+.ios-pwa-tip .tip-desc {
+  font-size: 12px;
+  color: var(--mio-text-secondary, #606266);
+  line-height: 1.5;
 }
 </style>
