@@ -307,6 +307,9 @@ const loadChannelHistory = async (options = {}) => {
         if (newUniqueMsgs.length > 0) {
           contactor.messageChain.unshift(...newUniqueMsgs);
           renderedCount.value += newUniqueMsgs.length;
+        } else {
+          // 本次翻页没有新消息，视为服务端历史已取尽，避免重复请求
+          hasMoreServerHistory.value = false;
         }
       }
     }
