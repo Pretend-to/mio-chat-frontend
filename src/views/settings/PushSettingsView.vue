@@ -287,48 +287,62 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .push-settings-view {
-  padding: 0;
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-}
+  margin-bottom: 24px;
 
-.page-header h1 {
-  font-size: 20px;
-  font-weight: 600;
-  margin: 0;
-  color: var(--el-text-color-primary);
-}
+  h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--mio-text-primary);
+  }
 
-.header-actions {
-  display: flex;
-  gap: 12px;
+  .header-actions {
+    display: flex;
+    gap: 12px;
+  }
 }
 
 .config-card {
-  border-radius: 8px;
-}
+  margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 
-.section-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  margin-bottom: 18px;
-  color: var(--el-text-color-primary);
+  .section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--mio-text-primary);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--mio-border-color-light);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .el-icon {
+      color: #409eff;
+    }
+  }
 }
 
 .form-item-tip {
+  color: var(--mio-text-secondary);
   font-size: 12px;
-  color: var(--el-text-color-secondary);
-  line-height: 1.4;
+  line-height: 1.5;
   margin-top: 4px;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 24px;
 }
 </style>
