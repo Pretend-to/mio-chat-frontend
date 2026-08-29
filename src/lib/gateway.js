@@ -843,34 +843,12 @@ export const gateway = {
   handleLlmMessageEvent(e) {
     const data = e.data;
     const { metaData } = data || {};
-    let contactorId = metaData?.contactorId;
+    const contactorId = metaData?.contactorId;
     const messageId = metaData?.messageId || e.request_id;
 
-    const contactorStore = useContactorsStore();
-
-    if (contactorId && !contactorStore.contactors[contactorId]) {
-      const altId = String(contactorId).startsWith("c_") ? contactorId.slice(2) : `c_${contactorId}`;
-      if (contactorStore.contactors[altId]) {
-        contactorId = altId;
-      } else {
-        const found = Object.values(contactorStore.contactors).find(
-          (c) => c.channelId === contactorId || c.agentId === contactorId || c.options?.channelId === contactorId
-        );
-        if (found) contactorId = found.id;
-      }
-    }
-
-    if (!contactorId && messageId) {
-      // Fallback: search all contactors in the store for this message ID
-      const found = Object.values(contactorStore.contactors).find((c) =>
-        c.messageChain.some((m) => m.id === messageId),
-      );
-      if (found) {
-        contactorId = found.id;
-      }
-    }
-
     if (!contactorId) return;
+
+    const contactorStore = useContactorsStore();
 
     // Ensure the message has triggerType populated in the store
     const message = contactorStore.getOrCreateMessage(contactorId, messageId, {
@@ -1095,16 +1073,7 @@ export const gateway = {
       if (!contactorId || !userMessage) return;
 
       const contactorStore = useContactorsStore();
-      let contactor = contactorStore.contactors[contactorId];
-      if (!contactor) {
-        const altId = String(contactorId).startsWith("c_") ? contactorId.slice(2) : `c_${contactorId}`;
-        contactor = contactorStore.contactors[altId];
-      }
-      if (!contactor) {
-        contactor = Object.values(contactorStore.contactors).find(
-          (c) => c.channelId === contactorId || c.agentId === contactorId || c.id === contactorId || c.options?.channelId === contactorId
-        );
-      }
+      const contactor = contactorStore.contactors[contactorId];
       if (!contactor) return;
 
       // 1. 检查并追加用户在渠道（微信等）端发送的消息
