@@ -848,6 +848,18 @@ export const gateway = {
 
     const contactorStore = useContactorsStore();
 
+    if (contactorId && !contactorStore.contactors[contactorId]) {
+      const altId = String(contactorId).startsWith("c_") ? contactorId.slice(2) : `c_${contactorId}`;
+      if (contactorStore.contactors[altId]) {
+        contactorId = altId;
+      } else {
+        const found = Object.values(contactorStore.contactors).find(
+          (c) => c.channelId === contactorId || c.agentId === contactorId || c.options?.channelId === contactorId
+        );
+        if (found) contactorId = found.id;
+      }
+    }
+
     if (!contactorId && messageId) {
       // Fallback: search all contactors in the store for this message ID
       const found = Object.values(contactorStore.contactors).find((c) =>
@@ -1085,8 +1097,13 @@ export const gateway = {
       const contactorStore = useContactorsStore();
       let contactor = contactorStore.contactors[contactorId];
       if (!contactor) {
-        const rawId = String(contactorId).startsWith("c_") ? contactorId : `c_${contactorId}`;
-        contactor = contactorStore.contactors[rawId];
+        const altId = String(contactorId).startsWith("c_") ? contactorId.slice(2) : `c_${contactorId}`;
+        contactor = contactorStore.contactors[altId];
+      }
+      if (!contactor) {
+        contactor = Object.values(contactorStore.contactors).find(
+          (c) => c.channelId === contactorId || c.agentId === contactorId || c.id === contactorId || c.options?.channelId === contactorId
+        );
       }
       if (!contactor) return;
 
