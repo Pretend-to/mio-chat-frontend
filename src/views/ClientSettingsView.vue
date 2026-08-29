@@ -448,11 +448,14 @@
           <div v-if="pushSubscribed" class="setting-field">
             <div class="field-info">
               <span class="field-label">测试通知</span>
-              <span class="field-desc">向当前已订阅的所有设备发送一条即时测试通知</span>
+              <span class="field-desc">可测试远程 Web Push 推送或本地 Service Worker 弹窗</span>
             </div>
-            <div class="field-value">
+            <div class="field-value" style="display: flex; gap: 8px;">
               <el-button size="small" type="primary" plain :loading="testPushLoading" @click="handleTestPush">
-                发送测试通知
+                远程推送测试
+              </el-button>
+              <el-button size="small" plain @click="handleLocalTest">
+                本地弹窗测试
               </el-button>
             </div>
           </div>
@@ -615,6 +618,7 @@ import {
   subscribePush,
   unsubscribePush,
   testPushNotification,
+  showLocalTestNotification,
 } from "@/lib/pushClient.js";
 
 const configStore = useConfigStore();
@@ -681,6 +685,15 @@ const handleTestPush = async () => {
     ElMessage.error(err.message || "发送测试通知失败");
   } finally {
     testPushLoading.value = false;
+  }
+};
+
+const handleLocalTest = async () => {
+  try {
+    await showLocalTestNotification();
+    ElMessage.success("本地通知弹窗已触发！");
+  } catch (err) {
+    ElMessage.error(err.message || "本地弹窗测试失败");
   }
 };
 

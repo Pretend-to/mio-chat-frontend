@@ -101,3 +101,20 @@ export async function testPushNotification(title = 'Mio-Chat 测试提醒', body
     method: 'POST',
   })
 }
+
+export async function showLocalTestNotification() {
+  if (!('Notification' in window)) {
+    throw new Error('当前环境不支持 Notification API')
+  }
+  if (Notification.permission !== 'granted') {
+    const perm = await Notification.requestPermission()
+    if (perm !== 'granted') {
+      throw new Error(`通知权限未授予: ${perm}`)
+    }
+  }
+  const reg = await navigator.serviceWorker.ready
+  return await reg.showNotification('Mio-Chat 本地测试通知', {
+    body: '系统通知通道完全正常！',
+    data: { url: '/' },
+  })
+}
