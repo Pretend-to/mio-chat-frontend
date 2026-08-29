@@ -44,58 +44,84 @@
             <div class="field-value">
               <el-input
                 v-model="form.profile.name"
-                placeholder="你的昵称"
+                placeholder="请输入你的昵称"
                 maxlength="30"
-                @change="save"
+                show-word-limit
+                @change="handleProfileChange"
               />
             </div>
           </div>
+
           <div class="setting-field">
-            <span class="field-label">个性称号</span>
+            <span class="field-label">头像</span>
+            <div class="field-value avatar-upload-area">
+              <div class="avatar-preview-wrapper" @click="triggerAvatarUpload">
+                <img :src="currentAvatarUrl" class="avatar-preview" alt="avatar" />
+                <div class="avatar-overlay">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                  </svg>
+                </div>
+              </div>
+              <input
+                ref="avatarInputRef"
+                type="file"
+                accept="image/*"
+                class="hidden-file-input"
+                @change="handleAvatarFileChange"
+              />
+              <span class="field-desc">点击头像更换，建议 1:1 正方形图片</span>
+            </div>
+          </div>
+
+          <div class="setting-field">
+            <span class="field-label">称号 / 头衔</span>
             <div class="field-value">
               <el-input
                 v-model="form.profile.title"
-                placeholder="显示在昵称上方的称号"
+                placeholder="请输入称号，如：Mio"
                 maxlength="20"
-                @change="save"
+                show-word-limit
+                @change="handleProfileChange"
               />
-            </div>
-          </div>
-          <div class="setting-field">
-            <span class="field-label">头像</span>
-            <div class="field-value avatar-field-value">
-              <div class="profile-avatar-display" @click="openAvatarDialog">
-                <img
-                  :src="getAdminAvatarUrl(form.profile.avatar)"
-                  alt="个人头像"
-                  class="profile-avatar-img"
-                />
-              </div>
-              <el-button type="primary" plain size="small" @click="openAvatarDialog">
-                修改头像
-              </el-button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ========== 外观显示 ========== -->
+      <!-- ========== 外观设置 ========== -->
       <div v-if="activeTab === 'appearance'" class="tab-pane">
         <div class="settings-card">
           <div class="setting-field">
-            <span class="field-label">主题</span>
+            <div class="field-info">
+              <span class="field-label">界面主题</span>
+              <span class="field-desc">选择符合你喜好的视觉主题</span>
+            </div>
             <div class="field-value">
-              <el-select v-model="form.appearance.theme" @change="onAppearanceChange">
+              <el-select
+                v-model="form.appearance.theme"
+                style="width: 140px"
+                @change="handleAppearanceChange"
+              >
                 <el-option label="跟随系统" value="auto" />
                 <el-option label="浅色" value="light" />
                 <el-option label="深色" value="dark" />
               </el-select>
             </div>
           </div>
+
           <div class="setting-field">
-            <span class="field-label">字体大小</span>
+            <div class="field-info">
+              <span class="field-label">字体大小</span>
+              <span class="field-desc">调整聊天与界面的文字大小</span>
+            </div>
             <div class="field-value">
-              <el-select v-model="form.appearance.fontSize" @change="onAppearanceChange">
+              <el-select
+                v-model="form.appearance.fontSize"
+                style="width: 140px"
+                @change="handleAppearanceChange"
+              >
                 <el-option label="小" value="small" />
                 <el-option label="标准" value="medium" />
                 <el-option label="大" value="large" />
@@ -105,55 +131,47 @@
         </div>
       </div>
 
-      <!-- ========== 聊天设置 ========== -->
+      <!-- ========== 对话体验 ========== -->
       <div v-if="activeTab === 'chat'" class="tab-pane">
         <div class="settings-card">
           <div class="setting-field">
-            <span class="field-label">
-              Enter 键行为
-              <el-tooltip content="关闭时 Ctrl+Enter 发送消息" placement="top">
-                <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
-              </el-tooltip>
-            </span>
+            <div class="field-info">
+              <span class="field-label">回车发送消息</span>
+              <span class="field-desc">开启后按 Enter 发送，Shift+Enter 换行；关闭后需点击发送按钮</span>
+            </div>
             <div class="field-value">
               <el-switch
                 v-model="form.chat.desktopEnterSend"
-                active-text="发送"
-                inactive-text="换行"
-                @change="save"
+                @change="handleChatChange"
               />
             </div>
           </div>
+
           <div class="setting-field">
-            <span class="field-label">
-              自动朗读
-              <el-tooltip content="AI 回复完成后自动进行语音朗读" placement="top">
-                <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
-              </el-tooltip>
-            </span>
+            <div class="field-info">
+              <span class="field-label">自动语音朗读</span>
+              <span class="field-desc">收到 AI 回复后自动使用语音朗读文本内容</span>
+            </div>
             <div class="field-value">
               <el-switch
                 v-model="form.chat.autoReadAloud"
-                active-text="开"
-                inactive-text="关"
-                @change="save"
+                @change="handleChatChange"
               />
             </div>
           </div>
-          <div class="setting-field">
-            <span class="field-label">
-              朗读音色
-              <el-tooltip content="选择语音朗读使用的系统音色" placement="top">
-                <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
-              </el-tooltip>
-            </span>
+
+          <div class="setting-field" v-if="form.chat.autoReadAloud">
+            <div class="field-info">
+              <span class="field-label">朗读音色</span>
+              <span class="field-desc">选择自动朗读时使用的语音音色</span>
+            </div>
             <div class="field-value">
               <el-select
                 v-model="form.chat.readAloudVoice"
-                style="width: 220px"
-                @change="save"
+                style="width: 160px"
+                @change="handleChatChange"
               >
-                <el-option label="自动选择 (默认中文)" value="auto" />
+                <el-option label="自动选择" value="auto" />
                 <el-option
                   v-for="voice in availableVoices"
                   :key="voice.voiceURI"
@@ -163,35 +181,68 @@
               </el-select>
             </div>
           </div>
+
           <div class="setting-field">
-            <span class="field-label">
-              携带时间戳
-              <el-tooltip content="发送消息时自动包合时间戳标签 <message time='...'>" placement="top">
-                <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
-              </el-tooltip>
-            </span>
+            <div class="field-info">
+              <span class="field-label">发送消息音效</span>
+              <span class="field-desc">发送消息时播放轻快的提示音</span>
+            </div>
             <div class="field-value">
               <el-switch
-                v-model="form.chat.carryTimestamp"
-                active-text="开"
-                inactive-text="关"
-                @change="save"
+                v-model="form.chat.sendSound"
+                @change="handleChatChange"
               />
             </div>
           </div>
+
           <div class="setting-field">
-            <span class="field-label">
-              注入用户画像
-              <el-tooltip content="首次对话时将设备与用户信息自动注入 Prompt" placement="top">
-                <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
-              </el-tooltip>
-            </span>
+            <div class="field-info">
+              <span class="field-label">接收消息音效</span>
+              <span class="field-desc">收到 AI 回复时播放提示音</span>
+            </div>
             <div class="field-value">
               <el-switch
-                v-model="form.chat.carryProfile"
-                active-text="开"
-                inactive-text="关"
-                @change="save"
+                v-model="form.chat.receiveSound"
+                @change="handleChatChange"
+              />
+            </div>
+          </div>
+
+          <div class="setting-field">
+            <div class="field-info">
+              <span class="field-label">打字机流式光标</span>
+              <span class="field-desc">在 AI 实时流式输出时显示呼吸光标</span>
+            </div>
+            <div class="field-value">
+              <el-switch
+                v-model="form.chat.typingCursor"
+                @change="handleChatChange"
+              />
+            </div>
+          </div>
+
+          <div class="setting-field">
+            <div class="field-info">
+              <span class="field-label">默认展开思考过程</span>
+              <span class="field-desc">深度思考模型（如 R1）的推理过程默认展开而非折叠</span>
+            </div>
+            <div class="field-value">
+              <el-switch
+                v-model="form.chat.autoExpandReasoning"
+                @change="handleChatChange"
+              />
+            </div>
+          </div>
+
+          <div class="setting-field">
+            <div class="field-info">
+              <span class="field-label">默认展开工具调用</span>
+              <span class="field-desc">Agent 调用工具（Tools）的执行细节默认展开</span>
+            </div>
+            <div class="field-value">
+              <el-switch
+                v-model="form.chat.autoExpandToolCalls"
+                @change="handleChatChange"
               />
             </div>
           </div>
@@ -459,18 +510,6 @@
               </el-button>
             </div>
           </div>
-
-          <div class="setting-field">
-            <div class="field-info">
-              <span class="field-label">已注册设备管理</span>
-              <span class="field-desc">当前服务端登记的接收设备数: {{ deviceCount }} 台</span>
-            </div>
-            <div class="field-value">
-              <el-button size="small" type="danger" plain :loading="clearLoading" @click="handleClearDevices">
-                清空所有设备订阅
-              </el-button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -631,8 +670,6 @@ import {
   unsubscribePush,
   testPushNotification,
   showLocalTestNotification,
-  clearAllDeviceSubscriptions,
-  getDeviceSubscriptions,
 } from "@/lib/pushClient.js";
 
 const configStore = useConfigStore();
@@ -642,8 +679,6 @@ const activeTab = ref("profile");
 const pushSubscribed = ref(false);
 const pushLoading = ref(false);
 const testPushLoading = ref(false);
-const clearLoading = ref(false);
-const deviceCount = ref(0);
 
 const pushSupported = computed(() => isPushSupported());
 const isIOS = computed(() => isIOSDevice());
@@ -659,15 +694,6 @@ const platformSummary = computed(() => {
   return "现代浏览器网页端模式";
 });
 
-const refreshDeviceCount = async () => {
-  try {
-    const res = await getDeviceSubscriptions();
-    deviceCount.value = res?.data?.count || 0;
-  } catch {
-    deviceCount.value = 0;
-  }
-};
-
 const checkPushStatus = async () => {
   try {
     const sub = await getPushSubscription();
@@ -675,7 +701,6 @@ const checkPushStatus = async () => {
   } catch {
     pushSubscribed.value = false;
   }
-  await refreshDeviceCount();
 };
 
 const handleTogglePush = async (val) => {
@@ -690,7 +715,6 @@ const handleTogglePush = async (val) => {
       pushSubscribed.value = false;
       ElMessage.info("已关闭系统推送通知");
     }
-    await refreshDeviceCount();
   } catch (err) {
     pushSubscribed.value = !val;
     ElMessage.error(err.message || "设置推送通知失败");
@@ -721,20 +745,6 @@ const handleLocalTest = async () => {
     ElMessage.success("本地通知弹窗已触发！");
   } catch (err) {
     ElMessage.error(err.message || "本地弹窗测试失败");
-  }
-};
-
-const handleClearDevices = async () => {
-  clearLoading.value = true;
-  try {
-    await clearAllDeviceSubscriptions();
-    deviceCount.value = 0;
-    pushSubscribed.value = false;
-    ElMessage.success("已清空所有已登记的设备推送订阅！");
-  } catch (err) {
-    ElMessage.error(err.message || "清空失败");
-  } finally {
-    clearLoading.value = false;
   }
 };
 

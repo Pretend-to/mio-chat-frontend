@@ -151,6 +151,12 @@ const router = createRouter({
           meta: { title: "自动化任务" },
         },
         {
+          path: "push",
+          name: "settings_push",
+          component: () => import("../views/settings/PushSettingsView.vue"),
+          meta: { title: "推送设置" },
+        },
+        {
           path: "server",
           name: "settings_server",
           component: () => import("../views/settings/ServerConfigView.vue"),

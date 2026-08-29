@@ -358,6 +358,7 @@ import {
   View,
   Share,
   Operation,
+  Bell,
 } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
@@ -418,6 +419,7 @@ const allMenuItems = [
   { index: "shell-policy", label: "Shell 权限", icon: Lock },
   { index: "channels", label: "渠道管理", icon: Share },
   { index: "automation", label: "系统任务", icon: Operation },
+  { index: "push", label: "推送设置", icon: Bell },
   { index: "server", label: "服务器配置", icon: Monitor },
   { index: "web", label: "Web 配置", icon: ChromeFilled },
   { index: "onebot", label: "OneBot 配置", icon: ChatDotRound },
