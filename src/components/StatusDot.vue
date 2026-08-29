@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from "vue";
 import { useConnectionStore } from "@/stores/connectionStore";
+import { client } from "@/lib/runtime.js";
 
 const props = defineProps({
   size: {
@@ -16,7 +17,7 @@ const props = defineProps({
 const connectionStore = useConnectionStore();
 
 const isOnline = computed(() => {
-  return connectionStore.isConnected;
+  return connectionStore.isConnected || client.isConnected;
 });
 
 const dotStyle = computed(() => ({

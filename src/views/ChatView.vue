@@ -971,7 +971,6 @@ onMounted(() => {
   client.on("plugins_updated", handlePluginsUpdated);
   client.on("scroll_to_message", performScrollToMessage);
   client.on("channel_bots_synced", trySync);
-  client.on("connection_changed", trySync);
   window.addEventListener("beforeunload", handleBeforeUnload);
 
   resizeHandler.value = () => {
@@ -991,10 +990,13 @@ onMounted(() => {
     const pageHeight = window.innerHeight;
     inputBarTop.value = pageHeight - element.offsetTop;
   }
+});
 
-  client.on("plugins_updated", handlePluginsUpdated);
-  client.on("scroll_to_message", performScrollToMessage);
-  window.addEventListener("beforeunload", handleBeforeUnload);
+// 使用 Pinia 响应式连接状态触发同步，避免事件覆盖
+watch(isConnected, (val) => {
+  if (val) {
+    trySync();
+  }
 });
 
 useStatusBarColor("var(--mio-bg-statusbar-friendlist)");
@@ -1010,7 +1012,6 @@ onBeforeUnmount(() => {
   client.off("plugins_updated", handlePluginsUpdated);
   client.off("scroll_to_message", performScrollToMessage);
   client.off("channel_bots_synced", trySync);
-  client.off("connection_changed", trySync);
   client.off("socket_ready");
   window.removeEventListener("beforeunload", handleBeforeUnload);
 

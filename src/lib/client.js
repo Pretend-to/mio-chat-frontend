@@ -35,6 +35,7 @@ import Socket from "./websocket.js";
 import { getActivePinia } from "pinia";
 import { useContactorsStore } from "@/stores/contactorsStore.js";
 import { useConfigStore } from "@/stores/configStore.js";
+import { useConnectionStore } from "@/stores/connectionStore.js";
 import { gateway } from "@/lib/gateway.js";
 import { getClientSettings, getLocalPresetById } from "@/lib/clientSettings.js";
 
@@ -42,6 +43,7 @@ import { getClientSettings, getLocalPresetById } from "@/lib/clientSettings.js";
 function getStore(storeName = "contactors") {
   if (!getActivePinia()) return null;
   if (storeName === "config") return useConfigStore();
+  if (storeName === "connection") return useConnectionStore();
   return useContactorsStore();
 }
 
@@ -805,6 +807,8 @@ export default class Client extends EventEmitter {
         console.log("Login successful");
         this.isConnected = true;
         this.socket = socket;
+        const connStore = getStore("connection");
+        if (connStore) connStore.setConnected(true);
         this.emit("socket_ready", socket);
         this.emit("connection_changed", true);
         this.config.setLlmModels(info.models);
@@ -897,6 +901,8 @@ export default class Client extends EventEmitter {
       socket.on("connect_error", (error) => {
         console.log("Login failed", error);
         this.isConnected = false;
+        const connStore = getStore("connection");
+        if (connStore) connStore.setConnected(false);
         this.emit("connection_changed", false);
         this.emit("connect_error", error);
         reject(error.message);
@@ -905,6 +911,8 @@ export default class Client extends EventEmitter {
       // 监听连接状态变化并同步到 client
       socket.on("connection_changed", (status) => {
         this.isConnected = !!status;
+        const connStore = getStore("connection");
+        if (connStore) connStore.setConnected(!!status);
         this.emit("connection_changed", status);
       });
 
@@ -1157,8 +1165,12 @@ export default class Client extends EventEmitter {
    */
   async logout() {
     this.isConnected = false;
-    this.socket.disconnect();
-    this.socket = null;
+    const connStore = getStore("connection");
+    if (connStore) connStore.setConnected(false);
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
     this.setLocalStorage();
   }
 
