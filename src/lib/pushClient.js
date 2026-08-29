@@ -1,4 +1,4 @@
-import client from './client.js'
+import configAPI from './configApi.js'
 
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
@@ -56,7 +56,7 @@ export async function subscribePush() {
   }
 
   // 1. 获取后端 VAPID 公钥
-  const res = await client.request('/api/push/vapid-key')
+  const res = await configAPI.request('/api/push/vapid-key')
   const vapidPublicKey = res?.data?.publicKey
   if (!vapidPublicKey) {
     throw new Error('获取服务端 Push 公钥失败')
@@ -71,9 +71,12 @@ export async function subscribePush() {
 
   // 3. 上报至服务端持久化
   const deviceType = isIOSDevice() ? 'ios_pwa' : (isPWAStandalone() ? 'pwa' : 'web')
-  await client.request('/api/push/subscribe', 'POST', {
-    device: deviceType,
-    subscription: sub.toJSON(),
+  await configAPI.request('/api/push/subscribe', {
+    body: {
+      device: deviceType,
+      subscription: sub.toJSON(),
+    },
+    method: 'POST',
   })
 
   return sub
@@ -84,11 +87,17 @@ export async function unsubscribePush() {
   if (sub) {
     const endpoint = sub.endpoint
     await sub.unsubscribe().catch(() => {})
-    await client.request('/api/push/unsubscribe', 'POST', { endpoint }).catch(() => {})
+    await configAPI.request('/api/push/unsubscribe', {
+      body: { endpoint },
+      method: 'POST',
+    }).catch(() => {})
   }
   return true
 }
 
 export async function testPushNotification(title = 'Mio-Chat 测试提醒', body = '这是一条来自服务端的 Web Push 测试推送！') {
-  return await client.request('/api/push/test', 'POST', { body, title })
+  return await configAPI.request('/api/push/test', {
+    body: { body, title },
+    method: 'POST',
+  })
 }
