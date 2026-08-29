@@ -90,6 +90,9 @@
           />
         </div>
       </div>
+      <div v-else class="profile-container skeleton-container" style="padding: 24px; width: 100%; box-sizing: border-box;">
+        <el-skeleton animated :rows="8" />
+      </div>
     </div>
     <div v-if="activeContactor" class="action-bar">
       <el-button v-if="activeMember" plain @click="$router.push(`/profile/${activeContactor.id}`)">
@@ -349,16 +352,21 @@ export default {
     // Use created instead of beforeMount for data initialization
     this.initContactor();
     if (!this.activeContactor) {
-      client.on("loaded", this.handleClientLoaded);
+      if (client.inited) {
+        this.handleClientLoaded();
+      } else {
+        client.on("loaded", this.handleClientLoaded, false);
+      }
     }
   },
   mounted() {
-    // Socket 连接状态现在统一通过 Pinia Store 管理
-    client.on("plugins_updated", this.handlePluginsUpdated);
+    client.on("plugins_updated", this.handlePluginsUpdated, false);
+    client.on("channel_bots_synced", this.handleClientLoaded, false);
   },
   beforeUnmount() {
     client.off("plugins_updated", this.handlePluginsUpdated);
     client.off("loaded", this.handleClientLoaded);
+    client.off("channel_bots_synced", this.handleClientLoaded);
   },
   methods: {
     handleBack() {

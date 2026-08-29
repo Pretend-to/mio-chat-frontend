@@ -42,58 +42,62 @@
 
     <!-- Tab 1: Soul & Basic Info -->
     <div v-if="activeTab === 'soul'" class="tab-pane">
-      <!-- 基础信息 -->
-      <div class="group-title">
-        <span>基础信息</span>
-        <el-button
-          type="primary"
-          size="small"
-          :loading="savingBasic"
-          @click="saveBasicInfo"
-        >
-          保存基础信息
-        </el-button>
-      </div>
-      <div class="settings-card">
-        <div class="setting-field">
-          <div class="field-label">Agent 名称</div>
-          <div class="field-value">
-            <el-input v-model="basicName" placeholder="例如：微信助手" />
+      <el-skeleton :loading="loading && !soulContent && !basicName" animated :rows="7">
+        <template #default>
+          <!-- 基础信息 -->
+          <div class="group-title">
+            <span>基础信息</span>
+            <el-button
+              type="primary"
+              size="small"
+              :loading="savingBasic"
+              @click="saveBasicInfo"
+            >
+              保存基础信息
+            </el-button>
           </div>
-        </div>
-        <div class="setting-field">
-          <div class="field-label">头像 URL</div>
-          <div class="field-value" style="display: flex; gap: 8px; align-items: center;">
-            <el-input v-model="basicAvatar" placeholder="图片地址（例如 /static/icons/512x512.png）" />
-            <el-avatar :src="basicAvatar || '/static/icons/512x512.png'" :size="32" shape="square" />
+          <div class="settings-card">
+            <div class="setting-field">
+              <div class="field-label">Agent 名称</div>
+              <div class="field-value">
+                <el-input v-model="basicName" placeholder="例如：微信助手" />
+              </div>
+            </div>
+            <div class="setting-field">
+              <div class="field-label">头像 URL</div>
+              <div class="field-value" style="display: flex; gap: 8px; align-items: center;">
+                <el-input v-model="basicAvatar" placeholder="图片地址（例如 /static/icons/512x512.png）" />
+                <el-avatar :src="basicAvatar || '/static/icons/512x512.png'" :size="32" shape="square" />
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <!-- 灵魂人设 -->
-      <div class="group-title" style="margin-top: 8px;">
-        <span>灵魂人格设定</span>
-        <el-button
-          type="primary"
-          size="small"
-          :loading="savingSoul"
-          @click="saveSoul"
-        >
-          保存人设
-        </el-button>
-      </div>
-      <div class="settings-card">
-        <div class="card-desc">
-          直接修改并持久化到后端，微信与 Web 端下一轮对话即刻生效。
-        </div>
-        <el-input
-          v-model="soulContent"
-          type="textarea"
-          :rows="10"
-          placeholder="请输入该 Agent 的专属人设、语气、行为准则或背景故事..."
-          class="soul-textarea"
-        />
-      </div>
+          <!-- 灵魂人设 -->
+          <div class="group-title" style="margin-top: 8px;">
+            <span>灵魂人格设定</span>
+            <el-button
+              type="primary"
+              size="small"
+              :loading="savingSoul"
+              @click="saveSoul"
+            >
+              保存人设
+            </el-button>
+          </div>
+          <div class="settings-card">
+            <div class="card-desc">
+              直接修改并持久化到后端，微信与 Web 端下一轮对话即刻生效。
+            </div>
+            <el-input
+              v-model="soulContent"
+              type="textarea"
+              :rows="10"
+              placeholder="请输入该 Agent 的专属人设、语气、行为准则或背景故事..."
+              class="soul-textarea"
+            />
+          </div>
+        </template>
+      </el-skeleton>
     </div>
 
     <!-- Tab 2: Model -->
@@ -165,74 +169,78 @@
 
     <!-- Tab 5: Memory -->
     <div v-if="activeTab === 'memory'" class="tab-pane">
-      <div class="group-title">分区记忆管理</div>
-      <div class="settings-card editor-card">
-        <div class="settings-row">
-          <div class="row-left">
-            <span class="card-desc" style="margin: 0;">
-              当前会话核心记忆结晶（修改后微信与 Web 端实时同步生效）
-            </span>
+      <el-skeleton :loading="loading && Object.keys(globalMemories).length === 0 && !zoneContents.long_term_profile" animated :rows="6">
+        <template #default>
+          <div class="group-title">分区记忆管理</div>
+          <div class="settings-card editor-card">
+            <div class="settings-row">
+              <div class="row-left">
+                <span class="card-desc" style="margin: 0;">
+                  当前会话核心记忆结晶（修改后微信与 Web 端实时同步生效）
+                </span>
+              </div>
+              <div class="row-actions">
+                <el-button size="small" type="danger" plain @click="clearCrystal">
+                  清空结晶
+                </el-button>
+                <el-button
+                  type="primary"
+                  size="small"
+                  :loading="savingCrystal"
+                  @click="saveCrystal"
+                >
+                  保存修改
+                </el-button>
+              </div>
+            </div>
+
+            <el-tabs v-model="activeZoneTab" class="zone-tabs">
+              <el-tab-pane
+                v-for="zone in CRYSTAL_ZONES"
+                :key="zone.key"
+                :label="`${zone.icon} ${zone.label}`"
+                :name="zone.key"
+              >
+                <el-input
+                  v-model="zoneContents[zone.key]"
+                  type="textarea"
+                  :autosize="{ minRows: 6, maxRows: 15 }"
+                  :placeholder="getZonePlaceholder(zone.key)"
+                  resize="vertical"
+                  class="zone-textarea"
+                />
+              </el-tab-pane>
+            </el-tabs>
           </div>
-          <div class="row-actions">
-            <el-button size="small" type="danger" plain @click="clearCrystal">
-              清空结晶
-            </el-button>
-            <el-button
-              type="primary"
-              size="small"
-              :loading="savingCrystal"
-              @click="saveCrystal"
+
+          <div class="group-title" style="margin-top: 20px;">
+            <span>全局长期记忆</span>
+          </div>
+          <div class="settings-card">
+            <div v-if="Object.keys(globalMemories).length === 0" class="card-desc muted">
+              暂无已落盘的全局长期记忆
+            </div>
+            <div
+              v-for="(content, category) in globalMemories"
+              :key="category"
+              class="global-cat-item"
             >
-              保存修改
-            </el-button>
+              <div class="global-cat-header">
+                <strong>📁 {{ category }}.md</strong>
+              </div>
+              <el-input
+                v-model="globalMemories[category]"
+                type="textarea"
+                :rows="4"
+                style="margin-top: 6px;"
+              />
+              <div style="text-align: right; margin-top: 6px;">
+                <el-button size="small" @click="saveGlobalCategory(category)">保存分类</el-button>
+              </div>
+            </div>
           </div>
-        </div>
-
-        <el-tabs v-model="activeZoneTab" class="zone-tabs">
-          <el-tab-pane
-            v-for="zone in CRYSTAL_ZONES"
-            :key="zone.key"
-            :label="`${zone.icon} ${zone.label}`"
-            :name="zone.key"
-          >
-            <el-input
-              v-model="zoneContents[zone.key]"
-              type="textarea"
-              :autosize="{ minRows: 6, maxRows: 15 }"
-              :placeholder="getZonePlaceholder(zone.key)"
-              resize="vertical"
-              class="zone-textarea"
-            />
-          </el-tab-pane>
-        </el-tabs>
-      </div>
-
-      <div class="group-title" style="margin-top: 20px;">
-        <span>全局长期记忆</span>
-      </div>
-      <div class="settings-card">
-        <div v-if="Object.keys(globalMemories).length === 0" class="card-desc muted">
-          暂无已落盘的全局长期记忆
-        </div>
-        <div
-          v-for="(content, category) in globalMemories"
-          :key="category"
-          class="global-cat-item"
-        >
-          <div class="global-cat-header">
-            <strong>📁 {{ category }}.md</strong>
-          </div>
-          <el-input
-            v-model="globalMemories[category]"
-            type="textarea"
-            :rows="4"
-            style="margin-top: 6px;"
-          />
-          <div style="text-align: right; margin-top: 6px;">
-            <el-button size="small" @click="saveGlobalCategory(category)">保存分类</el-button>
-          </div>
-        </div>
-      </div>
+        </template>
+      </el-skeleton>
     </div>
 
     <!-- Tab 4: Channel Status -->
@@ -326,6 +334,7 @@ import { ElMessage } from "element-plus";
 import { client } from "@/lib/runtime.js";
 import { configAPI } from "@/lib/configApi.js";
 import { useContactorsStore } from "@/stores/contactorsStore.js";
+import { useConnectionStore } from "@/stores/connectionStore.js";
 import { debounce } from "@/utils/tools.js";
 import ContactorToolsTab from "./ContactorToolsTab.vue";
 import ContactorSkillsTab from "./ContactorSkillsTab.vue";
@@ -342,9 +351,12 @@ const props = defineProps({
   },
 });
 
+const connectionStore = useConnectionStore();
 const activeTab = ref("soul");
 const channelId = computed(() => props.contactor.channelId || props.contactor.id);
 const agentId = computed(() => props.contactor.agentId || "wechat-master");
+const loading = ref(true);
+const cacheKey = computed(() => `mio_channel_cache_${channelId.value}`);
 
 // Basic Info
 const basicName = ref(props.contactor.name || "");
@@ -560,9 +572,54 @@ const modelGroups = computed(() => {
   return result;
 });
 
-async function loadData() {
-  if (!client.socket || !client.isConnected) return;
+function loadFromCache() {
+  try {
+    const raw = localStorage.getItem(cacheKey.value);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (data.soul && !soulContent.value) soulContent.value = data.soul;
+      if (data.basicName && !basicName.value) basicName.value = data.basicName;
+      if (data.basicAvatar && !basicAvatar.value) basicAvatar.value = data.basicAvatar;
+      if (data.selectedProvider && !selectedProvider.value) selectedProvider.value = data.selectedProvider;
+      if (data.selectedModel && !selectedModel.value) selectedModel.value = data.selectedModel;
+      if (data.channelStatus) channelStatus.value = data.channelStatus;
+      if (data.channelConnected !== undefined) channelConnected.value = data.channelConnected;
+      if (data.crystal) zoneContents.value = parseXmlZones(data.crystal);
+      if (data.globals) globalMemories.value = data.globals;
+      if (data.tools && Array.isArray(data.tools)) {
+        channelToolsModel.value = {
+          toolCallSettings: {
+            mode: data.toolCallMode || "AUTO",
+            tools: data.tools,
+          },
+        };
+      }
+      return true;
+    }
+  } catch (e) {}
+  return false;
+}
 
+function saveToCache() {
+  try {
+    const cacheObj = {
+      soul: soulContent.value,
+      basicName: basicName.value,
+      basicAvatar: basicAvatar.value,
+      selectedProvider: selectedProvider.value,
+      selectedModel: selectedModel.value,
+      channelStatus: channelStatus.value,
+      channelConnected: channelConnected.value,
+      crystal: buildXmlFromZones(zoneContents.value),
+      globals: globalMemories.value,
+      tools: channelToolsModel.value?.toolCallSettings?.tools || [],
+      toolCallMode: channelToolsModel.value?.toolCallSettings?.mode || "AUTO",
+    };
+    localStorage.setItem(cacheKey.value, JSON.stringify(cacheObj));
+  } catch (e) {}
+}
+
+async function loadData() {
   // 1. 获取模型元数据
   try {
     const models = client.config?.getLlmModels?.() || {};
@@ -570,24 +627,7 @@ async function loadData() {
     availableProviders.value = Object.keys(models);
   } catch {}
 
-  // 2. 获取 Soul
-  try {
-    const res = await client.socket.fetch(`/api/channel/get_soul/${channelId.value}`, {});
-    soulContent.value = res?.soul || "";
-  } catch (err) {
-    console.error("加载 soul 失败:", err);
-  }
-
-  // 3. 获取 Memory
-  try {
-    const res = await client.socket.fetch(`/api/channel/get_memory/${channelId.value}`, {});
-    zoneContents.value = parseXmlZones(res?.crystal || "");
-    globalMemories.value = res?.globals || {};
-  } catch (err) {
-    console.error("加载 memory 失败:", err);
-  }
-
-  // 4. 获取渠道真实运行状态、基础信息与工具配置
+  // 2. HTTP 渠道数据（独立于 socket，首屏刷新即可呈现）
   try {
     const res = await configAPI.request(`/api/channels/${channelId.value}`);
     if (res?.data) {
@@ -609,8 +649,33 @@ async function loadData() {
           tools: savedTools,
         },
       };
+      saveToCache();
     }
-  } catch {}
+  } catch (err) {
+    console.warn("加载渠道 HTTP 配置失败:", err);
+  }
+
+  // 3. Socket RPC（Soul 与 Memory）
+  if (client.socket && client.isConnected) {
+    try {
+      const [soulRes, memRes] = await Promise.allSettled([
+        client.socket.fetch(`/api/channel/get_soul/${channelId.value}`, {}),
+        client.socket.fetch(`/api/channel/get_memory/${channelId.value}`, {}),
+      ]);
+      if (soulRes.status === "fulfilled" && soulRes.value) {
+        soulContent.value = soulRes.value.soul || "";
+      }
+      if (memRes.status === "fulfilled" && memRes.value) {
+        zoneContents.value = parseXmlZones(memRes.value.crystal || "");
+        globalMemories.value = memRes.value.globals || {};
+      }
+      saveToCache();
+    } catch (err) {
+      console.error("加载 soul/memory 失败:", err);
+    }
+  }
+
+  loading.value = false;
 }
 
 async function saveSoul() {
@@ -619,6 +684,7 @@ async function saveSoul() {
     await client.socket.fetch(`/api/channel/save_soul/${channelId.value}`, {
       soul: soulContent.value,
     });
+    saveToCache();
     ElMessage.success("灵魂人格设定已保存并落盘！");
   } catch (err) {
     ElMessage.error(err.message || "保存 soul 失败");
@@ -634,6 +700,7 @@ async function saveCrystal() {
     await client.socket.fetch(`/api/channel/save_crystal/${channelId.value}`, {
       crystal: xml,
     });
+    saveToCache();
     ElMessage.success("会话结晶已保存！");
   } catch (err) {
     ElMessage.error(err.message || "保存结晶失败");
@@ -648,6 +715,7 @@ async function saveGlobalCategory(category) {
       category,
       content: globalMemories.value[category] || "",
     });
+    saveToCache();
     ElMessage.success(`长期记忆 [${category}] 已更新！`);
   } catch (err) {
     ElMessage.error(err.message || "保存长期记忆失败");
@@ -690,6 +758,7 @@ async function saveModelConfig() {
       props.contactor.options.model = modelStr;
     }
     client.setLocalStorage();
+    saveToCache();
     ElMessage.success("模型配置已更新！");
   } catch (err) {
     ElMessage.error(err.message || "更新模型配置失败");
@@ -709,6 +778,7 @@ async function toggleStatus(action) {
       channelStatus.value = action === "start" ? "running" : "stopped";
       channelConnected.value = action === "start";
     }
+    saveToCache();
     ElMessage.success(action === "start" ? "渠道已启动！" : "渠道已停止");
     setTimeout(() => {
       loadData();
@@ -721,12 +791,26 @@ async function toggleStatus(action) {
 }
 
 onMounted(() => {
+  loadFromCache();
   loadData();
 });
 
-watch(() => props.contactor.id, () => {
-  loadData();
-});
+watch(
+  () => props.contactor.id,
+  () => {
+    loadFromCache();
+    loadData();
+  }
+);
+
+watch(
+  () => connectionStore.isConnected,
+  (connected) => {
+    if (connected) {
+      loadData();
+    }
+  }
+);
 </script>
 
 <style lang="scss" scoped>
