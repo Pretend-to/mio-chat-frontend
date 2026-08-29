@@ -1095,7 +1095,7 @@ export const gateway = {
         const existsAi = contactor.messageChain.some((m) => m.id === assistantMessageId);
         if (!existsAi) {
           const aiContainer = {
-            role: "assistant",
+            role: "other",
             id: assistantMessageId,
             time: Date.now(),
             status: "running",
