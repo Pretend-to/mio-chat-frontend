@@ -620,8 +620,11 @@ function saveToCache() {
 }
 
 async function loadData() {
-  // 1. 获取模型元数据
+  // 1. 获取模型与工具元数据
   try {
+    if (!client.config?.llmTools || Object.keys(client.config.llmTools).length === 0) {
+      await client.config?.loadllmTools?.();
+    }
     const models = client.config?.getLlmModels?.() || {};
     modelsMeta.value = models;
     availableProviders.value = Object.keys(models);
