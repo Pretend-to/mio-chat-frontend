@@ -431,11 +431,7 @@ const allLlmToolsData = computed(() => {
       const t = group[toolKey];
       const toolName = t.name;
       return {
-        enabled:
-          Array.isArray(selected) &&
-          (selected.includes(toolName) ||
-            selected.includes(toolKey) ||
-            selected.includes(toolName?.split("_mid_")[0])),
+        enabled: Array.isArray(selected) && selected.includes(toolName),
         ...t,
       };
     });

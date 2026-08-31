@@ -99,18 +99,6 @@ const filteredAllLLMTools = computed(() => {
   );
 });
 
-const isToolEnabled = (toolName, enabledTools) => {
-  if (!Array.isArray(enabledTools) || !toolName) return false;
-  const baseName = toolName.split("_mid_")[0];
-  return enabledTools.some(
-    (t) =>
-      t === toolName ||
-      t === baseName ||
-      toolName.startsWith(`${t}_mid_`) ||
-      (typeof t === "string" && t.split("_mid_")[0] === baseName)
-  );
-};
-
 const updateEnabledTools = () => {
   const enabledTools = props.modelValue?.toolCallSettings?.tools || [];
 
@@ -118,7 +106,7 @@ const updateEnabledTools = () => {
   localAllLLMTools.value = (localAllLLMTools.value || []).map((plugin) => {
     const updatedTools = (plugin.tools || []).map((tool) => ({
       ...tool,
-      enabled: isToolEnabled(tool.name, enabledTools),
+      enabled: enabledTools.includes(tool.name),
     }));
     return {
       ...plugin,
@@ -156,7 +144,7 @@ const emitUpdate = () => {
   newOptions.toolCallSettings.mode = localLlmToolCallMode.value;
 
   const activeTools = localAllLLMTools.value.flatMap((plugin) =>
-    plugin.tools.filter((tool) => tool.enabled).map((tool) => tool.name.split("_mid_")[0] || tool.name),
+    plugin.tools.filter((tool) => tool.enabled).map((tool) => tool.name),
   );
   newOptions.toolCallSettings.tools = activeTools;
 
