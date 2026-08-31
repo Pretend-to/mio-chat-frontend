@@ -108,6 +108,14 @@ export async function unsubscribePush() {
   return true
 }
 
+export async function removeDeviceSubscription(endpoint) {
+  if (!endpoint) return
+  return await configAPI.request('/api/push/unsubscribe', {
+    body: { endpoint },
+    method: 'POST',
+  })
+}
+
 export async function clearAllDeviceSubscriptions() {
   return await configAPI.request('/api/push/clear-all', {
     method: 'POST',

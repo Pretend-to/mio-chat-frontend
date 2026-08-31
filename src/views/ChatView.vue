@@ -292,9 +292,20 @@ const loadChannelHistory = async (options = {}) => {
     if (res && Array.isArray(res.messages)) {
       hasMoreServerHistory.value = res.hasMore === true;
       if (!before) {
-        // 首屏拉取
-        contactor.messageChain = res.messages;
-        renderedCount.value = Math.min(20, res.messages.length);
+        // 首屏拉取：检查本地是否有正在流式生成中的活跃消息（in-flight streaming message）
+        const activeStreamingMsgs = Array.isArray(contactor.messageChain)
+          ? contactor.messageChain.filter((m) => m && m.status === "streaming")
+          : [];
+
+        if (activeStreamingMsgs.length > 0) {
+          const serverMsgIds = new Set(res.messages.map((m) => m.id));
+          const uniqueStreamingMsgs = activeStreamingMsgs.filter((m) => !serverMsgIds.has(m.id));
+          contactor.messageChain = [...res.messages, ...uniqueStreamingMsgs];
+        } else {
+          contactor.messageChain = res.messages;
+        }
+
+        renderedCount.value = Math.min(20, contactor.messageChain.length);
         contactorsStore.updateContactorSummary(contactor);
         client.setLocalStorage();
         nextTick(() => {
