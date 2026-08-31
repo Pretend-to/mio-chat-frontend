@@ -59,6 +59,16 @@ pnpm install
 pnpm dev        # http://localhost:1314，代理 /socket.io 与 /api 到后端 (:3080)
 ```
 
+提交改动前请运行以下验证：
+
+```bash
+pnpm test       # 运行 Vitest 测试套件
+pnpm build      # 执行生产构建
+pnpm lint       # 运行 oxlint；注意：该命令包含 --fix，会修改文件
+```
+
+如果只想检查 lint 而不自动修改文件，可运行 `pnpm exec oxlint .`。执行带修复的 lint 前，请先确认工作树中的改动已经妥善保存。
+
 > 后端、架构图与完整双语 README：[**mio-chat-backend**](https://github.com/Pretend-to/mio-chat-backend)。
 
 ## 🙏 致谢

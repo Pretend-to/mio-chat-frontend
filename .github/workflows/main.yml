@@ -32,6 +32,8 @@ jobs:
             echo "Dependencies installation failed"
             exit 1
           fi
+      - name: Run tests
+        run: pnpm test
       - name: Build the project
         run: |
           pnpm run build

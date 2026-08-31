@@ -59,6 +59,16 @@ pnpm install
 pnpm dev        # http://localhost:1314, proxies /socket.io & /api to the backend (:3080)
 ```
 
+Run these checks before submitting changes:
+
+```bash
+pnpm test       # Run the Vitest suite
+pnpm build      # Create a production build
+pnpm lint       # Run oxlint; note that this command includes --fix and edits files
+```
+
+For a read-only lint check, run `pnpm exec oxlint .`. Before running the fixing lint command, make sure any worktree changes you want to keep are safely recorded.
+
 > Backend, architecture diagram and the full bilingual README: [**mio-chat-backend**](https://github.com/Pretend-to/mio-chat-backend).
 
 ## 🙏 Acknowledgements

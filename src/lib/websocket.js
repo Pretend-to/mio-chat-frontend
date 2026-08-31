@@ -210,11 +210,9 @@ export default class Socket extends EventEmitter {
     try {
       const e = JSON.parse(message);
       if (e.protocol === "llm") {
-        this.emit(e.request_id, e);
         this.emit("llm_message", e);
       }
       if (e.protocol === "channel") {
-        this.emit(e.request_id, e);
         this.emit("channel_message", e);
       }
       if (e.protocol === "onebot") {
