@@ -122,6 +122,8 @@ export function useInputCommandPopup({
         { label: "model", value: "model", preset: "/model", description: "查看或切换当前渠道模型 (如 /model glm-5.3-flash)" },
         { label: "think", value: "think", preset: "/think", description: "调整思考推理强度 (0-4 / off / low / med / high / max)" },
         { label: "tools", value: "tools", preset: "/tools", description: "查看与开启/禁用工具 (ls / on / off / reset)" },
+        { label: "yolo", value: "yolo", preset: "/yolo", description: "当前会话 Shell 审批开关 (on / off)" },
+        { label: "status", value: "status", preset: "/status", description: "查看当前会话与执行状态" },
         { label: "soul", value: "soul", preset: "/soul", description: "查看或重设当前 Agent 灵魂人设" },
         { label: "memory", value: "memory", preset: "/memory", description: "查看跨会话长期记忆" },
         { label: "context", value: "context", preset: "/context", description: "查看当前会话 6 分区核心记忆结晶" },
