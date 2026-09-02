@@ -19,6 +19,7 @@
             v-for="opt in activeInteraction.options"
             :key="opt.value"
             class="interaction-btn"
+            :disabled="interactionSubmitting"
             @click="submitResponse({ selectResult: opt.value })"
           >
             {{ opt.label || opt.value }}
@@ -32,10 +33,10 @@
         >
           <!-- 1. Command Code Block -->
           <div
-            v-if="activeInteraction.meta?.command"
+            v-if="activeInteraction.meta?.commandPreview"
             class="command-preview-box"
           >
-            <code>{{ activeInteraction.meta.command }}</code>
+            <code>{{ approvalCommandPreview }}</code>
           </div>
 
           <!-- 2. Global Memory Preview Box -->
@@ -67,40 +68,59 @@
           </div>
 
           <button
+            v-if="
+              !activeInteraction.meta?.commandPreview ||
+              activeInteraction.meta?.rememberable === false
+            "
             class="interaction-btn approve-btn"
+            :disabled="interactionSubmitting"
             @click="submitResponse({ approved: true })"
           >
             {{
               activeInteraction.meta?.type === "global_memory" ||
               activeInteraction.meta?.scope === "global"
                 ? "授权写入"
-                : activeInteraction.meta?.command
+                : activeInteraction.meta?.commandPreview
                   ? "授权执行"
                   : "授权更新"
             }}
           </button>
           <template
             v-if="
-              activeInteraction.meta?.command &&
+              activeInteraction.meta?.commandPreview &&
               activeInteraction.meta?.rememberable !== false
             "
           >
             <button
               class="interaction-btn approve-once-btn"
-              @click="submitResponse({ approved: true, rememberType: 'specific' })"
+              :disabled="interactionSubmitting"
+              @click="
+                submitResponse({ approved: true, rememberType: 'prefix2' })
+              "
             >
-              授权并记住此命令
+              授权并记住「{{ approvalCommandPreview }}」
             </button>
             <button
+              v-if="
+                activeInteraction.meta?.commandPrefix1 &&
+                activeInteraction.meta.commandPrefix1 !== approvalCommandPreview
+              "
               class="interaction-btn approve-once-btn"
-              @click="submitResponse({ approved: true, rememberType: 'prefix' })"
+              :disabled="interactionSubmitting"
+              @click="
+                submitResponse({ approved: true, rememberType: 'prefix1' })
+              "
             >
-              授权并记住此命令前缀
+              授权并记住「{{ activeInteraction.meta.commandPrefix1 }}」
             </button>
           </template>
+          <div v-if="interactionError" class="interaction-error">
+            {{ interactionError }}
+          </div>
           <div class="reject-reason-container">
             <button
               class="interaction-btn reject-btn"
+              :disabled="interactionSubmitting"
               @click="
                 submitResponse({ approved: false, reason: rejectReasonText })
               "
@@ -110,6 +130,7 @@
             <input
               v-model="rejectReasonText"
               class="reason-input-inline"
+              :disabled="interactionSubmitting"
               placeholder="拒绝理由（可选）"
               @keyup.enter="
                 submitResponse({ approved: false, reason: rejectReasonText })
@@ -485,9 +506,15 @@ const {
 const {
   activeInteraction,
   hasActiveInteraction,
+  interactionError,
+  interactionSubmitting,
   submitResponse,
   rejectReasonText,
 } = useInputInteractions({ activeContactor });
+
+const approvalCommandPreview = computed(() => {
+  return activeInteraction.value?.meta?.commandPreview || "";
+});
 
 // 7. Message Format and Sending Logic
 const { hasInput, isUploading, presend, send } = useInputSend({
@@ -1358,6 +1385,10 @@ i, .input-icon-btn
       transition: all 0.15s ease
       color: var(--mio-text-regular)
 
+      &:disabled
+        opacity: 0.55
+        cursor: wait
+
       &:hover
         background: var(--mio-bg-active)
         color: var(--mio-text-primary)
@@ -1409,6 +1440,11 @@ i, .input-icon-btn
 
       &:focus
         border-bottom-color: var(--mio-color-danger)
+
+  .interaction-error
+    width: 100%
+    color: var(--mio-color-danger)
+    font-size: 11px
 
 .slide-up-enter-active, .slide-up-leave-active
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)

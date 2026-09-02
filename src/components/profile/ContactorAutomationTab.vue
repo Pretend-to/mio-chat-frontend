@@ -139,14 +139,6 @@
               placeholder="可选。任务触发时唤醒 Agent 的消息，留空时使用默认提示词。"
             />
           </el-form-item>
-          <el-form-item label="Shell 白名单">
-            <el-input
-              v-model="editingTask.shWhitelist"
-              type="textarea"
-              :rows="2"
-              placeholder="例如: curl,cat,node (多个用逗号分隔)"
-            />
-          </el-form-item>
           <el-form-item label="工具集">
             <el-input
               v-model="editingTask.toolsDisplay"
@@ -345,7 +337,6 @@ const editingTask = reactive({
   preset: "",
   triggerPrompt: "",
   systemPrompt: "",
-  shWhitelist: "",
   toolsDisplay: "",
   status: "active",
 });
@@ -449,7 +440,6 @@ const handleAddTask = () => {
     preset: props.name,
     triggerPrompt: "",
     systemPrompt: "",
-    shWhitelist: "",
     toolsDisplay: "",
     status: "active",
   });
@@ -474,7 +464,6 @@ const handleEditTask = async (row) => {
       preset: props.name,
       triggerPrompt: task.triggerPrompt || "",
       systemPrompt: task.systemPrompt || "",
-      shWhitelist: task.shWhitelist || "",
       toolsDisplay: Array.isArray(tools) ? tools.join(", ") : "",
       status: task.status || "active",
     });

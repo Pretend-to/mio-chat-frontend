@@ -9,8 +9,13 @@ import { useInteraction } from "@/composables/useInteraction.js";
  */
 export function useInputInteractions({ activeContactor }) {
   const contactorId = computed(() => activeContactor.value?.id);
-  const { activeInteraction, hasActiveInteraction, submitResponse } =
-    useInteraction(contactorId);
+  const {
+    activeInteraction,
+    hasActiveInteraction,
+    interactionError,
+    interactionSubmitting,
+    submitResponse,
+  } = useInteraction(contactorId);
   const rejectReasonText = ref("");
 
   watch(
@@ -24,6 +29,8 @@ export function useInputInteractions({ activeContactor }) {
   return {
     activeInteraction,
     hasActiveInteraction,
+    interactionError,
+    interactionSubmitting,
     submitResponse,
     rejectReasonText,
   };
