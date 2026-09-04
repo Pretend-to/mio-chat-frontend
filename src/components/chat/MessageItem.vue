@@ -186,7 +186,7 @@
                 :contactor="activeContactor"
                 :isStreaming="
                   item.role === 'other' &&
-                  ['pending', 'retrying'].includes(item.status)
+                  ['pending', 'running', 'streaming', 'retrying'].includes(item.status)
                 "
                 :messageIndex="index"
                 :mioPlugins="mioPlugins"
