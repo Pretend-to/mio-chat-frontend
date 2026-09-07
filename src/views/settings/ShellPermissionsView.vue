@@ -3,10 +3,16 @@
     <div class="page-header">
       <div class="header-title">
         <h1>Shell 权限</h1>
-        <div class="header-desc">管理后端权威的 Shell 命令自动审批名单：deny 高危黑名单（必须人工介入）与 allow 自动放行名单（可绑定工作区目录）。前端已不再维护本地审批名单。</div>
+        <div class="header-desc">
+          管理后端权威的 Shell 命令自动审批名单：deny
+          高危黑名单（必须人工介入）与 allow
+          自动放行名单（可绑定工作区目录）。前端已不再维护本地审批名单。
+        </div>
       </div>
       <div class="header-actions">
-        <el-button type="primary" :icon="Plus" @click="openAdd">添加规则</el-button>
+        <el-button type="primary" :icon="Plus" @click="openAdd"
+          >添加规则</el-button
+        >
       </div>
     </div>
 
@@ -29,20 +35,34 @@
       <template #header>
         <div class="card-header-flex">
           <span class="card-title">Shell 命令审批规则</span>
-          <span class="card-subtitle">判定顺序：YOLO → 后端名单(deny/allow × 工作区) → 旧任务白名单 → 后台拦截 / 前台人工审批</span>
+          <span class="card-subtitle"
+            >判定顺序：YOLO → 后端名单(deny/allow × 工作区) → 旧任务白名单 →
+            后台拦截 / 前台人工审批</span
+          >
         </div>
       </template>
-      <el-table :data="rules" v-loading="loading" style="width: 100%" empty-text="暂无规则，系统将默认播种高危黑名单">
+      <el-table
+        :data="rules"
+        v-loading="loading"
+        style="width: 100%"
+        empty-text="暂无规则，系统将默认播种高危黑名单"
+      >
         <el-table-column label="类型" width="130">
           <template #default="{ row }">
-            <el-tag :type="row.deny ? 'danger' : 'success'" effect="dark" size="small">
-              {{ row.deny ? '高危 deny' : '放行 allow' }}
+            <el-tag
+              :type="row.deny ? 'danger' : 'success'"
+              effect="dark"
+              size="small"
+            >
+              {{ row.deny ? "高危 deny" : "放行 allow" }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="匹配方式" width="110">
           <template #default="{ row }">
-            <el-tag effect="plain" size="small">{{ row.matchType === 'prefix' ? '前缀' : '全等' }}</el-tag>
+            <el-tag effect="plain" size="small">{{
+              row.matchType === "prefix" ? "前缀" : "全等"
+            }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="匹配串" min-width="220">
@@ -50,7 +70,11 @@
             <code class="match-code">{{ row.match }}</code>
           </template>
         </el-table-column>
-        <el-table-column prop="cwd" label="工作区目录 (留空=全局)" min-width="260">
+        <el-table-column
+          prop="cwd"
+          label="工作区目录 (留空=全局)"
+          min-width="260"
+        >
           <template #default="{ row }">
             <span v-if="row.cwd" class="cwd-text">{{ row.cwd }}</span>
             <el-tag v-else type="info" effect="plain" size="small">全局</el-tag>
@@ -58,12 +82,16 @@
         </el-table-column>
         <el-table-column label="启用" width="90" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.enabled ? 'success' : 'info'" size="small">{{ row.enabled ? '启用' : '停用' }}</el-tag>
+            <el-tag :type="row.enabled ? 'success' : 'info'" size="small">{{
+              row.enabled ? "启用" : "停用"
+            }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="90" align="right">
           <template #default="{ row }">
-            <el-button size="small" link type="danger" @click="removeRule(row)">删除</el-button>
+            <el-button size="small" link type="danger" @click="removeRule(row)"
+              >删除</el-button
+            >
           </template>
         </el-table-column>
       </el-table>
@@ -76,7 +104,9 @@
             <el-radio :value="false">自动放行 allow</el-radio>
             <el-radio :value="true">高危黑名单 deny</el-radio>
           </el-radio-group>
-          <div class="form-tip" v-if="!addForm.deny">高危命令（rm/node/python/npm/curl/sudo 等）不允许加入放行名单</div>
+          <div class="form-tip" v-if="!addForm.deny">
+            高危命令（rm/node/python/npm/curl/sudo 等）不允许加入放行名单
+          </div>
         </el-form-item>
         <el-form-item label="匹配方式">
           <el-select v-model="addForm.matchType" style="width: 100%">
@@ -85,15 +115,23 @@
           </el-select>
         </el-form-item>
         <el-form-item label="匹配串">
-          <el-input v-model="addForm.match" placeholder='如 "git status" 或前缀 "git pull"' />
+          <el-input
+            v-model="addForm.match"
+            placeholder='如 "git status" 或前缀 "git pull"'
+          />
         </el-form-item>
         <el-form-item label="工作区目录">
-          <el-input v-model="addForm.cwd" placeholder="可选：仅该目录及子目录内生效，留空=全局" />
+          <el-input
+            v-model="addForm.cwd"
+            placeholder="可选：仅该目录及子目录内生效，留空=全局"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="addVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitAdd">添加</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitAdd"
+          >添加</el-button
+        >
       </template>
     </el-dialog>
   </div>
@@ -162,12 +200,18 @@ const submitAdd = async () => {
 
 const removeRule = async (row) => {
   try {
-    await ElMessageBox.confirm(`确认删除规则「${row.match}」${row.deny ? "（高危deny）" : ""}？`, "删除确认", { type: "warning" });
+    await ElMessageBox.confirm(
+      `确认删除规则「${row.match}」${row.deny ? "（高危deny）" : ""}？`,
+      "删除确认",
+      { type: "warning" },
+    );
   } catch {
     return;
   }
   try {
-    await configAPI.request(`/api/shell/policy/${row.id}`, { method: "DELETE" });
+    await configAPI.request(`/api/shell/policy/${row.id}`, {
+      method: "DELETE",
+    });
     ElMessage.success("规则已删除");
     loadRules();
   } catch (e) {

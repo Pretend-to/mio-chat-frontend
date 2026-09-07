@@ -6,10 +6,7 @@
       <div class="setting-field">
         <div class="field-label">流式响应</div>
         <div class="field-value">
-          <el-switch
-            v-model="localStream"
-            @change="updateGeneralSettings"
-          />
+          <el-switch v-model="localStream" @change="updateGeneralSettings" />
         </div>
       </div>
 
@@ -22,7 +19,10 @@
             popper-class="mio-hint-popper"
             :content="visionStatusText"
           >
-            <el-icon class="label-hint-icon" :class="{ 'is-supported': effectiveVisionSupport }">
+            <el-icon
+              class="label-hint-icon"
+              :class="{ 'is-supported': effectiveVisionSupport }"
+            >
               <InfoFilled />
             </el-icon>
           </el-tooltip>
@@ -44,7 +44,12 @@
       <template v-for="(_, key) in localLlmGeneralKeys" :key="key">
         <div
           v-if="
-            ['temperature', 'top_p', 'frequency_penalty', 'presence_penalty'].includes(key)
+            [
+              'temperature',
+              'top_p',
+              'frequency_penalty',
+              'presence_penalty',
+            ].includes(key)
           "
           class="setting-field"
         >
@@ -188,7 +193,9 @@ const modelDefaultVision = computed(() => {
   }
 
   const lower = String(model).toLowerCase();
-  return /vision|[-_]vl\b|[-_]vl[-_]|gemini|claude-(3|4)|gpt-4o|o1|o3/i.test(lower);
+  return /vision|[-_]vl\b|[-_]vl[-_]|gemini|claude-(3|4)|gpt-4o|o1|o3/i.test(
+    lower,
+  );
 });
 
 // 当前最终生效的视觉能力

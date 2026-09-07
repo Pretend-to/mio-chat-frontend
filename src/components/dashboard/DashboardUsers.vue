@@ -5,7 +5,9 @@
       <div class="card-header">
         <div class="header-left">
           <span class="card-title">活跃用户用量排行 Top 10</span>
-          <span class="header-subtitle desktop-only-inline">会话频次与 Token 消耗统计</span>
+          <span class="header-subtitle desktop-only-inline"
+            >会话频次与 Token 消耗统计</span
+          >
         </div>
         <div class="header-right">
           <div class="user-sort-toggle">
@@ -35,10 +37,7 @@
           >
             <el-table-column label="排名" width="80" align="center">
               <template #default="scope">
-                <span
-                  class="rank-badge"
-                  :class="'rank-' + (scope.$index + 1)"
-                >
+                <span class="rank-badge" :class="'rank-' + (scope.$index + 1)">
                   {{ scope.$index + 1 }}
                 </span>
               </template>
@@ -51,12 +50,24 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="calls" label="调用次数" width="140" align="right">
+            <el-table-column
+              prop="calls"
+              label="调用次数"
+              width="140"
+              align="right"
+            >
               <template #default="scope">
-                <span class="calls-value">{{ formatNumber(scope.row.calls) }}</span>
+                <span class="calls-value">{{
+                  formatNumber(scope.row.calls)
+                }}</span>
               </template>
             </el-table-column>
-            <el-table-column prop="tokens" label="消耗 Token" width="180" align="right">
+            <el-table-column
+              prop="tokens"
+              label="消耗 Token"
+              width="180"
+              align="right"
+            >
               <template #default="scope">
                 <span class="token-value-text">{{
                   formatNumber(scope.row.tokens)
@@ -66,7 +77,9 @@
             <el-table-column label="平均单次消耗" width="160" align="right">
               <template #default="scope">
                 <span class="avg-token-text">{{
-                  formatNumber(Math.round(scope.row.tokens / (scope.row.calls || 1)))
+                  formatNumber(
+                    Math.round(scope.row.tokens / (scope.row.calls || 1)),
+                  )
                 }}</span>
               </template>
             </el-table-column>
@@ -91,7 +104,14 @@
             <span class="card-title">服务提供商 (Provider)</span>
           </div>
           <div class="provider-list-scroll">
-            <el-skeleton :loading="store.loadingOverview && store.groupedProviders.length === 0" animated :rows="5" style="padding: 10px;">
+            <el-skeleton
+              :loading="
+                store.loadingOverview && store.groupedProviders.length === 0
+              "
+              animated
+              :rows="5"
+              style="padding: 10px"
+            >
               <template #default>
                 <div
                   class="provider-item"
@@ -136,11 +156,21 @@
             >
           </div>
           <div class="card-body-chart">
-            <el-skeleton v-if="store.loadingOverview && !store.historicalData" animated :rows="6" style="padding: 20px;" />
+            <el-skeleton
+              v-if="store.loadingOverview && !store.historicalData"
+              animated
+              :rows="6"
+              style="padding: 20px"
+            />
             <div
               id="provider-models-chart"
               class="chart-container-models"
-              :style="{ display: store.loadingOverview && !store.historicalData ? 'none' : 'block' }"
+              :style="{
+                display:
+                  store.loadingOverview && !store.historicalData
+                    ? 'none'
+                    : 'block',
+              }"
             ></div>
           </div>
         </div>
@@ -258,7 +288,9 @@ const store = useDashboardStore();
 
 const userSortBy = ref("tokens");
 const userRankingsList = computed(() => {
-  return userSortBy.value === "tokens" ? store.tokenTopUsers : store.callsTopUsers;
+  return userSortBy.value === "tokens"
+    ? store.tokenTopUsers
+    : store.callsTopUsers;
 });
 
 const filteredModelsTable = computed(() => {
@@ -320,11 +352,17 @@ function formatNumber(num) {
 }
 
 function getChartTheme() {
-  const isDark = typeof document !== "undefined" && (document.documentElement.getAttribute("data-theme") === "dark" || document.documentElement.classList.contains("dark"));
+  const isDark =
+    typeof document !== "undefined" &&
+    (document.documentElement.getAttribute("data-theme") === "dark" ||
+      document.documentElement.classList.contains("dark"));
   return {
     isDark,
     backgroundColor: "transparent",
-    textStyle: { color: isDark ? "#94a3b8" : "#64748b", fontFamily: "Plus Jakarta Sans, sans-serif" },
+    textStyle: {
+      color: isDark ? "#94a3b8" : "#64748b",
+      fontFamily: "Plus Jakarta Sans, sans-serif",
+    },
     grid: {
       left: "3%",
       right: "4%",
@@ -341,7 +379,9 @@ function getChartTheme() {
         fontFamily: "Plus Jakarta Sans, sans-serif",
       },
       borderRadius: 8,
-      boxShadow: isDark ? "0 4px 12px rgba(0, 0, 0, 0.4)" : "0 4px 12px rgba(0, 0, 0, 0.05)",
+      boxShadow: isDark
+        ? "0 4px 12px rgba(0, 0, 0, 0.4)"
+        : "0 4px 12px rgba(0, 0, 0, 0.05)",
     },
   };
 }
@@ -449,7 +489,7 @@ watch(
         handleResize();
       });
     }
-  }
+  },
 );
 
 function handleResize() {

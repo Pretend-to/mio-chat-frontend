@@ -2,7 +2,9 @@
   <div class="client-settings">
     <div class="page-header">
       <h1>客户端设置</h1>
-      <p class="page-desc">管理个人资料、外观偏好与默认 Agent 配置。更改实时生效并保存到本地。</p>
+      <p class="page-desc">
+        管理个人资料、外观偏好与默认 Agent 配置。更改实时生效并保存到本地。
+      </p>
     </div>
 
     <!-- 板块内 tabs -->
@@ -11,27 +13,39 @@
         <div
           :class="{ 'tab-item': true, active: activeTab === 'profile' }"
           @click="activeTab = 'profile'"
-        >个人资料</div>
+        >
+          个人资料
+        </div>
         <div
           :class="{ 'tab-item': true, active: activeTab === 'appearance' }"
           @click="activeTab = 'appearance'"
-        >外观显示</div>
+        >
+          外观显示
+        </div>
         <div
           :class="{ 'tab-item': true, active: activeTab === 'chat' }"
           @click="activeTab = 'chat'"
-        >聊天设置</div>
+        >
+          聊天设置
+        </div>
         <div
           :class="{ 'tab-item': true, active: activeTab === 'agent' }"
           @click="activeTab = 'agent'"
-        >默认 Agent</div>
+        >
+          默认 Agent
+        </div>
         <div
           :class="{ 'tab-item': true, active: activeTab === 'memory' }"
           @click="activeTab = 'memory'"
-        >全局记忆</div>
+        >
+          全局记忆
+        </div>
         <div
           :class="{ 'tab-item': true, active: activeTab === 'notification' }"
           @click="activeTab = 'notification'"
-        >推送通知</div>
+        >
+          推送通知
+        </div>
       </div>
     </div>
 
@@ -62,7 +76,12 @@
                   class="profile-avatar-img"
                 />
               </div>
-              <el-button type="primary" plain size="small" @click="openAvatarDialog">
+              <el-button
+                type="primary"
+                plain
+                size="small"
+                @click="openAvatarDialog"
+              >
                 修改头像
               </el-button>
             </div>
@@ -130,7 +149,10 @@
           <div class="setting-field">
             <div class="field-info">
               <span class="field-label">回车发送消息</span>
-              <span class="field-desc">开启后按 Enter 发送，Shift+Enter 换行；关闭后需点击发送按钮</span>
+              <span class="field-desc"
+                >开启后按 Enter 发送，Shift+Enter
+                换行；关闭后需点击发送按钮</span
+              >
             </div>
             <div class="field-value">
               <el-switch
@@ -143,7 +165,9 @@
           <div class="setting-field">
             <div class="field-info">
               <span class="field-label">自动语音朗读</span>
-              <span class="field-desc">收到 AI 回复后自动使用语音朗读文本内容</span>
+              <span class="field-desc"
+                >收到 AI 回复后自动使用语音朗读文本内容</span
+              >
             </div>
             <div class="field-value">
               <el-switch
@@ -217,7 +241,9 @@
           <div class="setting-field">
             <div class="field-info">
               <span class="field-label">默认展开思考过程</span>
-              <span class="field-desc">深度思考模型（如 R1）的推理过程默认展开而非折叠</span>
+              <span class="field-desc"
+                >深度思考模型（如 R1）的推理过程默认展开而非折叠</span
+              >
             </div>
             <div class="field-value">
               <el-switch
@@ -230,7 +256,9 @@
           <div class="setting-field">
             <div class="field-info">
               <span class="field-label">默认展开工具调用</span>
-              <span class="field-desc">Agent 调用工具（Tools）的执行细节默认展开</span>
+              <span class="field-desc"
+                >Agent 调用工具（Tools）的执行细节默认展开</span
+              >
             </div>
             <div class="field-value">
               <el-switch
@@ -246,7 +274,8 @@
       <div v-if="activeTab === 'agent'" class="tab-pane">
         <div class="settings-card">
           <div class="section-intro">
-            选择一个预设作为默认 Agent。新建会话时将自动继承该预设的全部配置（模型、工具集、技能、记忆等）。
+            选择一个预设作为默认
+            Agent。新建会话时将自动继承该预设的全部配置（模型、工具集、技能、记忆等）。
           </div>
 
           <div class="preset-list">
@@ -272,7 +301,9 @@
                   系统内置基础预设 · 使用全局默认模型与工具配置
                 </div>
               </div>
-              <el-tag size="small" type="info" effect="plain" class="system-tag">内置</el-tag>
+              <el-tag size="small" type="info" effect="plain" class="system-tag"
+                >内置</el-tag
+              >
             </div>
 
             <!-- 用户本地创建的预设 -->
@@ -295,7 +326,7 @@
               <div class="preset-info" @click="selectPreset(preset.id)">
                 <div class="preset-name">{{ preset.name }}</div>
                 <div class="preset-detail">
-                  {{ preset.title || '本地预设' }}
+                  {{ preset.title || "本地预设" }}
                   <span v-if="preset.options?.base?.model">
                     · {{ preset.options.base.model }}
                   </span>
@@ -306,7 +337,8 @@
                 text
                 type="danger"
                 @click.stop="deletePreset(preset)"
-              >删除</el-button>
+                >删除</el-button
+              >
             </div>
           </div>
         </div>
@@ -319,8 +351,10 @@
             <div class="memory-intro">
               <span class="memory-title">跨会话事实库</span>
               <p class="memory-desc">
-                记录在所有 Agent 和群聊中共享的核心用户事实与偏好。系统会自动将以下事实条目以
-                <code>&lt;global_long_term_memory&gt;</code> 注入 System 提示词。
+                记录在所有 Agent
+                和群聊中共享的核心用户事实与偏好。系统会自动将以下事实条目以
+                <code>&lt;global_long_term_memory&gt;</code> 注入 System
+                提示词。
               </p>
             </div>
             <div class="memory-actions">
@@ -361,10 +395,21 @@
           <div v-if="globalMemories.length === 0" class="memory-empty-state">
             <el-empty description="暂无全局长期记忆条目" :image-size="80">
               <template #description>
-                <p style="font-size: 13px; color: var(--mio-text-secondary); margin-bottom: 10px;">
-                  你可以手动添加如“用户操作系统”、“开发技术栈”、“沟通偏好”等跨 Agent 通用事实，或者由开启智能模式的 Agent 在对话中自发沉淀。
+                <p
+                  style="
+                    font-size: 13px;
+                    color: var(--mio-text-secondary);
+                    margin-bottom: 10px;
+                  "
+                >
+                  你可以手动添加如“用户操作系统”、“开发技术栈”、“沟通偏好”等跨
+                  Agent 通用事实，或者由开启智能模式的 Agent 在对话中自发沉淀。
                 </p>
-                <el-button type="primary" size="small" @click="openAddMemoryDialog">
+                <el-button
+                  type="primary"
+                  size="small"
+                  @click="openAddMemoryDialog"
+                >
                   立即添加第一条
                 </el-button>
               </template>
@@ -384,7 +429,9 @@
                   <el-tag size="small" effect="plain" class="category-tag">
                     {{ getCategoryLabel(item.category) }}
                   </el-tag>
-                  <span class="memory-time">{{ formatMemoryTime(item.updatedAt || item.createdAt) }}</span>
+                  <span class="memory-time">{{
+                    formatMemoryTime(item.updatedAt || item.createdAt)
+                  }}</span>
                 </div>
                 <div class="item-actions">
                   <el-button
@@ -416,16 +463,30 @@
                     placeholder="请输入事实内容..."
                   />
                   <div class="inline-edit-footer">
-                    <el-select v-model="editForm.category" size="small" style="width: 140px">
+                    <el-select
+                      v-model="editForm.category"
+                      size="small"
+                      style="width: 140px"
+                    >
                       <el-option label="通用事实" value="general" />
                       <el-option label="用户画像" value="user_profile" />
-                      <el-option label="行为准则" value="behavioral_guidelines" />
+                      <el-option
+                        label="行为准则"
+                        value="behavioral_guidelines"
+                      />
                       <el-option label="技术栈/偏好" value="tech_stack" />
                       <el-option label="项目规范" value="project_fact" />
                     </el-select>
                     <div style="display: flex; gap: 8px">
-                      <el-button size="small" @click="editingMemoryId = null">取消</el-button>
-                      <el-button size="small" type="primary" @click="saveEditMemory(item.id)">保存</el-button>
+                      <el-button size="small" @click="editingMemoryId = null"
+                        >取消</el-button
+                      >
+                      <el-button
+                        size="small"
+                        type="primary"
+                        @click="saveEditMemory(item.id)"
+                        >保存</el-button
+                      >
                     </div>
                   </div>
                 </div>
@@ -445,14 +506,19 @@
             <span>Web Push 离线推送与 PWA 提醒</span>
           </div>
           <div class="section-intro">
-            开启后，后台定时任务（Cron）执行完成或触发 Channel 预警时，可在已订阅的手机与电脑设备上接收实时推送通知。
+            开启后，后台定时任务（Cron）执行完成或触发 Channel
+            预警时，可在已订阅的手机与电脑设备上接收实时推送通知。
           </div>
 
           <div class="setting-field">
             <div class="field-info">
               <span class="field-label">启用系统推送通知</span>
               <span class="field-desc">
-                {{ pushSubscribed ? '当前设备已启用 Web Push 离线通知' : '允许 Mio-Chat 向此设备推送后台任务提醒与重要通知' }}
+                {{
+                  pushSubscribed
+                    ? "当前设备已启用 Web Push 离线通知"
+                    : "允许 Mio-Chat 向此设备推送后台任务提醒与重要通知"
+                }}
               </span>
             </div>
             <div class="field-value">
@@ -473,7 +539,7 @@
             </div>
             <div class="field-value">
               <el-tag :type="pushSupported ? 'success' : 'info'" size="small">
-                {{ pushSupported ? '支持 Push API' : '环境受限' }}
+                {{ pushSupported ? "支持 Push API" : "环境受限" }}
               </el-tag>
             </div>
           </div>
@@ -484,7 +550,9 @@
             <div class="tip-body">
               <div class="tip-title">iOS 用户须知 (iOS ≥ 16.4)</div>
               <div class="tip-desc">
-                苹果系统限制：必须在 Safari 中点击<strong>「分享」→「添加到主屏幕」</strong>，并在主屏幕以独立 App (PWA) 方式打开，才能接收系统离线推送。
+                苹果系统限制：必须在 Safari
+                中点击<strong>「分享」→「添加到主屏幕」</strong>，并在主屏幕以独立
+                App (PWA) 方式打开，才能接收系统离线推送。
               </div>
             </div>
           </div>
@@ -492,10 +560,18 @@
           <div v-if="pushSubscribed" class="setting-field">
             <div class="field-info">
               <span class="field-label">测试通知</span>
-              <span class="field-desc">可测试远程 Web Push 推送或本地 Service Worker 弹窗</span>
+              <span class="field-desc"
+                >可测试远程 Web Push 推送或本地 Service Worker 弹窗</span
+              >
             </div>
-            <div class="field-value" style="display: flex; gap: 8px;">
-              <el-button size="small" type="primary" plain :loading="testPushLoading" @click="handleTestPush">
+            <div class="field-value" style="display: flex; gap: 8px">
+              <el-button
+                size="small"
+                type="primary"
+                plain
+                :loading="testPushLoading"
+                @click="handleTestPush"
+              >
                 远程推送测试
               </el-button>
               <el-button size="small" plain @click="handleLocalTest">
@@ -515,19 +591,39 @@
       append-to-body
     >
       <div class="add-memory-dialog-form">
-        <div class="setting-field" style="flex-direction: column; align-items: stretch; gap: 6px;">
-          <span class="field-label" style="font-weight: 600;">分类标签</span>
+        <div
+          class="setting-field"
+          style="flex-direction: column; align-items: stretch; gap: 6px"
+        >
+          <span class="field-label" style="font-weight: 600">分类标签</span>
           <el-select v-model="newMemoryForm.category" style="width: 100%">
             <el-option label="通用事实 (General)" value="general" />
             <el-option label="用户画像 (User Profile)" value="user_profile" />
-            <el-option label="行为准则 (Behavioral Guidelines)" value="behavioral_guidelines" />
-            <el-option label="技术栈/开发偏好 (Tech Stack)" value="tech_stack" />
-            <el-option label="项目与环境规范 (Project Fact)" value="project_fact" />
+            <el-option
+              label="行为准则 (Behavioral Guidelines)"
+              value="behavioral_guidelines"
+            />
+            <el-option
+              label="技术栈/开发偏好 (Tech Stack)"
+              value="tech_stack"
+            />
+            <el-option
+              label="项目与环境规范 (Project Fact)"
+              value="project_fact"
+            />
           </el-select>
         </div>
 
-        <div class="setting-field" style="flex-direction: column; align-items: stretch; gap: 6px; margin-top: 14px;">
-          <span class="field-label" style="font-weight: 600;">事实内容</span>
+        <div
+          class="setting-field"
+          style="
+            flex-direction: column;
+            align-items: stretch;
+            gap: 6px;
+            margin-top: 14px;
+          "
+        >
+          <span class="field-label" style="font-weight: 600">事实内容</span>
           <el-input
             v-model="newMemoryForm.content"
             type="textarea"
@@ -539,7 +635,11 @@
       <template #footer>
         <div style="display: flex; justify-content: flex-end; gap: 8px">
           <el-button @click="addMemoryDialogVisible = false">取消</el-button>
-          <el-button type="primary" :disabled="!newMemoryForm.content.trim()" @click="confirmAddMemory">
+          <el-button
+            type="primary"
+            :disabled="!newMemoryForm.content.trim()"
+            @click="confirmAddMemory"
+          >
             保存条目
           </el-button>
         </div>
@@ -558,7 +658,11 @@
         <!-- 1. 头像策略选择 -->
         <div class="dialog-section">
           <div class="dialog-section-label">头像策略</div>
-          <el-radio-group v-model="tempPolicy" size="default" class="policy-radio-group">
+          <el-radio-group
+            v-model="tempPolicy"
+            size="default"
+            class="policy-radio-group"
+          >
             <el-radio-button value="system">跟随系统</el-radio-button>
             <el-radio-button value="qq">自定义 QQ</el-radio-button>
             <el-radio-button value="url">自定义 URL</el-radio-button>
@@ -593,7 +697,9 @@
               <el-icon style="margin-right: 4px"><Picture /></el-icon>
               选择图片并裁切
             </el-button>
-            <span v-if="tempUploadedAvatar" class="upload-status-tag">已选择裁切图片</span>
+            <span v-if="tempUploadedAvatar" class="upload-status-tag"
+              >已选择裁切图片</span
+            >
             <input
               ref="cropFileInputRef"
               type="file"
@@ -620,7 +726,9 @@
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="avatarDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="confirmAvatarChange">确定</el-button>
+          <el-button type="primary" @click="confirmAvatarChange"
+            >确定</el-button
+          >
         </div>
       </template>
     </el-dialog>
@@ -679,7 +787,9 @@ const isStandalone = computed(() => isPWAStandalone());
 
 const platformSummary = computed(() => {
   if (isIOS.value) {
-    return isStandalone.value ? "iOS (PWA 独立主屏幕模式)" : "iOS Safari (网页标签页模式)";
+    return isStandalone.value
+      ? "iOS (PWA 独立主屏幕模式)"
+      : "iOS Safari (网页标签页模式)";
   }
   if (isStandalone.value) {
     return "已安装为桌面/移动端独立 PWA 应用";
@@ -719,7 +829,10 @@ const handleTogglePush = async (val) => {
 const handleTestPush = async () => {
   testPushLoading.value = true;
   try {
-    const res = await testPushNotification("Mio-Chat 提醒", "这是一条测试推送通知，表明 Web Push 配置完全正常！");
+    const res = await testPushNotification(
+      "Mio-Chat 提醒",
+      "这是一条测试推送通知，表明 Web Push 配置完全正常！",
+    );
     if (res?.data?.delivered > 0) {
       ElMessage.success(`测试通知已成功推送到 ${res.data.delivered} 台设备！`);
     } else {
@@ -780,7 +893,8 @@ const cropFileInputRef = ref(null);
 // 打开头像修改对话框
 const openAvatarDialog = () => {
   const currentAvatar = form.profile.avatar || "";
-  const qqMatch = currentAvatar.match(/q=(\d+)/) || currentAvatar.match(/^(\d+)$/);
+  const qqMatch =
+    currentAvatar.match(/q=(\d+)/) || currentAvatar.match(/^(\d+)$/);
   if (!currentAvatar) {
     tempPolicy.value = "system";
     tempQq.value = "";
@@ -814,7 +928,9 @@ const dialogPreviewUrl = computed(() => {
       ? getAdminAvatarUrl(tempQq.value.trim())
       : getAdminAvatarUrl(null);
   } else if (tempPolicy.value === "url") {
-    return tempUrl.value.trim() ? tempUrl.value.trim() : getAdminAvatarUrl(null);
+    return tempUrl.value.trim()
+      ? tempUrl.value.trim()
+      : getAdminAvatarUrl(null);
   } else if (tempPolicy.value === "upload") {
     return tempUploadedAvatar.value
       ? tempUploadedAvatar.value
@@ -978,15 +1094,11 @@ const selectPreset = async (id) => {
 
 const deletePreset = async (preset) => {
   try {
-    await ElMessageBox.confirm(
-      `确定删除预设「${preset.name}」？`,
-      "删除确认",
-      {
-        confirmButtonText: "删除",
-        cancelButtonText: "取消",
-        type: "warning",
-      },
-    );
+    await ElMessageBox.confirm(`确定删除预设「${preset.name}」？`, "删除确认", {
+      confirmButtonText: "删除",
+      cancelButtonText: "取消",
+      type: "warning",
+    });
     await removePreset(preset.id);
     presets.value = presets.value.filter((p) => p.id !== preset.id);
 
@@ -1582,8 +1694,14 @@ const handleClearAllMemories = async () => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Mobile */

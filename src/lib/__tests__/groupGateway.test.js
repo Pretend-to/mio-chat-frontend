@@ -89,7 +89,9 @@ describe("groupGateway - Mention Resolution & Invocation Engine", () => {
             id: "msg_1",
             role: "user",
             status: "completed",
-            content: [{ type: "text", data: { text: "Hello @'AgentB'(member_b)" } }],
+            content: [
+              { type: "text", data: { text: "Hello @'AgentB'(member_b)" } },
+            ],
             invocationDepth: 0,
           },
         ],
@@ -112,7 +114,14 @@ describe("groupGateway - Mention Resolution & Invocation Engine", () => {
             id: "msg_1",
             role: "user",
             status: "completed",
-            content: [{ type: "text", data: { text: "@'AgentA'(member_a) @'AgentB'(member_b) let us start" } }],
+            content: [
+              {
+                type: "text",
+                data: {
+                  text: "@'AgentA'(member_a) @'AgentB'(member_b) let us start",
+                },
+              },
+            ],
             invocationDepth: 0,
           },
         ],
@@ -137,7 +146,9 @@ describe("groupGateway - Mention Resolution & Invocation Engine", () => {
             role: "other",
             senderMemberId: "member_b",
             status: "completed",
-            content: [{ type: "text", data: { text: "I am @'AgentB'(member_b)" } }],
+            content: [
+              { type: "text", data: { text: "I am @'AgentB'(member_b)" } },
+            ],
             invocationDepth: 1,
           },
         ],
@@ -194,7 +205,9 @@ describe("groupGateway - Mention Resolution & Invocation Engine", () => {
             role: "other",
             senderMemberId: "member_b",
             status: "completed",
-            content: [{ type: "text", data: { text: "My reply @'AgentC'(member_c)" } }],
+            content: [
+              { type: "text", data: { text: "My reply @'AgentC'(member_c)" } },
+            ],
             invocationDepth: 1,
           },
         ],
@@ -261,7 +274,12 @@ describe("groupGateway - Mention Resolution & Invocation Engine", () => {
             role: "other",
             senderMemberId: "member_a",
             status: "completed",
-            content: [{ type: "text", data: { text: "Delegating to @'AgentB'(member_b)" } }],
+            content: [
+              {
+                type: "text",
+                data: { text: "Delegating to @'AgentB'(member_b)" },
+              },
+            ],
             invocationDepth: 1,
           },
           {
@@ -269,7 +287,12 @@ describe("groupGateway - Mention Resolution & Invocation Engine", () => {
             role: "other",
             senderMemberId: "member_b",
             status: "completed",
-            content: [{ type: "text", data: { text: "Delegating to @'AgentC'(member_c)" } }],
+            content: [
+              {
+                type: "text",
+                data: { text: "Delegating to @'AgentC'(member_c)" },
+              },
+            ],
             invocationDepth: 2,
           },
         ],
@@ -292,7 +315,12 @@ describe("groupGateway - Mention Resolution & Invocation Engine", () => {
             id: "msg_a",
             role: "user",
             status: "completed",
-            content: [{ type: "text", data: { text: "@'AgentB'(member_b) @'AgentC'(member_c)" } }],
+            content: [
+              {
+                type: "text",
+                data: { text: "@'AgentB'(member_b) @'AgentC'(member_c)" },
+              },
+            ],
             invocationDepth: 0,
           },
           {
@@ -300,7 +328,9 @@ describe("groupGateway - Mention Resolution & Invocation Engine", () => {
             role: "other",
             senderMemberId: "member_b",
             status: "completed",
-            content: [{ type: "text", data: { text: "Option A. @'AgentC'(member_c)" } }],
+            content: [
+              { type: "text", data: { text: "Option A. @'AgentC'(member_c)" } },
+            ],
             invocationDepth: 1,
           },
           {
@@ -308,7 +338,9 @@ describe("groupGateway - Mention Resolution & Invocation Engine", () => {
             role: "other",
             senderMemberId: "member_c",
             status: "completed",
-            content: [{ type: "text", data: { text: "Option B. @'AgentB'(member_b)" } }],
+            content: [
+              { type: "text", data: { text: "Option B. @'AgentB'(member_b)" } },
+            ],
             invocationDepth: 1,
           },
         ],
@@ -397,12 +429,19 @@ describe("groupGateway - Mention Resolution & Invocation Engine", () => {
         ],
       };
 
-      const messages = formatGroupMessagesForMember(group, member, "System prompt");
+      const messages = formatGroupMessagesForMember(
+        group,
+        member,
+        "System prompt",
+      );
       expect(messages.length).toBeGreaterThanOrEqual(2);
       expect(messages[0].role).toBe("system");
       // 必须包含用户最新发送的发言
       const hasUserMsg = messages.some(
-        (m) => m.role === "user" && typeof m.content === "string" && m.content.includes("你好 @AgentA"),
+        (m) =>
+          m.role === "user" &&
+          typeof m.content === "string" &&
+          m.content.includes("你好 @AgentA"),
       );
       expect(hasUserMsg).toBe(true);
     });
@@ -430,14 +469,28 @@ describe("groupGateway - Mention Resolution & Invocation Engine", () => {
         ],
       };
 
-      const messages = formatGroupMessagesForMember(group, member, "System prompt");
+      const messages = formatGroupMessagesForMember(
+        group,
+        member,
+        "System prompt",
+      );
       expect(messages[0].role).toBe("system");
       expect(messages[1].role).toBe("user"); // 必须是 user 角色，不能直接是 assistant
     });
 
     it("should format tool call in brief mode by default without exposing parameters/results", () => {
-      const memberA = { id: "member_a", name: "AgentA", lastCompressedIndex: 0, options: {} };
-      const memberB = { id: "member_b", name: "AgentB", lastCompressedIndex: 0, options: {} };
+      const memberA = {
+        id: "member_a",
+        name: "AgentA",
+        lastCompressedIndex: 0,
+        options: {},
+      };
+      const memberB = {
+        id: "member_b",
+        name: "AgentB",
+        lastCompressedIndex: 0,
+        options: {},
+      };
 
       const group = {
         platform: "group",
@@ -464,8 +517,14 @@ describe("groupGateway - Mention Resolution & Invocation Engine", () => {
         ],
       };
 
-      const messages = formatGroupMessagesForMember(group, memberA, "System prompt");
-      const userMsg = messages.find((m) => m.role === "user" && m.content.includes("search_web"));
+      const messages = formatGroupMessagesForMember(
+        group,
+        memberA,
+        "System prompt",
+      );
+      const userMsg = messages.find(
+        (m) => m.role === "user" && m.content.includes("search_web"),
+      );
       expect(userMsg).toBeDefined();
       expect(userMsg.content).toContain('<tool_call name="search_web" />');
       expect(userMsg.content).not.toContain("secret info");
@@ -473,8 +532,18 @@ describe("groupGateway - Mention Resolution & Invocation Engine", () => {
     });
 
     it("should format tool call in full mode when toolCallContextMode is explicitly set to full", () => {
-      const memberA = { id: "member_a", name: "AgentA", lastCompressedIndex: 0, options: {} };
-      const memberB = { id: "member_b", name: "AgentB", lastCompressedIndex: 0, options: {} };
+      const memberA = {
+        id: "member_a",
+        name: "AgentA",
+        lastCompressedIndex: 0,
+        options: {},
+      };
+      const memberB = {
+        id: "member_b",
+        name: "AgentB",
+        lastCompressedIndex: 0,
+        options: {},
+      };
 
       const group = {
         platform: "group",
@@ -502,8 +571,14 @@ describe("groupGateway - Mention Resolution & Invocation Engine", () => {
         ],
       };
 
-      const messages = formatGroupMessagesForMember(group, memberA, "System prompt");
-      const userMsg = messages.find((m) => m.role === "user" && m.content.includes("search_web"));
+      const messages = formatGroupMessagesForMember(
+        group,
+        memberA,
+        "System prompt",
+      );
+      const userMsg = messages.find(
+        (m) => m.role === "user" && m.content.includes("search_web"),
+      );
       expect(userMsg).toBeDefined();
       expect(userMsg.content).toContain("<parameters>");
       expect(userMsg.content).toContain("<result>");
@@ -511,4 +586,3 @@ describe("groupGateway - Mention Resolution & Invocation Engine", () => {
     });
   });
 });
-

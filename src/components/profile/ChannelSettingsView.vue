@@ -42,7 +42,11 @@
 
     <!-- Tab 1: Soul & Basic Info -->
     <div v-if="activeTab === 'soul'" class="tab-pane">
-      <el-skeleton :loading="loading && !soulContent && !basicName" animated :rows="7">
+      <el-skeleton
+        :loading="loading && !soulContent && !basicName"
+        animated
+        :rows="7"
+      >
         <template #default>
           <!-- 基础信息 -->
           <div class="group-title">
@@ -65,15 +69,25 @@
             </div>
             <div class="setting-field">
               <div class="field-label">头像 URL</div>
-              <div class="field-value" style="display: flex; gap: 8px; align-items: center;">
-                <el-input v-model="basicAvatar" placeholder="图片地址（例如 /static/icons/512x512.png）" />
-                <el-avatar :src="basicAvatar || '/static/icons/512x512.png'" :size="32" shape="square" />
+              <div
+                class="field-value"
+                style="display: flex; gap: 8px; align-items: center"
+              >
+                <el-input
+                  v-model="basicAvatar"
+                  placeholder="图片地址（例如 /static/icons/512x512.png）"
+                />
+                <el-avatar
+                  :src="basicAvatar || '/static/icons/512x512.png'"
+                  :size="32"
+                  shape="square"
+                />
               </div>
             </div>
           </div>
 
           <!-- 灵魂人设 -->
-          <div class="group-title" style="margin-top: 8px;">
+          <div class="group-title" style="margin-top: 8px">
             <span>灵魂人格设定</span>
             <el-button
               type="primary"
@@ -169,18 +183,31 @@
 
     <!-- Tab 5: Memory -->
     <div v-if="activeTab === 'memory'" class="tab-pane">
-      <el-skeleton :loading="loading && Object.keys(globalMemories).length === 0 && !zoneContents.long_term_profile" animated :rows="6">
+      <el-skeleton
+        :loading="
+          loading &&
+          Object.keys(globalMemories).length === 0 &&
+          !zoneContents.long_term_profile
+        "
+        animated
+        :rows="6"
+      >
         <template #default>
           <div class="group-title">分区记忆管理</div>
           <div class="settings-card editor-card">
             <div class="settings-row">
               <div class="row-left">
-                <span class="card-desc" style="margin: 0;">
+                <span class="card-desc" style="margin: 0">
                   当前会话核心记忆结晶（修改后微信与 Web 端实时同步生效）
                 </span>
               </div>
               <div class="row-actions">
-                <el-button size="small" type="danger" plain @click="clearCrystal">
+                <el-button
+                  size="small"
+                  type="danger"
+                  plain
+                  @click="clearCrystal"
+                >
                   清空结晶
                 </el-button>
                 <el-button
@@ -213,11 +240,14 @@
             </el-tabs>
           </div>
 
-          <div class="group-title" style="margin-top: 20px;">
+          <div class="group-title" style="margin-top: 20px">
             <span>全局长期记忆</span>
           </div>
           <div class="settings-card">
-            <div v-if="Object.keys(globalMemories).length === 0" class="card-desc muted">
+            <div
+              v-if="Object.keys(globalMemories).length === 0"
+              class="card-desc muted"
+            >
               暂无已落盘的全局长期记忆
             </div>
             <div
@@ -232,10 +262,12 @@
                 v-model="globalMemories[category]"
                 type="textarea"
                 :rows="4"
-                style="margin-top: 6px;"
+                style="margin-top: 6px"
               />
-              <div style="text-align: right; margin-top: 6px;">
-                <el-button size="small" @click="saveGlobalCategory(category)">保存分类</el-button>
+              <div style="text-align: right; margin-top: 6px">
+                <el-button size="small" @click="saveGlobalCategory(category)"
+                  >保存分类</el-button
+                >
               </div>
             </div>
           </div>
@@ -247,7 +279,11 @@
     <div v-if="activeTab === 'status'" class="tab-pane">
       <div class="group-title">
         <span>渠道运行状态</span>
-        <el-button size="small" :loading="refreshingStatus" @click="refreshStatus">
+        <el-button
+          size="small"
+          :loading="refreshingStatus"
+          @click="refreshStatus"
+        >
           🔄 刷新状态
         </el-button>
       </div>
@@ -266,9 +302,17 @@
         </div>
         <div class="setting-field">
           <div class="field-label">运行状态</div>
-          <div class="field-value" style="display: flex; align-items: center; gap: 12px; justify-content: flex-end;">
+          <div
+            class="field-value"
+            style="
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              justify-content: flex-end;
+            "
+          >
             <el-tag :type="channelStatus === 'running' ? 'success' : 'info'">
-              {{ channelStatus === 'running' ? '● 运行中' : '○ 已停止' }}
+              {{ channelStatus === "running" ? "● 运行中" : "○ 已停止" }}
             </el-tag>
             <el-button
               v-if="channelStatus === 'running'"
@@ -293,19 +337,36 @@
         </div>
         <div class="setting-field">
           <div class="field-label">微信服务连接</div>
-          <div class="field-value" style="display: flex; align-items: center; gap: 8px; justify-content: flex-end;">
-            <el-tag v-if="channelStatus === 'running' && channelConnected" type="success" effect="light">
+          <div
+            class="field-value"
+            style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              justify-content: flex-end;
+            "
+          >
+            <el-tag
+              v-if="channelStatus === 'running' && channelConnected"
+              type="success"
+              effect="light"
+            >
               🟢 活跃链接已建立
             </el-tag>
-            <el-tag v-else-if="channelStatus === 'running' && !channelConnected" type="danger" effect="light">
+            <el-tag
+              v-else-if="channelStatus === 'running' && !channelConnected"
+              type="danger"
+              effect="light"
+            >
               🔴 链接断开 / 异常
             </el-tag>
-            <el-tag v-else type="info" effect="plain">
-              ⚪ 未建立连接
-            </el-tag>
+            <el-tag v-else type="info" effect="plain"> ⚪ 未建立连接 </el-tag>
           </div>
         </div>
-        <div v-if="channelStatus === 'running' && lastPollSuccess" class="setting-field">
+        <div
+          v-if="channelStatus === 'running' && lastPollSuccess"
+          class="setting-field"
+        >
           <div class="field-label">最近心跳探活</div>
           <div class="field-value">
             <span>{{ formatTimestamp(lastPollSuccess) }}</span>
@@ -319,7 +380,10 @@
         </div>
         <div v-if="lastError" class="setting-field">
           <div class="field-label">异常原因</div>
-          <div class="field-value" style="color: var(--el-color-danger, #f56c6c); font-size: 12px;">
+          <div
+            class="field-value"
+            style="color: var(--el-color-danger, #f56c6c); font-size: 12px"
+          >
             {{ lastError }}
           </div>
         </div>
@@ -353,7 +417,9 @@ const props = defineProps({
 
 const connectionStore = useConnectionStore();
 const activeTab = ref("soul");
-const channelId = computed(() => props.contactor.channelId || props.contactor.id);
+const channelId = computed(
+  () => props.contactor.channelId || props.contactor.id,
+);
 const agentId = computed(() => props.contactor.agentId || "wechat-master");
 const loading = ref(true);
 const cacheKey = computed(() => `mio_channel_cache_${channelId.value}`);
@@ -476,12 +542,18 @@ const savingCrystal = ref(false);
 
 function getZonePlaceholder(key) {
   const map = {
-    long_term_profile: "在此处编辑「用户画像」内容（如技术栈偏好、称谓、工作习惯等长期事实）...",
-    behavioral_guidelines: "在此处编辑「行为准则」内容（如交互规范、操作边界、禁止事项等长效偏好）...",
-    short_term_goals: "在此处编辑「短期目标」内容（如当前会话核心任务、期望达成的结果）...",
-    current_plan: "在此处编辑「运行计划」内容（如具体执行步骤、阶段性任务进度）...",
-    file_architecture_delta: "在此处编辑「文件变更」内容（如关键文件路径与功能摘要）...",
-    constraints: "在此处编辑「开发约束」内容（如技术限制条件、已知未解决的 bug 等）...",
+    long_term_profile:
+      "在此处编辑「用户画像」内容（如技术栈偏好、称谓、工作习惯等长期事实）...",
+    behavioral_guidelines:
+      "在此处编辑「行为准则」内容（如交互规范、操作边界、禁止事项等长效偏好）...",
+    short_term_goals:
+      "在此处编辑「短期目标」内容（如当前会话核心任务、期望达成的结果）...",
+    current_plan:
+      "在此处编辑「运行计划」内容（如具体执行步骤、阶段性任务进度）...",
+    file_architecture_delta:
+      "在此处编辑「文件变更」内容（如关键文件路径与功能摘要）...",
+    constraints:
+      "在此处编辑「开发约束」内容（如技术限制条件、已知未解决的 bug 等）...",
   };
   return map[key] || "在此处编辑内容...";
 }
@@ -533,9 +605,13 @@ const modelGroups = computed(() => {
       rawGroups.forEach((group) => {
         let groupLabel = p;
         if (group.owner) {
-          groupLabel = selectedProvider.value ? group.owner : `${p} / ${group.owner}`;
+          groupLabel = selectedProvider.value
+            ? group.owner
+            : `${p} / ${group.owner}`;
         } else if (group.label) {
-          groupLabel = selectedProvider.value ? group.label : `${p} / ${group.label}`;
+          groupLabel = selectedProvider.value
+            ? group.label
+            : `${p} / ${group.label}`;
         }
 
         let modelList = [];
@@ -575,11 +651,15 @@ function loadFromCache() {
       const data = JSON.parse(raw);
       if (data.soul && !soulContent.value) soulContent.value = data.soul;
       if (data.basicName && !basicName.value) basicName.value = data.basicName;
-      if (data.basicAvatar && !basicAvatar.value) basicAvatar.value = data.basicAvatar;
-      if (data.selectedProvider && !selectedProvider.value) selectedProvider.value = data.selectedProvider;
-      if (data.selectedModel && !selectedModel.value) selectedModel.value = data.selectedModel;
+      if (data.basicAvatar && !basicAvatar.value)
+        basicAvatar.value = data.basicAvatar;
+      if (data.selectedProvider && !selectedProvider.value)
+        selectedProvider.value = data.selectedProvider;
+      if (data.selectedModel && !selectedModel.value)
+        selectedModel.value = data.selectedModel;
       if (data.channelStatus) channelStatus.value = data.channelStatus;
-      if (data.channelConnected !== undefined) channelConnected.value = data.channelConnected;
+      if (data.channelConnected !== undefined)
+        channelConnected.value = data.channelConnected;
       if (data.crystal) zoneContents.value = parseXmlZones(data.crystal);
       if (data.globals) globalMemories.value = data.globals;
       if (data.tools && Array.isArray(data.tools)) {
@@ -618,7 +698,10 @@ function saveToCache() {
 async function loadData() {
   // 1. 获取模型与工具元数据
   try {
-    if (!client.config?.llmTools || Object.keys(client.config.llmTools).length === 0) {
+    if (
+      !client.config?.llmTools ||
+      Object.keys(client.config.llmTools).length === 0
+    ) {
       await client.config?.loadllmTools?.();
     }
     const models = client.config?.getLlmModels?.() || {};
@@ -630,7 +713,8 @@ async function loadData() {
   try {
     const res = await configAPI.request(`/api/channels/${channelId.value}`);
     if (res?.data) {
-      channelStatus.value = res.data.status || (res.data.isRunning ? "running" : "stopped");
+      channelStatus.value =
+        res.data.status || (res.data.isRunning ? "running" : "stopped");
       channelConnected.value = !!res.data.connected;
       lastPollSuccess.value = res.data.lastPollSuccess || null;
       lastActive.value = res.data.lastActive || null;
@@ -638,7 +722,8 @@ async function loadData() {
       if (res.data.name) basicName.value = res.data.name;
       if (res.data.avatar) basicAvatar.value = res.data.avatar;
       if (res.data.provider) selectedProvider.value = res.data.provider;
-      if (res.data.model) selectedModel.value = getCleanModelStr(res.data.model);
+      if (res.data.model)
+        selectedModel.value = getCleanModelStr(res.data.model);
 
       const savedTools = Array.isArray(res.data.tools) ? res.data.tools : [];
       const mode = res.data.toolCallMode || "AUTO";
@@ -767,11 +852,15 @@ async function saveModelConfig() {
 async function toggleStatus(action) {
   togglingStatus.value = true;
   try {
-    const res = await configAPI.request(`/api/channels/${channelId.value}/${action}`, {
-      method: "POST",
-    });
+    const res = await configAPI.request(
+      `/api/channels/${channelId.value}/${action}`,
+      {
+        method: "POST",
+      },
+    );
     if (res?.data) {
-      channelStatus.value = res.data.status || (action === "start" ? "running" : "stopped");
+      channelStatus.value =
+        res.data.status || (action === "start" ? "running" : "stopped");
       channelConnected.value = !!res.data.connected;
     } else {
       channelStatus.value = action === "start" ? "running" : "stopped";
@@ -799,7 +888,7 @@ watch(
   () => {
     loadFromCache();
     loadData();
-  }
+  },
 );
 
 watch(
@@ -808,7 +897,7 @@ watch(
     if (connected) {
       loadData();
     }
-  }
+  },
 );
 </script>
 
@@ -960,7 +1049,7 @@ watch(
 .zone-textarea {
   width: 100%;
   :deep(textarea) {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-family: "JetBrains Mono", "Fira Code", monospace;
     font-size: 12px;
     line-height: 1.6;
     background: var(--mio-bg-chat-window, rgba(0, 0, 0, 0.02));

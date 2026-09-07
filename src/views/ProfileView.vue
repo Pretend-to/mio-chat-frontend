@@ -16,7 +16,15 @@
           <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
       </div>
-      <div class="nav-title">{{ activeMember ? '群聊成员设置' : (activeContactor?.platform === 'group' ? '群聊设置' : '联系人详情') }}</div>
+      <div class="nav-title">
+        {{
+          activeMember
+            ? "群聊成员设置"
+            : activeContactor?.platform === "group"
+              ? "群聊设置"
+              : "联系人详情"
+        }}
+      </div>
       <!-- 移动端 .action-bar 是隐藏的，三个操作全部收进这里的「更多」菜单 -->
       <el-dropdown
         v-if="activeContactor"
@@ -33,7 +41,13 @@
             </el-dropdown-item>
             <el-dropdown-item command="delete" divided>
               <span style="color: var(--el-color-danger)">
-                {{ activeMember ? '移出群聊' : (activeContactor?.platform === 'group' ? '解散群聊' : '删除好友') }}
+                {{
+                  activeMember
+                    ? "移出群聊"
+                    : activeContactor?.platform === "group"
+                      ? "解散群聊"
+                      : "删除好友"
+                }}
               </span>
             </el-dropdown-item>
           </el-dropdown-menu>
@@ -46,7 +60,10 @@
       <div v-if="activeContactor" class="profile-container">
         <!-- 桌面端从群成员设置返回群聊设置的导航条 -->
         <div v-if="activeMember && !isMobile" class="desktop-member-header">
-          <button class="back-group-btn" @click="$router.push(`/profile/${activeContactor.id}`)">
+          <button
+            class="back-group-btn"
+            @click="$router.push(`/profile/${activeContactor.id}`)"
+          >
             <svg
               width="16"
               height="16"
@@ -59,7 +76,7 @@
             >
               <polyline points="15 18 9 12 15 6"></polyline>
             </svg>
-            <span>返回「{{ activeContactor.name || '群聊' }}」设置</span>
+            <span>返回「{{ activeContactor.name || "群聊" }}」设置</span>
           </button>
           <span class="member-badge">群成员专属配置</span>
         </div>
@@ -78,7 +95,9 @@
             :safety-simple-value-options="safetySimpleValue"
             :presets-history-data="options.presetSettings?.history"
             :name="activeMember ? activeMember.name : activeContactor.name"
-            :avatar="activeMember ? activeMember.avatar : activeContactor.avatar"
+            :avatar="
+              activeMember ? activeMember.avatar : activeContactor.avatar
+            "
             :is-group-member="!!activeMember"
             :group-member-id="activeMember ? String(activeMember.id) : null"
             :group-name="activeContactor?.name || ''"
@@ -90,22 +109,41 @@
           />
         </div>
       </div>
-      <div v-else class="profile-container skeleton-container" style="padding: 24px; width: 100%; box-sizing: border-box;">
+      <div
+        v-else
+        class="profile-container skeleton-container"
+        style="padding: 24px; width: 100%; box-sizing: border-box"
+      >
         <el-skeleton animated :rows="8" />
       </div>
     </div>
     <div v-if="activeContactor" class="action-bar">
-      <el-button v-if="activeMember" plain @click="$router.push(`/profile/${activeContactor.id}`)">
+      <el-button
+        v-if="activeMember"
+        plain
+        @click="$router.push(`/profile/${activeContactor.id}`)"
+      >
         返回群聊设置
       </el-button>
       <el-button plain @click="$router.push(`/chat/${activeContactor.id}`)">
         发送消息
       </el-button>
       <el-button type="danger" plain @click="centerDialogVisible = true">
-        {{ activeMember ? '移出群聊' : (activeContactor?.platform === 'group' ? '解散群聊' : '删除好友') }}
+        {{
+          activeMember
+            ? "移出群聊"
+            : activeContactor?.platform === "group"
+              ? "解散群聊"
+              : "删除好友"
+        }}
       </el-button>
       <!-- 群成员详情没有「保存本地」：成员配置隶属于群，不是可独立复用的预设 -->
-      <el-button v-if="!activeMember" type="primary" plain @click="saveAsPreset">
+      <el-button
+        v-if="!activeMember"
+        type="primary"
+        plain
+        @click="saveAsPreset"
+      >
         保存本地
       </el-button>
       <el-dialog
@@ -115,7 +153,13 @@
         center
         class="confirm-dialog"
       >
-        <span> {{ activeMember ? '确认要从群聊中移出该成员吗？' : '确认要删除此好友吗？该操作不可逆。' }} </span>
+        <span>
+          {{
+            activeMember
+              ? "确认要从群聊中移出该成员吗？"
+              : "确认要删除此好友吗？该操作不可逆。"
+          }}
+        </span>
         <template #footer>
           <div class="dialog-footer">
             <el-button @click="centerDialogVisible = false">取消</el-button>
@@ -134,7 +178,10 @@ import { useConnectionStore } from "@/stores/connectionStore";
 import { mapState } from "pinia";
 import { useStatusBarColor } from "@/composables/useStatusBarColor";
 import { saveLocalPreset } from "@/lib/clientSettings.js";
-import { useContactorsStore, getAvatarByModel } from "@/stores/contactorsStore.js";
+import {
+  useContactorsStore,
+  getAvatarByModel,
+} from "@/stores/contactorsStore.js";
 
 export default {
   components: {
@@ -257,7 +304,9 @@ export default {
             });
           } else {
             // 单聊联系人模式
-            this.activeContactor.options = JSON.parse(JSON.stringify(newOptions));
+            this.activeContactor.options = JSON.parse(
+              JSON.stringify(newOptions),
+            );
             if (
               model &&
               (this.activeContactor.platform === "openai" ||
@@ -268,7 +317,8 @@ export default {
                 this.activeContactor.avatarPolicy === "MODEL"
               ) {
                 useContactorsStore().loadContactorAvatar(this.activeContactor);
-                if (this.basicInfo) this.basicInfo.avatar = this.activeContactor.avatar;
+                if (this.basicInfo)
+                  this.basicInfo.avatar = this.activeContactor.avatar;
               }
               if (
                 this.activeContactor.namePolicy === 0 ||
@@ -288,7 +338,9 @@ export default {
       handler(newInfo, oldInfo) {
         if (newInfo && this.activeContactor) {
           const isGroupMember = !!this.activeMember;
-          const target = isGroupMember ? this.activeMember : this.activeContactor;
+          const target = isGroupMember
+            ? this.activeMember
+            : this.activeContactor;
           const options = target?.options || this.options;
           const model = options?.base?.model || options?.model;
           const provider = options?.provider;
@@ -300,7 +352,10 @@ export default {
             oldInfo &&
             (oldInfo.avatarPolicy === 0 || oldInfo.avatarPolicy === "MODEL");
 
-          if (isAvatarModelPolicy && (!wasAvatarModelPolicy || !newInfo.avatar)) {
+          if (
+            isAvatarModelPolicy &&
+            (!wasAvatarModelPolicy || !newInfo.avatar)
+          ) {
             if (model) {
               const modelAvatar = getAvatarByModel(model, provider);
               if (modelAvatar) {
@@ -437,15 +492,23 @@ export default {
       const memberId = this.$route.query?.memberId;
       if (this.activeContactor.platform === "group" && memberId) {
         const foundMember = this.activeContactor.members?.find(
-          (m) => m.id === memberId || m.agentId === memberId
+          (m) => m.id === memberId || m.agentId === memberId,
         );
         if (foundMember) {
           this.activeMember = foundMember;
           if (!this.activeMember.options) this.activeMember.options = {};
           this.options = JSON.parse(JSON.stringify(this.activeMember.options));
 
-          const { id, name, avatar, title, intro, namePolicy, avatarPolicy, priority } =
-            this.activeMember;
+          const {
+            id,
+            name,
+            avatar,
+            title,
+            intro,
+            namePolicy,
+            avatarPolicy,
+            priority,
+          } = this.activeMember;
           this.basicInfo = {
             id,
             name: name || "Agent 成员",
@@ -469,8 +532,18 @@ export default {
         id,
         name,
         avatar,
-        namePolicy: namePolicy !== undefined ? namePolicy : (this.activeContactor.platform === "channel" ? 1 : 0),
-        avatarPolicy: avatarPolicy !== undefined ? avatarPolicy : (this.activeContactor.platform === "channel" ? 1 : 0),
+        namePolicy:
+          namePolicy !== undefined
+            ? namePolicy
+            : this.activeContactor.platform === "channel"
+              ? 1
+              : 0,
+        avatarPolicy:
+          avatarPolicy !== undefined
+            ? avatarPolicy
+            : this.activeContactor.platform === "channel"
+              ? 1
+              : 0,
         priority: priority === 1 ? false : true,
       };
 
@@ -538,13 +611,16 @@ export default {
 
       if (this.activeMember) {
         const updatedMembers = (this.activeContactor.members || []).filter(
-          (m) => m.id !== this.activeMember.id && m.agentId !== this.activeMember.id
+          (m) =>
+            m.id !== this.activeMember.id && m.agentId !== this.activeMember.id,
         );
         const store = useContactorsStore();
         await store.updateContactor(this.activeContactor.id, {
           members: updatedMembers,
         });
-        this.$message.success(`已从群聊中移出成员【${this.activeMember.name}】`);
+        this.$message.success(
+          `已从群聊中移出成员【${this.activeMember.name}】`,
+        );
         this.activeMember = null;
         this.$router.push(`/profile/${this.activeContactor.id}`);
       } else {

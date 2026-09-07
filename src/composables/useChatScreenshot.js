@@ -351,11 +351,9 @@ export function useChatScreenshot({ chatWindowRef, selectedMessages }) {
     if (navigator.canShare && navigator.share) {
       try {
         const blob = await fetch(previewImageUrl.value).then((r) => r.blob());
-        const file = new File(
-          [blob],
-          `chat_image_export_${Date.now()}.png`,
-          { type: blob.type || "image/png" },
-        );
+        const file = new File([blob], `chat_image_export_${Date.now()}.png`, {
+          type: blob.type || "image/png",
+        });
         if (navigator.canShare({ files: [file] })) {
           await navigator.share({
             files: [file],
@@ -373,7 +371,9 @@ export function useChatScreenshot({ chatWindowRef, selectedMessages }) {
     }
 
     // 兜底：不支持自动保存时引导长按预览图保存（不关闭预览）
-    ElMessage.warning("当前浏览器不支持直接保存，请长按上方图片选择「存储图像」");
+    ElMessage.warning(
+      "当前浏览器不支持直接保存，请长按上方图片选择「存储图像」",
+    );
   };
 
   const shareMobilePreviewLink = async () => {

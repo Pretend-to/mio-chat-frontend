@@ -58,11 +58,8 @@
 
           <span class="member-name">{{ m.name }}</span>
 
-          <span
-            class="role-tag"
-            :class="m.isUser ? 'owner' : 'admin'"
-          >
-            {{ m.isUser ? '群主' : (m.title || 'Agent') }}
+          <span class="role-tag" :class="m.isUser ? 'owner' : 'admin'">
+            {{ m.isUser ? "群主" : m.title || "Agent" }}
           </span>
         </div>
       </div>
@@ -76,7 +73,9 @@
       append-to-body
     >
       <div class="notice-dialog-body">
-        <div class="dialog-tip">修改后的群公告将自动同步注入至各 Agent 的讨论上下文中</div>
+        <div class="dialog-tip">
+          修改后的群公告将自动同步注入至各 Agent 的讨论上下文中
+        </div>
         <el-input
           v-model="noticeForm"
           type="textarea"
@@ -119,7 +118,7 @@ watch(
   (val) => {
     noticeForm.value = val || "";
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 function saveNotice() {
@@ -157,9 +156,7 @@ const displayMembers = computed(() => {
 const filteredMembers = computed(() => {
   if (!searchKey.value.trim()) return displayMembers.value;
   const kw = searchKey.value.trim().toLowerCase();
-  return displayMembers.value.filter((m) =>
-    m.name.toLowerCase().includes(kw)
-  );
+  return displayMembers.value.filter((m) => m.name.toLowerCase().includes(kw));
 });
 </script>
 

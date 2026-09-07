@@ -956,7 +956,9 @@ figure {
   }
 
   // Touch adaptations (exclude small/circle icon buttons)
-  .el-button:not(.is-circle):not(.action-btn):not(.el-button--small):not(.el-button--mini),
+  .el-button:not(.is-circle):not(.action-btn):not(.el-button--small):not(
+      .el-button--mini
+    ),
   .el-checkbox,
   .el-radio,
   .el-switch {

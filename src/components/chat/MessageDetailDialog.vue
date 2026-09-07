@@ -34,7 +34,11 @@
       </div>
     </template>
 
-    <div v-if="message" class="detail-container" :class="{ 'is-mobile': isMobile }">
+    <div
+      v-if="message"
+      class="detail-container"
+      :class="{ 'is-mobile': isMobile }"
+    >
       <!-- 头部：基本摘要信息 -->
       <div class="detail-header-card">
         <div class="header-avatar-name">
@@ -85,19 +89,13 @@
             <div class="stat-value prompt">
               {{ formatNumber(promptTokens) }}
             </div>
-            <div
-              v-if="cachedTokens > 0"
-              class="stat-sub-text"
-            >
+            <div v-if="cachedTokens > 0" class="stat-sub-text">
               缓存命中: {{ formatNumber(cachedTokens) }}
             </div>
           </div>
 
           <!-- 思考 Tokens (如果存在) -->
-          <div
-            v-if="hasReasoningTokens"
-            class="usage-stat-card"
-          >
+          <div v-if="hasReasoningTokens" class="usage-stat-card">
             <div class="stat-label">思考 (Reasoning)</div>
             <div class="stat-value reasoning">
               {{ formatNumber(reasoningTokens) }}
@@ -131,7 +129,9 @@
 
         <div class="perf-row">
           <div class="perf-item" v-if="formattedDuration">
-            <span class="perf-label">{{ viewMode === 'last_round' ? '本轮耗时' : '整体耗时' }}</span>
+            <span class="perf-label">{{
+              viewMode === "last_round" ? "本轮耗时" : "整体耗时"
+            }}</span>
             <span class="perf-value">{{ formattedDuration }}</span>
           </div>
           <div class="perf-item" v-if="formattedTtft">
@@ -234,13 +234,17 @@ const currentUsage = computed(() => {
 });
 
 const promptTokens = computed(() => currentUsage.value?.prompt_tokens || 0);
-const completionTokens = computed(() => currentUsage.value?.completion_tokens || 0);
+const completionTokens = computed(
+  () => currentUsage.value?.completion_tokens || 0,
+);
 const totalTokens = computed(
   () =>
     currentUsage.value?.total_tokens ||
     promptTokens.value + completionTokens.value,
 );
-const reasoningTokens = computed(() => currentUsage.value?.reasoning_tokens || 0);
+const reasoningTokens = computed(
+  () => currentUsage.value?.reasoning_tokens || 0,
+);
 const cachedTokens = computed(() => currentUsage.value?.cached_tokens || 0);
 const rounds = computed(() => usageInfo.value?.rounds || 1);
 
@@ -284,7 +288,12 @@ const formattedTtft = computed(() => {
 const tpsRate = computed(() => {
   const comp = completionTokens.value;
   const dur = durationMs.value;
-  if (typeof comp === "number" && typeof dur === "number" && dur > 0 && comp > 0) {
+  if (
+    typeof comp === "number" &&
+    typeof dur === "number" &&
+    dur > 0 &&
+    comp > 0
+  ) {
     return (comp / (dur / 1000)).toFixed(1);
   }
   return null;
@@ -332,7 +341,8 @@ const formattedTime = computed(() => {
 });
 
 const charCount = computed(() => {
-  if (!props.message?.content || !Array.isArray(props.message.content)) return 0;
+  if (!props.message?.content || !Array.isArray(props.message.content))
+    return 0;
   return props.message.content.reduce((sum, elm) => {
     if (elm.type === "text") return sum + (elm.data?.text || "").length;
     if (elm.type === "reason") return sum + (elm.data?.text || "").length;

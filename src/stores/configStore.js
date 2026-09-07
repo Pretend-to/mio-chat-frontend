@@ -636,7 +636,10 @@ export const useConfigStore = defineStore("config", () => {
         userProfile.value = {
           name: settings.profile.name || "user",
           title: settings.profile.title || "Mio",
-          avatar: settings.profile.avatar !== undefined ? settings.profile.avatar : null,
+          avatar:
+            settings.profile.avatar !== undefined
+              ? settings.profile.avatar
+              : null,
         };
         try {
           localStorage.setItem(

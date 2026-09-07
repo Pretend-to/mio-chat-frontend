@@ -56,7 +56,10 @@ export function useInteraction(contactorIdRef) {
       if (ack.ok === false) {
         if (activeInteraction.value?.interactionId === interactionId) {
           interactionError.value = ack.error || "交互反馈失败，请重试。";
-          console.error("[useInteraction] 交互反馈失败:", interactionError.value);
+          console.error(
+            "[useInteraction] 交互反馈失败:",
+            interactionError.value,
+          );
         }
         return;
       }
@@ -82,7 +85,10 @@ export function useInteraction(contactorIdRef) {
           settle,
         );
       } catch (error) {
-        settle({ ok: false, error: error?.message || "交互发送失败，请重试。" });
+        settle({
+          ok: false,
+          error: error?.message || "交互发送失败，请重试。",
+        });
       }
     } else {
       settle({ ok: false, error: "Socket.IO 连接未就绪，请重试。" });
@@ -93,8 +99,10 @@ export function useInteraction(contactorIdRef) {
     activeInteraction,
     hasActiveInteraction,
     interactionError,
-    interactionSubmitting: computed(() =>
-      submittingInteractionId.value === activeInteraction.value?.interactionId,
+    interactionSubmitting: computed(
+      () =>
+        submittingInteractionId.value ===
+        activeInteraction.value?.interactionId,
     ),
     submitResponse,
   };

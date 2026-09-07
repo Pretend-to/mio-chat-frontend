@@ -11,7 +11,9 @@
           <div class="metric-item-block">
             <span class="metric-label">故障调用总数</span>
             <div class="metric-value-row">
-              <span class="metric-number text-danger">{{ store.failures.length }}</span>
+              <span class="metric-number text-danger">{{
+                store.failures.length
+              }}</span>
               <span class="metric-unit">次</span>
             </div>
           </div>
@@ -31,11 +33,20 @@
           <span class="card-title">异常类型分布</span>
         </div>
         <div class="card-body chart-card-body">
-          <el-skeleton v-if="store.loadingFailures && store.failures.length === 0" animated :rows="3" />
+          <el-skeleton
+            v-if="store.loadingFailures && store.failures.length === 0"
+            animated
+            :rows="3"
+          />
           <div
             id="error-chart"
             class="chart-container"
-            :style="{ display: store.loadingFailures && store.failures.length === 0 ? 'none' : 'block' }"
+            :style="{
+              display:
+                store.loadingFailures && store.failures.length === 0
+                  ? 'none'
+                  : 'block',
+            }"
           ></div>
         </div>
       </div>
@@ -46,12 +57,22 @@
       <div class="card-header table-header-bar">
         <div class="header-left">
           <span class="card-title">异常诊断控制台</span>
-          <span class="record-count-badge">{{ store.failures.length }} 条记录</span>
+          <span class="record-count-badge"
+            >{{ store.failures.length }} 条记录</span
+          >
         </div>
       </div>
       <div class="card-body p-none table-card-body">
-        <el-skeleton v-if="store.loadingFailures && store.failures.length === 0" animated :rows="8" style="padding: 20px;" />
-        <div v-show="!store.loadingFailures || store.failures.length > 0" class="table-responsive-wrapper">
+        <el-skeleton
+          v-if="store.loadingFailures && store.failures.length === 0"
+          animated
+          :rows="8"
+          style="padding: 20px"
+        />
+        <div
+          v-show="!store.loadingFailures || store.failures.length > 0"
+          class="table-responsive-wrapper"
+        >
           <el-table
             :data="store.failures"
             size="default"
@@ -60,7 +81,9 @@
           >
             <el-table-column label="发生时间" width="160">
               <template #default="scope">
-                <span class="time-text">{{ formatTime(scope.row.createdAt) }}</span>
+                <span class="time-text">{{
+                  formatTime(scope.row.createdAt)
+                }}</span>
               </template>
             </el-table-column>
             <el-table-column
@@ -80,7 +103,12 @@
               show-overflow-tooltip
             >
               <template #default="scope">
-                <el-tag size="small" type="danger" effect="plain" class="model-tag">
+                <el-tag
+                  size="small"
+                  type="danger"
+                  effect="plain"
+                  class="model-tag"
+                >
                   {{ scope.row.model }}
                 </el-tag>
               </template>
@@ -92,7 +120,9 @@
               show-overflow-tooltip
             >
               <template #default="scope">
-                <span class="error-msg-text">{{ scope.row.errorMessage || "未知异常" }}</span>
+                <span class="error-msg-text">{{
+                  scope.row.errorMessage || "未知异常"
+                }}</span>
               </template>
             </el-table-column>
             <el-table-column
@@ -161,8 +191,7 @@ const categorizedErrors = computed(() => {
       cat = "Auth Failure (401)";
     else if (msg.includes("400") || msg.includes("未找到指定的适配器"))
       cat = "Config/Adapter Error (400)";
-    else if (msg.toLowerCase().includes("aborted"))
-      cat = "Client Aborted";
+    else if (msg.toLowerCase().includes("aborted")) cat = "Client Aborted";
 
     acc[cat] = (acc[cat] || 0) + 1;
     return acc;
@@ -226,7 +255,11 @@ function renderChart() {
     {
       backgroundColor: theme.backgroundColor,
       textStyle: theme.textStyle,
-      tooltip: { ...theme.tooltip, trigger: "item", formatter: "{b}: {c} 次 ({d}%)" },
+      tooltip: {
+        ...theme.tooltip,
+        trigger: "item",
+        formatter: "{b}: {c} 次 ({d}%)",
+      },
       legend: {
         orient: "vertical",
         right: "10%",

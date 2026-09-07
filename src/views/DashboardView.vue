@@ -45,7 +45,11 @@
       </div>
 
       <div class="sidebar-footer">
-        <div class="back-to-app" @click="router.push('/settings')" title="返回设置概览">
+        <div
+          class="back-to-app"
+          @click="router.push('/settings')"
+          title="返回设置概览"
+        >
           <i class="fa-solid fa-arrow-left-long"></i>
           <span>返回设置概览</span>
         </div>
@@ -542,7 +546,8 @@ onUnmounted(() => {
   .view-body.flex-layout {
     padding: 20px 12px 12px;
   }
-}@keyframes fadeInOverlay {
+}
+@keyframes fadeInOverlay {
   from {
     opacity: 0;
   }

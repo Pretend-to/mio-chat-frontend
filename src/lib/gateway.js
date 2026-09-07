@@ -631,8 +631,13 @@ export const gateway = {
       }
 
       // 获取当前用户发送的最新一条消息（极轻量纯净当前轮输入，零上下文拼接）
-      const lastUserMsg = (messagesChain || []).filter((m) => m.role === "user").pop();
-      const text = lastUserMsg?.content?.find((c) => c.type === "text")?.data?.text || lastUserMsg?.text || "";
+      const lastUserMsg = (messagesChain || [])
+        .filter((m) => m.role === "user")
+        .pop();
+      const text =
+        lastUserMsg?.content?.find((c) => c.type === "text")?.data?.text ||
+        lastUserMsg?.text ||
+        "";
       const images = [];
       const files = [];
 
@@ -651,12 +656,15 @@ export const gateway = {
       getOrCreateBuffer(contactorId, messageId, contactorStore);
 
       const targetChannelId = contactor.channelId || contactor.id;
-      const res = await client.socket.fetch(`/api/channel/message/${targetChannelId}`, {
-        text,
-        images,
-        files,
-        messageId,
-      });
+      const res = await client.socket.fetch(
+        `/api/channel/message/${targetChannelId}`,
+        {
+          text,
+          images,
+          files,
+          messageId,
+        },
+      );
 
       return res?.messageId || messageId;
     } else {
@@ -690,7 +698,9 @@ export const gateway = {
         const baseSystemPrompt = options?.presetSettings?.opening || "";
         const latestSummary = crystallization.latestSummary || "";
         const isGlobalMemOn = crystallization.globalMemoryEnabled !== false;
-        const globalMem = isGlobalMemOn ? (client._clientSettings?.globalMemory || []) : [];
+        const globalMem = isGlobalMemOn
+          ? client._clientSettings?.globalMemory || []
+          : [];
         const assembledSystem = assembleSystemPrompt(
           baseSystemPrompt,
           latestSummary,
@@ -715,8 +725,11 @@ export const gateway = {
           contactor?.options?.base?.max_messages_num || 20,
         );
 
-        const isGlobalMemOn = contactor?.options?.crystallization?.globalMemoryEnabled !== false;
-        const globalMem = isGlobalMemOn ? (client._clientSettings?.globalMemory || []) : [];
+        const isGlobalMemOn =
+          contactor?.options?.crystallization?.globalMemoryEnabled !== false;
+        const globalMem = isGlobalMemOn
+          ? client._clientSettings?.globalMemory || []
+          : [];
         if (Array.isArray(globalMem) && globalMem.length > 0) {
           const hasGlobalMem = finalMessages.some(
             (m) =>
@@ -725,7 +738,9 @@ export const gateway = {
               m.content.includes("<global_long_term_memory>"),
           );
           if (!hasGlobalMem) {
-            const validItems = globalMem.filter((m) => m && m.content && m.content.trim());
+            const validItems = globalMem.filter(
+              (m) => m && m.content && m.content.trim(),
+            );
             if (validItems.length > 0) {
               const memXml = [
                 "<global_long_term_memory>",
@@ -755,10 +770,11 @@ export const gateway = {
       const enrichedOptions = { ...options };
       if (crystallizationEnabled) {
         enrichedOptions.crystallization_token_watermark =
-          crystallization.tokenWatermark ?? 'auto';
+          crystallization.tokenWatermark ?? "auto";
         enrichedOptions.previous_summary = crystallization.latestSummary || "";
         enrichedOptions.crystallization_keep_turns = 1;
-        enrichedOptions.pending_memory_events = crystallization.pendingMemoryEvents || [];
+        enrichedOptions.pending_memory_events =
+          crystallization.pendingMemoryEvents || [];
         // 移除 system prompt 中的 opening（已合并到消息链头部）
         if (enrichedOptions.presetSettings) {
           enrichedOptions.presetSettings = {
@@ -1077,14 +1093,18 @@ export const gateway = {
       if (!contactor) return;
 
       // 1. 检查并追加用户在渠道（微信等）端发送的消息
-      const existsUser = contactor.messageChain.some((m) => m.id === userMessage.id);
+      const existsUser = contactor.messageChain.some(
+        (m) => m.id === userMessage.id,
+      );
       if (!existsUser) {
         const userContainer = {
           role: "user",
           id: userMessage.id || `msg_u_${Date.now()}`,
           time: userMessage.time || Date.now(),
           status: "completed",
-          content: userMessage.content || [{ type: "text", data: { text: userMessage.text || "" } }],
+          content: userMessage.content || [
+            { type: "text", data: { text: userMessage.text || "" } },
+          ],
           text: userMessage.text || "",
         };
         contactor.messageChain.push(userContainer);
@@ -1092,7 +1112,9 @@ export const gateway = {
 
       // 2. 检查并创建 AI 回复的 Blank 占位及 StreamBuffer
       if (assistantMessageId) {
-        const existsAi = contactor.messageChain.some((m) => m.id === assistantMessageId);
+        const existsAi = contactor.messageChain.some(
+          (m) => m.id === assistantMessageId,
+        );
         if (!existsAi) {
           const aiContainer = {
             role: "other",

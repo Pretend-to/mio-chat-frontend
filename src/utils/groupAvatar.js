@@ -1,6 +1,6 @@
 /**
  * groupAvatar.js — 智能组合头像合成引擎 (SVG/Canvas 双引擎)
- * 
+ *
  * 采用 SVG 矢量切割与 Canvas 备用双引擎算法，100% 免疫跨域图片 (CORS) 导致的 Tainted Canvas 崩溃。
  */
 
@@ -121,7 +121,10 @@ function escapeXml(str) {
 /**
  * 智能合成多宫格群头像 (带安全兜底)
  */
-export async function generateCompositeAvatar(avatarUrls = [], canvasSize = 256) {
+export async function generateCompositeAvatar(
+  avatarUrls = [],
+  canvasSize = 256,
+) {
   try {
     const validUrls = (avatarUrls || []).filter(Boolean);
     if (validUrls.length === 0) {

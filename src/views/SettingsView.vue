@@ -291,7 +291,7 @@
 
           <template v-if="validating">
             <!-- 正在验证访问码时显示加载骨架屏 -->
-            <div style="padding: 24px;">
+            <div style="padding: 24px">
               <el-skeleton :rows="10" animated />
             </div>
           </template>
@@ -470,13 +470,16 @@ const activeMenu = computed(() => {
 // 检查是否在设置子页面
 const isInSubPage = () => {
   const currentPath = route.path;
-  return currentPath !== "/settings" && currentPath !== "/settings/" && currentPath.startsWith("/settings/");
+  return (
+    currentPath !== "/settings" &&
+    currentPath !== "/settings/" &&
+    currentPath.startsWith("/settings/")
+  );
 };
 
 useStatusBarColor(() =>
   isInSubPage() ? "var(--mio-bg-card)" : "var(--mio-bg-page)",
 );
-
 
 // 获取返回按钮的提示文本
 const getBackButtonTitle = () => {
@@ -493,7 +496,9 @@ const getMobileTitle = () => {
   }
 
   // 如果在设置子页面，显示对应的页面名称
-  const currentItem = menuItems.value.find((item) => item.index === activeMenu.value);
+  const currentItem = menuItems.value.find(
+    (item) => item.index === activeMenu.value,
+  );
   return currentItem ? currentItem.label : "设置";
 };
 
@@ -588,7 +593,6 @@ const handleResetCache = async () => {
     }
   }
 };
-
 
 // 游客进入非客户端设置页时，自动跳转到客户端设置
 watch(

@@ -14,69 +14,99 @@
         ></div>
       </div>
       <div class="profile-info">
-        <div v-if="isGroupMember" class="group-member-tag" style="margin-bottom: 6px;">
+        <div
+          v-if="isGroupMember"
+          class="group-member-tag"
+          style="margin-bottom: 6px"
+        >
           <el-tag size="small" type="warning" effect="dark" round>
             群聊【{{ groupName }}】成员设置
           </el-tag>
         </div>
         <h1 class="profile-name">{{ name || "Mio Assistant" }}</h1>
-        <div class="profile-id">ID {{ basicInfo.id || contactorId || "114514" }}</div>
+        <div class="profile-id">
+          ID {{ basicInfo.id || contactorId || "114514" }}
+        </div>
         <div class="status-text">
-          <span :class="{ 'online-indicator': true, offline: !isGroupMember && activeContactorPlatform !== 'group' && !isConnected }"
+          <span
+            :class="{
+              'online-indicator': true,
+              offline:
+                !isGroupMember &&
+                activeContactorPlatform !== 'group' &&
+                !isConnected,
+            }"
             >●</span
           >
-          {{ isGroupMember ? `群聊 "${groupName}" 内部 Agent 成员` : (activeContactorPlatform === 'group' ? (currentContactor ? `${currentContactor.members?.length || 0} 位成员` : 'Agent 群聊') : (isConnected ? "在线" : "离线")) }}
+          {{
+            isGroupMember
+              ? `群聊 "${groupName}" 内部 Agent 成员`
+              : activeContactorPlatform === "group"
+                ? currentContactor
+                  ? `${currentContactor.members?.length || 0} 位成员`
+                  : "Agent 群聊"
+                : isConnected
+                  ? "在线"
+                  : "离线"
+          }}
         </div>
       </div>
     </div>
 
     <!-- Top Tabs (non-onebot & non-channel & non-group or isGroupMember) -->
-    <div class="tabs-container" v-if="activeContactorPlatform !== 'onebot' && activeContactorPlatform !== 'channel' && (activeContactorPlatform !== 'group' || isGroupMember)">
+    <div
+      class="tabs-container"
+      v-if="
+        activeContactorPlatform !== 'onebot' &&
+        activeContactorPlatform !== 'channel' &&
+        (activeContactorPlatform !== 'group' || isGroupMember)
+      "
+    >
       <div class="segmented-tabs">
-          <div
-            :class="{ 'tab-item': true, active: activeTab === 'basic' }"
-            @click="activeTab = 'basic'"
-          >
-            基础配置
-          </div>
-          <div
-            :class="{ 'tab-item': true, active: activeTab === 'tools' }"
-            @click="activeTab = 'tools'"
-          >
-            工具调用
-          </div>
-          <div
-            :class="{ 'tab-item': true, active: activeTab === 'skills' }"
-            @click="activeTab = 'skills'"
-          >
-            技能库
-          </div>
-          <div
-            :class="{ 'tab-item': true, active: activeTab === 'presets' }"
-            @click="activeTab = 'presets'"
-          >
-            历史预设
-          </div>
-          <div
-            :class="{ 'tab-item': true, active: activeTab === 'memory' }"
-            @click="activeTab = 'memory'"
-          >
-            记忆模块
-          </div>
-          <div
-            :class="{ 'tab-item': true, active: activeTab === 'automation' }"
-            @click="activeTab = 'automation'"
-          >
-            定时任务
-          </div>
-          <div
-            :class="{ 'tab-item': true, active: activeTab === 'advanced' }"
-            @click="activeTab = 'advanced'"
-          >
-            高级扩展
-          </div>
+        <div
+          :class="{ 'tab-item': true, active: activeTab === 'basic' }"
+          @click="activeTab = 'basic'"
+        >
+          基础配置
+        </div>
+        <div
+          :class="{ 'tab-item': true, active: activeTab === 'tools' }"
+          @click="activeTab = 'tools'"
+        >
+          工具调用
+        </div>
+        <div
+          :class="{ 'tab-item': true, active: activeTab === 'skills' }"
+          @click="activeTab = 'skills'"
+        >
+          技能库
+        </div>
+        <div
+          :class="{ 'tab-item': true, active: activeTab === 'presets' }"
+          @click="activeTab = 'presets'"
+        >
+          历史预设
+        </div>
+        <div
+          :class="{ 'tab-item': true, active: activeTab === 'memory' }"
+          @click="activeTab = 'memory'"
+        >
+          记忆模块
+        </div>
+        <div
+          :class="{ 'tab-item': true, active: activeTab === 'automation' }"
+          @click="activeTab = 'automation'"
+        >
+          定时任务
+        </div>
+        <div
+          :class="{ 'tab-item': true, active: activeTab === 'advanced' }"
+          @click="activeTab = 'advanced'"
+        >
+          高级扩展
         </div>
       </div>
+    </div>
 
     <!-- Settings Content Area -->
     <div class="settings-content">
@@ -94,7 +124,11 @@
 
       <!-- Tab: Basic -->
       <ContactorBasicTab
-        v-if="activeContactorPlatform !== 'channel' && !(activeContactorPlatform === 'group' && !isGroupMember) && activeTab === 'basic'"
+        v-if="
+          activeContactorPlatform !== 'channel' &&
+          !(activeContactorPlatform === 'group' && !isGroupMember) &&
+          activeTab === 'basic'
+        "
         :model-value="modelValue"
         @update:model-value="(val) => $emit('update:modelValue', val)"
         :basic-info="basicInfo"
@@ -111,7 +145,10 @@
 
       <!-- Tab: Tools -->
       <ContactorToolsTab
-        v-if="!(activeContactorPlatform === 'group' && !isGroupMember) && activeTab === 'tools'"
+        v-if="
+          !(activeContactorPlatform === 'group' && !isGroupMember) &&
+          activeTab === 'tools'
+        "
         :model-value="modelValue"
         @update:model-value="(val) => $emit('update:modelValue', val)"
         :tool-call-modes-list="toolCallModesList"
@@ -120,13 +157,19 @@
 
       <!-- Tab: Skills -->
       <ContactorSkillsTab
-        v-if="!(activeContactorPlatform === 'group' && !isGroupMember) && activeTab === 'skills'"
+        v-if="
+          !(activeContactorPlatform === 'group' && !isGroupMember) &&
+          activeTab === 'skills'
+        "
         :is-mobile="isMobile"
       />
 
       <!-- Tab: Presets -->
       <div
-        v-if="!(activeContactorPlatform === 'group' && !isGroupMember) && activeTab === 'presets'"
+        v-if="
+          !(activeContactorPlatform === 'group' && !isGroupMember) &&
+          activeTab === 'presets'
+        "
         class="tab-pane"
       >
         <div class="group-title">历史预设</div>
@@ -140,7 +183,10 @@
 
       <!-- Tab: Memory Crystallization -->
       <div
-        v-if="!(activeContactorPlatform === 'group' && !isGroupMember) && activeTab === 'memory'"
+        v-if="
+          !(activeContactorPlatform === 'group' && !isGroupMember) &&
+          activeTab === 'memory'
+        "
         class="tab-pane"
       >
         <MemoryManager
@@ -157,7 +203,10 @@
 
       <!-- Tab: Automation (定时任务) -->
       <ContactorAutomationTab
-        v-if="!(activeContactorPlatform === 'group' && !isGroupMember) && activeTab === 'automation'"
+        v-if="
+          !(activeContactorPlatform === 'group' && !isGroupMember) &&
+          activeTab === 'automation'
+        "
         :name="name"
         :contactor-id="contactorId"
         :is-mobile="isMobile"
@@ -165,7 +214,10 @@
 
       <!-- Tab: Advanced -->
       <ContactorAdvancedTab
-        v-if="!(activeContactorPlatform === 'group' && !isGroupMember) && activeTab === 'advanced'"
+        v-if="
+          !(activeContactorPlatform === 'group' && !isGroupMember) &&
+          activeTab === 'advanced'
+        "
         :model-value="modelValue"
         @update:model-value="(val) => $emit('update:modelValue', val)"
         :adapter-metadata="adapterMetadata"
@@ -267,7 +319,7 @@ const props = defineProps({
 
 const contactorStore = useContactorsStore();
 const currentContactor = computed(() =>
-  props.contactorId ? contactorStore.contactors[props.contactorId] : null
+  props.contactorId ? contactorStore.contactors[props.contactorId] : null,
 );
 
 defineEmits([

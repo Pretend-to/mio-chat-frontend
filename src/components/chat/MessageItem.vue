@@ -51,9 +51,15 @@
         <div v-if="item.role !== 'mio_system'" class="avatar">
           <template v-if="item.role === 'other'">
             <img
-              :src="groupMemberAvatar || activeContactor.avatar || '/static/icons/512x512.png'"
+              :src="
+                groupMemberAvatar ||
+                activeContactor.avatar ||
+                '/static/icons/512x512.png'
+              "
               :alt="groupMemberName || activeContactor.name"
-              @click="$emit('to-profile', item.sender_id || item.senderMemberId)"
+              @click="
+                $emit('to-profile', item.sender_id || item.senderMemberId)
+              "
             />
           </template>
           <img
@@ -67,22 +73,22 @@
             <div
               v-if="
                 item.role === 'other'
-                  ? (groupMemberTitle || activeContactor.title)
-                  : (userProfile.title || '用户')
+                  ? groupMemberTitle || activeContactor.title
+                  : userProfile.title || '用户'
               "
               class="title"
             >
               {{
                 item.role === "other"
-                  ? (groupMemberTitle || activeContactor.title)
-                  : (userProfile.title || "用户")
+                  ? groupMemberTitle || activeContactor.title
+                  : userProfile.title || "用户"
               }}
             </div>
             <div class="name">
               {{
                 item.role === "other"
-                  ? (groupMemberName || activeContactor.name)
-                  : (userProfile.name || "我")
+                  ? groupMemberName || activeContactor.name
+                  : userProfile.name || "我"
               }}
               <span v-if="item.triggerType === 'task'" class="task-name-tag"
                 >计划</span
@@ -186,7 +192,9 @@
                 :contactor="activeContactor"
                 :isStreaming="
                   item.role === 'other' &&
-                  ['pending', 'running', 'streaming', 'retrying'].includes(item.status)
+                  ['pending', 'running', 'streaming', 'retrying'].includes(
+                    item.status,
+                  )
                 "
                 :messageIndex="index"
                 :mioPlugins="mioPlugins"
@@ -265,7 +273,8 @@ const replyingMember = computed(() => {
   // 按 ID 定位，不用名字 —— 重名或改名都会错配。
   let member = sId
     ? props.activeContactor.members?.find(
-        (m) => String(m.id) === String(sId) || String(m.agentId) === String(sId),
+        (m) =>
+          String(m.id) === String(sId) || String(m.agentId) === String(sId),
       )
     : null;
 
@@ -338,7 +347,8 @@ const groupMemberName = computed(() => {
 });
 
 const groupMemberTitle = computed(() => {
-  if (props.activeContactor?.platform !== "group") return props.activeContactor.title;
+  if (props.activeContactor?.platform !== "group")
+    return props.activeContactor.title;
   return replyingMember.value?.title || "Agent 成员";
 });
 

@@ -26,7 +26,9 @@ export function useChatMessageMenu({
 
   const getseletedMessage = () => {
     if (validMessageIndex.value === -1) return null;
-    return activeContactor.value?.messageChain?.[validMessageIndex.value] || null;
+    return (
+      activeContactor.value?.messageChain?.[validMessageIndex.value] || null
+    );
   };
 
   const showMessageMenu = (event, messageIndex) => {

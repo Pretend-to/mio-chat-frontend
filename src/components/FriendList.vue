@@ -337,8 +337,10 @@ const genBotByProvider = async (provider) => {
         }
         if (preset.opening) options.presetSettings.opening = preset.opening;
         if (preset.history) options.presetSettings.history = preset.history;
-        if (preset.temperature !== undefined) options.chatParams.temperature = preset.temperature;
-        if (preset.reasoning_effort !== undefined) options.chatParams.reasoning_effort = preset.reasoning_effort;
+        if (preset.temperature !== undefined)
+          options.chatParams.temperature = preset.temperature;
+        if (preset.reasoning_effort !== undefined)
+          options.chatParams.reasoning_effort = preset.reasoning_effort;
         if (preset.tools?.length > 0) {
           const resolvedTools = [];
           const allPluginTools = Object.values(config.llmTools || {});
@@ -644,7 +646,11 @@ onBeforeUnmount(() => {
           <div class="mio-contact-item__info">
             <div class="mio-contact-item__name">{{ item.name }}</div>
             <div class="mio-contact-item__time">
-              {{ getContactorLastTime(item.lastMessageTime || item.lastUpdate || item.messageChain) }}
+              {{
+                getContactorLastTime(
+                  item.lastMessageTime || item.lastUpdate || item.messageChain,
+                )
+              }}
             </div>
             <div class="mio-contact-item__message-summary">
               <template v-if="item.draft">

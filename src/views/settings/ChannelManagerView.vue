@@ -3,22 +3,35 @@
     <div class="page-header">
       <div class="header-title">
         <h1>渠道管理</h1>
-        <div class="header-desc">接入微信 ClawBot / iLink 等外部渠道：添加 → 扫码绑定 → 编辑 → 启动运行。</div>
+        <div class="header-desc">
+          接入微信 ClawBot / iLink 等外部渠道：添加 → 扫码绑定 → 编辑 →
+          启动运行。
+        </div>
       </div>
       <div class="header-actions">
         <el-button :icon="Refresh" @click="loadChannels">刷新</el-button>
-        <el-button type="primary" :icon="Plus" @click="openAdd">添加渠道</el-button>
+        <el-button type="primary" :icon="Plus" @click="openAdd"
+          >添加渠道</el-button
+        >
       </div>
     </div>
 
     <!-- 空状态 -->
     <div v-if="!loading && channels.length === 0" class="empty-state">
-      <el-empty description="暂无渠道，点击右上角「添加渠道」" :image-size="100" />
+      <el-empty
+        description="暂无渠道，点击右上角「添加渠道」"
+        :image-size="100"
+      />
     </div>
 
     <!-- 卡片骨架加载 -->
     <div v-else-if="loading" class="channel-cards">
-      <el-card v-for="i in 3" :key="i" class="channel-card skeleton-card" shadow="hover">
+      <el-card
+        v-for="i in 3"
+        :key="i"
+        class="channel-card skeleton-card"
+        shadow="hover"
+      >
         <el-skeleton :rows="4" animated />
       </el-card>
     </div>
@@ -37,8 +50,15 @@
           <div class="card-title-row">
             <span class="card-name">{{ row.name }}</span>
             <div class="card-tags">
-              <el-tag effect="plain" size="small" class="type-tag">{{ row.type || 'wechat' }}</el-tag>
-              <el-tag :type="statusType(row.status)" effect="dark" size="small">{{ statusText(row.status) }}</el-tag>
+              <el-tag effect="plain" size="small" class="type-tag">{{
+                row.type || "wechat"
+              }}</el-tag>
+              <el-tag
+                :type="statusType(row.status)"
+                effect="dark"
+                size="small"
+                >{{ statusText(row.status) }}</el-tag
+              >
             </div>
           </div>
           <div class="card-id">{{ row.id }}</div>
@@ -48,13 +68,20 @@
         <div class="card-body">
           <div class="info-row">
             <span class="info-label">Agent</span>
-            <span class="info-value">{{ row.agentId || '—' }}</span>
+            <span class="info-value">{{ row.agentId || "—" }}</span>
           </div>
           <div v-if="row.provider || row.model" class="info-row">
             <span class="info-label">模型</span>
             <span class="info-value model-value">
-              <el-tag v-if="row.provider" size="small" type="info" effect="plain" class="provider-tag">{{ row.provider }}</el-tag>
-              {{ row.model || '系统默认' }}
+              <el-tag
+                v-if="row.provider"
+                size="small"
+                type="info"
+                effect="plain"
+                class="provider-tag"
+                >{{ row.provider }}</el-tag
+              >
+              {{ row.model || "系统默认" }}
             </span>
           </div>
           <div v-else class="info-row">
@@ -67,40 +94,110 @@
         <div class="card-footer">
           <div class="last-active">
             <span v-if="row.lastActive" class="active-time">
-              <span class="active-dot" :class="row.status === 'running' ? 'dot-green' : 'dot-gray'"></span>
+              <span
+                class="active-dot"
+                :class="row.status === 'running' ? 'dot-green' : 'dot-gray'"
+              ></span>
               {{ fmtRelativeTime(row.lastActive) }}
             </span>
             <span v-else class="muted">从未活跃</span>
           </div>
           <div class="card-actions">
             <template v-if="isBound(row)">
-              <el-button size="small" link type="primary" :icon="ChatDotRound" @click="enterChat(row)">进入对话</el-button>
-              <el-button size="small" link type="info" @click="openEdit(row)">编辑</el-button>
-              <el-button v-if="row.status === 'running'" size="small" link type="warning" @click="toggle(row, 'stop')">停止</el-button>
-              <el-button v-else size="small" link type="success" @click="toggle(row, 'start')">启动</el-button>
+              <el-button
+                size="small"
+                link
+                type="primary"
+                :icon="ChatDotRound"
+                @click="enterChat(row)"
+                >进入对话</el-button
+              >
+              <el-button size="small" link type="info" @click="openEdit(row)"
+                >编辑</el-button
+              >
+              <el-button
+                v-if="row.status === 'running'"
+                size="small"
+                link
+                type="warning"
+                @click="toggle(row, 'stop')"
+                >停止</el-button
+              >
+              <el-button
+                v-else
+                size="small"
+                link
+                type="success"
+                @click="toggle(row, 'start')"
+                >启动</el-button
+              >
             </template>
-            <el-button v-else-if="row.status === 'unbound'" size="small" link type="primary" @click="openBind(row)">扫码绑定</el-button>
-            <el-button size="small" link type="danger" @click="remove(row)">删除</el-button>
+            <el-button
+              v-else-if="row.status === 'unbound'"
+              size="small"
+              link
+              type="primary"
+              @click="openBind(row)"
+              >扫码绑定</el-button
+            >
+            <el-button size="small" link type="danger" @click="remove(row)"
+              >删除</el-button
+            >
           </div>
         </div>
       </el-card>
     </div>
 
     <!-- 添加 / 绑定 dialog -->
-    <el-dialog v-model="bindVisible" :title="bound ? '绑定成功' : '添加微信渠道'" width="480px" :close-on-click-modal="false">
+    <el-dialog
+      v-model="bindVisible"
+      :title="bound ? '绑定成功' : '添加微信渠道'"
+      width="480px"
+      :close-on-click-modal="false"
+    >
       <!-- 内容 1: 尚未创建渠道，填基本信息 -->
       <el-form v-if="!channelId && !bound" label-width="90px">
-        <el-form-item label="名称"><el-input v-model="addForm.name" placeholder="如：我的微信助手" /></el-form-item>
-        <el-form-item label="归属 agent"><el-input v-model="addForm.agentId" placeholder="默认 wechat-master" /></el-form-item>
+        <el-form-item label="名称"
+          ><el-input v-model="addForm.name" placeholder="如：我的微信助手"
+        /></el-form-item>
+        <el-form-item label="归属 agent"
+          ><el-input v-model="addForm.agentId" placeholder="默认 wechat-master"
+        /></el-form-item>
         <el-form-item label="提供商">
-          <el-select v-model="addForm.provider" placeholder="默认提供商" clearable @change="addForm.model = ''" style="width: 100%">
-            <el-option v-for="p in availableProviders" :key="p" :label="p" :value="p" />
+          <el-select
+            v-model="addForm.provider"
+            placeholder="默认提供商"
+            clearable
+            @change="addForm.model = ''"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="p in availableProviders"
+              :key="p"
+              :label="p"
+              :value="p"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="模型">
-          <el-select v-model="addForm.model" placeholder="默认模型" clearable filterable style="width: 100%">
-            <el-option-group v-for="group in getModelGroups(addForm.provider)" :key="group.label" :label="group.label">
-              <el-option v-for="m in group.options" :key="m" :label="m" :value="m" />
+          <el-select
+            v-model="addForm.model"
+            placeholder="默认模型"
+            clearable
+            filterable
+            style="width: 100%"
+          >
+            <el-option-group
+              v-for="group in getModelGroups(addForm.provider)"
+              :key="group.label"
+              :label="group.label"
+            >
+              <el-option
+                v-for="m in group.options"
+                :key="m"
+                :label="m"
+                :value="m"
+              />
             </el-option-group>
           </el-select>
         </el-form-item>
@@ -124,9 +221,19 @@
             <div>botId：{{ current?.botId }}</div>
             <div>绑定微信：{{ current?.userId }}</div>
             <div>归属 agent：{{ current?.agentId }}</div>
-            <div v-if="current?.model">模型：{{ current?.provider ? current.provider + '/' : '' }}{{ current?.model }}</div>
-            <div style="margin-top: 8px; color: var(--el-color-success); font-weight: 500;">
-              ✨ 渠道服务已在后台自动拉起运行，现在可以直接在微信中向 Bot 发送消息啦！
+            <div v-if="current?.model">
+              模型：{{ current?.provider ? current.provider + "/" : ""
+              }}{{ current?.model }}
+            </div>
+            <div
+              style="
+                margin-top: 8px;
+                color: var(--el-color-success);
+                font-weight: 500;
+              "
+            >
+              ✨ 渠道服务已在后台自动拉起运行，现在可以直接在微信中向 Bot
+              发送消息啦！
             </div>
           </div>
         </template>
@@ -135,38 +242,161 @@
       <template #footer>
         <template v-if="!channelId && !bound">
           <el-button @click="bindVisible = false">取消</el-button>
-          <el-button type="primary" :loading="creating" @click="createAndGetQr">下一步：生成二维码</el-button>
+          <el-button type="primary" :loading="creating" @click="createAndGetQr"
+            >下一步：生成二维码</el-button
+          >
         </template>
         <template v-else-if="!bound">
           <el-button @click="closeBind">关闭</el-button>
-          <el-button v-if="pollStatus === 'expired'" type="primary" @click="createAndGetQr">重新生成</el-button>
+          <el-button
+            v-if="pollStatus === 'expired'"
+            type="primary"
+            @click="createAndGetQr"
+            >重新生成</el-button
+          >
         </template>
         <el-button v-else type="primary" @click="closeBind">完成</el-button>
       </template>
     </el-dialog>
 
     <!-- 编辑 dialog -->
-    <el-dialog v-model="editVisible" title="编辑渠道" width="480px">
-      <el-form label-width="90px">
-        <el-form-item label="名称"><el-input v-model="editForm.name" /></el-form-item>
-        <el-form-item label="头像 URL"><el-input v-model="editForm.avatar" placeholder="可选" /></el-form-item>
-        <el-form-item label="归属 agent"><el-input v-model="editForm.agentId" /></el-form-item>
-        <el-form-item label="提供商">
-          <el-select v-model="editForm.provider" placeholder="默认提供商" clearable @change="editForm.model = ''" style="width: 100%">
-            <el-option v-for="p in availableProviders" :key="p" :label="p" :value="p" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="模型">
-          <el-select v-model="editForm.model" placeholder="默认模型" clearable filterable style="width: 100%">
-            <el-option-group v-for="group in getModelGroups(editForm.provider)" :key="group.label" :label="group.label">
-              <el-option v-for="m in group.options" :key="m" :label="m" :value="m" />
-            </el-option-group>
-          </el-select>
-        </el-form-item>
-      </el-form>
+    <el-dialog
+      v-model="editVisible"
+      :title="`编辑渠道${current?.name ? ' - ' + current.name : ''}`"
+      width="680px"
+      :before-close="handleCloseEdit"
+    >
+      <div class="edit-dialog-layout">
+        <!-- 左侧：基础配置 -->
+        <div class="edit-form-pane">
+          <div class="pane-subtitle">基本配置</div>
+          <el-form label-width="85px" label-position="left">
+            <el-form-item label="名称"
+              ><el-input v-model="editForm.name"
+            /></el-form-item>
+            <el-form-item label="头像 URL"
+              ><el-input v-model="editForm.avatar" placeholder="可选"
+            /></el-form-item>
+            <el-form-item label="归属 agent"
+              ><el-input v-model="editForm.agentId"
+            /></el-form-item>
+            <el-form-item label="提供商">
+              <el-select
+                v-model="editForm.provider"
+                placeholder="默认提供商"
+                clearable
+                @change="editForm.model = ''"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="p in availableProviders"
+                  :key="p"
+                  :label="p"
+                  :value="p"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="模型">
+              <el-select
+                v-model="editForm.model"
+                placeholder="默认模型"
+                clearable
+                filterable
+                style="width: 100%"
+              >
+                <el-option-group
+                  v-for="group in getModelGroups(editForm.provider)"
+                  :key="group.label"
+                  :label="group.label"
+                >
+                  <el-option
+                    v-for="m in group.options"
+                    :key="m"
+                    :label="m"
+                    :value="m"
+                  />
+                </el-option-group>
+              </el-select>
+            </el-form-item>
+          </el-form>
+        </div>
+
+        <!-- 右侧：微信二维码 -->
+        <div
+          v-if="!current?.type || current?.type === 'wechat'"
+          class="edit-qr-pane"
+        >
+          <div class="pane-subtitle">微信绑定二维码</div>
+          <div class="edit-qr-card">
+            <div class="edit-qr-box">
+              <div v-if="editQrLoading" class="edit-qr-loading">
+                <el-icon class="is-loading" :size="24"><Loading /></el-icon>
+                <span>生成二维码…</span>
+              </div>
+              <div v-else-if="editQrSrc" class="edit-qr-wrapper">
+                <img :src="editQrSrc" class="edit-qr-img" alt="微信二维码" />
+                <div
+                  v-if="editPollStatus === 'expired'"
+                  class="edit-qr-overlay"
+                >
+                  <span class="expired-text">二维码已过期</span>
+                  <el-button
+                    size="small"
+                    type="primary"
+                    :icon="Refresh"
+                    @click="fetchEditQr"
+                    >重新获取</el-button
+                  >
+                </div>
+              </div>
+              <div v-else class="edit-qr-empty">
+                <el-button
+                  type="primary"
+                  size="small"
+                  :icon="Refresh"
+                  :loading="editQrLoading"
+                  @click="fetchEditQr"
+                  >获取二维码</el-button
+                >
+              </div>
+            </div>
+
+            <div class="edit-qr-status" :class="'s-' + editPollStatus">
+              <span v-if="editPollStatus === 'wait'">⏳ 等待微信扫码…</span>
+              <span v-else-if="editPollStatus === 'confirmed'"
+                >✅ 扫码成功，已重新绑定！</span
+              >
+              <span v-else-if="editPollStatus === 'expired'"
+                >⏰ 二维码已过期</span
+              >
+            </div>
+
+            <div class="edit-qr-desc">
+              若在微信中手滑删除了 Bot，用微信重新扫码即可恢复绑定。
+            </div>
+
+            <div
+              v-if="editPollStatus !== 'expired' && editQrSrc"
+              class="edit-qr-action"
+            >
+              <el-button
+                link
+                type="primary"
+                size="small"
+                :icon="Refresh"
+                :loading="editQrLoading"
+                @click="fetchEditQr"
+                >刷新二维码</el-button
+              >
+            </div>
+          </div>
+        </div>
+      </div>
       <template #footer>
-        <el-button @click="editVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="saveEdit">保存</el-button>
+        <el-button @click="handleCloseEdit">关闭</el-button>
+        <el-button type="primary" :loading="saving" @click="saveEdit"
+          >保存</el-button
+        >
       </template>
     </el-dialog>
   </div>
@@ -175,7 +405,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
-import { Plus, Refresh, ChatDotRound } from "@element-plus/icons-vue";
+import { Plus, Refresh, ChatDotRound, Loading } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import QRCode from "qrcode";
 import { configAPI } from "@/lib/configApi.js";
@@ -194,12 +424,29 @@ const current = ref(null);
 const bound = ref(false);
 const qrSrc = ref("");
 const qrCode = ref("");
-const addForm = ref({ name: "", agentId: "wechat-master", provider: "", model: "" });
-const editForm = ref({ name: "", avatar: "", agentId: "", provider: "", model: "" });
+const addForm = ref({
+  name: "",
+  agentId: "wechat-master",
+  provider: "",
+  model: "",
+});
+const editForm = ref({
+  name: "",
+  avatar: "",
+  agentId: "",
+  provider: "",
+  model: "",
+});
 const creating = ref(false);
 const saving = ref(false);
 const pollTimer = ref(null);
 const pollStatus = ref("wait");
+
+const editQrSrc = ref("");
+const editQrCode = ref("");
+const editQrLoading = ref(false);
+const editPollStatus = ref("wait");
+const editPollTimer = ref(null);
 
 // 可用提供商列表
 const availableProviders = computed(() => {
@@ -234,8 +481,24 @@ const getModelGroups = (provider) => {
 };
 
 const isBound = (row) => !!row.userId && row.status !== "unbound";
-const statusText = (s) => ({ running: "运行中", stopped: "已停止", bound: "已绑定", unbound: "未绑定", expired: "已过期" }[s] || s || "—");
-const statusType = (s) => ({ running: "success", stopped: "info", bound: "primary", unbound: "warning", expired: "danger" }[s] || "info");
+const statusText = (s) =>
+  ({
+    running: "运行中",
+    stopped: "已停止",
+    bound: "已绑定",
+    unbound: "未绑定",
+    expired: "已过期",
+  })[s] ||
+  s ||
+  "—";
+const statusType = (s) =>
+  ({
+    running: "success",
+    stopped: "info",
+    bound: "primary",
+    unbound: "warning",
+    expired: "danger",
+  })[s] || "info";
 
 const fmtRelativeTime = (t) => {
   if (!t) return "";
@@ -243,7 +506,12 @@ const fmtRelativeTime = (t) => {
   if (diff < 60000) return "刚刚";
   if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`;
   if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时前`;
-  return new Date(t).toLocaleDateString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  return new Date(t).toLocaleDateString("zh-CN", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };
 
 const loadChannels = async () => {
@@ -269,7 +537,12 @@ const resetBind = () => {
 };
 const openAdd = () => {
   resetBind();
-  addForm.value = { name: "", agentId: "wechat-master", provider: "", model: "" };
+  addForm.value = {
+    name: "",
+    agentId: "wechat-master",
+    provider: "",
+    model: "",
+  };
   bindVisible.value = true;
 };
 const closeBind = () => {
@@ -286,8 +559,8 @@ const createAndGetQr = async () => {
     if (!id) {
       const res = await configAPI.request("/api/channels", {
         method: "POST",
-        body: JSON.stringify({ 
-          name: addForm.value.name || "微信助手", 
+        body: JSON.stringify({
+          name: addForm.value.name || "微信助手",
           type: "wechat",
           provider: addForm.value.provider || undefined,
           model: addForm.value.model || undefined,
@@ -298,7 +571,7 @@ const createAndGetQr = async () => {
       channelId.value = id;
       await configAPI.request(`/api/channels/${id}`, {
         method: "PUT",
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           agentId: addForm.value.agentId || "wechat-master",
           provider: addForm.value.provider || undefined,
           model: addForm.value.model || undefined,
@@ -306,7 +579,9 @@ const createAndGetQr = async () => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    const qrRes = await configAPI.request(`/api/channels/${id}/qrcode`, { method: "POST" });
+    const qrRes = await configAPI.request(`/api/channels/${id}/qrcode`, {
+      method: "POST",
+    });
     const rawContent = qrRes.data?.img || qrRes.img || "";
     qrCode.value = qrRes.data?.qrcode || "";
     if (rawContent) {
@@ -314,7 +589,10 @@ const createAndGetQr = async () => {
         qrSrc.value = rawContent;
       } else {
         // 扫码文本/URL/base64内容通过 qrcode 库在前端本地直接转为 Canvas DataURL
-        qrSrc.value = await QRCode.toDataURL(rawContent, { width: 200, margin: 2 });
+        qrSrc.value = await QRCode.toDataURL(rawContent, {
+          width: 200,
+          margin: 2,
+        });
       }
     } else {
       qrSrc.value = "";
@@ -341,7 +619,10 @@ const startPoll = (id, qrcode) => {
         pollStatus.value = "confirmed";
         bound.value = true;
         stopPoll();
-        current.value = { ...(res.data || res), name: current.value?.name || addForm.value.name || "微信助手" };
+        current.value = {
+          ...(res.data || res),
+          name: current.value?.name || addForm.value.name || "微信助手",
+        };
         loadChannels();
       } else if (st === "expired") {
         pollStatus.value = "expired";
@@ -355,7 +636,10 @@ const startPoll = (id, qrcode) => {
   }, 2000);
 };
 const stopPoll = () => {
-  if (pollTimer.value) { clearInterval(pollTimer.value); pollTimer.value = null; }
+  if (pollTimer.value) {
+    clearInterval(pollTimer.value);
+    pollTimer.value = null;
+  }
 };
 
 const openBind = (row) => {
@@ -365,16 +649,96 @@ const openBind = (row) => {
   bindVisible.value = true;
   createAndGetQr();
 };
+const stopEditPoll = () => {
+  if (editPollTimer.value) {
+    clearInterval(editPollTimer.value);
+    editPollTimer.value = null;
+  }
+};
+
+const startEditPoll = (id, qrcode) => {
+  stopEditPoll();
+  if (!qrcode) return;
+  editPollTimer.value = setInterval(async () => {
+    try {
+      const res = await configAPI.request(`/api/channels/${id}/poll`, {
+        method: "POST",
+        body: JSON.stringify({ qrcode }),
+        headers: { "Content-Type": "application/json" },
+      });
+      const st = res.data?.status || res.status;
+      if (st === "confirmed") {
+        editPollStatus.value = "confirmed";
+        stopEditPoll();
+        ElMessage.success("微信扫码绑定成功！渠道已在后台运行");
+        loadChannels();
+      } else if (st === "expired") {
+        editPollStatus.value = "expired";
+        stopEditPoll();
+      } else {
+        editPollStatus.value = "wait";
+      }
+    } catch {
+      // 忽略网络重试
+    }
+  }, 2000);
+};
+
+const fetchEditQr = async () => {
+  if (!current.value?.id) return;
+  editQrLoading.value = true;
+  editPollStatus.value = "wait";
+  stopEditPoll();
+  try {
+    const qrRes = await configAPI.request(
+      `/api/channels/${current.value.id}/qrcode`,
+      { method: "POST" },
+    );
+    const rawContent = qrRes.data?.img || qrRes.img || "";
+    editQrCode.value = qrRes.data?.qrcode || "";
+    if (rawContent) {
+      if (rawContent.startsWith("data:image")) {
+        editQrSrc.value = rawContent;
+      } else {
+        editQrSrc.value = await QRCode.toDataURL(rawContent, {
+          width: 180,
+          margin: 2,
+        });
+      }
+    } else {
+      editQrSrc.value = "";
+    }
+    if (editQrCode.value) {
+      startEditPoll(current.value.id, editQrCode.value);
+    }
+  } catch (e) {
+    ElMessage.error(`获取二维码失败: ${e?.message || e}`);
+  } finally {
+    editQrLoading.value = false;
+  }
+};
+
+const handleCloseEdit = () => {
+  stopEditPoll();
+  editVisible.value = false;
+};
+
 const openEdit = (row) => {
-  editForm.value = { 
-    name: row.name, 
-    avatar: row.avatar, 
+  editForm.value = {
+    name: row.name,
+    avatar: row.avatar,
     agentId: row.agentId,
     provider: row.provider || "",
     model: row.model || "",
   };
   current.value = row;
+  editQrSrc.value = "";
+  editQrCode.value = "";
+  editPollStatus.value = "wait";
   editVisible.value = true;
+  if (!row.type || row.type === "wechat") {
+    fetchEditQr();
+  }
 };
 const saveEdit = async () => {
   saving.value = true;
@@ -385,7 +749,7 @@ const saveEdit = async () => {
       headers: { "Content-Type": "application/json" },
     });
     ElMessage.success("已保存");
-    editVisible.value = false;
+    handleCloseEdit();
     loadChannels();
   } catch (e) {
     ElMessage.error(`保存失败: ${e?.message || e}`);
@@ -395,7 +759,9 @@ const saveEdit = async () => {
 };
 const toggle = async (row, act) => {
   try {
-    await configAPI.request(`/api/channels/${row.id}/${act}`, { method: "POST" });
+    await configAPI.request(`/api/channels/${row.id}/${act}`, {
+      method: "POST",
+    });
     ElMessage.success(act === "start" ? "已启动" : "已停止");
     loadChannels();
   } catch (e) {
@@ -404,7 +770,9 @@ const toggle = async (row, act) => {
 };
 const remove = async (row) => {
   try {
-    await ElMessageBox.confirm(`确认删除渠道「${row.name}」？`, "删除确认", { type: "warning" });
+    await ElMessageBox.confirm(`确认删除渠道「${row.name}」？`, "删除确认", {
+      type: "warning",
+    });
   } catch {
     return;
   }
@@ -436,17 +804,35 @@ const enterChat = async (row) => {
 };
 
 onMounted(loadChannels);
-onBeforeUnmount(stopPoll);
+onBeforeUnmount(() => {
+  stopPoll();
+  stopEditPoll();
+});
 </script>
 
 <style scoped>
-.channel-manager-view { padding: 16px; }
-.page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-.header-title h1 { margin: 0 0 6px; font-size: 20px; }
-.header-desc { color: var(--mio-text-secondary, #909399); font-size: 13px; }
+.channel-manager-view {
+  padding: 16px;
+}
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+.header-title h1 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+.header-desc {
+  color: var(--mio-text-secondary, #909399);
+  font-size: 13px;
+}
 
 /* ── 卡片网格 ── */
-.empty-state { padding: 48px 0; }
+.empty-state {
+  padding: 48px 0;
+}
 .channel-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -457,45 +843,280 @@ onBeforeUnmount(stopPoll);
   transition: box-shadow 0.2s;
   border-top: 3px solid transparent;
 }
-.channel-card.card-running  { border-top-color: var(--el-color-success); }
-.channel-card.card-stopped  { border-top-color: var(--el-color-info); }
-.channel-card.card-unbound  { border-top-color: var(--el-color-warning); }
-.channel-card.card-expired  { border-top-color: var(--el-color-danger); }
-.skeleton-card { min-height: 160px; }
+.channel-card.card-running {
+  border-top-color: var(--el-color-success);
+}
+.channel-card.card-stopped {
+  border-top-color: var(--el-color-info);
+}
+.channel-card.card-unbound {
+  border-top-color: var(--el-color-warning);
+}
+.channel-card.card-expired {
+  border-top-color: var(--el-color-danger);
+}
+.skeleton-card {
+  min-height: 160px;
+}
 
 /* ── 卡片头部 ── */
-.card-header { margin-bottom: 12px; }
-.card-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
-.card-name { font-weight: 600; font-size: 15px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.card-tags { display: flex; gap: 4px; flex-shrink: 0; }
-.type-tag { font-family: ui-monospace, monospace; }
-.card-id { font-size: 11px; color: var(--mio-text-secondary, #909399); font-family: ui-monospace, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-header {
+  margin-bottom: 12px;
+}
+.card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.card-name {
+  font-weight: 600;
+  font-size: 15px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card-tags {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.type-tag {
+  font-family: ui-monospace, monospace;
+}
+.card-id {
+  font-size: 11px;
+  color: var(--mio-text-secondary, #909399);
+  font-family: ui-monospace, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* ── 卡片主体 ── */
-.card-body { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-.info-row { display: flex; align-items: baseline; gap: 8px; font-size: 13px; }
-.info-label { color: var(--mio-text-secondary, #909399); flex-shrink: 0; min-width: 36px; }
-.info-value { color: var(--el-text-color-primary); word-break: break-all; }
-.model-value { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-.provider-tag { font-family: ui-monospace, monospace; font-size: 11px; }
-.muted { color: var(--mio-text-secondary, #909399); }
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.info-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+}
+.info-label {
+  color: var(--mio-text-secondary, #909399);
+  flex-shrink: 0;
+  min-width: 36px;
+}
+.info-value {
+  color: var(--el-text-color-primary);
+  word-break: break-all;
+}
+.model-value {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.provider-tag {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+}
+.muted {
+  color: var(--mio-text-secondary, #909399);
+}
 
 /* ── 卡片底部 ── */
-.card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 10px; border-top: 1px solid var(--el-border-color-lighter); }
-.last-active { font-size: 12px; color: var(--mio-text-secondary, #909399); display: flex; align-items: center; gap: 5px; }
-.active-time { display: flex; align-items: center; gap: 5px; }
-.active-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.dot-green { background: var(--el-color-success); box-shadow: 0 0 0 2px rgba(103, 194, 58, 0.25); }
-.dot-gray  { background: var(--el-color-info-light-5); }
-.card-actions { display: flex; gap: 2px; flex-shrink: 0; }
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--el-border-color-lighter);
+}
+.last-active {
+  font-size: 12px;
+  color: var(--mio-text-secondary, #909399);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.active-time {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.active-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-green {
+  background: var(--el-color-success);
+  box-shadow: 0 0 0 2px rgba(103, 194, 58, 0.25);
+}
+.dot-gray {
+  background: var(--el-color-info-light-5);
+}
+.card-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
 
 /* ── 二维码弹窗 ── */
-.qr-box { text-align: center; padding: 8px 0; }
-.qr-img { width: 200px; height: 200px; border: 1px solid #eee; border-radius: 8px; }
-.qr-loading { height: 200px; display: flex; align-items: center; justify-content: center; color: var(--mio-text-secondary, #909399); }
-.qr-hint { margin-top: 10px; color: var(--mio-text-secondary, #909399); font-size: 13px; }
-.qr-status { text-align: center; margin-top: 6px; font-size: 13px; }
-.s-wait { color: var(--mio-text-secondary, #606266); }
-.s-expired { color: var(--el-color-danger); }
-.bound-info { line-height: 1.8; font-size: 13px; color: var(--mio-text-secondary, #606266); }
+.qr-box {
+  text-align: center;
+  padding: 8px 0;
+}
+.qr-img {
+  width: 200px;
+  height: 200px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+}
+.qr-loading {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mio-text-secondary, #909399);
+}
+.qr-hint {
+  margin-top: 10px;
+  color: var(--mio-text-secondary, #909399);
+  font-size: 13px;
+}
+.qr-status {
+  text-align: center;
+  margin-top: 6px;
+  font-size: 13px;
+}
+.s-wait {
+  color: var(--mio-text-secondary, #606266);
+}
+.s-expired {
+  color: var(--el-color-danger);
+}
+.bound-info {
+  line-height: 1.8;
+  font-size: 13px;
+  color: var(--mio-text-secondary, #606266);
+}
+
+/* ── 编辑弹窗分栏与二维码 ── */
+.edit-dialog-layout {
+  display: flex;
+  gap: 24px;
+}
+.edit-form-pane {
+  flex: 1;
+  min-width: 0;
+}
+.pane-subtitle {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 14px;
+  color: var(--el-text-color-primary);
+}
+.edit-qr-pane {
+  width: 210px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--el-border-color-lighter);
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+}
+.edit-qr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.edit-qr-box {
+  width: 180px;
+  height: 180px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  background: var(--el-fill-color-blank, #fff);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.edit-qr-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--mio-text-secondary, #909399);
+  font-size: 12px;
+}
+.edit-qr-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.edit-qr-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+.edit-qr-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #fff;
+}
+.expired-text {
+  font-size: 13px;
+  font-weight: 500;
+}
+.edit-qr-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.edit-qr-status {
+  margin-top: 10px;
+  font-size: 12px;
+}
+.edit-qr-desc {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--mio-text-secondary, #909399);
+}
+.edit-qr-action {
+  margin-top: 6px;
+}
+
+@media (max-width: 640px) {
+  .edit-dialog-layout {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .edit-qr-pane {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--el-border-color-lighter);
+    padding-left: 0;
+    padding-top: 16px;
+  }
+}
 </style>

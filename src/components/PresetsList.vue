@@ -3,7 +3,10 @@
     <!-- 头部说明与快捷操作 -->
     <div class="presets-header">
       <div class="header-tip">
-        <span>配置 Few-Shot 对话示范或前置消息，引导模型按照指定语调或上下文回复。</span>
+        <span
+          >配置 Few-Shot
+          对话示范或前置消息，引导模型按照指定语调或上下文回复。</span
+        >
       </div>
       <el-button
         v-if="presetMessages.length > 0"
@@ -18,12 +21,15 @@
 
     <!-- 空状态 -->
     <div v-if="presetMessages.length === 0" class="presets-empty">
-      <el-empty
-        description="暂无预设历史消息"
-        :image-size="70"
-      >
+      <el-empty description="暂无预设历史消息" :image-size="70">
         <template #description>
-          <p style="font-size: 13px; color: var(--mio-text-secondary); margin-bottom: 8px;">
+          <p
+            style="
+              font-size: 13px;
+              color: var(--mio-text-secondary);
+              margin-bottom: 8px;
+            "
+          >
             暂无预设历史，可添加角色消息构建示范样本
           </p>
         </template>
@@ -166,9 +172,7 @@ const props = defineProps({
 
 const emit = defineEmits(["update-presets", "updatePresets"]);
 
-const presetMessages = ref(
-  (props.presetsHistory || []).map((m) => ({ ...m })),
-);
+const presetMessages = ref((props.presetsHistory || []).map((m) => ({ ...m })));
 
 watch(
   () => props.presetsHistory,

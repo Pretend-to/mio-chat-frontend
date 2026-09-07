@@ -160,7 +160,6 @@
         </div>
       </div>
 
-
       <!-- 智能模式 (一键启用 ai-plugin 核心智能工具集) -->
       <div class="setting-field">
         <div class="field-label">
@@ -244,14 +243,19 @@ const isAiPluginEnabled = computed(() => {
   const currentTools = props.modelValue?.toolCallSettings?.tools || [];
   if (currentTools.length === 0) return false;
 
-  const aiPlugin = (props.allLlmToolsData || []).find((p) =>
-    p.name?.toLowerCase().includes("ai-plugin") || p.name?.toLowerCase() === "ai",
+  const aiPlugin = (props.allLlmToolsData || []).find(
+    (p) =>
+      p.name?.toLowerCase().includes("ai-plugin") ||
+      p.name?.toLowerCase() === "ai",
   );
   if (aiPlugin && aiPlugin.tools && aiPlugin.tools.length > 0) {
     return aiPlugin.tools.every((t) => currentTools.includes(t.name));
   }
 
-  const aiTools = typeof config.getAiPluginToolNames === "function" ? config.getAiPluginToolNames() : [];
+  const aiTools =
+    typeof config.getAiPluginToolNames === "function"
+      ? config.getAiPluginToolNames()
+      : [];
   if (aiTools.length > 0) {
     return aiTools.every((t) => currentTools.includes(t));
   }
@@ -264,8 +268,10 @@ const handleToggleAiPlugin = (enable) => {
   if (!newOptions.toolCallSettings) newOptions.toolCallSettings = {};
   let currentTools = [...(newOptions.toolCallSettings.tools || [])];
 
-  const aiPlugin = (props.allLlmToolsData || []).find((p) =>
-    p.name?.toLowerCase().includes("ai-plugin") || p.name?.toLowerCase() === "ai",
+  const aiPlugin = (props.allLlmToolsData || []).find(
+    (p) =>
+      p.name?.toLowerCase().includes("ai-plugin") ||
+      p.name?.toLowerCase() === "ai",
   );
 
   let targetToolNames = [];
@@ -281,11 +287,16 @@ const handleToggleAiPlugin = (enable) => {
         currentTools.push(name);
       }
     });
-    if (!newOptions.toolCallSettings.mode || newOptions.toolCallSettings.mode === "NONE") {
+    if (
+      !newOptions.toolCallSettings.mode ||
+      newOptions.toolCallSettings.mode === "NONE"
+    ) {
       newOptions.toolCallSettings.mode = "AUTO";
     }
   } else {
-    currentTools = currentTools.filter((name) => !targetToolNames.includes(name));
+    currentTools = currentTools.filter(
+      (name) => !targetToolNames.includes(name),
+    );
   }
 
   newOptions.toolCallSettings.tools = currentTools;
@@ -302,7 +313,9 @@ const emitBasicInfoUpdate = () => {
 // LLM Options States
 const localLlmProvider = ref(props.modelValue?.provider || "");
 const localLlmModel = ref(props.modelValue?.base?.model || "");
-const localReasoningEffort = ref(props.modelValue?.chatParams?.reasoning_effort ?? -1);
+const localReasoningEffort = ref(
+  props.modelValue?.chatParams?.reasoning_effort ?? -1,
+);
 
 const sliderTypes = {
   a: { min: 0, max: 2, step: 0.1 },

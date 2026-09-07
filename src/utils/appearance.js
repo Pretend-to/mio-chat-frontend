@@ -11,7 +11,9 @@ export function applyAppearanceSettings(appearance = {}) {
 
   // 1. 处理主题 (auto / light / dark)
   const applyTheme = () => {
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const prefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)",
+    ).matches;
     const isDark =
       currentThemeSetting === "dark" ||
       (currentThemeSetting === "auto" && prefersDark);

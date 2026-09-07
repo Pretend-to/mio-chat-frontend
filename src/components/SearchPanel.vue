@@ -86,7 +86,10 @@ const highlight = (text, query) => {
             class="avatar"
             :class="contact.avatarPolicy == 1 ? 'custom' : 'model'"
           >
-            <GroupAvatar v-if="contact.platform === 'group'" :contactor="contact" />
+            <GroupAvatar
+              v-if="contact.platform === 'group'"
+              :contactor="contact"
+            />
             <img v-else :src="contact.avatar" :alt="contact.name" />
           </div>
           <div class="info">

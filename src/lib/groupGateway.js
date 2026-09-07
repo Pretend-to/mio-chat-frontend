@@ -1,6 +1,6 @@
 /**
  * groupGateway.js — 群聊多 Agent 消息分发与上下文隔离封装引擎
- * 
+ *
  * 职责：
  * 1. 注入包含群信息、全量成员名单与职责的 Group System Prompt。
  * 2. 对每个 Agent 的上下文进行隔离封装：Agent 自己的发言保持原生格式，其他成员/用户的发言通过 <group_chat_history> XML 清晰化呈现。
@@ -16,8 +16,8 @@ import { numberString } from "@/utils/generate.js";
 
 /**
  * 构建特定 Agent 成员在群聊中的专属 System Prompt
- * @param {Object} group 
- * @param {Object} member 
+ * @param {Object} group
+ * @param {Object} member
  * @returns {string}
  */
 export function buildGroupSystemPrompt(group, member) {
@@ -27,7 +27,7 @@ export function buildGroupSystemPrompt(group, member) {
   const membersXml = (group.members || [])
     .map((m) => {
       const isSelf = m.id === member.id;
-      return `    <member id="${m.id}" name="${m.name}" title="${m.title || ''}" intro="${m.intro || ''}" is_self="${isSelf}" />`;
+      return `    <member id="${m.id}" name="${m.name}" title="${m.title || ""}" intro="${m.intro || ""}" is_self="${isSelf}" />`;
     })
     .join("\n");
 
@@ -36,7 +36,7 @@ export function buildGroupSystemPrompt(group, member) {
     (group.members || []).find((m) => m.id !== member.id) || member;
 
   const lines = [
-    `You are participating as group member "${member.name}" (${member.title || 'Agent'}) in a multi-agent Group Chat.`,
+    `You are participating as group member "${member.name}" (${member.title || "Agent"}) in a multi-agent Group Chat.`,
     ``,
     `<group_info>`,
     `  <group_name>${group.name || "Group Chat"}</group_name>`,
@@ -100,8 +100,8 @@ function extractMessageText(message, includeReason = true) {
 
 /**
  * 为特定的群 Agent 成员格式化 OpenAI 请求 Payload
- * @param {Object} group 
- * @param {Object} member 
+ * @param {Object} group
+ * @param {Object} member
  * @returns {Array<Object>} finalMessages
  */
 export function formatGroupMessagesForMember(group, member) {
@@ -114,7 +114,9 @@ export function formatGroupMessagesForMember(group, member) {
   // 没有压缩的话每个成员的上下文都会无限膨胀，比单聊更早撞上限。
   const crystal = member.options?.crystallization;
   const isGlobalMemOn = crystal?.globalMemoryEnabled !== false;
-  const globalMem = isGlobalMemOn ? (client._clientSettings?.globalMemory || []) : [];
+  const globalMem = isGlobalMemOn
+    ? client._clientSettings?.globalMemory || []
+    : [];
   const systemPrompt = assembleSystemPrompt(
     groupPrompt,
     crystal?.latestSummary || "",
@@ -204,7 +206,7 @@ export function formatGroupMessagesForMember(group, member) {
         // 流式进行中的 Agent 消息：向其他成员暴露「正在输入 + 已有片段」，
         // 避免他们基于「对方完全没说话」的假象盲目互唤。
         pendingHistoryXml.push(
-          formatTypingMessageXml(msg, senderId, senderName, timeText)
+          formatTypingMessageXml(msg, senderId, senderName, timeText),
         );
         return;
       }
@@ -285,7 +287,6 @@ function formatToolCallXml(toolCallData, maxLen = 1000, mode = "brief") {
     return `    <tool_call name="${escapeXml(name)}" />`;
   }
 
-
   // 1. 解析与格式化 parameters
   let rawParams =
     toolCallData.parameters ??
@@ -310,10 +311,7 @@ function formatToolCallXml(toolCallData, maxLen = 1000, mode = "brief") {
 
   // 2. 解析与格式化 result / response
   let rawResult =
-    toolCallData.result ??
-    toolCallData.response ??
-    toolCallData.output ??
-    "";
+    toolCallData.result ?? toolCallData.response ?? toolCallData.output ?? "";
   if (typeof rawResult === "object" && rawResult !== null) {
     try {
       rawResult = JSON.stringify(rawResult);
@@ -376,7 +374,13 @@ function formatTypingMessageXml(msg, senderId, senderName, timeText) {
   );
 }
 
-function formatMessageXml(msg, senderId, senderName, timeText, toolCallMode = "brief") {
+function formatMessageXml(
+  msg,
+  senderId,
+  senderName,
+  timeText,
+  toolCallMode = "brief",
+) {
   if (!msg || !Array.isArray(msg.content)) return "";
 
   const textParts = [];
@@ -458,7 +462,8 @@ function resolveImplicitResponder(group, currentUserMsg) {
   const findById = (id) =>
     id
       ? members.find(
-          (m) => String(m.id) === String(id) || String(m.agentId) === String(id),
+          (m) =>
+            String(m.id) === String(id) || String(m.agentId) === String(id),
         )
       : null;
 
@@ -558,7 +563,11 @@ export function resolveMentionedMembers(text, members) {
  * @param {string} assistantMsgId - 主占位消息 ID
  * @param {string} targetMemberId - 指定唤醒的成员 ID (可选)
  */
-export async function sendGroupCompletions(group, assistantMsgId, targetMemberId = null) {
+export async function sendGroupCompletions(
+  group,
+  assistantMsgId,
+  targetMemberId = null,
+) {
   if (!group || !group.members || group.members.length === 0) {
     throw new Error("群聊中暂无可用成员");
   }
@@ -601,7 +610,9 @@ export async function sendGroupCompletions(group, assistantMsgId, targetMemberId
     .reverse()
     .find((m) => m.role === "user");
   const requestedTools = (lastUserMsg?.content || [])
-    .filter((c) => c.type === "prompt_hint" && Array.isArray(c.data?.enableTools))
+    .filter(
+      (c) => c.type === "prompt_hint" && Array.isArray(c.data?.enableTools),
+    )
     .flatMap((c) => c.data.enableTools);
 
   if (requestedTools.length > 0) {
@@ -659,7 +670,9 @@ export async function sendGroupCompletions(group, assistantMsgId, targetMemberId
         senderAvatar: member.avatar,
       });
     } else {
-      const placeholder = group.messageChain.find((m) => m.id === assistantMsgId);
+      const placeholder = group.messageChain.find(
+        (m) => m.id === assistantMsgId,
+      );
       if (placeholder) {
         placeholder.sender_id = member.id;
         placeholder.sender_name = member.name;
@@ -688,7 +701,7 @@ export async function sendGroupCompletions(group, assistantMsgId, targetMemberId
 
     // 群聊结晶恒开，无条件下发水位线参数
     settings.crystallization_token_watermark =
-      memberCrystal?.tokenWatermark ?? 'auto';
+      memberCrystal?.tokenWatermark ?? "auto";
     settings.previous_summary = memberCrystal?.latestSummary || "";
     settings.crystallization_keep_turns = 1;
     settings.pending_memory_events = memberCrystal?.pendingMemoryEvents || [];
@@ -712,7 +725,10 @@ export async function sendGroupCompletions(group, assistantMsgId, targetMemberId
       messages: finalMessages,
     };
 
-    console.log(`🚀 [groupGateway] 正在触发群成员 [${member.name}] 响应:`, data);
+    console.log(
+      `🚀 [groupGateway] 正在触发群成员 [${member.name}] 响应:`,
+      data,
+    );
     client.socket.streamCompletions(data, metaData);
   }
 }
@@ -751,7 +767,11 @@ function hasPendingDepthWarning(group) {
  * @param {Object} [triggerMessage]
  * @param {boolean} [dryRun=false] 是否仅返回结果而不执行实际唤起（用于单测）
  */
-export function resolveUnhandledMentions(group, triggerMessage = null, dryRun = false) {
+export function resolveUnhandledMentions(
+  group,
+  triggerMessage = null,
+  dryRun = false,
+) {
   if (
     !group ||
     group.platform !== "group" ||
@@ -776,7 +796,9 @@ export function resolveUnhandledMentions(group, triggerMessage = null, dryRun = 
   }
 
   const maxDepth =
-    group.maxInvocationDepth !== undefined ? Number(group.maxInvocationDepth) : 5;
+    group.maxInvocationDepth !== undefined
+      ? Number(group.maxInvocationDepth)
+      : 5;
 
   if (maxDepth <= 0) {
     return dryRun ? { validTriggers: [], exceededTriggers: [] } : undefined;
@@ -852,7 +874,9 @@ export function resolveUnhandledMentions(group, triggerMessage = null, dryRun = 
   }
 
   const validTriggers = membersToTrigger.filter((t) => t.nextDepth <= maxDepth);
-  const exceededTriggers = membersToTrigger.filter((t) => t.nextDepth > maxDepth);
+  const exceededTriggers = membersToTrigger.filter(
+    (t) => t.nextDepth > maxDepth,
+  );
 
   if (dryRun) {
     return { validTriggers, exceededTriggers };
@@ -914,4 +938,3 @@ export function resolveUnhandledMentions(group, triggerMessage = null, dryRun = 
 export function checkAndTriggerAgentInvocation(group, message) {
   return resolveUnhandledMentions(group, message);
 }
-

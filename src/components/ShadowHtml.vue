@@ -81,8 +81,10 @@ export default {
     unbindSocketEvents() {
       const socket = client?.socket?.socket || client?.socket;
       if (socket && typeof socket.off === "function") {
-        if (this._onTaskComplete) socket.off("image:task_complete", this._onTaskComplete);
-        if (this._onTaskFailed) socket.off("image:task_failed", this._onTaskFailed);
+        if (this._onTaskComplete)
+          socket.off("image:task_complete", this._onTaskComplete);
+        if (this._onTaskFailed)
+          socket.off("image:task_failed", this._onTaskFailed);
         if (this._onSocketConnect) socket.off("connect", this._onSocketConnect);
       }
     },
@@ -98,7 +100,10 @@ export default {
 
     unbindWindowEvents() {
       if (this._onVisibilityChange) {
-        document.removeEventListener("visibilitychange", this._onVisibilityChange);
+        document.removeEventListener(
+          "visibilitychange",
+          this._onVisibilityChange,
+        );
       }
     },
 
@@ -111,7 +116,8 @@ export default {
 
     processAsyncTasks() {
       if (!this.shadowRoot) return;
-      const pendingElements = this.shadowRoot.querySelectorAll("[data-task-id]");
+      const pendingElements =
+        this.shadowRoot.querySelectorAll("[data-task-id]");
       if (!pendingElements || pendingElements.length === 0) return;
 
       pendingElements.forEach((el) => {
@@ -129,7 +135,9 @@ export default {
       }
 
       try {
-        const res = await fetch(`/api/images/tasks/${encodeURIComponent(taskId)}`);
+        const res = await fetch(
+          `/api/images/tasks/${encodeURIComponent(taskId)}`,
+        );
         if (!res.ok) return;
         const json = await res.json();
         const data = json.data || json;
@@ -176,7 +184,9 @@ export default {
         clearTimeout(this.pollingTimers.get(data.taskId));
         this.pollingTimers.delete(data.taskId);
       }
-      const targetEl = this.shadowRoot.querySelector(`[data-task-id="${data.taskId}"]`);
+      const targetEl = this.shadowRoot.querySelector(
+        `[data-task-id="${data.taskId}"]`,
+      );
       if (targetEl && data.url) {
         this.applyImageToElement(targetEl, data.url);
       }
@@ -188,7 +198,9 @@ export default {
         clearTimeout(this.pollingTimers.get(data.taskId));
         this.pollingTimers.delete(data.taskId);
       }
-      const targetEl = this.shadowRoot.querySelector(`[data-task-id="${data.taskId}"]`);
+      const targetEl = this.shadowRoot.querySelector(
+        `[data-task-id="${data.taskId}"]`,
+      );
       if (targetEl) {
         this.applyErrorToElement(targetEl, data.error);
       }
@@ -206,8 +218,12 @@ export default {
       if (!el) return;
       el.removeAttribute("data-task-id");
 
-      const imgEl = el.tagName.toLowerCase() === "img" ? el : el.querySelector("img");
-      const stageEl = el.classList?.contains("stage") || el.classList?.contains("ldr-box") ? el : el.closest?.(".stage, .ldr-box");
+      const imgEl =
+        el.tagName.toLowerCase() === "img" ? el : el.querySelector("img");
+      const stageEl =
+        el.classList?.contains("stage") || el.classList?.contains("ldr-box")
+          ? el
+          : el.closest?.(".stage, .ldr-box");
 
       if (imgEl) {
         imgEl.removeAttribute("data-task-id");
@@ -283,9 +299,9 @@ export default {
       if (spinner) {
         spinner.innerHTML = `<span style="color: #f87171; font-size: 11px;">⚠️ 失败</span>`;
       } else if (el.tagName.toLowerCase() === "img") {
-        el.title = `生图失败: ${errorMsg || '未知错误'}`;
+        el.title = `生图失败: ${errorMsg || "未知错误"}`;
       } else {
-        el.innerHTML = `<div style="padding: 12px; color: #f87171; font-size: 12px; text-align: center;">⚠️ 图片生成失败: ${errorMsg || '请重试'}</div>`;
+        el.innerHTML = `<div style="padding: 12px; color: #f87171; font-size: 12px; text-align: center;">⚠️ 图片生成失败: ${errorMsg || "请重试"}</div>`;
       }
       this.notifyHtmlChange();
     },

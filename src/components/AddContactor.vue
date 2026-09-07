@@ -212,7 +212,9 @@
                   <img :src="item.avatar" class="member-avatar" />
                   <div class="member-info">
                     <div class="member-name">{{ item.name }}</div>
-                    <div class="member-desc">{{ item.title || item.opening || 'Agent' }}</div>
+                    <div class="member-desc">
+                      {{ item.title || item.opening || "Agent" }}
+                    </div>
                   </div>
                 </div>
                 <el-empty
@@ -225,7 +227,10 @@
               <!-- 已选成员预览区 (固定在灰色卡片内底端) -->
               <div class="selected-preview-bar">
                 <div class="preview-title">
-                  已选成员 <span class="count-badge">({{ selectedGroupMembers.length }})</span>
+                  已选成员
+                  <span class="count-badge"
+                    >({{ selectedGroupMembers.length }})</span
+                  >
                 </div>
                 <div class="preview-chips-container">
                   <template v-if="selectedGroupMembers.length > 0">
@@ -236,7 +241,11 @@
                     >
                       <img :src="m.avatar" class="chip-avatar" />
                       <span class="chip-name">{{ m.name }}</span>
-                      <span class="chip-remove" @click.stop="toggleGroupMember(m)">×</span>
+                      <span
+                        class="chip-remove"
+                        @click.stop="toggleGroupMember(m)"
+                        >×</span
+                      >
                     </div>
                   </template>
                   <div v-else class="empty-chips-hint">
@@ -493,7 +502,9 @@
                 <img :src="item.avatar" class="member-avatar" />
                 <div class="member-info">
                   <div class="member-name">{{ item.name }}</div>
-                  <div class="member-desc">{{ item.title || item.opening || 'Agent' }}</div>
+                  <div class="member-desc">
+                    {{ item.title || item.opening || "Agent" }}
+                  </div>
                 </div>
               </div>
               <el-empty
@@ -506,7 +517,10 @@
             <!-- 已选成员预览区 (固定在灰色卡片内底端) -->
             <div class="selected-preview-bar">
               <div class="preview-title">
-                已选成员 <span class="count-badge">({{ selectedGroupMembers.length }})</span>
+                已选成员
+                <span class="count-badge"
+                  >({{ selectedGroupMembers.length }})</span
+                >
               </div>
               <div class="preview-chips-container">
                 <template v-if="selectedGroupMembers.length > 0">
@@ -517,7 +531,9 @@
                   >
                     <img :src="m.avatar" class="chip-avatar" />
                     <span class="chip-name">{{ m.name }}</span>
-                    <span class="chip-remove" @click.stop="toggleGroupMember(m)">×</span>
+                    <span class="chip-remove" @click.stop="toggleGroupMember(m)"
+                      >×</span
+                    >
                   </div>
                 </template>
                 <div v-else class="empty-chips-hint">
@@ -569,7 +585,10 @@ import { Loading, Search } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { getAvatarByModel, useContactorsStore } from "@/stores/contactorsStore.js";
+import {
+  getAvatarByModel,
+  useContactorsStore,
+} from "@/stores/contactorsStore.js";
 import { getLocalPresets } from "@/lib/clientSettings.js";
 
 // Props
@@ -624,26 +643,29 @@ const selectedGroupMembers = ref([]);
 const availableGroupMembers = computed(() => {
   if (groupMemberTab.value === "recent") {
     const contactorStore = useContactorsStore();
-    return Object.values(contactorStore.contactors || {})
-      .filter((c) => c.platform !== "group")
-      // 按最近活跃时间倒序，与好友列表 sortedContactors 的口径一致
-      .sort((a, b) => (b.lastUpdate || 0) - (a.lastUpdate || 0))
-      .map((c) => ({
-        id: c.id,
-        agentId: c.id,
-        name: c.name,
-        avatar: c.avatar || "/static/icons/512x512.png",
-        title: c.title || "联系人",
-        namePolicy: c.namePolicy !== undefined ? c.namePolicy : 0,
-        avatarPolicy: c.avatarPolicy !== undefined ? c.avatarPolicy : 0,
-        options: c.options,
-      }));
+    return (
+      Object.values(contactorStore.contactors || {})
+        .filter((c) => c.platform !== "group")
+        // 按最近活跃时间倒序，与好友列表 sortedContactors 的口径一致
+        .sort((a, b) => (b.lastUpdate || 0) - (a.lastUpdate || 0))
+        .map((c) => ({
+          id: c.id,
+          agentId: c.id,
+          name: c.name,
+          avatar: c.avatar || "/static/icons/512x512.png",
+          title: c.title || "联系人",
+          namePolicy: c.namePolicy !== undefined ? c.namePolicy : 0,
+          avatarPolicy: c.avatarPolicy !== undefined ? c.avatarPolicy : 0,
+          options: c.options,
+        }))
+    );
   } else {
     return localPresets.value.map((p) => ({
       id: p.id,
       agentId: p.id,
       name: p.name,
-      avatar: p.avatar || getAvatarByModel(p.model) || "/static/icons/512x512.png",
+      avatar:
+        p.avatar || getAvatarByModel(p.model) || "/static/icons/512x512.png",
       title: p.title || "本地预设",
       namePolicy: p.namePolicy !== undefined ? p.namePolicy : 0,
       avatarPolicy:
@@ -671,7 +693,8 @@ const toggleGroupMember = (item) => {
 };
 
 const handleCreateGroup = async () => {
-  if (!groupName.value.trim() || selectedGroupMembers.value.length === 0) return;
+  if (!groupName.value.trim() || selectedGroupMembers.value.length === 0)
+    return;
   const contactorStore = useContactorsStore();
   try {
     const newGroup = await contactorStore.addGroupContactor({

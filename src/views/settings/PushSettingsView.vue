@@ -23,7 +23,8 @@
       style="margin-bottom: 24px"
     >
       <template #title>
-        Web Push 允许服务端在后台定时任务（Cron）执行完成或触发 Channel 联动时，即使浏览器关闭/手机锁屏，也能向用户设备发送原生系统离线推送。
+        Web Push 允许服务端在后台定时任务（Cron）执行完成或触发 Channel
+        联动时，即使浏览器关闭/手机锁屏，也能向用户设备发送原生系统离线推送。
       </template>
     </el-alert>
 
@@ -38,12 +39,26 @@
           <el-tag type="success" size="small">已就绪 (Active)</el-tag>
         </el-form-item>
         <el-form-item label="当前有效设备数">
-          <span style="font-size: 15px; font-weight: 600; color: var(--el-color-primary)">
+          <span
+            style="
+              font-size: 15px;
+              font-weight: 600;
+              color: var(--el-color-primary);
+            "
+          >
             {{ devices.length }} 台
           </span>
         </el-form-item>
         <el-form-item label="VAPID 公钥">
-          <div style="display: flex; align-items: center; gap: 8px; width: 100%; max-width: 600px">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              width: 100%;
+              max-width: 600px;
+            "
+          >
             <el-input
               :model-value="vapidPublicKey || '加载中...'"
               readonly
@@ -53,7 +68,8 @@
           </div>
           <template #extra>
             <span class="form-item-tip">
-              客户端通过此公钥向 Apple APNs / Google FCM 申请加密端点，已安全持久化在服务端数据库。
+              客户端通过此公钥向 Apple APNs / Google FCM
+              申请加密端点，已安全持久化在服务端数据库。
             </span>
           </template>
         </el-form-item>
@@ -104,7 +120,14 @@
 
     <!-- 已登记设备管理表格 -->
     <el-card class="config-card">
-      <div class="section-title" style="display: flex; justify-content: space-between; align-items: center">
+      <div
+        class="section-title"
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        "
+      >
         <div style="display: flex; align-items: center; gap: 8px">
           <el-icon><Monitor /></el-icon>
           已登记设备列表 ({{ devices.length }})
@@ -121,23 +144,45 @@
           <template #default="{ row }">
             <el-tag
               size="small"
-              :type="row.device === 'ios_pwa' ? 'warning' : (row.device === 'pwa' ? 'success' : 'info')"
+              :type="
+                row.device === 'ios_pwa'
+                  ? 'warning'
+                  : row.device === 'pwa'
+                    ? 'success'
+                    : 'info'
+              "
             >
-              {{ row.device === 'ios_pwa' ? 'iOS PWA' : (row.device === 'pwa' ? 'Desktop PWA' : '网页浏览器') }}
+              {{
+                row.device === "ios_pwa"
+                  ? "iOS PWA"
+                  : row.device === "pwa"
+                    ? "Desktop PWA"
+                    : "网页浏览器"
+              }}
             </el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column label="推送端点 (Endpoint)" min-width="260" show-overflow-tooltip>
+        <el-table-column
+          label="推送端点 (Endpoint)"
+          min-width="260"
+          show-overflow-tooltip
+        >
           <template #default="{ row }">
             <code style="font-size: 11px">{{ row.endpoint }}</code>
           </template>
         </el-table-column>
 
-        <el-table-column label="客户端 User-Agent" min-width="200" show-overflow-tooltip>
+        <el-table-column
+          label="客户端 User-Agent"
+          min-width="200"
+          show-overflow-tooltip
+        >
           <template #default="{ row }">
-            <span style="font-size: 12px; color: var(--el-text-color-secondary)">
-              {{ row.userAgent || '未知设备 UA' }}
+            <span
+              style="font-size: 12px; color: var(--el-text-color-secondary)"
+            >
+              {{ row.userAgent || "未知设备 UA" }}
             </span>
           </template>
         </el-table-column>
@@ -168,123 +213,123 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Bell, Promotion, Monitor } from '@element-plus/icons-vue'
-import configAPI from '@/lib/configApi.js'
+import { ref, reactive, onMounted } from "vue";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { Bell, Promotion, Monitor } from "@element-plus/icons-vue";
+import configAPI from "@/lib/configApi.js";
 
-const loading = ref(false)
-const clearing = ref(false)
-const testing = ref(false)
-const vapidPublicKey = ref('')
-const devices = ref([])
+const loading = ref(false);
+const clearing = ref(false);
+const testing = ref(false);
+const vapidPublicKey = ref("");
+const devices = ref([]);
 
 const testForm = reactive({
-  title: 'Mio-Chat 系统提醒',
-  body: '这是一条来自管理员后台的 Web Push 测试推送！',
-  contactorId: '',
-})
+  title: "Mio-Chat 系统提醒",
+  body: "这是一条来自管理员后台的 Web Push 测试推送！",
+  contactorId: "",
+});
 
 const fetchData = async () => {
-  loading.value = true
+  loading.value = true;
   try {
     const [keyRes, subsRes] = await Promise.all([
-      configAPI.request('/api/push/vapid-key').catch(() => null),
-      configAPI.request('/api/push/subscriptions').catch(() => null),
-    ])
+      configAPI.request("/api/push/vapid-key").catch(() => null),
+      configAPI.request("/api/push/subscriptions").catch(() => null),
+    ]);
     if (keyRes?.data?.publicKey) {
-      vapidPublicKey.value = keyRes.data.publicKey
+      vapidPublicKey.value = keyRes.data.publicKey;
     }
     if (Array.isArray(subsRes?.data?.list)) {
-      devices.value = subsRes.data.list
+      devices.value = subsRes.data.list;
     }
   } catch (err) {
-    ElMessage.error(err.message || '获取推送配置失败')
+    ElMessage.error(err.message || "获取推送配置失败");
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const copyPublicKey = () => {
-  if (!vapidPublicKey.value) return
-  navigator.clipboard.writeText(vapidPublicKey.value)
-  ElMessage.success('VAPID 公钥已复制到剪贴板')
-}
+  if (!vapidPublicKey.value) return;
+  navigator.clipboard.writeText(vapidPublicKey.value);
+  ElMessage.success("VAPID 公钥已复制到剪贴板");
+};
 
 const handleSendTest = async () => {
   if (devices.value.length === 0) {
-    ElMessage.warning('当前暂无已登记的设备，无法发送测试通知')
-    return
+    ElMessage.warning("当前暂无已登记的设备，无法发送测试通知");
+    return;
   }
-  testing.value = true
+  testing.value = true;
   try {
-    const res = await configAPI.request('/api/push/test', {
+    const res = await configAPI.request("/api/push/test", {
       body: {
         title: testForm.title,
         body: testForm.body,
         contactorId: testForm.contactorId || null,
       },
-      method: 'POST',
-    })
+      method: "POST",
+    });
     if (res?.data?.delivered > 0) {
-      ElMessage.success(`测试通知已成功推送到 ${res.data.delivered} 台设备！`)
+      ElMessage.success(`测试通知已成功推送到 ${res.data.delivered} 台设备！`);
     } else {
-      ElMessage.warning('通知已触发，但设备端可能未确认接收')
+      ElMessage.warning("通知已触发，但设备端可能未确认接收");
     }
   } catch (err) {
-    ElMessage.error(err.message || '发送测试推送失败')
+    ElMessage.error(err.message || "发送测试推送失败");
   } finally {
-    testing.value = false
+    testing.value = false;
   }
-}
+};
 
 const handleRemoveDevice = async (endpoint) => {
   try {
-    await ElMessageBox.confirm('确认注销并移除该设备的推送订阅吗？', '提示', {
-      confirmButtonText: '确定移除',
-      cancelButtonText: '取消',
-      type: 'warning',
-    })
-    await configAPI.request('/api/push/unsubscribe', {
+    await ElMessageBox.confirm("确认注销并移除该设备的推送订阅吗？", "提示", {
+      confirmButtonText: "确定移除",
+      cancelButtonText: "取消",
+      type: "warning",
+    });
+    await configAPI.request("/api/push/unsubscribe", {
       body: { endpoint },
-      method: 'POST',
-    })
-    ElMessage.success('已移除该设备订阅')
-    await fetchData()
+      method: "POST",
+    });
+    ElMessage.success("已移除该设备订阅");
+    await fetchData();
   } catch (err) {
-    if (err !== 'cancel') {
-      ElMessage.error(err.message || '移除设备失败')
+    if (err !== "cancel") {
+      ElMessage.error(err.message || "移除设备失败");
     }
   }
-}
+};
 
 const confirmClearAll = async () => {
   try {
     await ElMessageBox.confirm(
-      '确定要清空所有已登记的设备推送订阅吗？清空后各设备需要重新进入客户端开启通知。',
-      '清空设备确认',
+      "确定要清空所有已登记的设备推送订阅吗？清空后各设备需要重新进入客户端开启通知。",
+      "清空设备确认",
       {
-        confirmButtonText: '确认全部清空',
-        cancelButtonText: '取消',
-        type: 'danger',
-      }
-    )
-    clearing.value = true
-    await configAPI.request('/api/push/clear-all', { method: 'POST' })
-    ElMessage.success('已清空所有设备订阅')
-    await fetchData()
+        confirmButtonText: "确认全部清空",
+        cancelButtonText: "取消",
+        type: "danger",
+      },
+    );
+    clearing.value = true;
+    await configAPI.request("/api/push/clear-all", { method: "POST" });
+    ElMessage.success("已清空所有设备订阅");
+    await fetchData();
   } catch (err) {
-    if (err !== 'cancel') {
-      ElMessage.error(err.message || '清空失败')
+    if (err !== "cancel") {
+      ElMessage.error(err.message || "清空失败");
     }
   } finally {
-    clearing.value = false
+    clearing.value = false;
   }
-}
+};
 
 onMounted(() => {
-  fetchData()
-})
+  fetchData();
+});
 </script>
 
 <style scoped lang="scss">

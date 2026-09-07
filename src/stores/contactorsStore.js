@@ -10,6 +10,7 @@ import {
   deleteGlobalMemoryItem,
 } from "@/lib/clientSettings.js";
 
+
 const avatarPolicy = ["MODEL", "CUSTOM"];
 const namePolicy = ["MODEL", "CUSTOM", "SUMMARY"];
 
@@ -146,44 +147,22 @@ export function getLastMessageSummary(messageChain, message = null) {
     : "[未知消息]";
 }
 
-function formatErrorMessage(error) {
-  if (!error) return "未知错误";
-
-  let raw = error;
-  if (typeof error === "object") {
-    if (error instanceof Error) {
-      raw = error.message || error.stack || String(error);
-    } else if (error.message) {
-      raw = error.message;
-    } else if (error.error?.message) {
-      raw = error.error.message;
-    } else {
-      try {
-        raw = JSON.stringify(error, null, 2);
-      } catch {
-        raw = String(error);
-      }
-    }
+export function formatErrorMessage(error) {
+  if (!error) return "⚠️ **请求失败**: 未知错误";
+  if (typeof error === "string") {
+    return error.startsWith("⚠️") ? error : `⚠️ **请求失败**: ${error}`;
   }
-
-  let errorMsg = String(raw).trim();
-  let isJson = false;
-
-  if (errorMsg.startsWith("{") || errorMsg.startsWith("[")) {
-    try {
-      const parsed = JSON.parse(errorMsg);
-      errorMsg = JSON.stringify(parsed, null, 2);
-      isJson = true;
-    } catch {
-      // keep raw
-    }
+  const msg = error.message || error.error;
+  if (typeof msg === "string") {
+    return msg.startsWith("⚠️") ? msg : `⚠️ **请求失败**: ${msg}`;
   }
-
-  if (isJson) {
-    return `\n\`\`\`json\n${errorMsg}\n\`\`\``;
+  try {
+    return `⚠️ **请求失败**\n\n\`\`\`json\n${JSON.stringify(msg || error, null, 2)}\n\`\`\``;
+  } catch {
+    return `⚠️ **请求失败**: ${String(msg || error)}`;
   }
-  return `⚠️ 请求失败: ${errorMsg}`;
 }
+
 
 export const useContactorsStore = defineStore("contactors", () => {
   // State
@@ -227,7 +206,12 @@ export const useContactorsStore = defineStore("contactors", () => {
         defaultResponderId: item.defaultResponderId ?? "",
         toolCallContextMode: item.toolCallContextMode || "brief",
         members: item.members ?? [],
-        priority: item.priority === true ? 0 : item.priority === false ? 1 : (item.priority ?? 1),
+        priority:
+          item.priority === true
+            ? 0
+            : item.priority === false
+              ? 1
+              : (item.priority ?? 1),
         firstMessageIndex: item.firstMessageIndex ?? 0,
         messageChain: Array.isArray(item.messageChain)
           ? item.messageChain.map((m) =>
@@ -252,7 +236,7 @@ export const useContactorsStore = defineStore("contactors", () => {
         newContactors[item.id].options.crystallization = {
           enabled: true,
           latestSummary: "",
-          tokenWatermark: 'auto',
+          tokenWatermark: "auto",
         };
       }
 
@@ -290,7 +274,7 @@ export const useContactorsStore = defineStore("contactors", () => {
       newContactor.options.crystallization = {
         enabled: true,
         latestSummary: "",
-        tokenWatermark: 'auto',
+        tokenWatermark: "auto",
       };
     }
 
@@ -303,7 +287,13 @@ export const useContactorsStore = defineStore("contactors", () => {
     return newContactor;
   }
 
-  async function addGroupContactor({ name, intro = "", members = [], avatarPolicy = "composite", avatar = null }) {
+  async function addGroupContactor({
+    name,
+    intro = "",
+    members = [],
+    avatarPolicy = "composite",
+    avatar = null,
+  }) {
     const id = numberString(10);
 
     const newGroup = {
@@ -427,7 +417,7 @@ export const useContactorsStore = defineStore("contactors", () => {
         contactor.options.crystallization = {
           enabled: true,
           latestSummary: "",
-          tokenWatermark: 'auto',
+          tokenWatermark: "auto",
         };
         client.setLocalStorage();
       }
@@ -487,9 +477,7 @@ export const useContactorsStore = defineStore("contactors", () => {
   }
 
   function updateContactorSummary(contactor) {
-    const summary = getLastMessageSummary(
-      contactor.messageChain,
-    );
+    const summary = getLastMessageSummary(contactor.messageChain);
     if (summary) {
       contactor.lastMessageSummary = summary;
     } else if (contactor.platform !== "channel") {
@@ -704,7 +692,7 @@ export const useContactorsStore = defineStore("contactors", () => {
         enabled: true,
         globalMemoryEnabled: true,
         latestSummary: "",
-        tokenWatermark: 'auto',
+        tokenWatermark: "auto",
       };
     }
     return host.options.crystallization;
@@ -741,13 +729,17 @@ export const useContactorsStore = defineStore("contactors", () => {
         } else if (action === "delete") {
           // target 可以是 id（如 mem_xxx）或匹配内容
           const currentMem = client._clientSettings?.globalMemory || [];
-          const matched = currentMem.find((m) => m.id === target || m.content.includes(target));
+          const matched = currentMem.find(
+            (m) => m.id === target || m.content.includes(target),
+          );
           if (matched) {
             await deleteGlobalMemoryItem(matched.id);
           }
         } else if (action === "update") {
           const currentMem = client._clientSettings?.globalMemory || [];
-          const matched = currentMem.find((m) => m.id === target || m.content.includes(target));
+          const matched = currentMem.find(
+            (m) => m.id === target || m.content.includes(target),
+          );
           if (matched) {
             await updateGlobalMemoryItem(matched.id, { content, category });
           } else if (content) {
@@ -1098,7 +1090,11 @@ export const useContactorsStore = defineStore("contactors", () => {
       // 格式化具体的错误信息并作为代码块塞进 message 的 content 中，避免重复塞入
       const errorText = formatErrorMessage(error);
       const lastElm = message.content[message.content.length - 1];
-      if (!lastElm || lastElm.type !== "text" || lastElm.data?.text !== errorText) {
+      if (
+        !lastElm ||
+        lastElm.type !== "text" ||
+        lastElm.data?.text !== errorText
+      ) {
         message.content.push({
           type: "text",
           data: { text: errorText },
@@ -1193,8 +1189,14 @@ export const useContactorsStore = defineStore("contactors", () => {
       contactor.messageChain.splice(index, 1);
 
       // 单聊：修正 firstMessageIndex
-      if (contactor.firstMessageIndex !== undefined && contactor.firstMessageIndex >= index) {
-        contactor.firstMessageIndex = Math.max(0, contactor.firstMessageIndex - 1);
+      if (
+        contactor.firstMessageIndex !== undefined &&
+        contactor.firstMessageIndex >= index
+      ) {
+        contactor.firstMessageIndex = Math.max(
+          0,
+          contactor.firstMessageIndex - 1,
+        );
       }
 
       // 群聊：群成员的 lastCompressedIndex 指向群消息链的下标，删除会让其后及当天的所有
@@ -1387,7 +1389,12 @@ export const useContactorsStore = defineStore("contactors", () => {
   function toMessagesJSON(contactorId) {
     const contactor = contactors.value[contactorId];
     // 零本地存储：渠道 Bot 绝不导出消息链用于持久化
-    if (!contactor || contactor.platform === "channel" || !Array.isArray(contactor.messageChain)) return [];
+    if (
+      !contactor ||
+      contactor.platform === "channel" ||
+      !Array.isArray(contactor.messageChain)
+    )
+      return [];
     return contactor.messageChain;
   }
 
@@ -1433,7 +1440,8 @@ export const useContactorsStore = defineStore("contactors", () => {
     toMessagesJSON,
     // Crystallization
     handleCrystallizeEvent,
-    updateCrystallization,    updateContactorOption,
+    updateCrystallization,
+    updateContactorOption,
     getCrystalHost,
     appendToXmlZone,
   };

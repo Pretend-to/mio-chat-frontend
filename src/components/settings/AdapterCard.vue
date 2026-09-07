@@ -11,7 +11,9 @@
     <!-- 卡片头部 -->
     <div class="card-header">
       <div class="header-left">
-        <el-tag size="small" type="primary" effect="plain">{{ typeLabel }}</el-tag>
+        <el-tag size="small" type="primary" effect="plain">{{
+          typeLabel
+        }}</el-tag>
         <el-tag :type="adapter.enable ? 'success' : 'info'" size="small">
           {{ adapter.enable ? "已启用" : "已禁用" }}
         </el-tag>
@@ -58,10 +60,7 @@
               >
                 视觉 {{ registrySummary.visionCount }}
               </el-tag>
-              <el-tooltip
-                :content="registrySummary.sourceText"
-                placement="top"
-              >
+              <el-tooltip :content="registrySummary.sourceText" placement="top">
                 <el-tag size="small" effect="plain">
                   ctx {{ registrySummary.ctxRange }}
                 </el-tag>

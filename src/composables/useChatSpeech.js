@@ -76,7 +76,8 @@ export function useChatSpeech() {
   };
 
   const speakTextChunk = (text, messageId) => {
-    if (typeof window === "undefined" || !window.speechSynthesis || !text) return;
+    if (typeof window === "undefined" || !window.speechSynthesis || !text)
+      return;
 
     const cleanText = stripEmojis(text);
     if (!cleanText) return;

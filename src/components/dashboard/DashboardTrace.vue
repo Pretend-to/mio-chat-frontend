@@ -45,9 +45,17 @@
           </div>
 
           <div class="turns-list-scroll">
-            <el-skeleton :loading="store.loadingTurns && store.toolCallTurns.length === 0" animated :rows="6" style="padding: 10px;">
+            <el-skeleton
+              :loading="store.loadingTurns && store.toolCallTurns.length === 0"
+              animated
+              :rows="6"
+              style="padding: 10px"
+            >
               <template #default>
-                <div v-if="store.toolCallTurns.length === 0" class="empty-state">
+                <div
+                  v-if="store.toolCallTurns.length === 0"
+                  class="empty-state"
+                >
                   暂无对话记录
                 </div>
 
@@ -129,9 +137,7 @@
             </div>
             <span class="total-tokens-badge" v-if="store.activeTurn">
               {{ isMobile ? "" : "总 Token: "
-              }}<strong>{{
-                formatTokens(activeTurnFinalTokens)
-              }}</strong>
+              }}<strong>{{ formatTokens(activeTurnFinalTokens) }}</strong>
             </span>
           </div>
 
@@ -141,7 +147,15 @@
           </div>
 
           <div v-else class="trace-timeline-scroll">
-            <el-skeleton :loading="store.loadingTrace && (!store.activeTurn.steps || store.activeTurn.steps.length === 0)" animated :rows="6" style="padding: 16px;">
+            <el-skeleton
+              :loading="
+                store.loadingTrace &&
+                (!store.activeTurn.steps || store.activeTurn.steps.length === 0)
+              "
+              animated
+              :rows="6"
+              style="padding: 16px"
+            >
               <template #default>
                 <div class="timeline-container">
                   <div
@@ -149,160 +163,165 @@
                     :key="index"
                     class="timeline-node"
                   >
-                <!-- Timeline indicator column -->
-                <div class="node-indicator">
-                  <div class="node-dot" :class="step.type">
-                    <i
-                      :class="
-                        step.type === 'tool'
-                          ? 'fa-solid fa-wrench'
-                          : 'fa-solid fa-brain'
-                      "
-                    ></i>
-                  </div>
-                  <div
-                    class="node-line"
-                    v-if="index < store.activeTurn.steps.length - 1"
-                  ></div>
-                </div>
-
-                <!-- Timeline card content -->
-                <div class="node-content-card">
-                  <div class="step-card-header">
-                    <span class="step-time">{{
-                      formatTime(step.timestamp)
-                    }}</span>
-                    <span class="step-badge" :class="step.type">
-                      {{ step.type === "tool" ? "Tool" : "Inference" }}
-                    </span>
-                    <span class="step-model-tag" v-if="step.model">
-                      {{ step.model }}
-                    </span>
-                    <el-tag
-                      v-if="step.cacheHitTokens > 0"
-                      size="small"
-                      type="success"
-                      effect="light"
-                      class="cache-badge"
-                    >
-                      <i class="fa-solid fa-bolt"></i>
-                      <span class="desktop-only-inline"> 命中:</span>
-                      <span>
-                        {{
-                          Math.round(
-                            (step.cacheHitTokens /
-                              (step.cacheHitTokens + step.cacheMissTokens)) *
-                              100,
-                          )
-                        }}%</span
-                      >
-                    </el-tag>
-                  </div>
-
-                  <div class="step-details">
-                    <h4 class="step-title">
-                      {{
-                        step.type === "tool"
-                          ? `执行工具: ${step.toolName}`
-                          : "对话大模型推理"
-                      }}
-                    </h4>
-
-                    <!-- LLM fields -->
-                    <div v-if="step.type === 'llm'" class="llm-fields">
-                      <div class="metric-row">
-                        <span class="metric-item"
-                          >输入 Token:
-                          <strong>{{ step.promptTokens }}</strong></span
-                        >
-                        <span class="metric-item"
-                          >输出 Token:
-                          <strong>{{ step.candidatesTokens }}</strong></span
-                        >
-                        <span class="metric-item latency" v-if="step.ttft">
-                          首字延迟: <strong>{{ step.ttft }}ms</strong>
-                        </span>
-                        <span
-                          class="metric-item cache"
-                          v-if="step.cacheHitTokens !== undefined"
-                        >
-                          缓存命中:
-                          <strong
-                            :style="{
-                              color:
-                                step.cacheHitTokens > 0 ? '#10b981' : '#64748b',
-                            }"
-                          >
-                            {{ formatNumber(step.cacheHitTokens) }}
-                          </strong>
-                        </span>
-                        <span
-                          class="metric-item cache-rate"
-                          v-if="step.cacheHitTokens !== undefined"
-                        >
-                          缓存命中率:
-                          <strong
-                            :style="{
-                              color:
-                                step.cacheHitTokens > 0 ? '#10b981' : '#64748b',
-                            }"
-                          >
-                            {{
-                              step.cacheHitTokens + step.cacheMissTokens > 0
-                                ? Math.round(
-                                    (step.cacheHitTokens /
-                                      (step.cacheHitTokens +
-                                        step.cacheMissTokens)) *
-                                      100,
-                                  )
-                                : 0
-                            }}%
-                          </strong>
-                        </span>
+                    <!-- Timeline indicator column -->
+                    <div class="node-indicator">
+                      <div class="node-dot" :class="step.type">
+                        <i
+                          :class="
+                            step.type === 'tool'
+                              ? 'fa-solid fa-wrench'
+                              : 'fa-solid fa-brain'
+                          "
+                        ></i>
                       </div>
-
                       <div
-                        v-if="step.toolsCalled && step.toolsCalled.length"
-                        class="tools-called-box"
-                      >
-                        <span class="box-label"
-                          ><i class="fa-solid fa-code-branch"></i>
-                          触发的后续工具:</span
-                        >
-                        <div class="tags-group">
-                          <el-tag
-                            v-for="t in step.toolsCalled"
-                            :key="t"
-                            size="small"
-                            type="warning"
-                            effect="dark"
-                          >
-                            {{ t }}
-                          </el-tag>
-                        </div>
-                      </div>
+                        class="node-line"
+                        v-if="index < store.activeTurn.steps.length - 1"
+                      ></div>
                     </div>
 
-                    <!-- Tool fields -->
-                    <div v-if="step.type === 'tool'" class="tool-fields">
-                      <div class="code-editor-box">
-                        <div class="code-box-header">
-                          <span>参数与返回值</span>
+                    <!-- Timeline card content -->
+                    <div class="node-content-card">
+                      <div class="step-card-header">
+                        <span class="step-time">{{
+                          formatTime(step.timestamp)
+                        }}</span>
+                        <span class="step-badge" :class="step.type">
+                          {{ step.type === "tool" ? "Tool" : "Inference" }}
+                        </span>
+                        <span class="step-model-tag" v-if="step.model">
+                          {{ step.model }}
+                        </span>
+                        <el-tag
+                          v-if="step.cacheHitTokens > 0"
+                          size="small"
+                          type="success"
+                          effect="light"
+                          class="cache-badge"
+                        >
+                          <i class="fa-solid fa-bolt"></i>
+                          <span class="desktop-only-inline"> 命中:</span>
+                          <span>
+                            {{
+                              Math.round(
+                                (step.cacheHitTokens /
+                                  (step.cacheHitTokens +
+                                    step.cacheMissTokens)) *
+                                  100,
+                              )
+                            }}%</span
+                          >
+                        </el-tag>
+                      </div>
+
+                      <div class="step-details">
+                        <h4 class="step-title">
+                          {{
+                            step.type === "tool"
+                              ? `执行工具: ${step.toolName}`
+                              : "对话大模型推理"
+                          }}
+                        </h4>
+
+                        <!-- LLM fields -->
+                        <div v-if="step.type === 'llm'" class="llm-fields">
+                          <div class="metric-row">
+                            <span class="metric-item"
+                              >输入 Token:
+                              <strong>{{ step.promptTokens }}</strong></span
+                            >
+                            <span class="metric-item"
+                              >输出 Token:
+                              <strong>{{ step.candidatesTokens }}</strong></span
+                            >
+                            <span class="metric-item latency" v-if="step.ttft">
+                              首字延迟: <strong>{{ step.ttft }}ms</strong>
+                            </span>
+                            <span
+                              class="metric-item cache"
+                              v-if="step.cacheHitTokens !== undefined"
+                            >
+                              缓存命中:
+                              <strong
+                                :style="{
+                                  color:
+                                    step.cacheHitTokens > 0
+                                      ? '#10b981'
+                                      : '#64748b',
+                                }"
+                              >
+                                {{ formatNumber(step.cacheHitTokens) }}
+                              </strong>
+                            </span>
+                            <span
+                              class="metric-item cache-rate"
+                              v-if="step.cacheHitTokens !== undefined"
+                            >
+                              缓存命中率:
+                              <strong
+                                :style="{
+                                  color:
+                                    step.cacheHitTokens > 0
+                                      ? '#10b981'
+                                      : '#64748b',
+                                }"
+                              >
+                                {{
+                                  step.cacheHitTokens + step.cacheMissTokens > 0
+                                    ? Math.round(
+                                        (step.cacheHitTokens /
+                                          (step.cacheHitTokens +
+                                            step.cacheMissTokens)) *
+                                          100,
+                                      )
+                                    : 0
+                                }}%
+                              </strong>
+                            </span>
+                          </div>
+
+                          <div
+                            v-if="step.toolsCalled && step.toolsCalled.length"
+                            class="tools-called-box"
+                          >
+                            <span class="box-label"
+                              ><i class="fa-solid fa-code-branch"></i>
+                              触发的后续工具:</span
+                            >
+                            <div class="tags-group">
+                              <el-tag
+                                v-for="t in step.toolsCalled"
+                                :key="t"
+                                size="small"
+                                type="warning"
+                                effect="dark"
+                              >
+                                {{ t }}
+                              </el-tag>
+                            </div>
+                          </div>
                         </div>
-                        <pre
-                          class="code-box-content"
-                        ><code>参数: {{ step.arguments }}
+
+                        <!-- Tool fields -->
+                        <div v-if="step.type === 'tool'" class="tool-fields">
+                          <div class="code-editor-box">
+                            <div class="code-box-header">
+                              <span>参数与返回值</span>
+                            </div>
+                            <pre
+                              class="code-box-content"
+                            ><code>参数: {{ step.arguments }}
 返回值: {{ step.output }}</code></pre>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </template>
-        </el-skeleton>
-      </div>
-    </div>
+              </template>
+            </el-skeleton>
+          </div>
+        </div>
       </div>
     </div>
   </div>

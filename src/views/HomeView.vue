@@ -76,7 +76,6 @@ export default {
   background-color: transparent;
 }
 
-
 .mio-main-layout--mobile {
   width: 100%;
   height: calc(100% - 4.2rem - env(safe-area-inset-bottom, 0px));

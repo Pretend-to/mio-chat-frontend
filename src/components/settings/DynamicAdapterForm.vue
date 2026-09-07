@@ -54,7 +54,9 @@
           @update:model-value="updateField(fieldName, $event)"
           :placeholder="
             fieldConfig.placeholder ||
-            (fieldConfig.default ? `默认: ${fieldConfig.default}` : fieldConfig.description)
+            (fieldConfig.default
+              ? `默认: ${fieldConfig.default}`
+              : fieldConfig.description)
           "
           clearable
         />
@@ -113,7 +115,9 @@
           @update:model-value="updateField(fieldName, $event)"
           :placeholder="
             fieldConfig.placeholder ||
-            (fieldConfig.default ? `默认: ${fieldConfig.default}` : fieldConfig.description)
+            (fieldConfig.default
+              ? `默认: ${fieldConfig.default}`
+              : fieldConfig.description)
           "
           :readonly="fieldConfig.readonly"
           clearable
@@ -209,7 +213,8 @@ const updateField = (fieldName, value) => {
     padding: 16px 20px;
     background: var(--mio-bg-primary-light);
     border-radius: 14px;
-    border: 1px solid color-mix(in srgb, var(--mio-color-primary) 25%, transparent);
+    border: 1px solid
+      color-mix(in srgb, var(--mio-color-primary) 25%, transparent);
     margin-bottom: 24px;
     display: flex;
     gap: 14px;
@@ -254,7 +259,8 @@ const updateField = (fieldName, value) => {
         color: var(--mio-color-primary);
         text-decoration: none;
         font-weight: 500;
-        border-bottom: 1px solid color-mix(in srgb, var(--mio-color-primary) 30%, transparent);
+        border-bottom: 1px solid
+          color-mix(in srgb, var(--mio-color-primary) 30%, transparent);
         transition: all 0.2s ease;
         padding-bottom: 1px;
 

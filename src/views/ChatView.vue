@@ -42,7 +42,10 @@ import { client } from "@/lib/runtime.js";
 import { shareOrCopy } from "@/utils/tools.js";
 import { gateway } from "@/lib/gateway.js";
 import { numberString } from "@/utils/generate.js";
-import { getClientSettings, buildUserProfileXml } from "@/lib/clientSettings.js";
+import {
+  getClientSettings,
+  buildUserProfileXml,
+} from "@/lib/clientSettings.js";
 
 // Markdown plugins
 import {
@@ -239,7 +242,10 @@ let isObservingResize = false;
 let oldInnerHeight = 0;
 let observeTimer = null;
 const loadingIcon = "<span id='message-loading-icon'></span>";
-const katexPluginList = [{ plugin: katexPlugin }, { plugin: agentMentionPlugin }];
+const katexPluginList = [
+  { plugin: katexPlugin },
+  { plugin: agentMentionPlugin },
+];
 
 const mioPlugins = [
   { plugin: codeBlockPlugin },
@@ -276,7 +282,8 @@ const isLoadingServerHistory = ref(false);
 const loadChannelHistory = async (options = {}) => {
   const contactor = activeContactor.value;
   if (!contactor || contactor.platform !== "channel") return;
-  if (!client.isConnected || !client.socket || isLoadingServerHistory.value) return;
+  if (!client.isConnected || !client.socket || isLoadingServerHistory.value)
+    return;
 
   const { before = null, limit = 20 } = options;
   if (before && !hasMoreServerHistory.value) return;
@@ -299,7 +306,9 @@ const loadChannelHistory = async (options = {}) => {
 
         if (activeStreamingMsgs.length > 0) {
           const serverMsgIds = new Set(res.messages.map((m) => m.id));
-          const uniqueStreamingMsgs = activeStreamingMsgs.filter((m) => !serverMsgIds.has(m.id));
+          const uniqueStreamingMsgs = activeStreamingMsgs.filter(
+            (m) => !serverMsgIds.has(m.id),
+          );
           contactor.messageChain = [...res.messages, ...uniqueStreamingMsgs];
         } else {
           contactor.messageChain = res.messages;
@@ -314,7 +323,9 @@ const loadChannelHistory = async (options = {}) => {
       } else {
         // 触顶向前翻页加载
         const existingIds = new Set(contactor.messageChain.map((m) => m.id));
-        const newUniqueMsgs = res.messages.filter((m) => !existingIds.has(m.id));
+        const newUniqueMsgs = res.messages.filter(
+          (m) => !existingIds.has(m.id),
+        );
         if (newUniqueMsgs.length > 0) {
           contactor.messageChain.unshift(...newUniqueMsgs);
           renderedCount.value += newUniqueMsgs.length;
@@ -370,12 +381,8 @@ const {
 } = useChatSend({ activeContactor, toBottom: toButtom, autoScroll });
 
 // 4. Message Retry Composable
-const {
-  retryList,
-  getRetryTargetIndex,
-  handleRetryMessage,
-  handleMenuRetry,
-} = useChatRetry({ activeContactor, toBottom: toButtom, inputEditor });
+const { retryList, getRetryTargetIndex, handleRetryMessage, handleMenuRetry } =
+  useChatRetry({ activeContactor, toBottom: toButtom, inputEditor });
 
 // 5. Selection & Screenshot states
 const selectedMessages = ref([]);
@@ -549,7 +556,10 @@ watch(
 
     if (activeContactor.value?.platform === "channel") {
       hasMoreServerHistory.value = true;
-      if (!activeContactor.value.messageChain || activeContactor.value.messageChain.length === 0) {
+      if (
+        !activeContactor.value.messageChain ||
+        activeContactor.value.messageChain.length === 0
+      ) {
         loadChannelHistory({ limit: 20 });
       }
     }
@@ -574,8 +584,15 @@ watch(
 watch(
   () => [activeContactor.value?.id, client.isConnected],
   ([contactorId, isConnected]) => {
-    if (contactorId && isConnected && activeContactor.value?.platform === "channel") {
-      if (!activeContactor.value.messageChain || activeContactor.value.messageChain.length === 0) {
+    if (
+      contactorId &&
+      isConnected &&
+      activeContactor.value?.platform === "channel"
+    ) {
+      if (
+        !activeContactor.value.messageChain ||
+        activeContactor.value.messageChain.length === 0
+      ) {
         loadChannelHistory({ limit: 20 });
       }
     }
@@ -896,15 +913,24 @@ const handleImageLoad = (e) => {
 
     // 图片加载完后位置可能漂移，轻量重新定位（不重新注册 observer/timer）
     if (currentScrollTargetId.value) {
-      const targetEl = elm.querySelector(`[data-id="${currentScrollTargetId.value}"]`);
+      const targetEl = elm.querySelector(
+        `[data-id="${currentScrollTargetId.value}"]`,
+      );
       if (targetEl) {
         const getOffsetTop = (el, container) => {
-          let top = 0, curr = el;
-          while (curr && curr !== container) { top += curr.offsetTop; curr = curr.offsetParent; }
+          let top = 0,
+            curr = el;
+          while (curr && curr !== container) {
+            top += curr.offsetTop;
+            curr = curr.offsetParent;
+          }
           return top;
         };
         elm.scrollTo({
-       top: Math.max(0, getOffsetTop(targetEl, elm) - elm.clientHeight * 0.3),
+          top: Math.max(
+            0,
+            getOffsetTop(targetEl, elm) - elm.clientHeight * 0.3,
+          ),
           behavior: "instant",
         });
       }
@@ -969,7 +995,11 @@ onMounted(() => {
 
   // Sync with socket on mount
   trySync();
-  if (activeContactor.value?.platform === "channel" && (!activeContactor.value.messageChain || activeContactor.value.messageChain.length === 0)) {
+  if (
+    activeContactor.value?.platform === "channel" &&
+    (!activeContactor.value.messageChain ||
+      activeContactor.value.messageChain.length === 0)
+  ) {
     loadChannelHistory({ limit: 20 });
   }
   if (client.socket) {
@@ -1070,212 +1100,218 @@ onBeforeUnmount(() => {
         @share="share"
       />
 
-    <!-- Selection Banners -->
-    <transition name="select-banner-fade">
+      <!-- Selection Banners -->
+      <transition name="select-banner-fade">
+        <div
+          v-if="isMultiSelect && hasSelectedBelow"
+          class="select-banner top"
+          @click="selectToTopHere"
+        >
+          <i class="iconfont down1"></i>
+          <span>选择到此处</span>
+        </div>
+      </transition>
+      <transition name="select-banner-fade">
+        <div
+          v-if="isMultiSelect && hasSelectedAbove"
+          class="select-banner bottom"
+          @click="selectToBottomHere"
+        >
+          <i
+            class="iconfont down1"
+            style="transform: rotate(180deg); display: inline-block"
+          ></i>
+          <span>选择到此处</span>
+        </div>
+      </transition>
+
       <div
-        v-if="isMultiSelect && hasSelectedBelow"
-        class="select-banner top"
-        @click="selectToTopHere"
+        id="main-messages-window"
+        ref="chatWindow"
+        :class="{
+          'mio-chat-window__messages': true,
+          'message-window': true,
+          preview: preview,
+          'is-dragging': dragSelect.active,
+        }"
+      >
+        <ContextMenu
+          v-if="showMenu"
+          type="message"
+          :message="getseletedMessage()"
+          :seleted-text
+          :seleted-image
+          :style="getMenuStyle"
+          :client-x="menuLeft"
+          :current-speaking-message-id="currentSpeakingMessageId"
+          :can-retry="canRetry"
+          :is-group="activeContactor?.platform === 'group'"
+          :is-channel="activeContactor?.platform === 'channel'"
+          @message-option="handleMessageOption"
+          @close="showMenu = false"
+        />
+
+        <MessageDetailDialog
+          v-model="showDetailDialog"
+          :message="detailTargetMessage"
+          :contactor="activeContactor"
+        />
+
+        <div
+          ref="messagesInner"
+          class="messages-inner-wrapper"
+          style="width: 100%; display: flex; flex-direction: column"
+        >
+          <!-- History Loading Indicator -->
+          <div
+            v-if="renderedCount < (activeContactor?.messageChain?.length || 0)"
+            class="history-loading-container"
+            :class="{ 'is-loading': isLoadingHistory }"
+          >
+            <div class="loading-content">
+              <div class="spinner-dots">
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+              </div>
+              <span class="loading-text">{{
+                isLoadingHistory
+                  ? "正在加载历史消息..."
+                  : "继续向上滚动加载历史消息"
+              }}</span>
+            </div>
+          </div>
+
+          <!-- Opening Message -->
+          <MessageItem
+            v-if="openingMessage"
+            :item="openingMessage"
+            :index="-1"
+            :activeContactor="activeContactor"
+            :isOpening="true"
+            :mioPlugins="mioPlugins"
+            :katexPluginList="katexPluginList"
+            :mdOptions="mdOptions"
+            @to-profile="toProfile"
+          />
+
+          <MessageItem
+            v-for="(item, index) of activeMessageChain"
+            :key="`${activeContactor.id}-${item.id}`"
+            :item="item"
+            :index="index"
+            :updateTrigger="0"
+            :activeContactor="activeContactor"
+            :isMultiSelect="isMultiSelect"
+            :isSelected="selectedMessages.includes(item.id)"
+            :showTimeInfo="showTime(index)"
+            :mioPlugins="mioPlugins"
+            :katexPluginList="katexPluginList"
+            :mdOptions="mdOptions"
+            @click-message="handleMessageClick"
+            @toggle-checkbox="toggleSelect"
+            @to-profile="toProfile"
+            @mouseup-content="handleMouseUp"
+            @contextmenu-content="showMessageMenu"
+            @touchstart-content="handleTouchStart"
+            @delete-system="delSystemMessage"
+            @retry-message="handleRetryMessage"
+            @delete-message="handleDeleteMessage"
+          />
+        </div>
+
+        <!-- Selection Rectangle for Desktop Drag-Select -->
+        <div
+          v-if="dragSelect.active"
+          class="drag-select-rect"
+          :style="{
+            left: dragSelect.left + 'px',
+            top: dragSelect.top + 'px',
+            width: dragSelect.width + 'px',
+            height: dragSelect.height + 'px',
+          }"
+        ></div>
+      </div>
+
+      <!-- 滚动到底部快捷按钮 (基于 chat-main-area 定位，适配右侧 Sidebar) -->
+      <div
+        v-if="showRollDown"
+        class="mio-chat-window__scroll-down-btn"
+        id="roll-buttom-button"
+        :style="{ bottom: inputBarTop + 24 + 'px' }"
+        @click.stop="toButtom('smooth')"
       >
         <i class="iconfont down1"></i>
-        <span>选择到此处</span>
       </div>
-    </transition>
-    <transition name="select-banner-fade">
-      <div
-        v-if="isMultiSelect && hasSelectedAbove"
-        class="select-banner bottom"
-        @click="selectToBottomHere"
-      >
-        <i
-          class="iconfont down1"
-          style="transform: rotate(180deg); display: inline-block"
-        ></i>
-        <span>选择到此处</span>
-      </div>
-    </transition>
 
-    <div
-      id="main-messages-window"
-      ref="chatWindow"
-      :class="{
-        'mio-chat-window__messages': true,
-        'message-window': true,
-        preview: preview,
-        'is-dragging': dragSelect.active,
-      }"
-    >
-      <ContextMenu
-        v-if="showMenu"
-        type="message"
-        :message="getseletedMessage()"
-        :seleted-text
-        :seleted-image
-        :style="getMenuStyle"
-        :client-x="menuLeft"
-        :current-speaking-message-id="currentSpeakingMessageId"
-        :can-retry="canRetry"
-        :is-group="activeContactor?.platform === 'group'"
-        :is-channel="activeContactor?.platform === 'channel'"
-        @message-option="handleMessageOption"
-        @close="showMenu = false"
+      <InputEditor
+        v-if="!isMultiSelect"
+        ref="inputEditor"
+        :active-contactor="activeContactor"
+        @stroge="client.setLocalStorage()"
+        @set-model="setModel"
+        @clean-screen="cleanScreen"
+        @clean-history="cleanHistory"
+        @to-buttom="toButtom"
       />
 
-      <MessageDetailDialog
-        v-model="showDetailDialog"
-        :message="detailTargetMessage"
-        :contactor="activeContactor"
-      />
-
-      <div
-        ref="messagesInner"
-        class="messages-inner-wrapper"
-        style="width: 100%; display: flex; flex-direction: column"
-      >
-        <!-- History Loading Indicator -->
-        <div
-          v-if="renderedCount < (activeContactor?.messageChain?.length || 0)"
-          class="history-loading-container"
-          :class="{ 'is-loading': isLoadingHistory }"
-        >
-          <div class="loading-content">
-            <div class="spinner-dots">
-              <span class="dot"></span>
-              <span class="dot"></span>
-              <span class="dot"></span>
-            </div>
-            <span class="loading-text">{{
-              isLoadingHistory
-                ? "正在加载历史消息..."
-                : "继续向上滚动加载历史消息"
-            }}</span>
+      <div v-else class="multi-select-action-bar">
+        <div class="actions">
+          <div
+            class="action-btn hide-mobile"
+            @click="handleMultiShareMD(activeContactor, client.name)"
+          >
+            <span class="action-icon"><i class="iconfont icon-share"></i></span>
+            <span class="action-label">导出MD</span>
           </div>
+          <div
+            class="action-btn"
+            @click="handleMultiShareImage(activeContactor)"
+          >
+            <span class="action-icon"><i class="iconfont icon-share"></i></span>
+            <span class="action-label">导出图片</span>
+          </div>
+          <div
+            class="action-btn hide-mobile"
+            @click="handleMultiShareLink(activeContactor)"
+          >
+            <span class="action-icon"><i class="iconfont icon-share"></i></span>
+            <span class="action-label">分享链接</span>
+          </div>
+          <div
+            class="action-btn"
+            @click="handleMultiCopy(activeContactor, client.name)"
+          >
+            <span class="action-icon"><i class="iconfont fuzhi"></i></span>
+            <span class="action-label">复制</span>
+          </div>
+          <el-popconfirm
+            title="此操作不可撤销"
+            confirm-button-text="确定"
+            cancel-button-text="取消"
+            placement="top"
+            @confirm="handleMultiDelete(activeContactor)"
+          >
+            <template #reference>
+              <div class="action-btn">
+                <span class="action-icon"
+                  ><i class="iconfont shanchu"></i
+                ></span>
+                <span class="action-label">删除</span>
+              </div>
+            </template>
+          </el-popconfirm>
         </div>
-
-        <!-- Opening Message -->
-        <MessageItem
-          v-if="openingMessage"
-          :item="openingMessage"
-          :index="-1"
-          :activeContactor="activeContactor"
-          :isOpening="true"
-          :mioPlugins="mioPlugins"
-          :katexPluginList="katexPluginList"
-          :mdOptions="mdOptions"
-          @to-profile="toProfile"
-        />
-
-        <MessageItem
-          v-for="(item, index) of activeMessageChain"
-          :key="`${activeContactor.id}-${item.id}`"
-          :item="item"
-          :index="index"
-          :updateTrigger="0"
-          :activeContactor="activeContactor"
-          :isMultiSelect="isMultiSelect"
-          :isSelected="selectedMessages.includes(item.id)"
-          :showTimeInfo="showTime(index)"
-          :mioPlugins="mioPlugins"
-          :katexPluginList="katexPluginList"
-          :mdOptions="mdOptions"
-          @click-message="handleMessageClick"
-          @toggle-checkbox="toggleSelect"
-          @to-profile="toProfile"
-          @mouseup-content="handleMouseUp"
-          @contextmenu-content="showMessageMenu"
-          @touchstart-content="handleTouchStart"
-          @delete-system="delSystemMessage"
-          @retry-message="handleRetryMessage"
-          @delete-message="handleDeleteMessage"
-        />
+        <button
+          class="close-btn"
+          @click="cancelMultiSelect"
+          aria-label="取消多选"
+        >
+          &times;
+        </button>
       </div>
-
-      <!-- Selection Rectangle for Desktop Drag-Select -->
-      <div
-        v-if="dragSelect.active"
-        class="drag-select-rect"
-        :style="{
-          left: dragSelect.left + 'px',
-          top: dragSelect.top + 'px',
-          width: dragSelect.width + 'px',
-          height: dragSelect.height + 'px',
-        }"
-      ></div>
     </div>
-
-    <!-- 滚动到底部快捷按钮 (基于 chat-main-area 定位，适配右侧 Sidebar) -->
-    <div
-      v-if="showRollDown"
-      class="mio-chat-window__scroll-down-btn"
-      id="roll-buttom-button"
-      :style="{ bottom: inputBarTop + 24 + 'px' }"
-      @click.stop="toButtom('smooth')"
-    >
-      <i class="iconfont down1"></i>
-    </div>
-
-    <InputEditor
-      v-if="!isMultiSelect"
-      ref="inputEditor"
-      :active-contactor="activeContactor"
-      @stroge="client.setLocalStorage()"
-      @set-model="setModel"
-      @clean-screen="cleanScreen"
-      @clean-history="cleanHistory"
-      @to-buttom="toButtom"
-    />
-
-    <div v-else class="multi-select-action-bar">
-      <div class="actions">
-        <div
-          class="action-btn hide-mobile"
-          @click="handleMultiShareMD(activeContactor, client.name)"
-        >
-          <span class="action-icon"><i class="iconfont icon-share"></i></span>
-          <span class="action-label">导出MD</span>
-        </div>
-        <div class="action-btn" @click="handleMultiShareImage(activeContactor)">
-          <span class="action-icon"><i class="iconfont icon-share"></i></span>
-          <span class="action-label">导出图片</span>
-        </div>
-        <div
-          class="action-btn hide-mobile"
-          @click="handleMultiShareLink(activeContactor)"
-        >
-          <span class="action-icon"><i class="iconfont icon-share"></i></span>
-          <span class="action-label">分享链接</span>
-        </div>
-        <div
-          class="action-btn"
-          @click="handleMultiCopy(activeContactor, client.name)"
-        >
-          <span class="action-icon"><i class="iconfont fuzhi"></i></span>
-          <span class="action-label">复制</span>
-        </div>
-        <el-popconfirm
-          title="此操作不可撤销"
-          confirm-button-text="确定"
-          cancel-button-text="取消"
-          placement="top"
-          @confirm="handleMultiDelete(activeContactor)"
-        >
-          <template #reference>
-            <div class="action-btn">
-              <span class="action-icon"><i class="iconfont shanchu"></i></span>
-              <span class="action-label">删除</span>
-            </div>
-          </template>
-        </el-popconfirm>
-      </div>
-      <button
-        class="close-btn"
-        @click="cancelMultiSelect"
-        aria-label="取消多选"
-      >
-        &times;
-      </button>
-    </div>
-    </div> <!-- End of .chat-main-area -->
+    <!-- End of .chat-main-area -->
 
     <!-- QQ Style Right Sidebar for Group Chat (Desktop only) -->
     <GroupSidebar
@@ -1311,8 +1347,17 @@ onBeforeUnmount(() => {
         class="mio-img-preview-overlay"
         @click.self="imagePreview.visible = false"
       >
-        <img :src="imagePreview.url" class="mio-img-preview-img" alt="preview" />
-        <button class="mio-img-preview-close" @click="imagePreview.visible = false">×</button>
+        <img
+          :src="imagePreview.url"
+          class="mio-img-preview-img"
+          alt="preview"
+        />
+        <button
+          class="mio-img-preview-close"
+          @click="imagePreview.visible = false"
+        >
+          ×
+        </button>
       </div>
     </transition>
   </Teleport>

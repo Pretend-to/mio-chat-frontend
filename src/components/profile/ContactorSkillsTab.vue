@@ -33,14 +33,34 @@
     </div>
     <div class="skills-scroll-container" style="margin-top: 12px">
       <!-- 骨架屏占位 -->
-      <div v-if="loadingSkills && availableSkills.length === 0" class="skills-grid">
+      <div
+        v-if="loadingSkills && availableSkills.length === 0"
+        class="skills-grid"
+      >
         <div v-for="i in 6" :key="i" class="skill-item skeleton-item">
-          <el-skeleton animated style="display: flex; align-items: center; gap: 16px; width: 100%;">
+          <el-skeleton
+            animated
+            style="display: flex; align-items: center; gap: 16px; width: 100%"
+          >
             <template #template>
-              <el-skeleton-item variant="circle" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 10px;" />
-              <div style="flex: 1; min-width: 0;">
-                <el-skeleton-item variant="h3" style="width: 45%; height: 16px; margin-bottom: 8px;" />
-                <el-skeleton-item variant="text" style="width: 85%; height: 12px;" />
+              <el-skeleton-item
+                variant="circle"
+                style="
+                  width: 44px;
+                  height: 44px;
+                  flex-shrink: 0;
+                  border-radius: 10px;
+                "
+              />
+              <div style="flex: 1; min-width: 0">
+                <el-skeleton-item
+                  variant="h3"
+                  style="width: 45%; height: 16px; margin-bottom: 8px"
+                />
+                <el-skeleton-item
+                  variant="text"
+                  style="width: 85%; height: 12px"
+                />
               </div>
             </template>
           </el-skeleton>

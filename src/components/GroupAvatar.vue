@@ -113,7 +113,7 @@
           <img
             :src="displayAvatars[3]"
             class="sub-avatar"
-     alt="avatar"
+            alt="avatar"
             @error="handleImgError($event)"
           />
           <img
@@ -288,7 +288,8 @@ const wrapperStyle = computed(() => {
 });
 
 const displayAvatars = computed(() => {
-  const policy = props.contactor?.avatarPolicy || props.avatarPolicy || "composite";
+  const policy =
+    props.contactor?.avatarPolicy || props.avatarPolicy || "composite";
   const customAvatar = props.contactor?.avatar || props.avatar;
 
   // 自定义单张头像策略
@@ -436,7 +437,8 @@ function handleImgError(e) {
     gap: 2px;
     box-sizing: border-box;
 
-    .top-row, .bottom-row {
+    .top-row,
+    .bottom-row {
       display: flex;
       justify-content: center;
       width: 100%;
@@ -474,7 +476,9 @@ function handleImgError(e) {
   }
 
   /* 7个人、8个人、9个人及以上: 统一采用 flex 比例化 3 行排列，防止任何形式的尺寸不一、拉伸和不居中 */
-  .layout-7, .layout-8, .layout-9 {
+  .layout-7,
+  .layout-8,
+  .layout-9 {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -485,7 +489,10 @@ function handleImgError(e) {
     gap: 2px;
     box-sizing: border-box;
 
-    .top-row, .middle-row, .bottom-row, .row {
+    .top-row,
+    .middle-row,
+    .bottom-row,
+    .row {
       display: flex;
       justify-content: center;
       width: 100%;

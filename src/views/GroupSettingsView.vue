@@ -23,7 +23,8 @@
       <div class="group-title">群公告</div>
       <div class="settings-card notice-card">
         <div class="notice-tip">
-          公告会自动同步注入到各 Agent 的讨论上下文中，可用于声明本群准则或当前目标。
+          公告会自动同步注入到各 Agent
+          的讨论上下文中，可用于声明本群准则或当前目标。
         </div>
         <el-input
           v-model="noticeForm"
@@ -32,13 +33,14 @@
           placeholder="输入群公告内容、本群准则或项目目标..."
         />
         <div class="notice-actions">
-          <el-button
-            v-if="noticeForm"
-            @click="noticeForm = group.notice || ''"
-          >
+          <el-button v-if="noticeForm" @click="noticeForm = group.notice || ''">
             撤销修改
           </el-button>
-          <el-button type="primary" :disabled="!noticeDirty" @click="saveNotice">
+          <el-button
+            type="primary"
+            :disabled="!noticeDirty"
+            @click="saveNotice"
+          >
             保存并发布
           </el-button>
         </div>
@@ -47,181 +49,195 @@
 
     <!-- ========== 群聊设置 ========== -->
     <template v-else>
-    <!-- 群聊基本配置 -->
-    <div class="group-title">群聊基本配置</div>
-    <div class="settings-card">
-      <div class="setting-field">
-        <div class="field-label">群名称</div>
-        <div class="field-value">
-          <el-input
-            v-model="groupForm.name"
-            placeholder="群聊名称"
-            @change="saveGroupInfo"
-          />
-        </div>
-      </div>
-
-      <div class="setting-field">
-        <div class="field-label">群介绍 / 全局规则</div>
-        <div class="field-value">
-          <el-input
-            v-model="groupForm.intro"
-            type="textarea"
-            :rows="3"
-            placeholder="描写群聊设定与规则，如：本群专注于全栈开发与方案评审..."
-            @change="saveGroupInfo"
-          />
-        </div>
-      </div>
-
-      <div class="setting-field">
-        <div class="field-label">头像绘制策略</div>
-        <div class="field-value">
-          <el-select
-            v-model="groupForm.avatarPolicy"
-            style="width: 100%"
-            @change="handleAvatarPolicyChange"
-          >
-            <el-option label="拼图头像 (动态多宫格)" value="composite" />
-            <el-option label="自定义网络 URL" value="url" />
-          </el-select>
-        </div>
-      </div>
-
-      <div v-if="groupForm.avatarPolicy === 'url' || groupForm.avatarPolicy === 'custom'" class="setting-field">
-        <div class="field-label">头像 URL</div>
-        <div class="field-value">
-          <el-input
-            v-model="groupForm.avatar"
-            placeholder="https://example.com/avatar.png"
-            @change="saveGroupInfo"
-          />
-        </div>
-      </div>
-
-      <div class="setting-field">
-        <div class="field-label">会话置顶</div>
-        <div class="field-value">
-          <el-switch
-            v-model="groupForm.priority"
-            @change="saveGroupInfo"
-          />
-        </div>
-      </div>
-
-      <div class="setting-field">
-        <div class="field-label">
-          默认发言人
-          <el-tooltip
-            placement="top"
-            popper-class="mio-hint-popper"
-            content="用户未 @ 任何人时：优先由上一轮发言的成员接话；上一轮无人发言或多人同时发言时，交给这里指定的成员（不归它管时它会自行 @ 转交）"
-          >
-            <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
-          </el-tooltip>
-        </div>
-        <div class="field-value">
-          <el-select
-            v-model="groupForm.defaultResponderId"
-            placeholder="成员列表首位"
-            clearable
-            style="width: 180px;"
-            @change="saveGroupInfo"
-          >
-            <el-option
-              v-for="m in (group?.members || [])"
-              :key="m.id"
-              :label="m.name"
-              :value="m.id"
+      <!-- 群聊基本配置 -->
+      <div class="group-title">群聊基本配置</div>
+      <div class="settings-card">
+        <div class="setting-field">
+          <div class="field-label">群名称</div>
+          <div class="field-value">
+            <el-input
+              v-model="groupForm.name"
+              placeholder="群聊名称"
+              @change="saveGroupInfo"
             />
-          </el-select>
-        </div>
-      </div>
-
-      <div class="setting-field">
-        <div class="field-label">
-          上下文 ToolCall 传递
-          <el-tooltip
-            placement="top"
-            popper-class="mio-hint-popper"
-            content="构造群聊讨论上下文时，其他 Agent 的 toolcall 以何种形式呈现给当前发言成员。完整：含工具名、参数与结果；简略：仅工具名，参数与结果不可见。"
-          >
-            <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
-          </el-tooltip>
-        </div>
-        <div class="field-value">
-          <el-switch
-            :model-value="groupForm.toolCallContextMode === 'brief'"
-            @update:model-value="handleToolCallModeSwitch"
-            inline-prompt
-            active-text="简略"
-            inactive-text="完整"
-          />
-        </div>
-      </div>
-
-      <div class="setting-field">
-        <div class="field-label">
-          Agent 连锁唤起最大深度
-          <el-tooltip
-            placement="top"
-            popper-class="mio-hint-popper"
-            content="本群内部 Agent 互相 @ 讨论的最大连续轮数。每条唤起支线独立计数，到顶后会插入系统提示。默认 5 轮，设为 0 则禁用连锁唤起。"
-          >
-            <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
-          </el-tooltip>
-        </div>
-        <div class="field-value">
-          <el-input-number
-            v-model="groupForm.maxInvocationDepth"
-            :min="0"
-            :max="20"
-            :step="1"
-            controls-position="right"
-            style="width: 120px;"
-            @change="saveGroupInfo"
-          />
-        </div>
-      </div>
-    </div>
-
-    <!-- 群成员管理 -->
-    <div class="group-title-header">
-      <div class="group-title">群成员管理 ({{ displayMembers.length }})</div>
-      <el-button size="small" type="primary" plain @click="showAddMemberModal = true">
-        + 添加群成员
-      </el-button>
-    </div>
-    <div class="settings-card">
-      <div class="group-members-grid">
-        <div v-for="m in displayMembers" :key="m.id" class="group-member-card">
-          <img :src="m.avatar" class="member-avatar" />
-          <div class="member-info">
-            <div class="member-name">{{ m.name }}</div>
-            <div class="member-title">{{ m.title || 'Agent 成员' }}</div>
           </div>
-          <el-tag v-if="m.isUser" size="small" type="success" effect="plain">我</el-tag>
-          <template v-else>
-            <el-button
-              size="small"
-              type="primary"
-              link
-              @click="openMemberProfile(m.id)"
+        </div>
+
+        <div class="setting-field">
+          <div class="field-label">群介绍 / 全局规则</div>
+          <div class="field-value">
+            <el-input
+              v-model="groupForm.intro"
+              type="textarea"
+              :rows="3"
+              placeholder="描写群聊设定与规则，如：本群专注于全栈开发与方案评审..."
+              @change="saveGroupInfo"
+            />
+          </div>
+        </div>
+
+        <div class="setting-field">
+          <div class="field-label">头像绘制策略</div>
+          <div class="field-value">
+            <el-select
+              v-model="groupForm.avatarPolicy"
+              style="width: 100%"
+              @change="handleAvatarPolicyChange"
             >
-              设置
-            </el-button>
-            <el-button
-              size="small"
-              type="danger"
-              link
-              @click="removeMember(m.id)"
+              <el-option label="拼图头像 (动态多宫格)" value="composite" />
+              <el-option label="自定义网络 URL" value="url" />
+            </el-select>
+          </div>
+        </div>
+
+        <div
+          v-if="
+            groupForm.avatarPolicy === 'url' ||
+            groupForm.avatarPolicy === 'custom'
+          "
+          class="setting-field"
+        >
+          <div class="field-label">头像 URL</div>
+          <div class="field-value">
+            <el-input
+              v-model="groupForm.avatar"
+              placeholder="https://example.com/avatar.png"
+              @change="saveGroupInfo"
+            />
+          </div>
+        </div>
+
+        <div class="setting-field">
+          <div class="field-label">会话置顶</div>
+          <div class="field-value">
+            <el-switch v-model="groupForm.priority" @change="saveGroupInfo" />
+          </div>
+        </div>
+
+        <div class="setting-field">
+          <div class="field-label">
+            默认发言人
+            <el-tooltip
+              placement="top"
+              popper-class="mio-hint-popper"
+              content="用户未 @ 任何人时：优先由上一轮发言的成员接话；上一轮无人发言或多人同时发言时，交给这里指定的成员（不归它管时它会自行 @ 转交）"
             >
-              移除
-            </el-button>
-          </template>
+              <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
+            </el-tooltip>
+          </div>
+          <div class="field-value">
+            <el-select
+              v-model="groupForm.defaultResponderId"
+              placeholder="成员列表首位"
+              clearable
+              style="width: 180px"
+              @change="saveGroupInfo"
+            >
+              <el-option
+                v-for="m in group?.members || []"
+                :key="m.id"
+                :label="m.name"
+                :value="m.id"
+              />
+            </el-select>
+          </div>
+        </div>
+
+        <div class="setting-field">
+          <div class="field-label">
+            上下文 ToolCall 传递
+            <el-tooltip
+              placement="top"
+              popper-class="mio-hint-popper"
+              content="构造群聊讨论上下文时，其他 Agent 的 toolcall 以何种形式呈现给当前发言成员。完整：含工具名、参数与结果；简略：仅工具名，参数与结果不可见。"
+            >
+              <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
+            </el-tooltip>
+          </div>
+          <div class="field-value">
+            <el-switch
+              :model-value="groupForm.toolCallContextMode === 'brief'"
+              @update:model-value="handleToolCallModeSwitch"
+              inline-prompt
+              active-text="简略"
+              inactive-text="完整"
+            />
+          </div>
+        </div>
+
+        <div class="setting-field">
+          <div class="field-label">
+            Agent 连锁唤起最大深度
+            <el-tooltip
+              placement="top"
+              popper-class="mio-hint-popper"
+              content="本群内部 Agent 互相 @ 讨论的最大连续轮数。每条唤起支线独立计数，到顶后会插入系统提示。默认 5 轮，设为 0 则禁用连锁唤起。"
+            >
+              <el-icon class="label-hint-icon"><InfoFilled /></el-icon>
+            </el-tooltip>
+          </div>
+          <div class="field-value">
+            <el-input-number
+              v-model="groupForm.maxInvocationDepth"
+              :min="0"
+              :max="20"
+              :step="1"
+              controls-position="right"
+              style="width: 120px"
+              @change="saveGroupInfo"
+            />
+          </div>
         </div>
       </div>
-    </div>
+
+      <!-- 群成员管理 -->
+      <div class="group-title-header">
+        <div class="group-title">群成员管理 ({{ displayMembers.length }})</div>
+        <el-button
+          size="small"
+          type="primary"
+          plain
+          @click="showAddMemberModal = true"
+        >
+          + 添加群成员
+        </el-button>
+      </div>
+      <div class="settings-card">
+        <div class="group-members-grid">
+          <div
+            v-for="m in displayMembers"
+            :key="m.id"
+            class="group-member-card"
+          >
+            <img :src="m.avatar" class="member-avatar" />
+            <div class="member-info">
+              <div class="member-name">{{ m.name }}</div>
+              <div class="member-title">{{ m.title || "Agent 成员" }}</div>
+            </div>
+            <el-tag v-if="m.isUser" size="small" type="success" effect="plain"
+              >我</el-tag
+            >
+            <template v-else>
+              <el-button
+                size="small"
+                type="primary"
+                link
+                @click="openMemberProfile(m.id)"
+              >
+                设置
+              </el-button>
+              <el-button
+                size="small"
+                type="danger"
+                link
+                @click="removeMember(m.id)"
+              >
+                移除
+              </el-button>
+            </template>
+          </div>
+        </div>
+      </div>
     </template>
 
     <!-- 弹窗：添加成员 -->
@@ -246,7 +262,7 @@
             <img :src="item.avatar" class="candidate-avatar" />
             <div class="candidate-info">
               <div class="candidate-name">{{ item.name }}</div>
-              <div class="candidate-desc">{{ item.title || 'Agent' }}</div>
+              <div class="candidate-desc">{{ item.title || "Agent" }}</div>
             </div>
             <el-button size="small" type="primary" plain>加入</el-button>
           </div>
@@ -259,7 +275,10 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { useContactorsStore, getAvatarByModel } from "@/stores/contactorsStore.js";
+import {
+  useContactorsStore,
+  getAvatarByModel,
+} from "@/stores/contactorsStore.js";
 import { getLocalPresets } from "@/lib/clientSettings.js";
 import { client } from "@/lib/runtime.js";
 import { ElMessage, ElMessageBox } from "element-plus";
@@ -344,12 +363,14 @@ watch(
       // 保存后 watch(deep) 把开关弹回、连续保存时置顶状态反复反转。
       groupForm.priority = val.priority === 0 || val.priority === true;
       groupForm.maxInvocationDepth =
-        val.maxInvocationDepth !== undefined ? Number(val.maxInvocationDepth) : 5;
+        val.maxInvocationDepth !== undefined
+          ? Number(val.maxInvocationDepth)
+          : 5;
       groupForm.defaultResponderId = val.defaultResponderId || "";
       groupForm.toolCallContextMode = val.toolCallContextMode || "brief";
     }
   },
-  { immediate: true, deep: true }
+  { immediate: true, deep: true },
 );
 
 function saveGroupInfo() {
@@ -402,24 +423,35 @@ onMounted(() => {
 });
 
 const candidateMembers = computed(() => {
-  const existingIds = new Set((group.value?.members || []).map((m) => m.agentId || m.id));
+  const existingIds = new Set(
+    (group.value?.members || []).map((m) => m.agentId || m.id),
+  );
 
   if (candidateTab.value === "recent") {
-    return Object.values(contactorStore.contactors)
-      .filter((c) => c.id !== props.contactorId && c.platform !== "group" && !existingIds.has(c.id))
-      // 按最近活跃时间倒序，与好友列表 sortedContactors 的口径一致
-      .sort((a, b) => (b.lastUpdate || 0) - (a.lastUpdate || 0))
-      .map((c) => ({
-        id: c.id,
-        name: c.name,
-        avatar: c.avatar,
-        title: c.title || c.platform,
-        namePolicy: c.namePolicy !== undefined ? c.namePolicy : 0,
-        avatarPolicy: c.avatarPolicy !== undefined ? c.avatarPolicy : 0,
-        options: c.options,
-      }));
+    return (
+      Object.values(contactorStore.contactors)
+        .filter(
+          (c) =>
+            c.id !== props.contactorId &&
+            c.platform !== "group" &&
+            !existingIds.has(c.id),
+        )
+        // 按最近活跃时间倒序，与好友列表 sortedContactors 的口径一致
+        .sort((a, b) => (b.lastUpdate || 0) - (a.lastUpdate || 0))
+        .map((c) => ({
+          id: c.id,
+          name: c.name,
+          avatar: c.avatar,
+          title: c.title || c.platform,
+          namePolicy: c.namePolicy !== undefined ? c.namePolicy : 0,
+          avatarPolicy: c.avatarPolicy !== undefined ? c.avatarPolicy : 0,
+          options: c.options,
+        }))
+    );
   } else {
-    const presets = Array.isArray(localPresetsList.value) ? localPresetsList.value : [];
+    const presets = Array.isArray(localPresetsList.value)
+      ? localPresetsList.value
+      : [];
     return presets
       .filter((p) => !existingIds.has(p.id))
       .map((p) => ({
@@ -457,7 +489,9 @@ function removeMember(memberId) {
     ElMessage.warning("群聊至少需保留 1 位 Agent 成员");
     return;
   }
-  const members = (group.value.members || []).filter((m) => m.id !== memberId && m.agentId !== memberId);
+  const members = (group.value.members || []).filter(
+    (m) => m.id !== memberId && m.agentId !== memberId,
+  );
   contactorStore.updateContactor(props.contactorId, { members });
   ElMessage.success("已移除该成员");
 }

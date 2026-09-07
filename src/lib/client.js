@@ -261,8 +261,14 @@ export default class Client extends EventEmitter {
               id: this.genFakeId(),
               name: preset.name,
               avatar: preset.avatar || "/static/icons/512x512.png",
-              namePolicy: preset.namePolicy !== undefined ? preset.namePolicy : 1,
-              avatarPolicy: preset.avatarPolicy !== undefined ? preset.avatarPolicy : (preset.avatar ? 1 : 0),
+              namePolicy:
+                preset.namePolicy !== undefined ? preset.namePolicy : 1,
+              avatarPolicy:
+                preset.avatarPolicy !== undefined
+                  ? preset.avatarPolicy
+                  : preset.avatar
+                    ? 1
+                    : 0,
               title: "chat",
               priority: 1,
               lastUpdate: -Infinity,
@@ -615,7 +621,8 @@ export default class Client extends EventEmitter {
   async getLocalStorage() {
     const client = await localforage.getItem("client");
     if (client) {
-      const localConfig = typeof client === "string" ? JSON.parse(client) : client;
+      const localConfig =
+        typeof client === "string" ? JSON.parse(client) : client;
       return localConfig;
     } else {
       // First-time user
@@ -648,7 +655,10 @@ export default class Client extends EventEmitter {
             return { ...item, messageChain: [] };
           }
           // 1. 如果旧版数据中内嵌了 messageChain，无感自动迁移至独立分片 mio_msg_*
-          if (Array.isArray(item.messageChain) && item.messageChain.length > 0) {
+          if (
+            Array.isArray(item.messageChain) &&
+            item.messageChain.length > 0
+          ) {
             needsMigration = true;
             try {
               await localforage.setItem(
@@ -679,7 +689,9 @@ export default class Client extends EventEmitter {
       store.loadContactors(contactList);
 
       if (needsMigration) {
-        console.log("[Client] 自动完成历史会话消息分片迁移，正在同步瘦身元数据...");
+        console.log(
+          "[Client] 自动完成历史会话消息分片迁移，正在同步瘦身元数据...",
+        );
         this._setLocalStorage();
       }
     } else {
@@ -710,7 +722,6 @@ export default class Client extends EventEmitter {
       }
     }
   }
-
 
   /**
    * Replay cached contactors into the store once Pinia is active.
@@ -781,7 +792,10 @@ export default class Client extends EventEmitter {
     const client = {
       id: this.id,
       code: this.code,
-      contactList: typeof store.toMetadataJSON === "function" ? store.toMetadataJSON() : store.toJSON(),
+      contactList:
+        typeof store.toMetadataJSON === "function"
+          ? store.toMetadataJSON()
+          : store.toJSON(),
     };
     await localforage.setItem("client", JSON.stringify(client));
     await localforage.setItem("mio_boot_id", this._bootId || "");
@@ -1019,7 +1033,16 @@ export default class Client extends EventEmitter {
 
         // 处理 Agent 自主更新自身人设、头衔、职责与 System Prompt
         if (e.type === "agent_profile_updated" && e.data) {
-          const { contactorId, memberId, memberName, name, prompt, opening, title, intro } = e.data;
+          const {
+            contactorId,
+            memberId,
+            memberName,
+            name,
+            prompt,
+            opening,
+            title,
+            intro,
+          } = e.data;
           const newOpening = prompt !== undefined ? prompt : opening;
           const store = getStore();
           const targetContactorId = contactorId || store.activeContactorId;
@@ -1043,7 +1066,9 @@ export default class Client extends EventEmitter {
             if ((memberId || memberName) && Array.isArray(contactor.members)) {
               const member = contactor.members.find(
                 (m) =>
-                  (memberId && (String(m.id) === String(memberId) || String(m.agentId) === String(memberId))) ||
+                  (memberId &&
+                    (String(m.id) === String(memberId) ||
+                      String(m.agentId) === String(memberId))) ||
                   (memberName && String(m.name) === String(memberName)),
               );
               if (member) {
@@ -1113,7 +1138,10 @@ export default class Client extends EventEmitter {
     try {
       const { useConfigStore } = await import("@/stores/configStore.js");
       const configStore = useConfigStore();
-      const hasAdmin = configStore.isAuthenticated || !!localStorage.getItem("admin_code") || this.isAdmin;
+      const hasAdmin =
+        configStore.isAuthenticated ||
+        !!localStorage.getItem("admin_code") ||
+        this.isAdmin;
       if (!hasAdmin) return;
 
       const store = getStore();

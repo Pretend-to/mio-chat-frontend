@@ -110,11 +110,15 @@ export const useDashboardStore = defineStore("dashboard", () => {
   const providers = computed(() => providerStats.value.map((p) => p.name));
 
   const tokenTopUsers = computed(() => {
-    return [...userRankings.value].sort((a, b) => b.tokens - a.tokens).slice(0, 10);
+    return [...userRankings.value]
+      .sort((a, b) => b.tokens - a.tokens)
+      .slice(0, 10);
   });
 
   const callsTopUsers = computed(() => {
-    return [...userRankings.value].sort((a, b) => b.calls - a.calls).slice(0, 10);
+    return [...userRankings.value]
+      .sort((a, b) => b.calls - a.calls)
+      .slice(0, 10);
   });
 
   const calculatedCost = computed(() => {
@@ -307,7 +311,11 @@ export const useDashboardStore = defineStore("dashboard", () => {
         `/api/admin/dashboard/trace/${turn.requestId}`,
       );
       if (curSeq !== traceSeq) return;
-      if (res.success && activeTurn.value && activeTurn.value.requestId === turn.requestId) {
+      if (
+        res.success &&
+        activeTurn.value &&
+        activeTurn.value.requestId === turn.requestId
+      ) {
         activeTurn.value.steps = res.data.steps;
       }
     } catch (err) {

@@ -211,13 +211,17 @@ export default {
       if (this.toolCall.action == "started") return "就绪";
       if (this.toolCall.action == "pending") return "准备中";
       if (this.toolCall.action == "running") {
-        return this.durationFormatted ? `(${this.durationFormatted})` : "执行中";
+        return this.durationFormatted
+          ? `(${this.durationFormatted})`
+          : "执行中";
       }
       if (this.toolCallSuccess) {
         return this.durationFormatted ? `(${this.durationFormatted})` : "完成";
       }
       if (this.toolCallFail) {
-        return this.durationFormatted ? `失败 (${this.durationFormatted})` : "失败";
+        return this.durationFormatted
+          ? `失败 (${this.durationFormatted})`
+          : "失败";
       }
       return "未知";
     },
@@ -255,7 +259,9 @@ export default {
           : "失败";
       }
       if (this.toolCall.action === "running") {
-        return this.durationFormatted ? `(${this.durationFormatted})` : "执行中";
+        return this.durationFormatted
+          ? `(${this.durationFormatted})`
+          : "执行中";
       }
       return "准备中";
     },
@@ -440,15 +446,15 @@ export default {
   margin: 4px 0;
 }
 
-  .extra-render-link {
-    font-size: 13px;
-    text-decoration: none;
-  }
+.extra-render-link {
+  font-size: 13px;
+  text-decoration: none;
+}
 
-  .extra-render-iframe {
-    width: 100%;
-    border: 1px solid var(--mio-border-color-light);
-    border-radius: 6px;
-    background-color: #fff;
-  }
+.extra-render-iframe {
+  width: 100%;
+  border: 1px solid var(--mio-border-color-light);
+  border-radius: 6px;
+  background-color: #fff;
+}
 </style>

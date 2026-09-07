@@ -313,7 +313,7 @@ export default class Config {
         enabled: true,
         globalMemoryEnabled: true,
         latestSummary: "",
-        tokenWatermark: 'auto',
+        tokenWatermark: "auto",
       },
       chatParams: {
         temperature: 1,
@@ -355,9 +355,9 @@ export default class Config {
     // 历史迁移保护：早期版本或 localStorage 中若存有旧的数值型或缺失的 tokenWatermark，强制迁移为 'auto'
     if (
       this.LLMDefaultConfig.crystallization &&
-      typeof this.LLMDefaultConfig.crystallization.tokenWatermark === 'number'
+      typeof this.LLMDefaultConfig.crystallization.tokenWatermark === "number"
     ) {
-      this.LLMDefaultConfig.crystallization.tokenWatermark = 'auto';
+      this.LLMDefaultConfig.crystallization.tokenWatermark = "auto";
     }
 
     console.log(

@@ -105,7 +105,7 @@
                 :class="{
                   'stat-icon--success': systemStatus === 'normal',
                   'stat-icon--warning': systemStatus === 'warning',
-                  'stat-icon--danger': systemStatus === 'error'
+                  'stat-icon--danger': systemStatus === 'error',
                 }"
               >
                 <el-icon :size="32">
@@ -114,8 +114,8 @@
                       systemStatus === 'normal'
                         ? SuccessFilled
                         : systemStatus === 'error'
-                        ? CircleCloseFilled
-                        : WarningFilled
+                          ? CircleCloseFilled
+                          : WarningFilled
                     "
                   />
                 </el-icon>
@@ -124,7 +124,10 @@
                 <div class="stat-value">{{ systemStatusText }}</div>
                 <div class="stat-label">
                   系统状态
-                  <span v-if="systemStatusDetails.length > 0" class="status-hint-num">
+                  <span
+                    v-if="systemStatusDetails.length > 0"
+                    class="status-hint-num"
+                  >
                     ({{ systemStatusDetails.length }})
                   </span>
                 </div>

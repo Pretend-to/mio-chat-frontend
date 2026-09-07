@@ -2,11 +2,22 @@
   <div class="overview-container">
     <!-- Stats Cards Grid -->
     <div class="stats-grid">
-      <el-skeleton :loading="store.loadingOverview && !store.stats.connections && !store.stats.totalTokens" animated :rows="2">
+      <el-skeleton
+        :loading="
+          store.loadingOverview &&
+          !store.stats.connections &&
+          !store.stats.totalTokens
+        "
+        animated
+        :rows="2"
+      >
         <template #template>
           <div class="stat-card">
             <el-skeleton-item variant="text" style="width: 50%" />
-            <el-skeleton-item variant="h3" style="width: 80%; margin-top: 8px;" />
+            <el-skeleton-item
+              variant="h3"
+              style="width: 80%; margin-top: 8px"
+            />
           </div>
         </template>
         <template #default>
@@ -24,11 +35,22 @@
         </template>
       </el-skeleton>
 
-      <el-skeleton :loading="store.loadingOverview && !store.stats.users && !store.stats.totalTokens" animated :rows="2">
+      <el-skeleton
+        :loading="
+          store.loadingOverview &&
+          !store.stats.users &&
+          !store.stats.totalTokens
+        "
+        animated
+        :rows="2"
+      >
         <template #template>
           <div class="stat-card">
             <el-skeleton-item variant="text" style="width: 50%" />
-            <el-skeleton-item variant="h3" style="width: 80%; margin-top: 8px;" />
+            <el-skeleton-item
+              variant="h3"
+              style="width: 80%; margin-top: 8px"
+            />
           </div>
         </template>
         <template #default>
@@ -44,18 +66,31 @@
         </template>
       </el-skeleton>
 
-      <el-skeleton :loading="store.loadingOverview && !store.stats.pending && !store.stats.totalTokens" animated :rows="2">
+      <el-skeleton
+        :loading="
+          store.loadingOverview &&
+          !store.stats.pending &&
+          !store.stats.totalTokens
+        "
+        animated
+        :rows="2"
+      >
         <template #template>
           <div class="stat-card">
             <el-skeleton-item variant="text" style="width: 50%" />
-            <el-skeleton-item variant="h3" style="width: 80%; margin-top: 8px;" />
+            <el-skeleton-item
+              variant="h3"
+              style="width: 80%; margin-top: 8px"
+            />
           </div>
         </template>
         <template #default>
           <div class="stat-card pending-reqs">
             <div class="stat-info">
               <span class="stat-title">执行中流式请求</span>
-              <span class="stat-value text-amber">{{ store.stats.pending }}</span>
+              <span class="stat-value text-amber">{{
+                store.stats.pending
+              }}</span>
             </div>
             <div class="stat-icon bg-amber">
               <i class="fa-solid fa-spinner fa-spin-slow"></i>
@@ -64,11 +99,18 @@
         </template>
       </el-skeleton>
 
-      <el-skeleton :loading="store.loadingOverview && !store.stats.totalTokens" animated :rows="2">
+      <el-skeleton
+        :loading="store.loadingOverview && !store.stats.totalTokens"
+        animated
+        :rows="2"
+      >
         <template #template>
           <div class="stat-card">
             <el-skeleton-item variant="text" style="width: 50%" />
-            <el-skeleton-item variant="h3" style="width: 80%; margin-top: 8px;" />
+            <el-skeleton-item
+              variant="h3"
+              style="width: 80%; margin-top: 8px"
+            />
           </div>
         </template>
         <template #default>
@@ -108,8 +150,21 @@
             </el-select>
           </div>
           <div class="card-body">
-            <el-skeleton v-if="store.loadingOverview && !store.historicalData" animated :rows="6" />
-            <div id="sla-chart" class="chart-container" :style="{ display: store.loadingOverview && !store.historicalData ? 'none' : 'block' }"></div>
+            <el-skeleton
+              v-if="store.loadingOverview && !store.historicalData"
+              animated
+              :rows="6"
+            />
+            <div
+              id="sla-chart"
+              class="chart-container"
+              :style="{
+                display:
+                  store.loadingOverview && !store.historicalData
+                    ? 'none'
+                    : 'block',
+              }"
+            ></div>
           </div>
         </div>
       </div>
@@ -120,8 +175,21 @@
             <span class="card-title">请求吞吐与 Token 时序走势</span>
           </div>
           <div class="card-body">
-            <el-skeleton v-if="store.loadingOverview && !store.historicalData" animated :rows="6" />
-            <div id="trend-chart" class="chart-container" :style="{ display: store.loadingOverview && !store.historicalData ? 'none' : 'block' }"></div>
+            <el-skeleton
+              v-if="store.loadingOverview && !store.historicalData"
+              animated
+              :rows="6"
+            />
+            <div
+              id="trend-chart"
+              class="chart-container"
+              :style="{
+                display:
+                  store.loadingOverview && !store.historicalData
+                    ? 'none'
+                    : 'block',
+              }"
+            ></div>
           </div>
         </div>
       </div>
@@ -133,8 +201,16 @@
         <span class="card-title">模型服务提供商及缓存命中审计</span>
       </div>
       <div class="card-body p-none">
-        <el-skeleton v-if="store.loadingOverview && store.providerStats.length === 0" animated :rows="5" style="padding: 20px;" />
-        <div v-show="!store.loadingOverview || store.providerStats.length > 0" class="table-responsive-wrapper">
+        <el-skeleton
+          v-if="store.loadingOverview && store.providerStats.length === 0"
+          animated
+          :rows="5"
+          style="padding: 20px"
+        />
+        <div
+          v-show="!store.loadingOverview || store.providerStats.length > 0"
+          class="table-responsive-wrapper"
+        >
           <el-table
             :data="store.providerStats"
             style="width: 100%"
@@ -170,9 +246,7 @@
               }}</template>
             </el-table-column>
             <el-table-column prop="calls" label="总调用次数">
-              <template #default="scope">{{
-                scope.row.calls
-              }}</template>
+              <template #default="scope">{{ scope.row.calls }}</template>
             </el-table-column>
           </el-table>
         </div>
@@ -207,13 +281,16 @@ function formatNumber(num) {
 
 // 动态根据系统/用户主题生成 ECharts 配置
 function getChartTheme() {
-  const isDark = typeof document !== "undefined" && (document.documentElement.getAttribute("data-theme") === "dark" || document.documentElement.classList.contains("dark"));
+  const isDark =
+    typeof document !== "undefined" &&
+    (document.documentElement.getAttribute("data-theme") === "dark" ||
+      document.documentElement.classList.contains("dark"));
   return {
     isDark,
     backgroundColor: "transparent",
-    textStyle: { 
-      color: isDark ? "#94a3b8" : "#64748b", 
-      fontFamily: "Plus Jakarta Sans, sans-serif" 
+    textStyle: {
+      color: isDark ? "#94a3b8" : "#64748b",
+      fontFamily: "Plus Jakarta Sans, sans-serif",
     },
     grid: {
       left: "3%",
@@ -231,7 +308,9 @@ function getChartTheme() {
         fontFamily: "Plus Jakarta Sans, sans-serif",
       },
       borderRadius: 8,
-      boxShadow: isDark ? "0 4px 12px rgba(0, 0, 0, 0.4)" : "0 4px 12px rgba(0, 0, 0, 0.05)",
+      boxShadow: isDark
+        ? "0 4px 12px rgba(0, 0, 0, 0.4)"
+        : "0 4px 12px rgba(0, 0, 0, 0.05)",
     },
   };
 }
@@ -290,7 +369,9 @@ function renderCharts() {
         xAxis: {
           type: "category",
           data: modelLabels,
-          axisLine: { lineStyle: { color: theme.isDark ? "#475569" : "#cbd5e1" } },
+          axisLine: {
+            lineStyle: { color: theme.isDark ? "#475569" : "#cbd5e1" },
+          },
           axisLabel: {
             interval: 0,
             rotate: 30,
@@ -307,8 +388,12 @@ function renderCharts() {
             store.slaMetric === "ttft"
               ? "平均首字延迟 (ms)"
               : "平均生成速率 (TPS)",
-          splitLine: { lineStyle: { color: theme.isDark ? "#334155" : "#f1f5f9" } },
-          axisLine: { lineStyle: { color: theme.isDark ? "#475569" : "#cbd5e1" } },
+          splitLine: {
+            lineStyle: { color: theme.isDark ? "#334155" : "#f1f5f9" },
+          },
+          axisLine: {
+            lineStyle: { color: theme.isDark ? "#475569" : "#cbd5e1" },
+          },
         },
         dataZoom: hasZoom
           ? [
@@ -397,7 +482,9 @@ function renderCharts() {
         xAxis: {
           type: "category",
           data: timeLabels,
-          axisLine: { lineStyle: { color: theme.isDark ? "#475569" : "#cbd5e1" } },
+          axisLine: {
+            lineStyle: { color: theme.isDark ? "#475569" : "#cbd5e1" },
+          },
           axisLabel: {
             color: theme.isDark ? "#94a3b8" : "#64748b",
             rotate: 25,
@@ -408,14 +495,20 @@ function renderCharts() {
           {
             type: "value",
             name: "调用次数",
-            splitLine: { lineStyle: { color: theme.isDark ? "#334155" : "#f1f5f9" } },
-            axisLine: { lineStyle: { color: theme.isDark ? "#475569" : "#cbd5e1" } },
+            splitLine: {
+              lineStyle: { color: theme.isDark ? "#334155" : "#f1f5f9" },
+            },
+            axisLine: {
+              lineStyle: { color: theme.isDark ? "#475569" : "#cbd5e1" },
+            },
           },
           {
             type: "value",
             name: "Tokens",
             splitLine: { show: false },
-            axisLine: { lineStyle: { color: theme.isDark ? "#475569" : "#cbd5e1" } },
+            axisLine: {
+              lineStyle: { color: theme.isDark ? "#475569" : "#cbd5e1" },
+            },
           },
         ],
         series: [
@@ -479,7 +572,7 @@ watch(
         renderCharts();
       });
     }
-  }
+  },
 );
 
 function handleResize() {

@@ -25,7 +25,11 @@ export const CRYSTAL_ZONES = [
  * @param {string|Array|null} globalMemory - 全局长期记忆条目数组或已构建好的 XML 字符串
  * @returns {string} 组装好的单条 system message 内容
  */
-export function assembleSystemPrompt(baseSystemPrompt, latestSummary, globalMemory = null) {
+export function assembleSystemPrompt(
+  baseSystemPrompt,
+  latestSummary,
+  globalMemory = null,
+) {
   const parts = [];
 
   // 1. 基础人格设定
@@ -38,7 +42,9 @@ export function assembleSystemPrompt(baseSystemPrompt, latestSummary, globalMemo
     if (typeof globalMemory === "string" && globalMemory.trim()) {
       parts.push(globalMemory.trim());
     } else if (Array.isArray(globalMemory) && globalMemory.length > 0) {
-      const validItems = globalMemory.filter((m) => m && m.content && m.content.trim());
+      const validItems = globalMemory.filter(
+        (m) => m && m.content && m.content.trim(),
+      );
       if (validItems.length > 0) {
         const memLines = [
           "<global_long_term_memory>",

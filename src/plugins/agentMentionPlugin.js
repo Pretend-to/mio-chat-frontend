@@ -1,17 +1,18 @@
 /**
  * agentMentionPlugin — markdown-it 插件
- * 
+ *
  * 参考 alertPlugin.ts 的实现：函数签名 (md) => void，直接操作 md.renderer.rules
- * 
+ *
  * 在 markdown-it 文本 token 渲染阶段，将
  *   @'名称'(id) 或 @'名称'(id)（直/弯引号）或 @{名称}(id)
  * 输出为高亮 HTML span，隐藏括号内的 id。
- * 
+ *
  * 注意：非匹配的文本段必须调用 md.utils.escapeHtml，否则 < > & 等字符会出错。
  */
 export function agentMentionPlugin(md) {
   // 匹配直引号 ' (U+0027) 和弯引号 ' (U+2018) / ' (U+2019)
-  const MENTION_RE = /@(?:['\u2018\u2019]([^'\u2018\u2019]+)['\u2018\u2019]|\{([^}]+)\})(?:\([^)]*\))?/g;
+  const MENTION_RE =
+    /@(?:['\u2018\u2019]([^'\u2018\u2019]+)['\u2018\u2019]|\{([^}]+)\})(?:\([^)]*\))?/g;
 
   md.renderer.rules.text = function (tokens, idx) {
     const content = tokens[idx].content;

@@ -163,7 +163,9 @@
               />
             </template>
             <template v-else-if="item.type === 'text'">
-              <div class="outer-render-text">{{ item.content || item.text }}</div>
+              <div class="outer-render-text">
+                {{ item.content || item.text }}
+              </div>
             </template>
             <template v-else-if="item.type === 'alert'">
               <el-alert
@@ -187,7 +189,9 @@
                 </el-link>
               </div>
             </template>
-            <template v-else-if="item.type === 'iframe' || item.type === 'html'">
+            <template
+              v-else-if="item.type === 'iframe' || item.type === 'html'"
+            >
               <ShadowHtml
                 :html="item.html"
                 @update:html="handleShadowHtmlUpdate(item, $event)"
@@ -216,7 +220,13 @@
 </template>
 
 <script setup>
-import { computed, ref, defineAsyncComponent, onMounted, onUnmounted } from "vue";
+import {
+  computed,
+  ref,
+  defineAsyncComponent,
+  onMounted,
+  onUnmounted,
+} from "vue";
 import { client } from "@/lib/runtime.js";
 import { setupIframeAutoResize } from "@/utils/iframeAutoResize.js";
 import ShadowHtml from "@/components/ShadowHtml.vue";
@@ -365,7 +375,8 @@ const handleShadowHtmlUpdate = (item, newHtml) => {
 };
 
 // iframe 高度自适应：内容变化时自动贴合（ResizeObserver + postMessage）
-const { enable: enableIframeResize, disable: disableIframeResize } = setupIframeAutoResize();
+const { enable: enableIframeResize, disable: disableIframeResize } =
+  setupIframeAutoResize();
 onMounted(enableIframeResize);
 onUnmounted(disableIframeResize);
 </script>

@@ -49,14 +49,22 @@
           >
             <div class="preview-meta-header">
               <span class="preview-tag">📁 全局长期记忆</span>
-              <span v-if="activeInteraction.meta?.category" class="preview-category">
+              <span
+                v-if="activeInteraction.meta?.category"
+                class="preview-category"
+              >
                 分类: {{ activeInteraction.meta.category }}
               </span>
-              <span v-if="activeInteraction.meta?.action" class="preview-action">
+              <span
+                v-if="activeInteraction.meta?.action"
+                class="preview-action"
+              >
                 操作: {{ activeInteraction.meta.action }}
               </span>
             </div>
-            <code>{{ activeInteraction.meta.content || activeInteraction.meta.target }}</code>
+            <code>{{
+              activeInteraction.meta.content || activeInteraction.meta.target
+            }}</code>
           </div>
 
           <!-- 3. Plugin / System Config Preview Box -->
@@ -64,7 +72,11 @@
             v-else-if="activeInteraction.meta?.config"
             class="command-preview-box"
           >
-            <code>{{ typeof activeInteraction.meta.config === 'string' ? activeInteraction.meta.config : JSON.stringify(activeInteraction.meta.config, null, 2) }}</code>
+            <code>{{
+              typeof activeInteraction.meta.config === "string"
+                ? activeInteraction.meta.config
+                : JSON.stringify(activeInteraction.meta.config, null, 2)
+            }}</code>
           </div>
 
           <button
@@ -178,7 +190,11 @@
                 v-else-if="cmd.type === 'skill'"
                 class="mio-icon mio-icon-skill"
               ></i>
-              {{ (activeContactor.platform === "onebot" || cmd.type === "channel_slash") ? "/" : ""
+              {{
+                activeContactor.platform === "onebot" ||
+                cmd.type === "channel_slash"
+                  ? "/"
+                  : ""
               }}{{ cmd.label }}
             </span>
             <span v-if="cmd.type === 'plugin'" class="command-preset-plugin"
@@ -816,7 +832,10 @@ watch(
     loadDraft();
     // 群成员也是 Agent，同样要能用技能，与单聊保持一致
     const p = activeContactor.value?.platform;
-    if ((p === "openai" || p === "group") && availableSkills.value.length === 0) {
+    if (
+      (p === "openai" || p === "group") &&
+      availableSkills.value.length === 0
+    ) {
       fetchSkills();
     }
   },

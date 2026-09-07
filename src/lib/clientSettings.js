@@ -121,7 +121,11 @@ export async function saveLocalPreset(preset) {
   const idx = presets.findIndex((p) => p.id === preset.id);
 
   const now = Date.now();
-  const entry = { ...preset, createdAt: preset.createdAt || now, updatedAt: now };
+  const entry = {
+    ...preset,
+    createdAt: preset.createdAt || now,
+    updatedAt: now,
+  };
 
   if (idx !== -1) {
     presets[idx] = entry;
@@ -243,7 +247,7 @@ export async function getGlobalMemory() {
 export async function addGlobalMemoryItem({ content, category = "general" }) {
   const settings = await getClientSettings();
   if (!Array.isArray(settings.globalMemory)) settings.globalMemory = [];
-  
+
   const newItem = {
     id: `mem_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
     content: content.trim(),
@@ -309,4 +313,3 @@ function escapeXml(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 }
-

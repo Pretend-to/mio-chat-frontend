@@ -75,7 +75,10 @@ class ConfigAPI {
         try {
           data = JSON.parse(text);
         } catch {
-          data = { code: response.status, message: text || `HTTP ${response.status}` };
+          data = {
+            code: response.status,
+            message: text || `HTTP ${response.status}`,
+          };
         }
       }
 
@@ -95,7 +98,9 @@ class ConfigAPI {
             localStorage.removeItem("admin_code");
           }
         }
-        throw new Error(data.message || data.error || `请求失败 (HTTP ${response.status})`);
+        throw new Error(
+          data.message || data.error || `请求失败 (HTTP ${response.status})`,
+        );
       }
 
       // 检查业务错误码

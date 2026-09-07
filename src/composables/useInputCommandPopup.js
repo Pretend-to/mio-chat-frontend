@@ -117,21 +117,96 @@ export function useInputCommandPopup({
       }
     } else if (contactor.platform === "channel") {
       const channelCommands = [
-        { label: "help", value: "help", preset: "/help", description: "查看帮助菜单与指令列表" },
-        { label: "abort", value: "abort", preset: "/abort", description: "中止当前正在运行的任务 (别名 /crush)" },
-        { label: "model", value: "model", preset: "/model", description: "查看或切换当前渠道模型 (如 /model glm-5.3-flash)" },
-        { label: "think", value: "think", preset: "/think", description: "调整思考推理强度 (0-4 / off / low / med / high / max)" },
-        { label: "tools", value: "tools", preset: "/tools", description: "查看与开启/禁用工具 (ls / on / off / reset)" },
-        { label: "yolo", value: "yolo", preset: "/yolo", description: "当前会话 Shell 审批开关 (on / off)" },
-        { label: "status", value: "status", preset: "/status", description: "查看当前会话与执行状态" },
-        { label: "soul", value: "soul", preset: "/soul", description: "查看或重设当前 Agent 灵魂人设" },
-        { label: "memory", value: "memory", preset: "/memory", description: "查看跨会话长期记忆" },
-        { label: "context", value: "context", preset: "/context", description: "查看当前会话 6 分区核心记忆结晶" },
-        { label: "sessions", value: "sessions", preset: "/sessions", description: "查看历史会话列表" },
-        { label: "new", value: "new", preset: "/new", description: "新建并切换会话话题" },
-        { label: "use", value: "use", preset: "/use", description: "切换到指定会话 ID" },
-        { label: "current", value: "current", preset: "/current", description: "查看当前激活会话信息" },
-        { label: "clear", value: "clear", preset: "/clear", description: "清空当前会话消息" },
+        {
+          label: "help",
+          value: "help",
+          preset: "/help",
+          description: "查看帮助菜单与指令列表",
+        },
+        {
+          label: "abort",
+          value: "abort",
+          preset: "/abort",
+          description: "中止当前正在运行的任务 (别名 /crush)",
+        },
+        {
+          label: "model",
+          value: "model",
+          preset: "/model",
+          description: "查看或切换当前渠道模型 (如 /model glm-5.3-flash)",
+        },
+        {
+          label: "think",
+          value: "think",
+          preset: "/think",
+          description: "调整思考推理强度 (0-4 / off / low / med / high / max)",
+        },
+        {
+          label: "tools",
+          value: "tools",
+          preset: "/tools",
+          description: "查看与开启/禁用工具 (ls / on / off / reset)",
+        },
+        {
+          label: "yolo",
+          value: "yolo",
+          preset: "/yolo",
+          description: "当前会话 Shell 审批开关 (on / off)",
+        },
+        {
+          label: "status",
+          value: "status",
+          preset: "/status",
+          description: "查看当前会话与执行状态",
+        },
+        {
+          label: "soul",
+          value: "soul",
+          preset: "/soul",
+          description: "查看或重设当前 Agent 灵魂人设",
+        },
+        {
+          label: "memory",
+          value: "memory",
+          preset: "/memory",
+          description: "查看跨会话长期记忆",
+        },
+        {
+          label: "context",
+          value: "context",
+          preset: "/context",
+          description: "查看当前会话 6 分区核心记忆结晶",
+        },
+        {
+          label: "sessions",
+          value: "sessions",
+          preset: "/sessions",
+          description: "查看历史会话列表",
+        },
+        {
+          label: "new",
+          value: "new",
+          preset: "/new",
+          description: "新建并切换会话话题",
+        },
+        {
+          label: "use",
+          value: "use",
+          preset: "/use",
+          description: "切换到指定会话 ID",
+        },
+        {
+          label: "current",
+          value: "current",
+          preset: "/current",
+          description: "查看当前激活会话信息",
+        },
+        {
+          label: "clear",
+          value: "clear",
+          preset: "/clear",
+          description: "清空当前会话消息",
+        },
       ];
       channelCommands.forEach((cmd) => {
         list.push({

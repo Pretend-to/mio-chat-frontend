@@ -6,10 +6,7 @@
       <div class="setting-field">
         <div class="field-label">管理模式</div>
         <div class="field-value">
-          <el-radio-group
-            v-model="contextMode"
-            @change="onContextModeChange"
-          >
+          <el-radio-group v-model="contextMode" @change="onContextModeChange">
             <el-radio-button value="crystal">上下文压缩</el-radio-button>
             <el-radio-button value="window">滑动窗口</el-radio-button>
           </el-radio-group>
@@ -82,7 +79,9 @@
           </div>
           <div class="field-value">
             <el-input-number
-              :model-value="watermarkMode === 'custom' ? watermarkValue : autoWatermark"
+              :model-value="
+                watermarkMode === 'custom' ? watermarkValue : autoWatermark
+              "
               :disabled="watermarkMode !== 'custom'"
               :min="1000"
               :max="1000000"
@@ -135,7 +134,7 @@
               size="small"
               type="warning"
               effect="plain"
-              style="margin-left: 8px;"
+              style="margin-left: 8px"
             >
               {{ pendingEventsCount }} 条记忆待结晶
             </el-tag>
@@ -171,7 +170,10 @@
       </div>
     </template>
 
-    <div v-else-if="contextMode === 'crystal'" class="settings-card disabled-hint-card">
+    <div
+      v-else-if="contextMode === 'crystal'"
+      class="settings-card disabled-hint-card"
+    >
       <div class="disabled-hint-content">
         <span class="lock-icon">🔒</span>
         <span class="hint-text"
@@ -222,7 +224,9 @@ const crystalHost = computed(() =>
   contactorStore.getCrystalHost(props.contactorId, props.memberId),
 );
 const crystallization = computed(
-  () => props.modelValue?.crystallization || crystalHost.value?.options?.crystallization,
+  () =>
+    props.modelValue?.crystallization ||
+    crystalHost.value?.options?.crystallization,
 );
 
 // 上下文管理模式: "crystal" | "window"，默认上下文压缩
@@ -254,12 +258,12 @@ const autoWatermark = computed(() => {
 // 压缩上限：'auto'（按模型规格动态计算 80%）或手动数值
 const watermarkMode = computed(() => {
   const tw = crystallization.value?.tokenWatermark;
-  return typeof tw === 'number' ? 'custom' : 'auto';
+  return typeof tw === "number" ? "custom" : "auto";
 });
 
 const watermarkValue = computed(() => {
   const tw = crystallization.value?.tokenWatermark;
-  return typeof tw === 'number' ? tw : null;
+  return typeof tw === "number" ? tw : null;
 });
 
 const localMaxMessages = ref(
@@ -273,12 +277,18 @@ const zoneContents = ref(
 
 function getZonePlaceholder(key) {
   const map = {
-    long_term_profile: "在此处编辑「用户画像」内容（如技术栈偏好、称谓、工作习惯等长期事实）...",
-    behavioral_guidelines: "在此处编辑「行为准则」内容（如交互规范、操作边界、禁止事项等长效偏好）...",
-    short_term_goals: "在此处编辑「短期目标」内容（如当前会话核心任务、期望达成的结果）...",
-    current_plan: "在此处编辑「运行计划」内容（如具体执行步骤、阶段性任务进度）...",
-    file_architecture_delta: "在此处编辑「文件变更」内容（如关键文件路径与功能摘要）...",
-    constraints: "在此处编辑「开发约束」内容（如技术限制条件、已知未解决的 bug 等）...",
+    long_term_profile:
+      "在此处编辑「用户画像」内容（如技术栈偏好、称谓、工作习惯等长期事实）...",
+    behavioral_guidelines:
+      "在此处编辑「行为准则」内容（如交互规范、操作边界、禁止事项等长效偏好）...",
+    short_term_goals:
+      "在此处编辑「短期目标」内容（如当前会话核心任务、期望达成的结果）...",
+    current_plan:
+      "在此处编辑「运行计划」内容（如具体执行步骤、阶段性任务进度）...",
+    file_architecture_delta:
+      "在此处编辑「文件变更」内容（如关键文件路径与功能摘要）...",
+    constraints:
+      "在此处编辑「开发约束」内容（如技术限制条件、已知未解决的 bug 等）...",
   };
   return map[key] || "在此处编辑内容...";
 }
@@ -347,37 +357,58 @@ function onToggle(val) {
     enabled: val,
     latestSummary: crystallization.value?.latestSummary ?? "",
     tokenWatermark:
-      watermarkMode.value === 'auto'
-        ? 'auto'
+      watermarkMode.value === "auto"
+        ? "auto"
         : (watermarkValue.value ?? 100000),
   };
-  contactorStore.updateCrystallization(props.contactorId, patch, props.memberId);
+  contactorStore.updateCrystallization(
+    props.contactorId,
+    patch,
+    props.memberId,
+  );
   syncModelValue(patch);
 }
 
 function onToggleGlobalMemory(val) {
   const patch = { globalMemoryEnabled: val };
-  contactorStore.updateCrystallization(props.contactorId, patch, props.memberId);
+  contactorStore.updateCrystallization(
+    props.contactorId,
+    patch,
+    props.memberId,
+  );
   syncModelValue(patch);
 }
 
 function onWatermarkModeChange(mode) {
-  if (mode === 'auto') {
-    const patch = { tokenWatermark: 'auto' };
-    contactorStore.updateCrystallization(props.contactorId, patch, props.memberId);
+  if (mode === "auto") {
+    const patch = { tokenWatermark: "auto" };
+    contactorStore.updateCrystallization(
+      props.contactorId,
+      patch,
+      props.memberId,
+    );
     syncModelValue(patch);
     return;
   }
   // 切到手动：尚无数值时给默认值并立即保存，确保 UI 与 store 同步
-  const val = typeof autoWatermark.value === 'number' ? autoWatermark.value : 100000;
+  const val =
+    typeof autoWatermark.value === "number" ? autoWatermark.value : 100000;
   const patch = { tokenWatermark: val };
-  contactorStore.updateCrystallization(props.contactorId, patch, props.memberId);
+  contactorStore.updateCrystallization(
+    props.contactorId,
+    patch,
+    props.memberId,
+  );
   syncModelValue(patch);
 }
 
 function onWatermarkChange(val) {
   const patch = { tokenWatermark: val };
-  contactorStore.updateCrystallization(props.contactorId, patch, props.memberId);
+  contactorStore.updateCrystallization(
+    props.contactorId,
+    patch,
+    props.memberId,
+  );
   syncModelValue(patch);
 }
 

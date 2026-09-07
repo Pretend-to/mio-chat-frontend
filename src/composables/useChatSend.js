@@ -92,7 +92,11 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
         return messageId;
       } catch (e) {
         ElMessage.error(e.message || "发送失败");
-        contactorsStore.failedMessage(contactor.id, msg.id, e.message || "发送失败");
+        contactorsStore.failedMessage(
+          contactor.id,
+          msg.id,
+          e.message || "发送失败",
+        );
         throw e;
       }
     } else if (contactor.platform === "group") {
@@ -105,15 +109,11 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
       }
 
       const assistantMsgId = numberString(16);
-      contactorsStore.getOrCreateMessage(
-        contactor.id,
-        assistantMsgId,
-        {
-          role: "other",
-          status: "pending",
-          content: [{ type: "blank", data: {} }],
-        },
-      );
+      contactorsStore.getOrCreateMessage(contactor.id, assistantMsgId, {
+        role: "other",
+        status: "pending",
+        content: [{ type: "blank", data: {} }],
+      });
 
       contactorsStore.updateContactorSummary(contactor);
       client.setLocalStorage();
@@ -130,7 +130,11 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
         return msg.id;
       } catch (e) {
         ElMessage.error(e.message || "群聊发送失败");
-        contactorsStore.failedMessage(contactor.id, msg.id, e.message || "群聊发送失败");
+        contactorsStore.failedMessage(
+          contactor.id,
+          msg.id,
+          e.message || "群聊发送失败",
+        );
         const asstIdx = contactor.messageChain.findIndex(
           (m) => m.id === assistantMsgId,
         );
@@ -148,15 +152,11 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
       }
 
       const assistantMsgId = numberString(16);
-      contactorsStore.getOrCreateMessage(
-        contactor.id,
-        assistantMsgId,
-        {
-          role: "other",
-          status: "pending",
-          content: [{ type: "blank", data: {} }],
-        },
-      );
+      contactorsStore.getOrCreateMessage(contactor.id, assistantMsgId, {
+        role: "other",
+        status: "pending",
+        content: [{ type: "blank", data: {} }],
+      });
 
       contactorsStore.updateContactorSummary(contactor);
       if (toBottom) toBottom();
@@ -176,7 +176,11 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
         return msg.id;
       } catch (e) {
         ElMessage.error(e.message || "发送失败");
-        contactorsStore.failedMessage(contactor.id, assistantMsgId, e.message || "发送失败");
+        contactorsStore.failedMessage(
+          contactor.id,
+          assistantMsgId,
+          e.message || "发送失败",
+        );
         return msg.id;
       }
     } else {
@@ -190,15 +194,11 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
       }
 
       const assistantMsgId = numberString(16);
-      contactorsStore.getOrCreateMessage(
-        contactor.id,
-        assistantMsgId,
-        {
-          role: "other",
-          status: "pending",
-          content: [{ type: "blank", data: {} }],
-        },
-      );
+      contactorsStore.getOrCreateMessage(contactor.id, assistantMsgId, {
+        role: "other",
+        status: "pending",
+        content: [{ type: "blank", data: {} }],
+      });
 
       contactorsStore.updateContactorSummary(contactor);
       client.setLocalStorage();
@@ -220,7 +220,11 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
         return msg.id;
       } catch (e) {
         ElMessage.error(e.message || "请求失败");
-        contactorsStore.failedMessage(contactor.id, msg.id, e.message || "请求失败");
+        contactorsStore.failedMessage(
+          contactor.id,
+          msg.id,
+          e.message || "请求失败",
+        );
         const asstIdx = contactor.messageChain.findIndex(
           (m) => m.id === assistantMsgId,
         );

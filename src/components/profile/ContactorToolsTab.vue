@@ -22,7 +22,9 @@
       </div>
     </div>
 
-    <div class="group-title" v-if="filteredAllLLMTools.length > 0">插件工具</div>
+    <div class="group-title" v-if="filteredAllLLMTools.length > 0">
+      插件工具
+    </div>
     <div
       v-for="(plugin, index) in filteredAllLLMTools"
       :key="index"

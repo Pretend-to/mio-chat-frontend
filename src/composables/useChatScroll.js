@@ -4,7 +4,11 @@ import { useRoute, useRouter } from "vue-router";
 /**
  * 聊天界面滚动、自动吸底、分页加载与消息定位跳转
  */
-export function useChatScroll({ activeContactor, scrollDefault = true, onLoadMoreChannelHistory }) {
+export function useChatScroll({
+  activeContactor,
+  scrollDefault = true,
+  onLoadMoreChannelHistory,
+}) {
   const route = useRoute();
   const router = useRouter();
 
@@ -79,7 +83,10 @@ export function useChatScroll({ activeContactor, scrollDefault = true, onLoadMor
 
     const currentRenderedStartIndex = chain.length - renderedCount.value;
     if (msgIndex < currentRenderedStartIndex) {
-      renderedCount.value = Math.min(chain.length, chain.length - msgIndex + 10);
+      renderedCount.value = Math.min(
+        chain.length,
+        chain.length - msgIndex + 10,
+      );
     }
 
     if (shouldFlash) {

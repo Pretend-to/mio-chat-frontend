@@ -290,7 +290,9 @@
               :models-meta="configStore.modelsMeta"
               :provider-name="item.providerName"
               selectable
-              :is-selected="configStore.isAdapterSelected(item.type, item.index)"
+              :is-selected="
+                configStore.isAdapterSelected(item.type, item.index)
+              "
               @edit="handleCardEdit"
               @delete="handleCardDelete"
               @refresh="handleCardRefresh"

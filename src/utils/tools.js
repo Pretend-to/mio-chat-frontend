@@ -21,7 +21,11 @@ export function debounce(fn, delay) {
  * @returns {Promise<{success: boolean, message: string}>}
  *   message 为空字符串表示「用户取消分享」，调用方不应弹出任何提示。
  */
-export async function shareOrCopy(urlOrOptions, title = "从MioChat分享", text = "") {
+export async function shareOrCopy(
+  urlOrOptions,
+  title = "从MioChat分享",
+  text = "",
+) {
   let url = "";
   let finalTitle = title;
   let finalText = text;
