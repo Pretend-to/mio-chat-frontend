@@ -148,10 +148,57 @@
       </el-card>
     </div>
 
+    <!-- 渠道平台选择器 -->
+    <el-dialog
+      v-model="selectorVisible"
+      title="选择渠道平台"
+      width="820px"
+      destroy-on-close
+      align-center
+      class="channel-selector-dialog"
+    >
+      <div class="channel-selector">
+        <el-input
+          v-model="platformSearch"
+          :prefix-icon="Search"
+          placeholder="搜索渠道平台..."
+          clearable
+          class="channel-selector-search"
+        />
+        <el-scrollbar max-height="460px">
+          <div v-loading="catalogLoading" class="channel-platform-grid">
+            <button
+              v-for="platform in filteredPlatforms"
+              :key="platform.id"
+              type="button"
+              class="channel-platform-card"
+              @click="selectPlatform(platform)"
+            >
+              <span class="channel-platform-icon">{{ platform.icon || "💬" }}</span>
+              <span class="channel-platform-content">
+                <span class="channel-platform-title">{{ platform.name }}</span>
+                <span class="channel-platform-desc">{{ platform.description }}</span>
+                <span class="channel-platform-meta">
+                  <el-tag size="small" effect="plain">{{ platform.runtime }}</el-tag>
+                  <el-tag size="small" type="info" effect="plain">{{ platform.protocol }}</el-tag>
+                </span>
+              </span>
+              <el-icon class="channel-platform-add"><Plus /></el-icon>
+            </button>
+          </div>
+          <el-empty
+            v-if="!catalogLoading && filteredPlatforms.length === 0"
+            description="没有匹配的渠道平台"
+            :image-size="72"
+          />
+        </el-scrollbar>
+      </div>
+    </el-dialog>
+
     <!-- 添加 / 绑定 dialog -->
     <el-dialog
       v-model="bindVisible"
-      :title="bound ? '绑定成功' : '添加微信渠道'"
+      :title="bound ? '绑定成功' : `添加${selectedPlatform?.name || '渠道'}`"
       width="480px"
       :close-on-click-modal="false"
     >
@@ -201,12 +248,50 @@
             </el-option-group>
           </el-select>
         </el-form-item>
+        <el-form-item
+          v-for="field in selectedPlatform?.configSchema || []"
+          :key="field.key"
+          :label="field.label"
+        >
+          <el-select
+            v-if="field.type === 'select'"
+            v-model="addConfig[field.key]"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="option in field.options || []"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </el-select>
+          <el-switch
+            v-else-if="field.type === 'boolean'"
+            v-model="addConfig[field.key]"
+          />
+          <el-input-number
+            v-else-if="field.type === 'number'"
+            v-model="addConfig[field.key]"
+            :min="field.min"
+            :max="field.max"
+            style="width: 100%"
+          />
+          <el-input
+            v-else
+            v-model="addConfig[field.key]"
+            :type="field.type === 'secret' ? 'password' : 'text'"
+            :placeholder="field.placeholder"
+            :show-password="field.type === 'secret'"
+          />
+        </el-form-item>
       </el-form>
       <!-- 内容 2: 已创建，等待扫码 -->
       <div v-else-if="!bound" class="qr-box">
         <img v-if="qrSrc" :src="qrSrc" class="qr-img" alt="扫码绑定" />
         <div v-else class="qr-loading">加载二维码…</div>
-        <div class="qr-hint">用要绑定的微信扫码并确认（有效期约 2 分钟）</div>
+        <div class="qr-hint">
+          {{ selectedPlatform?.auth?.label || "扫码绑定" }}（有效期约 2 分钟）
+        </div>
         <div class="qr-status" :class="'s-' + pollStatus">
           <span v-if="pollStatus === 'wait'">⏳ 等待扫码…</span>
           <span v-else-if="pollStatus === 'expired'">⏰ 二维码已过期</span>
@@ -214,7 +299,7 @@
         </div>
       </div>
       <!-- 内容 3: 绑定成功 -->
-      <el-result v-else icon="success" title="微信渠道已绑定并已自动启动 🚀">
+      <el-result v-else icon="success" :title="`${selectedPlatform?.name || '渠道'}已绑定并自动启动 🚀`">
         <template #sub-title>
           <div class="bound-info">
             <div>名称：{{ current?.name }}</div>
@@ -405,7 +490,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
-import { Plus, Refresh, ChatDotRound, Loading } from "@element-plus/icons-vue";
+import { Plus, Refresh, ChatDotRound, Loading, Search } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import QRCode from "qrcode";
 import { configAPI } from "@/lib/configApi.js";
@@ -417,6 +502,11 @@ const contactorsStore = useContactorsStore();
 const configStore = useConfigStore();
 const channels = ref([]);
 const loading = ref(false);
+const selectorVisible = ref(false);
+const catalogLoading = ref(false);
+const platformSearch = ref("");
+const channelCatalog = ref({ version: 1, runtimes: [], platforms: [] });
+const selectedPlatform = ref(null);
 const bindVisible = ref(false);
 const editVisible = ref(false);
 const channelId = ref(null);
@@ -430,6 +520,7 @@ const addForm = ref({
   provider: "",
   model: "",
 });
+const addConfig = ref({});
 const editForm = ref({
   name: "",
   avatar: "",
@@ -453,6 +544,34 @@ const isWechatPlatform = (channel) => {
   if (platform) return platform === "wechat-clawbot";
   const type = String(channel?.type || "wechat").toLowerCase();
   return type === "wechat" || type === "onebots" || type === "onebot";
+};
+
+const filteredPlatforms = computed(() => {
+  const query = platformSearch.value.trim().toLowerCase();
+  const items = channelCatalog.value?.platforms || [];
+  if (!query) return items;
+  return items.filter((platform) =>
+    [platform.id, platform.name, platform.description, platform.runtime]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(query)),
+  );
+});
+
+const initializePlatformConfig = (platform) =>
+  Object.fromEntries(
+    (platform?.configSchema || []).map((field) => [field.key, field.default ?? ""]),
+  );
+
+const loadChannelCatalog = async () => {
+  catalogLoading.value = true;
+  try {
+    const response = await configAPI.request("/api/channels/catalog");
+    channelCatalog.value = response.data || response;
+  } catch (error) {
+    ElMessage.error(`加载渠道平台失败: ${error?.message || error}`);
+  } finally {
+    catalogLoading.value = false;
+  }
 };
 
 // 可用提供商列表
@@ -542,14 +661,22 @@ const resetBind = () => {
   qrCode.value = "";
   pollStatus.value = "wait";
 };
-const openAdd = () => {
+const openAdd = async () => {
   resetBind();
+  platformSearch.value = "";
+  if (!channelCatalog.value.platforms.length) await loadChannelCatalog();
+  selectorVisible.value = true;
+};
+const selectPlatform = (platform) => {
+  selectedPlatform.value = platform;
+  addConfig.value = initializePlatformConfig(platform);
   addForm.value = {
-    name: "",
-    agentId: "wechat-master",
+    name: platform.defaults?.name || "",
+    agentId: platform.defaults?.agentId || "channel-master",
     provider: "",
     model: "",
   };
+  selectorVisible.value = false;
   bindVisible.value = true;
 };
 const closeBind = () => {
@@ -567,26 +694,24 @@ const createAndGetQr = async () => {
       const res = await configAPI.request("/api/channels", {
         method: "POST",
         body: JSON.stringify({
-          name: addForm.value.name || "微信助手",
-          type: "onebots",
-          platform: "wechat-clawbot",
-          protocol: "onebot.v12",
-          provider: addForm.value.provider || undefined,
-          model: addForm.value.model || undefined,
+          version: channelCatalog.value.version || 1,
+          adapter: {
+            runtime: selectedPlatform.value?.runtime,
+            platform: selectedPlatform.value?.id,
+            protocol: selectedPlatform.value?.protocol,
+          },
+          profile: {
+            name: addForm.value.name || selectedPlatform.value?.defaults?.name,
+            agentId: addForm.value.agentId || selectedPlatform.value?.defaults?.agentId,
+            provider: addForm.value.provider || undefined,
+            model: addForm.value.model || undefined,
+          },
+          config: addConfig.value,
         }),
         headers: { "Content-Type": "application/json" },
       });
       id = res.data?.id || res.id;
       channelId.value = id;
-      await configAPI.request(`/api/channels/${id}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          agentId: addForm.value.agentId || "wechat-master",
-          provider: addForm.value.provider || undefined,
-          model: addForm.value.model || undefined,
-        }),
-        headers: { "Content-Type": "application/json" },
-      });
     }
     const qrRes = await configAPI.request(`/api/channels/${id}/qrcode`, {
       method: "POST",
@@ -653,6 +778,14 @@ const stopPoll = () => {
 
 const openBind = (row) => {
   resetBind();
+  selectedPlatform.value =
+    (channelCatalog.value.platforms || []).find((platform) =>
+      platform.id === (row.platform || (row.type === "wechat" ? "wechat-clawbot" : "")),
+    ) || {
+      id: row.platform || "wechat-clawbot",
+      name: row.platform || "微信 ClawBot",
+      auth: { type: "qrcode", label: "微信扫码绑定" },
+    };
   channelId.value = row.id;
   current.value = row;
   bindVisible.value = true;
@@ -838,6 +971,83 @@ onBeforeUnmount(() => {
   font-size: 13px;
 }
 
+/* ── 渠道平台选择器 ── */
+.channel-selector-dialog :deep(.el-dialog) {
+  border-radius: 16px;
+  overflow: hidden;
+}
+.channel-selector-dialog :deep(.el-dialog__body) {
+  padding: 16px 24px 24px;
+}
+.channel-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.channel-selector-search {
+  max-width: 420px;
+}
+.channel-platform-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  min-height: 120px;
+}
+.channel-platform-card {
+  appearance: none;
+  width: 100%;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 12px;
+  padding: 18px;
+  background: var(--el-fill-color-blank);
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+.channel-platform-card:hover {
+  border-color: var(--el-color-primary-light-5);
+  box-shadow: 0 8px 24px rgba(64, 158, 255, 0.12);
+  transform: translateY(-2px);
+}
+.channel-platform-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--el-color-primary-light-9);
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.channel-platform-content {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.channel-platform-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+.channel-platform-desc {
+  color: var(--mio-text-secondary, #909399);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.channel-platform-meta {
+  display: flex;
+  gap: 6px;
+}
+.channel-platform-add {
+  color: var(--el-color-primary);
+  flex-shrink: 0;
+}
+
 /* ── 卡片网格 ── */
 .empty-state {
   padding: 48px 0;
@@ -1019,6 +1229,15 @@ onBeforeUnmount(() => {
   line-height: 1.8;
   font-size: 13px;
   color: var(--mio-text-secondary, #606266);
+}
+
+@media (max-width: 768px) {
+  .channel-selector-dialog :deep(.el-dialog) {
+    width: 94vw !important;
+  }
+  .channel-platform-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ── 编辑弹窗分栏与二维码 ── */
