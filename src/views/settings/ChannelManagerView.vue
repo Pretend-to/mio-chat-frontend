@@ -317,7 +317,7 @@
                 font-weight: 500;
               "
             >
-              ✨ 渠道服务已在后台自动拉起运行，现在可以直接在微信中向 Bot
+              ✨ 渠道服务已在后台自动拉起运行，现在可以直接通过该平台向 Bot
               发送消息啦！
             </div>
           </div>
@@ -328,7 +328,7 @@
         <template v-if="!channelId && !bound">
           <el-button @click="bindVisible = false">取消</el-button>
           <el-button type="primary" :loading="creating" @click="createAndGetQr"
-            >下一步：生成二维码</el-button
+            >{{ authActionLabel }}</el-button
           >
         </template>
         <template v-else-if="!bound">
@@ -557,6 +557,10 @@ const filteredPlatforms = computed(() => {
   );
 });
 
+const authActionLabel = computed(() =>
+  selectedPlatform.value?.auth?.type === "none" ? "创建并启动" : "下一步：生成二维码",
+);
+
 const initializePlatformConfig = (platform) =>
   Object.fromEntries(
     (platform?.configSchema || []).map((field) => [field.key, field.default ?? ""]),
@@ -688,8 +692,13 @@ const closeBind = () => {
 const createAndGetQr = async () => {
   creating.value = true;
   try {
+    const authType = selectedPlatform.value?.auth?.type || "qrcode";
+    if (!["qrcode", "none"].includes(authType)) {
+      throw new Error(`暂不支持 ${authType} 认证方式`);
+    }
     pollStatus.value = "wait";
     let id = channelId.value;
+    let createdChannel = null;
     if (!id) {
       const res = await configAPI.request("/api/channels", {
         method: "POST",
@@ -710,8 +719,15 @@ const createAndGetQr = async () => {
         }),
         headers: { "Content-Type": "application/json" },
       });
-      id = res.data?.id || res.id;
+      createdChannel = res.data || res;
+      id = createdChannel.id;
       channelId.value = id;
+    }
+    if (authType === "none") {
+      await configAPI.request(`/api/channels/${id}/start`, { method: "POST" });
+      current.value = { ...(createdChannel || current.value), status: "running" };
+      bound.value = true;
+      return;
     }
     const qrRes = await configAPI.request(`/api/channels/${id}/qrcode`, {
       method: "POST",
