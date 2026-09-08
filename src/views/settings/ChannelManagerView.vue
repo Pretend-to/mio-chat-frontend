@@ -4,7 +4,7 @@
       <div class="header-title">
         <h1>渠道管理</h1>
         <div class="header-desc">
-          接入微信 ClawBot / iLink 等外部渠道：添加 → 扫码绑定 → 编辑 →
+          通过 OneBots 接入微信 ClawBot 等外部平台：添加 → 绑定 → 编辑 →
           启动运行。
         </div>
       </div>
@@ -51,7 +51,7 @@
             <span class="card-name">{{ row.name }}</span>
             <div class="card-tags">
               <el-tag effect="plain" size="small" class="type-tag">{{
-                row.type || "wechat"
+                row.platform || row.type || "onebots"
               }}</el-tag>
               <el-tag
                 :type="statusType(row.status)"
@@ -323,7 +323,7 @@
 
         <!-- 右侧：微信二维码 -->
         <div
-          v-if="!current?.type || current?.type === 'wechat'"
+          v-if="isWechatPlatform(current)"
           class="edit-qr-pane"
         >
           <div class="pane-subtitle">微信绑定二维码</div>
@@ -448,6 +448,13 @@ const editQrLoading = ref(false);
 const editPollStatus = ref("wait");
 const editPollTimer = ref(null);
 
+const isWechatPlatform = (channel) => {
+  const platform = String(channel?.platform || "").toLowerCase();
+  if (platform) return platform === "wechat-clawbot";
+  const type = String(channel?.type || "wechat").toLowerCase();
+  return type === "wechat" || type === "onebots" || type === "onebot";
+};
+
 // 可用提供商列表
 const availableProviders = computed(() => {
   return Object.keys(configStore.models || {});
@@ -561,7 +568,9 @@ const createAndGetQr = async () => {
         method: "POST",
         body: JSON.stringify({
           name: addForm.value.name || "微信助手",
-          type: "wechat",
+          type: "onebots",
+          platform: "wechat-clawbot",
+          protocol: "onebot.v12",
           provider: addForm.value.provider || undefined,
           model: addForm.value.model || undefined,
         }),
@@ -736,7 +745,7 @@ const openEdit = (row) => {
   editQrCode.value = "";
   editPollStatus.value = "wait";
   editVisible.value = true;
-  if (!row.type || row.type === "wechat") {
+  if (isWechatPlatform(row)) {
     fetchEditQr();
   }
 };
