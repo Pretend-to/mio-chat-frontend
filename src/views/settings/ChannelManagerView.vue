@@ -26,53 +26,86 @@
 
     <!-- 卡片骨架加载 -->
     <div v-else-if="loading" class="channel-cards">
-      <el-card
-        v-for="i in 3"
-        :key="i"
-        class="channel-card skeleton-card"
-        shadow="hover"
-      >
+      <div v-for="i in 3" :key="i" class="channel-card skeleton-card">
         <el-skeleton :rows="4" animated />
-      </el-card>
+      </div>
     </div>
 
     <!-- 渠道卡片 -->
     <div v-else class="channel-cards">
-      <el-card
+      <div
         v-for="row in channels"
         :key="row.id"
         class="channel-card"
-        shadow="hover"
         :class="'card-' + row.status"
+        :style="{
+          '--platform-theme': getChannelThemeColor(row),
+          '--platform-bg': getChannelBgColor(row),
+        }"
       >
-        <!-- 顶部：名称 + 类型tag + 状态tag -->
+        <!-- 顶部：头像/平台图标 + 渠道名称与ID + 状态与平台标签 -->
         <div class="card-header">
-          <div class="card-title-row">
-            <span class="card-name">{{ row.name }}</span>
-            <div class="card-tags">
-              <el-tag effect="plain" size="small" class="type-tag">{{
-                row.platform || row.type || "onebots"
-              }}</el-tag>
-              <el-tag
-                :type="statusType(row.status)"
-                effect="dark"
-                size="small"
-                >{{ statusText(row.status) }}</el-tag
+          <div class="header-main">
+            <div class="channel-avatar-wrapper">
+              <img
+                v-if="row.avatar"
+                :src="row.avatar"
+                class="channel-avatar-img"
+                alt="Avatar"
+              />
+              <img
+                v-else-if="
+                  getChannelPlatformIcon(row) &&
+                  !isEmojiIcon(getChannelPlatformIcon(row))
+                "
+                :src="getChannelPlatformIcon(row)"
+                class="channel-avatar-img"
+                alt="Icon"
+              />
+              <span v-else class="channel-avatar-emoji">{{
+                getChannelPlatformIcon(row) || "💬"
+              }}</span>
+            </div>
+            <div class="header-text">
+              <div class="card-name-row">
+                <span class="card-name" :title="row.name">{{ row.name }}</span>
+              </div>
+              <div
+                class="card-id-wrapper"
+                @click="copyChannelId(row.id)"
+                title="点击复制渠道 ID"
               >
+                <span class="card-id">{{ row.id }}</span>
+                <el-icon class="copy-icon"><CopyDocument /></el-icon>
+              </div>
             </div>
           </div>
-          <div class="card-id">{{ row.id }}</div>
+          <div class="header-badges">
+            <el-tag effect="plain" size="small" class="platform-tag">
+              {{ getPlatformName(row) }}
+            </el-tag>
+            <div class="status-badge" :class="'status-' + row.status">
+              <span class="status-indicator"></span>
+              <span class="status-text">{{ statusText(row.status) }}</span>
+            </div>
+          </div>
         </div>
 
-        <!-- 中部：Agent / 模型信息 -->
+        <!-- 中部：Agent / 模型与配置信息聚合面板 -->
         <div class="card-body">
           <div class="info-row">
             <span class="info-label">Agent</span>
-            <span class="info-value">{{ row.agentId || "—" }}</span>
+            <span class="info-value agent-badge">
+              <span class="agent-icon">🤖</span>
+              {{ row.agentId || "—" }}
+            </span>
           </div>
-          <div v-if="row.provider || row.model" class="info-row">
+          <div class="info-row">
             <span class="info-label">模型</span>
-            <span class="info-value model-value">
+            <div
+              v-if="row.provider || row.model"
+              class="info-value model-value"
+            >
               <el-tag
                 v-if="row.provider"
                 size="small"
@@ -81,26 +114,41 @@
                 class="provider-tag"
                 >{{ row.provider }}</el-tag
               >
-              {{ row.model || "系统默认" }}
-            </span>
+              <span class="model-name">{{ row.model || "系统默认" }}</span>
+            </div>
+            <span v-else class="info-value muted">系统默认</span>
           </div>
-          <div v-else class="info-row">
-            <span class="info-label">模型</span>
-            <span class="info-value muted">系统默认</span>
+          <div v-if="row.userId" class="info-row">
+            <span class="info-label">主用户</span>
+            <span class="info-value user-id-val" :title="row.userId">{{
+              row.userId
+            }}</span>
           </div>
         </div>
 
         <!-- 底部：最近活跃 + 操作 -->
         <div class="card-footer">
-          <div class="last-active">
+          <div
+            class="last-active"
+            :title="
+              row.lastActive
+                ? '最后活跃时间: ' + fmtFullTime(row.lastActive)
+                : ''
+            "
+          >
             <span v-if="row.lastActive" class="active-time">
               <span
                 class="active-dot"
                 :class="row.status === 'running' ? 'dot-green' : 'dot-gray'"
               ></span>
-              {{ fmtRelativeTime(row.lastActive) }}
+              <span class="active-text">{{
+                fmtRelativeTime(row.lastActive)
+              }}</span>
             </span>
-            <span v-else class="muted">从未活跃</span>
+            <span v-else class="active-time muted">
+              <span class="active-dot dot-gray"></span>
+              <span class="active-text">从未活跃</span>
+            </span>
           </div>
           <div class="card-actions">
             <template v-if="isBound(row)">
@@ -108,11 +156,17 @@
                 size="small"
                 link
                 type="primary"
+                class="action-btn enter-btn"
                 :icon="ChatDotRound"
                 @click="enterChat(row)"
                 >进入对话</el-button
               >
-              <el-button size="small" link type="info" @click="openEdit(row)"
+              <el-button
+                size="small"
+                link
+                type="info"
+                class="action-btn"
+                @click="openEdit(row)"
                 >编辑</el-button
               >
               <el-button
@@ -120,6 +174,7 @@
                 size="small"
                 link
                 type="warning"
+                class="action-btn"
                 @click="toggle(row, 'stop')"
                 >停止</el-button
               >
@@ -128,6 +183,7 @@
                 size="small"
                 link
                 type="success"
+                class="action-btn"
                 @click="toggle(row, 'start')"
                 >启动</el-button
               >
@@ -137,54 +193,84 @@
               size="small"
               link
               type="primary"
+              class="action-btn"
               @click="openBind(row)"
               >扫码绑定</el-button
             >
-            <el-button size="small" link type="danger" @click="remove(row)"
+            <el-button
+              size="small"
+              link
+              type="danger"
+              class="action-btn delete-btn"
+              @click="remove(row)"
               >删除</el-button
             >
           </div>
         </div>
-      </el-card>
+      </div>
     </div>
 
     <!-- 渠道平台选择器 -->
     <el-dialog
       v-model="selectorVisible"
       title="选择渠道平台"
-      width="820px"
+      width="900px"
       destroy-on-close
-      align-center
+      :align-center="true"
       class="channel-selector-dialog"
     >
-      <div class="channel-selector">
-        <el-input
-          v-model="platformSearch"
-          :prefix-icon="Search"
-          placeholder="搜索渠道平台..."
-          clearable
-          class="channel-selector-search"
-        />
-        <el-scrollbar max-height="460px">
-          <div v-loading="catalogLoading" class="channel-platform-grid">
-            <button
+      <div class="selector-container">
+        <div class="selector-header">
+          <div class="search-box">
+            <el-input
+              v-model="platformSearch"
+              placeholder="输入关键词搜索渠道平台..."
+              :prefix-icon="Search"
+              clearable
+            />
+          </div>
+        </div>
+
+        <el-scrollbar max-height="460px" class="selector-scrollbar">
+          <div v-loading="catalogLoading" class="grid-container">
+            <div
               v-for="platform in filteredPlatforms"
               :key="platform.id"
-              type="button"
-              class="channel-platform-card"
+              class="selector-card"
+              tabindex="0"
+              role="button"
+              :style="{
+                '--card-theme-color': getPlatformThemeColor(platform),
+                '--card-bg-color': getPlatformBgColor(platform),
+              }"
+              @keydown.enter="selectPlatform(platform)"
               @click="selectPlatform(platform)"
             >
-              <span class="channel-platform-icon">{{ platform.icon || "💬" }}</span>
-              <span class="channel-platform-content">
-                <span class="channel-platform-title">{{ platform.name }}</span>
-                <span class="channel-platform-desc">{{ platform.description }}</span>
-                <span class="channel-platform-meta">
-                  <el-tag size="small" effect="plain">{{ platform.runtime }}</el-tag>
-                  <el-tag size="small" type="info" effect="plain">{{ platform.protocol }}</el-tag>
-                </span>
-              </span>
-              <el-icon class="channel-platform-add"><Plus /></el-icon>
-            </button>
+              <div class="card-glow"></div>
+              <div class="card-icon">
+                <span
+                  v-if="isEmojiIcon(platform.icon)"
+                  class="platform-emoji-icon"
+                  >{{ platform.icon || "💬" }}</span
+                >
+                <img v-else :src="platform.icon" alt="Icon" />
+              </div>
+              <div class="card-info">
+                <div class="card-title">{{ platform.name }}</div>
+                <div class="card-desc">{{ platform.description }}</div>
+                <div class="card-meta">
+                  <el-tag size="small" effect="plain">{{
+                    platform.runtime
+                  }}</el-tag>
+                  <el-tag size="small" type="info" effect="plain">{{
+                    platform.protocol
+                  }}</el-tag>
+                </div>
+              </div>
+              <div class="card-action">
+                <el-icon><Plus /></el-icon>
+              </div>
+            </div>
           </div>
           <el-empty
             v-if="!catalogLoading && filteredPlatforms.length === 0"
@@ -299,7 +385,11 @@
         </div>
       </div>
       <!-- 内容 3: 绑定成功 -->
-      <el-result v-else icon="success" :title="`${selectedPlatform?.name || '渠道'}已绑定并自动启动 🚀`">
+      <el-result
+        v-else
+        icon="success"
+        :title="`${selectedPlatform?.name || '渠道'}已绑定并自动启动 🚀`"
+      >
         <template #sub-title>
           <div class="bound-info">
             <div>名称：{{ current?.name }}</div>
@@ -327,7 +417,10 @@
       <template #footer>
         <template v-if="!channelId && !bound">
           <el-button @click="bindVisible = false">取消</el-button>
-          <el-button type="primary" :loading="creating" @click="createAndGetQr"
+          <el-button
+            type="primary"
+            :loading="creating"
+            @click="createAndGetQr"
             >{{ authActionLabel }}</el-button
           >
         </template>
@@ -407,10 +500,7 @@
         </div>
 
         <!-- 右侧：微信二维码 -->
-        <div
-          v-if="isWechatPlatform(current)"
-          class="edit-qr-pane"
-        >
+        <div v-if="isWechatPlatform(current)" class="edit-qr-pane">
           <div class="pane-subtitle">微信绑定二维码</div>
           <div class="edit-qr-card">
             <div class="edit-qr-box">
@@ -490,7 +580,14 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
-import { Plus, Refresh, ChatDotRound, Loading, Search } from "@element-plus/icons-vue";
+import {
+  Plus,
+  Refresh,
+  ChatDotRound,
+  Loading,
+  Search,
+  CopyDocument,
+} from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import QRCode from "qrcode";
 import { configAPI } from "@/lib/configApi.js";
@@ -557,13 +654,57 @@ const filteredPlatforms = computed(() => {
   );
 });
 
+const isEmojiIcon = (icon) => {
+  if (!icon) return true;
+  return (
+    !/^(https?:\/\/|\/|data:image\/)/.test(icon) &&
+    !/\.(png|jpe?g|svg|webp|gif)$/i.test(icon)
+  );
+};
+
+const getPlatformThemeColor = (platform) => {
+  const id = String(platform?.id || "").toLowerCase();
+  if (id.includes("wechat")) return "#07c160";
+  if (id.includes("qq")) return "#12b7f5";
+  if (id.includes("lark") || id.includes("feishu")) return "#00d6b9";
+  if (id.includes("dingtalk")) return "#007fff";
+  if (id.includes("telegram")) return "#24a1de";
+  if (id.includes("discord")) return "#5865f2";
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const h = Math.abs(hash % 360);
+  return `hsl(${h}, 75%, 55%)`;
+};
+
+const getPlatformBgColor = (platform) => {
+  const id = String(platform?.id || "").toLowerCase();
+  if (id.includes("wechat")) return "rgba(7, 193, 96, 0.08)";
+  if (id.includes("qq")) return "rgba(18, 183, 245, 0.08)";
+  if (id.includes("lark") || id.includes("feishu"))
+    return "rgba(0, 214, 185, 0.08)";
+  if (id.includes("dingtalk")) return "rgba(0, 127, 255, 0.08)";
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const h = Math.abs(hash % 360);
+  return `hsla(${h}, 70%, 97%, 0.45)`;
+};
+
 const authActionLabel = computed(() =>
-  selectedPlatform.value?.auth?.type === "none" ? "创建并启动" : "下一步：生成二维码",
+  selectedPlatform.value?.auth?.type === "none"
+    ? "创建并启动"
+    : "下一步：生成二维码",
 );
 
 const initializePlatformConfig = (platform) =>
   Object.fromEntries(
-    (platform?.configSchema || []).map((field) => [field.key, field.default ?? ""]),
+    (platform?.configSchema || []).map((field) => [
+      field.key,
+      field.default ?? "",
+    ]),
   );
 
 const loadChannelCatalog = async () => {
@@ -634,14 +775,66 @@ const fmtRelativeTime = (t) => {
   if (!t) return "";
   const diff = Date.now() - new Date(t).getTime();
   if (diff < 60000) return "刚刚";
-  if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时前`;
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`;
   return new Date(t).toLocaleDateString("zh-CN", {
     month: "numeric",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
+};
+
+const fmtFullTime = (t) => {
+  if (!t) return "";
+  return new Date(t).toLocaleString("zh-CN", { hour12: false });
+};
+
+const copyChannelId = async (id) => {
+  if (!id) return;
+  try {
+    await navigator.clipboard.writeText(id);
+    ElMessage.success({ message: `已复制 ID: ${id}`, duration: 1500 });
+  } catch {
+    // 忽略剪贴板写入异常
+  }
+};
+
+const getPlatformName = (row) => {
+  const p = (channelCatalog.value?.platforms || []).find(
+    (item) =>
+      item.id ===
+      (row.platform || (row.type === "wechat" ? "wechat-clawbot" : row.type)),
+  );
+  return p?.name || row.platform || row.type || "OneBots";
+};
+
+const getChannelPlatformIcon = (row) => {
+  if (row.avatar) return row.avatar;
+  const p = (channelCatalog.value?.platforms || []).find(
+    (item) =>
+      item.id ===
+      (row.platform || (row.type === "wechat" ? "wechat-clawbot" : row.type)),
+  );
+  return p?.icon || null;
+};
+
+const getChannelThemeColor = (row) => {
+  const p = (channelCatalog.value?.platforms || []).find(
+    (item) =>
+      item.id ===
+      (row.platform || (row.type === "wechat" ? "wechat-clawbot" : row.type)),
+  );
+  return getPlatformThemeColor(p || { id: row.platform || row.type });
+};
+
+const getChannelBgColor = (row) => {
+  const p = (channelCatalog.value?.platforms || []).find(
+    (item) =>
+      item.id ===
+      (row.platform || (row.type === "wechat" ? "wechat-clawbot" : row.type)),
+  );
+  return getPlatformBgColor(p || { id: row.platform || row.type });
 };
 
 const loadChannels = async () => {
@@ -711,7 +904,9 @@ const createAndGetQr = async () => {
           },
           profile: {
             name: addForm.value.name || selectedPlatform.value?.defaults?.name,
-            agentId: addForm.value.agentId || selectedPlatform.value?.defaults?.agentId,
+            agentId:
+              addForm.value.agentId ||
+              selectedPlatform.value?.defaults?.agentId,
             provider: addForm.value.provider || undefined,
             model: addForm.value.model || undefined,
           },
@@ -725,7 +920,10 @@ const createAndGetQr = async () => {
     }
     if (authType === "none") {
       await configAPI.request(`/api/channels/${id}/start`, { method: "POST" });
-      current.value = { ...(createdChannel || current.value), status: "running" };
+      current.value = {
+        ...(createdChannel || current.value),
+        status: "running",
+      };
       bound.value = true;
       return;
     }
@@ -794,14 +992,15 @@ const stopPoll = () => {
 
 const openBind = (row) => {
   resetBind();
-  selectedPlatform.value =
-    (channelCatalog.value.platforms || []).find((platform) =>
-      platform.id === (row.platform || (row.type === "wechat" ? "wechat-clawbot" : "")),
-    ) || {
-      id: row.platform || "wechat-clawbot",
-      name: row.platform || "微信 ClawBot",
-      auth: { type: "qrcode", label: "微信扫码绑定" },
-    };
+  selectedPlatform.value = (channelCatalog.value.platforms || []).find(
+    (platform) =>
+      platform.id ===
+      (row.platform || (row.type === "wechat" ? "wechat-clawbot" : "")),
+  ) || {
+    id: row.platform || "wechat-clawbot",
+    name: row.platform || "微信 ClawBot",
+    auth: { type: "qrcode", label: "微信扫码绑定" },
+  };
   channelId.value = row.id;
   current.value = row;
   bindVisible.value = true;
@@ -816,12 +1015,12 @@ const stopEditPoll = () => {
 
 const startEditPoll = (id, qrcode) => {
   stopEditPoll();
-  if (!qrcode) return;
+  if (!id) return;
   editPollTimer.value = setInterval(async () => {
     try {
       const res = await configAPI.request(`/api/channels/${id}/poll`, {
         method: "POST",
-        body: JSON.stringify({ qrcode }),
+        body: JSON.stringify({ qrcode: qrcode || "" }),
         headers: { "Content-Type": "application/json" },
       });
       const st = res.data?.status || res.status;
@@ -850,7 +1049,11 @@ const fetchEditQr = async () => {
   try {
     const qrRes = await configAPI.request(
       `/api/channels/${current.value.id}/qrcode`,
-      { method: "POST" },
+      {
+        method: "POST",
+        body: JSON.stringify({ force: true }),
+        headers: { "Content-Type": "application/json" },
+      },
     );
     const rawContent = qrRes.data?.img || qrRes.img || "";
     editQrCode.value = qrRes.data?.qrcode || "";
@@ -858,6 +1061,7 @@ const fetchEditQr = async () => {
       if (rawContent.startsWith("data:image")) {
         editQrSrc.value = rawContent;
       } else {
+        // 扫码文本/URL/base64内容通过 qrcode 库在前端本地直接转为 Canvas DataURL
         editQrSrc.value = await QRCode.toDataURL(rawContent, {
           width: 180,
           margin: 2,
@@ -866,7 +1070,7 @@ const fetchEditQr = async () => {
     } else {
       editQrSrc.value = "";
     }
-    if (editQrCode.value) {
+    if (editQrSrc.value || editQrCode.value) {
       startEditPoll(current.value.id, editQrCode.value);
     }
   } catch (e) {
@@ -961,14 +1165,17 @@ const enterChat = async (row) => {
   router.push(`/chat/${contactor.id}`);
 };
 
-onMounted(loadChannels);
+onMounted(() => {
+  loadChannels();
+  loadChannelCatalog();
+});
 onBeforeUnmount(() => {
   stopPoll();
   stopEditPoll();
 });
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .channel-manager-view {
   padding: 16px;
 }
@@ -988,80 +1195,204 @@ onBeforeUnmount(() => {
 }
 
 /* ── 渠道平台选择器 ── */
-.channel-selector-dialog :deep(.el-dialog) {
-  border-radius: 16px;
-  overflow: hidden;
+.channel-selector-dialog {
+  :deep(.el-dialog) {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    background: var(--mio-bg-card);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--mio-border-color-light);
+  }
+
+  :deep(.el-dialog__header) {
+    margin-right: 0;
+    padding: 20px 24px 10px;
+    border-bottom: 1px solid var(--mio-border-color-light);
+
+    .el-dialog__title {
+      font-weight: 600;
+      font-size: 18px;
+      color: var(--mio-text-primary);
+    }
+  }
+
+  :deep(.el-dialog__body) {
+    padding: 16px 24px 24px;
+  }
 }
-.channel-selector-dialog :deep(.el-dialog__body) {
-  padding: 16px 24px 24px;
-}
-.channel-selector {
+
+.selector-container {
   display: flex;
   flex-direction: column;
   gap: 16px;
+
+  .search-box {
+    margin-bottom: 4px;
+
+    :deep(.el-input__wrapper) {
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      border: 1px solid var(--mio-border-color-light);
+      transition: all 0.3s;
+
+      &:hover,
+      &.is-focus {
+        border-color: #409eff;
+        box-shadow: 0 4px 12px rgba(64, 158, 255, 0.1);
+      }
+    }
+  }
 }
-.channel-selector-search {
-  max-width: 420px;
+
+.selector-scrollbar {
+  max-height: 460px;
+  padding-right: 4px;
 }
-.channel-platform-grid {
+
+.grid-container {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  min-height: 120px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  padding: 4px 2px 16px;
 }
-.channel-platform-card {
-  appearance: none;
-  width: 100%;
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 12px;
-  padding: 18px;
-  background: var(--el-fill-color-blank);
-  color: inherit;
+
+.selector-card {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 14px;
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
-}
-.channel-platform-card:hover {
-  border-color: var(--el-color-primary-light-5);
-  box-shadow: 0 8px 24px rgba(64, 158, 255, 0.12);
-  transform: translateY(-2px);
-}
-.channel-platform-icon {
-  width: 48px;
-  height: 48px;
+  padding: 16px;
   border-radius: 12px;
-  background: var(--el-color-primary-light-9);
-  display: grid;
-  place-items: center;
-  font-size: 24px;
-  flex-shrink: 0;
-}
-.channel-platform-content {
-  min-width: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.channel-platform-title {
-  font-size: 15px;
-  font-weight: 600;
-}
-.channel-platform-desc {
-  color: var(--mio-text-secondary, #909399);
-  font-size: 12px;
-  line-height: 1.45;
-}
-.channel-platform-meta {
-  display: flex;
-  gap: 6px;
-}
-.channel-platform-add {
-  color: var(--el-color-primary);
-  flex-shrink: 0;
+  background: var(--mio-bg-card);
+  border: 1px solid var(--mio-border-color-light);
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+
+  .card-glow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 12px;
+    opacity: 0;
+    background: var(--card-bg-color);
+    transition: opacity 0.3s ease;
+    z-index: 1;
+  }
+
+  .card-icon {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--mio-bg-hover);
+    border: 1px solid var(--mio-border-color-light);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s;
+    flex-shrink: 0;
+
+    img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+    }
+
+    .platform-emoji-icon {
+      font-size: 24px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  .card-info {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow: hidden;
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--mio-text-primary);
+      transition: color 0.3s;
+    }
+
+    .card-desc {
+      font-size: 12px;
+      color: var(--mio-text-secondary);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+    }
+  }
+
+  .card-action {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--mio-bg-hover);
+    color: var(--mio-text-secondary);
+    font-size: 12px;
+    opacity: 0;
+    transform: translateX(10px);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    border-color: var(--card-theme-color);
+    box-shadow:
+      0 8px 20px rgba(0, 0, 0, 0.05),
+      0 0 0 1px var(--card-theme-color);
+
+    .card-glow {
+      opacity: 1;
+    }
+
+    .card-icon {
+      border-color: var(--card-theme-color);
+      transform: scale(1.05);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+    }
+
+    .card-info .card-title {
+      color: var(--card-theme-color);
+    }
+
+    .card-action {
+      opacity: 1;
+      transform: translateX(0);
+      background: var(--card-theme-color);
+      color: #ffffff;
+    }
+  }
 }
 
 /* ── 卡片网格 ── */
@@ -1070,99 +1401,302 @@ onBeforeUnmount(() => {
 }
 .channel-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 20px;
 }
+
 .channel-card {
-  border-radius: 10px;
-  transition: box-shadow 0.2s;
-  border-top: 3px solid transparent;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--mio-bg-card, #ffffff);
+  border: 1px solid var(--mio-border-color-light, rgba(0, 0, 0, 0.08));
+  border-radius: 14px;
+  padding: 18px 20px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+
+  &:hover {
+    border-color: var(--platform-theme, var(--el-color-primary));
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.06),
+      0 0 0 1px var(--platform-theme, var(--el-color-primary));
+  }
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: transparent;
+    transition: background 0.2s;
+  }
+
+  &.card-running::before {
+    background: var(--el-color-success, #67c23a);
+  }
+  &.card-stopped::before {
+    background: var(--el-color-info-light-3, #909399);
+  }
+  &.card-unbound::before {
+    background: var(--el-color-warning, #e6a23c);
+  }
+  &.card-expired::before {
+    background: var(--el-color-danger, #f56c6c);
+  }
 }
-.channel-card.card-running {
-  border-top-color: var(--el-color-success);
-}
-.channel-card.card-stopped {
-  border-top-color: var(--el-color-info);
-}
-.channel-card.card-unbound {
-  border-top-color: var(--el-color-warning);
-}
-.channel-card.card-expired {
-  border-top-color: var(--el-color-danger);
-}
+
 .skeleton-card {
-  min-height: 160px;
+  min-height: 180px;
 }
 
 /* ── 卡片头部 ── */
 .card-header {
-  margin-bottom: 12px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
 }
-.card-title-row {
+
+.header-main {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 4px;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
 }
+
+.channel-avatar-wrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--platform-bg, rgba(0, 0, 0, 0.04));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+
+  .channel-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .channel-avatar-emoji {
+    font-size: 22px;
+    line-height: 1;
+  }
+}
+
+.header-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.card-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
 .card-name {
   font-weight: 600;
-  font-size: 15px;
-  flex: 1;
-  min-width: 0;
+  font-size: 16px;
+  color: var(--mio-text-primary, #303133);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.card-tags {
-  display: flex;
+
+.card-id-wrapper {
+  display: inline-flex;
+  align-items: center;
   gap: 4px;
+  cursor: pointer;
+  padding: 1px 6px;
+  margin-left: -6px;
+  border-radius: 4px;
+  transition: all 0.15s;
+
+  &:hover {
+    background: var(--mio-bg-secondary, rgba(0, 0, 0, 0.05));
+    .copy-icon {
+      opacity: 1;
+    }
+  }
+
+  .card-id {
+    font-size: 11px;
+    color: var(--mio-text-secondary, #909399);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    white-space: nowrap;
+  }
+
+  .copy-icon {
+    font-size: 11px;
+    color: var(--mio-text-secondary, #909399);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+}
+
+.header-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
   flex-shrink: 0;
 }
-.type-tag {
-  font-family: ui-monospace, monospace;
-}
-.card-id {
+
+.platform-tag {
   font-size: 11px;
-  color: var(--mio-text-secondary, #909399);
   font-family: ui-monospace, monospace;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-weight: 500;
+  border-radius: 6px;
+  padding: 0 6px;
+  height: 20px;
+  line-height: 18px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+
+  .status-indicator {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  &.status-running {
+    background: rgba(103, 194, 58, 0.12);
+    color: #529b2e;
+    .status-indicator {
+      background: #67c23a;
+      box-shadow: 0 0 0 2px rgba(103, 194, 58, 0.25);
+    }
+  }
+
+  &.status-stopped {
+    background: rgba(144, 147, 153, 0.12);
+    color: #909399;
+    .status-indicator {
+      background: #909399;
+    }
+  }
+
+  &.status-unbound {
+    background: rgba(230, 162, 60, 0.12);
+    color: #b88230;
+    .status-indicator {
+      background: #e6a23c;
+    }
+  }
+
+  &.status-expired {
+    background: rgba(245, 108, 108, 0.12);
+    color: #f56c6c;
+    .status-indicator {
+      background: #f56c6c;
+    }
+  }
 }
 
 /* ── 卡片主体 ── */
 .card-body {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  background: var(--mio-bg-secondary, rgba(0, 0, 0, 0.025));
+  border: 1px solid var(--mio-border-color-lighter, rgba(0, 0, 0, 0.04));
+  border-radius: 10px;
+  padding: 10px 12px;
   margin-bottom: 14px;
 }
+
 .info-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 12px;
+  min-width: 0;
 }
+
 .info-label {
   color: var(--mio-text-secondary, #909399);
   flex-shrink: 0;
-  min-width: 36px;
+  width: 44px;
+  font-weight: 500;
 }
+
 .info-value {
-  color: var(--el-text-color-primary);
-  word-break: break-all;
+  color: var(--mio-text-primary, #303133);
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &.agent-badge {
+    font-weight: 500;
+    font-family: ui-monospace, monospace;
+    color: var(--mio-text-primary, #303133);
+
+    .agent-icon {
+      margin-right: 4px;
+      font-size: 12px;
+    }
+  }
 }
+
 .model-value {
   display: flex;
   align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+
+  .model-name {
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
+
 .provider-tag {
   font-family: ui-monospace, monospace;
   font-size: 11px;
+  height: 18px;
+  line-height: 16px;
+  padding: 0 5px;
+  border-radius: 4px;
+  flex-shrink: 0;
 }
+
+.user-id-val {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--mio-text-secondary, #909399);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .muted {
   color: var(--mio-text-secondary, #909399);
 }
@@ -1172,39 +1706,79 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding-top: 10px;
-  border-top: 1px solid var(--el-border-color-lighter);
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--mio-border-color-light, rgba(0, 0, 0, 0.06));
+  margin-top: auto;
 }
+
 .last-active {
   font-size: 12px;
   color: var(--mio-text-secondary, #909399);
   display: flex;
   align-items: center;
-  gap: 5px;
+  white-space: nowrap !important;
+  flex-shrink: 0;
 }
+
 .active-time {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  white-space: nowrap !important;
+  flex-shrink: 0;
 }
+
 .active-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
 }
+
 .dot-green {
-  background: var(--el-color-success);
+  background: var(--el-color-success, #67c23a);
   box-shadow: 0 0 0 2px rgba(103, 194, 58, 0.25);
 }
+
 .dot-gray {
-  background: var(--el-color-info-light-5);
+  background: var(--el-color-info-light-5, #c0c4cc);
 }
+
+.active-text {
+  white-space: nowrap !important;
+  font-weight: 500;
+}
+
 .card-actions {
   display: flex;
-  gap: 2px;
+  align-items: center;
+  gap: 6px;
   flex-shrink: 0;
+
+  .action-btn {
+    padding: 0 6px;
+    height: 26px;
+    font-size: 13px;
+
+    &.enter-btn {
+      font-weight: 500;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .channel-cards {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .channel-card {
+    padding: 14px 16px 12px;
+  }
+  .card-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 }
 
 /* ── 二维码弹窗 ── */
@@ -1248,10 +1822,23 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 768px) {
-  .channel-selector-dialog :deep(.el-dialog) {
-    width: 94vw !important;
+  .channel-selector-dialog {
+    :deep(.el-dialog) {
+      width: 94vw !important;
+      margin-top: 6vh;
+      border-radius: 12px;
+    }
+    :deep(.el-dialog__header) {
+      padding: 14px 16px 8px;
+    }
+    :deep(.el-dialog__body) {
+      padding: 12px 16px 16px;
+    }
   }
-  .channel-platform-grid {
+  .selector-scrollbar {
+    max-height: 60vh;
+  }
+  .grid-container {
     grid-template-columns: 1fr;
   }
 }

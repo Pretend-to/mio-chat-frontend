@@ -80,17 +80,60 @@
           </div>
         </div>
         <div class="header-actions">
-          <el-select
-            v-model="store.timeRange"
-            size="default"
-            class="saas-time-select"
-            @change="store.refreshData"
-            aria-label="时间范围"
+          <div class="desktop-time-range-group">
+            <span class="time-range-label">时间范围:</span>
+            <el-select
+              v-model="store.timeRange"
+              size="default"
+              class="saas-time-select"
+              @change="store.refreshData"
+              aria-label="时间范围"
+            >
+              <el-option label="24小时" value="24h" />
+              <el-option label="近7天" value="7d" />
+              <el-option label="近30天" value="30d" />
+              <el-option label="近90天" value="90d" />
+              <el-option label="近1年" value="365d" />
+            </el-select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Subpage Navigation Bar -->
+      <div class="mobile-subpage-nav">
+        <div class="mobile-nav-scroll">
+          <button
+            class="mobile-nav-pill"
+            :class="{ active: store.activeTab === 'overview' }"
+            @click="switchTab('overview')"
           >
-            <el-option label="24小时" value="24h" />
-            <el-option label="近7天" value="7d" />
-            <el-option label="近30天" value="30d" />
-          </el-select>
+            <i class="fa-solid fa-gauge-high"></i>
+            <span>实时性能</span>
+          </button>
+          <button
+            class="mobile-nav-pill"
+            :class="{ active: store.activeTab === 'users' }"
+            @click="switchTab('users')"
+          >
+            <i class="fa-solid fa-users-viewfinder"></i>
+            <span>会话画像</span>
+          </button>
+          <button
+            class="mobile-nav-pill"
+            :class="{ active: store.activeTab === 'toolcalls' }"
+            @click="switchTab('toolcalls')"
+          >
+            <i class="fa-solid fa-network-wired"></i>
+            <span>调用 Trace</span>
+          </button>
+          <button
+            class="mobile-nav-pill"
+            :class="{ active: store.activeTab === 'failures' }"
+            @click="switchTab('failures')"
+          >
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>异常归因</span>
+          </button>
         </div>
       </div>
 
@@ -149,6 +192,13 @@ import TraceModal from "@/components/dashboard/TraceModal.vue";
 const store = useDashboardStore();
 const router = useRouter();
 const isSidebarOpen = ref(false);
+const isMobile = ref(false);
+
+const checkMobile = () => {
+  if (typeof window !== "undefined") {
+    isMobile.value = window.innerWidth <= 1024;
+  }
+};
 
 const tabTitle = computed(() => {
   switch (store.activeTab) {
@@ -215,9 +265,13 @@ onMounted(() => {
 
   // Initial dashboard load
   store.refreshData();
+
+  checkMobile();
+  window.addEventListener("resize", checkMobile);
 });
 
 onUnmounted(() => {
+  window.removeEventListener("resize", checkMobile);
   clearInterval(realtimeTimer);
   clearInterval(timeClockTimer);
 
@@ -227,7 +281,88 @@ onUnmounted(() => {
 });
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+/* Mobile Subpage Navigation */
+.mobile-subpage-nav {
+  display: none;
+  background: var(--mio-bg-card, #ffffff);
+  border-bottom: 1px solid var(--mio-border-color-light, #e2e8f0);
+  padding: 8px 16px;
+  flex-shrink: 0;
+
+  .mobile-nav-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .mobile-nav-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    border: 1px solid var(--mio-border-color-light, #e2e8f0);
+    background: var(--mio-bg-page, #f8fafc);
+    color: var(--mio-text-regular, #64748b);
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    i {
+      font-size: 12px;
+    }
+
+    &:hover {
+      background: var(--mio-bg-hover, #f1f5f9);
+      color: var(--mio-text-primary, #0f172a);
+    }
+
+    &.active {
+      background: var(--mio-bg-active, #eff6ff);
+      border-color: var(--mio-color-primary, #2563eb);
+      color: var(--mio-color-primary, #2563eb);
+      font-weight: 600;
+      box-shadow: 0 1px 4px rgba(37, 99, 235, 0.15);
+    }
+  }
+}
+
+.desktop-time-range-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  .time-range-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--mio-text-secondary, #64748b);
+    white-space: nowrap;
+  }
+}
+
+.saas-time-select {
+  width: 120px !important;
+  min-width: 120px !important;
+  flex-shrink: 0;
+
+  :deep(.el-select__wrapper) {
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--mio-border-color-light, #e2e8f0);
+  }
+}
+
 /* Main Dashboard Layout */
 .dashboard-root {
   display: flex;
@@ -525,15 +660,19 @@ onUnmounted(() => {
     animation: fadeInOverlay 0.2s ease-out;
   }
 
+  .mobile-subpage-nav {
+    display: block;
+  }
+
   .header-bar {
     padding: 14px 20px;
-    flex-wrap: wrap;
-    gap: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
   .header-actions {
-    width: 100%;
-    justify-content: space-between;
+    width: auto;
   }
 
   .view-body {
@@ -541,10 +680,40 @@ onUnmounted(() => {
   }
 }
 
-/* 移动端 toolcalls 页占满 header 下区域，四周留合宜留白（顶部与其他看板页一致） */
-@media (max-width: 900px) {
+@media (max-width: 768px) {
+  .header-bar {
+    padding: 10px 14px;
+    gap: 8px;
+  }
+
+  .page-title h2 {
+    font-size: 15px;
+    white-space: nowrap;
+  }
+
+  .page-title .subtitle {
+    display: none;
+  }
+
+  .header-actions {
+    width: auto;
+  }
+
+  .desktop-time-range-group .time-range-label {
+    display: none;
+  }
+
+  .saas-time-select {
+    width: 96px !important;
+    min-width: 96px !important;
+  }
+
+  .view-body {
+    padding: 14px 10px;
+  }
+
   .view-body.flex-layout {
-    padding: 20px 12px 12px;
+    padding: 14px 10px 10px;
   }
 }
 @keyframes fadeInOverlay {

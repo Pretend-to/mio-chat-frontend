@@ -553,26 +553,16 @@ onUnmounted(() => {
 }
 
 .row-flex {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) 1fr;
   gap: 20px;
-  flex-wrap: wrap;
+  align-items: stretch;
 }
 
-.left-col-4 {
-  width: calc(33.333% - 14px);
-  min-width: 250px;
-}
-
+.left-col-4,
 .right-col-8 {
-  width: calc(66.666% - 6px);
-  flex-grow: 1;
-}
-
-@media (max-width: 768px) {
-  .left-col-4,
-  .right-col-8 {
-    width: 100%;
-  }
+  width: 100%;
+  min-width: 0;
 }
 
 .saas-card {
@@ -855,20 +845,34 @@ onUnmounted(() => {
   -webkit-overflow-scrolling: touch;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 992px) {
+  .row-flex {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
   .left-col-4,
   .right-col-8 {
     width: 100%;
   }
 
-  .list-card,
+  .list-card {
+    height: auto;
+    min-height: auto;
+  }
+
+  .provider-list-scroll {
+    max-height: 220px;
+    overflow-y: auto;
+  }
+
   .chart-card {
     height: auto;
-    min-height: 300px;
+    min-height: 320px;
   }
 
   .chart-container-models {
-    height: 250px;
+    height: 280px;
   }
 }
 </style>

@@ -616,25 +616,24 @@ function formatTime(timestamp) {
 }
 
 .row-flex {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) 1fr;
   gap: 20px;
-  flex-wrap: wrap;
   flex: 1;
   min-height: 0;
   height: 100%;
 }
 
 .left-col-4 {
-  width: calc(33.333% - 14px);
-  min-width: 280px;
+  width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .right-col-8 {
-  width: calc(66.666% - 6px);
-  flex-grow: 1;
+  width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -642,6 +641,11 @@ function formatTime(timestamp) {
 }
 
 @media (max-width: 900px) {
+  .row-flex {
+    display: flex;
+    flex-direction: column;
+  }
+
   .left-col-4,
   .right-col-8 {
     width: 100%;

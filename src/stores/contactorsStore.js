@@ -10,7 +10,6 @@ import {
   deleteGlobalMemoryItem,
 } from "@/lib/clientSettings.js";
 
-
 const avatarPolicy = ["MODEL", "CUSTOM"];
 const namePolicy = ["MODEL", "CUSTOM", "SUMMARY"];
 
@@ -162,7 +161,6 @@ export function formatErrorMessage(error) {
     return `⚠️ **请求失败**: ${String(msg || error)}`;
   }
 }
-
 
 export const useContactorsStore = defineStore("contactors", () => {
   // State

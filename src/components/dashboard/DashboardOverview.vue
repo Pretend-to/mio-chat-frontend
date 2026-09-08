@@ -846,20 +846,52 @@ onUnmounted(() => {
 
 @media (max-width: 768px) {
   .stats-grid {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
 
   .stat-card {
-    padding: 16px;
+    padding: 12px 14px;
+    border-radius: 10px;
+  }
+
+  .stat-title {
+    font-size: 12px;
   }
 
   .stat-value {
-    font-size: 20px;
+    font-size: 18px;
+  }
+
+  .stat-sub {
+    font-size: 10px;
+    margin-top: 2px;
+  }
+
+  .stat-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+    border-radius: 8px;
   }
 
   .card-body {
     padding: 12px;
+  }
+
+  .charts-row {
+    flex-direction: column;
+    margin: 0;
+    gap: 16px;
+  }
+
+  .chart-card-col {
+    padding: 0;
+    width: 100%;
+  }
+
+  .chart-container {
+    height: 240px;
   }
 }
 </style>
