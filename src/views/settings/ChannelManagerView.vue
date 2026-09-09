@@ -602,7 +602,7 @@ const loading = ref(false);
 const selectorVisible = ref(false);
 const catalogLoading = ref(false);
 const platformSearch = ref("");
-const channelCatalog = ref({ version: 1, runtimes: [], platforms: [] });
+const channelCatalog = ref({ version: 1, runtimes: [], adapters: [], platforms: [] });
 const selectedPlatform = ref(null);
 const bindVisible = ref(false);
 const editVisible = ref(false);
@@ -637,15 +637,21 @@ const editPollStatus = ref("wait");
 const editPollTimer = ref(null);
 
 const isWechatPlatform = (channel) => {
+  const adapterId = String(channel?.adapterId || channel?.type || "").toLowerCase();
+  if (adapterId === "weixin-ilink" || adapterId === "wechat") return true;
   const platform = String(channel?.platform || "").toLowerCase();
   if (platform) return platform === "wechat-clawbot";
   const type = String(channel?.type || "wechat").toLowerCase();
   return type === "wechat" || type === "onebots" || type === "onebot";
 };
 
+const catalogAdapters = computed(
+  () => channelCatalog.value?.adapters || channelCatalog.value?.platforms || [],
+);
+
 const filteredPlatforms = computed(() => {
   const query = platformSearch.value.trim().toLowerCase();
-  const items = channelCatalog.value?.platforms || [];
+  const items = catalogAdapters.value;
   if (!query) return items;
   return items.filter((platform) =>
     [platform.id, platform.name, platform.description, platform.runtime]
@@ -664,7 +670,7 @@ const isEmojiIcon = (icon) => {
 
 const getPlatformThemeColor = (platform) => {
   const id = String(platform?.id || "").toLowerCase();
-  if (id.includes("wechat")) return "#07c160";
+  if (id.includes("wechat") || id.includes("weixin")) return "#07c160";
   if (id.includes("qq")) return "#12b7f5";
   if (id.includes("lark") || id.includes("feishu")) return "#00d6b9";
   if (id.includes("dingtalk")) return "#007fff";
@@ -680,7 +686,7 @@ const getPlatformThemeColor = (platform) => {
 
 const getPlatformBgColor = (platform) => {
   const id = String(platform?.id || "").toLowerCase();
-  if (id.includes("wechat")) return "rgba(7, 193, 96, 0.08)";
+  if (id.includes("wechat") || id.includes("weixin")) return "rgba(7, 193, 96, 0.08)";
   if (id.includes("qq")) return "rgba(18, 183, 245, 0.08)";
   if (id.includes("lark") || id.includes("feishu"))
     return "rgba(0, 214, 185, 0.08)";
@@ -800,40 +806,29 @@ const copyChannelId = async (id) => {
   }
 };
 
-const getPlatformName = (row) => {
-  const p = (channelCatalog.value?.platforms || []).find(
-    (item) =>
-      item.id ===
-      (row.platform || (row.type === "wechat" ? "wechat-clawbot" : row.type)),
+const findChannelPlatform = (row) =>
+  catalogAdapters.value.find(
+    (item) => item.id === (row.adapterId || row.type || row.platform),
   );
+
+const getPlatformName = (row) => {
+  const p = findChannelPlatform(row);
   return p?.name || row.platform || row.type || "OneBots";
 };
 
 const getChannelPlatformIcon = (row) => {
   if (row.avatar) return row.avatar;
-  const p = (channelCatalog.value?.platforms || []).find(
-    (item) =>
-      item.id ===
-      (row.platform || (row.type === "wechat" ? "wechat-clawbot" : row.type)),
-  );
+  const p = findChannelPlatform(row);
   return p?.icon || null;
 };
 
 const getChannelThemeColor = (row) => {
-  const p = (channelCatalog.value?.platforms || []).find(
-    (item) =>
-      item.id ===
-      (row.platform || (row.type === "wechat" ? "wechat-clawbot" : row.type)),
-  );
+  const p = findChannelPlatform(row);
   return getPlatformThemeColor(p || { id: row.platform || row.type });
 };
 
 const getChannelBgColor = (row) => {
-  const p = (channelCatalog.value?.platforms || []).find(
-    (item) =>
-      item.id ===
-      (row.platform || (row.type === "wechat" ? "wechat-clawbot" : row.type)),
-  );
+  const p = findChannelPlatform(row);
   return getPlatformBgColor(p || { id: row.platform || row.type });
 };
 
@@ -861,7 +856,7 @@ const resetBind = () => {
 const openAdd = async () => {
   resetBind();
   platformSearch.value = "";
-  if (!channelCatalog.value.platforms.length) await loadChannelCatalog();
+  if (!catalogAdapters.value.length) await loadChannelCatalog();
   selectorVisible.value = true;
 };
 const selectPlatform = (platform) => {
@@ -898,8 +893,8 @@ const createAndGetQr = async () => {
         body: JSON.stringify({
           version: channelCatalog.value.version || 1,
           adapter: {
+            id: selectedPlatform.value?.id,
             runtime: selectedPlatform.value?.runtime,
-            platform: selectedPlatform.value?.id,
             protocol: selectedPlatform.value?.protocol,
           },
           profile: {
@@ -992,13 +987,9 @@ const stopPoll = () => {
 
 const openBind = (row) => {
   resetBind();
-  selectedPlatform.value = (channelCatalog.value.platforms || []).find(
-    (platform) =>
-      platform.id ===
-      (row.platform || (row.type === "wechat" ? "wechat-clawbot" : "")),
-  ) || {
-    id: row.platform || "wechat-clawbot",
-    name: row.platform || "微信 ClawBot",
+  selectedPlatform.value = findChannelPlatform(row) || {
+    id: row.adapterId || row.type || "weixin-ilink",
+    name: row.adapterId || row.type || "微信 iLink",
     auth: { type: "qrcode", label: "微信扫码绑定" },
   };
   channelId.value = row.id;
