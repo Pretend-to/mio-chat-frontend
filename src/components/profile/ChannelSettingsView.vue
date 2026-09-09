@@ -168,12 +168,23 @@
 
     <!-- Tab 3: Tools -->
     <div v-if="activeTab === 'tools'" class="tab-pane">
-      <ContactorToolsTab
-        v-model="channelToolsModel"
-        :tool-call-modes-list="toolCallModesList"
-        :all-llm-tools-data="allLlmToolsData"
-        @update:model-value="onToolsUpdated"
-      />
+      <div class="group-title">Channel 工具策略</div>
+      <div class="settings-card">
+        <div class="setting-field">
+          <div class="field-label">工具插件</div>
+          <div class="field-value">
+            <el-tag type="success" effect="plain">ai-plugin</el-tag>
+          </div>
+        </div>
+        <div class="setting-field">
+          <div class="field-label">调用模式</div>
+          <div class="field-value">AUTO（固定）</div>
+        </div>
+        <div class="card-desc">
+          Channel 固定启用完整 ai-plugin，不支持按渠道增删工具。普通 Web
+          会话的工具配置不受影响。
+        </div>
+      </div>
     </div>
 
     <!-- Tab 4: Skills -->
@@ -400,7 +411,6 @@ import { configAPI } from "@/lib/configApi.js";
 import { useContactorsStore } from "@/stores/contactorsStore.js";
 import { useConnectionStore } from "@/stores/connectionStore.js";
 import { debounce } from "@/utils/tools.js";
-import ContactorToolsTab from "./ContactorToolsTab.vue";
 import ContactorSkillsTab from "./ContactorSkillsTab.vue";
 import {
   CRYSTAL_ZONES,
@@ -472,67 +482,6 @@ const selectedProvider = ref(props.contactor.options?.provider || "");
 const selectedModel = ref(getCleanModelStr(props.contactor.options?.model));
 const availableProviders = ref([]);
 const modelsMeta = ref({});
-
-// Tools & Mode
-const toolCallModesList = [
-  { value: "AUTO", label: "AUTO (自动)" },
-  { value: "ANY", label: "ANY (强制)" },
-  { value: "NONE", label: "NONE (禁用)" },
-];
-const channelToolsModel = ref({
-  toolCallSettings: {
-    mode: "AUTO",
-    tools: [],
-  },
-});
-
-const allLlmToolsData = computed(() => {
-  const toolsObj = client.config?.llmTools || {};
-  const selected = channelToolsModel.value.toolCallSettings?.tools || [];
-  const res = [];
-  for (const key in toolsObj) {
-    const group = toolsObj[key];
-    if (!group || typeof group !== "object") continue;
-    const toolsList = Object.keys(group).map((toolKey) => {
-      const t = group[toolKey];
-      const toolName = t.name;
-      return {
-        enabled: Array.isArray(selected) && selected.includes(toolName),
-        ...t,
-      };
-    });
-    if (toolsList.length > 0) {
-      res.push({
-        name: key,
-        tools: toolsList,
-        collapsed: true,
-      });
-    }
-  }
-  return res;
-});
-
-const debounceSaveTools = debounce(async (modelVal) => {
-  try {
-    const tools = modelVal?.toolCallSettings?.tools || [];
-    const mode = modelVal?.toolCallSettings?.mode || "AUTO";
-    await configAPI.request(`/api/channels/${channelId.value}`, {
-      method: "PUT",
-      body: {
-        tools,
-        toolCallMode: mode,
-      },
-    });
-    ElMessage.success("工具配置已自动保存！");
-  } catch (err) {
-    ElMessage.error(err.message || "保存工具配置失败");
-  }
-}, 500);
-
-function onToolsUpdated(newVal) {
-  channelToolsModel.value = newVal;
-  debounceSaveTools(newVal);
-}
 
 // Memory
 const zoneContents = ref(parseXmlZones(""));
@@ -662,14 +611,6 @@ function loadFromCache() {
         channelConnected.value = data.channelConnected;
       if (data.crystal) zoneContents.value = parseXmlZones(data.crystal);
       if (data.globals) globalMemories.value = data.globals;
-      if (data.tools && Array.isArray(data.tools)) {
-        channelToolsModel.value = {
-          toolCallSettings: {
-            mode: data.toolCallMode || "AUTO",
-            tools: data.tools,
-          },
-        };
-      }
       return true;
     }
   } catch (e) {}
@@ -688,8 +629,6 @@ function saveToCache() {
       channelConnected: channelConnected.value,
       crystal: buildXmlFromZones(zoneContents.value),
       globals: globalMemories.value,
-      tools: channelToolsModel.value?.toolCallSettings?.tools || [],
-      toolCallMode: channelToolsModel.value?.toolCallSettings?.mode || "AUTO",
     };
     localStorage.setItem(cacheKey.value, JSON.stringify(cacheObj));
   } catch (e) {}
@@ -725,14 +664,6 @@ async function loadData() {
       if (res.data.model)
         selectedModel.value = getCleanModelStr(res.data.model);
 
-      const savedTools = Array.isArray(res.data.tools) ? res.data.tools : [];
-      const mode = res.data.toolCallMode || "AUTO";
-      channelToolsModel.value = {
-        toolCallSettings: {
-          mode,
-          tools: savedTools,
-        },
-      };
       saveToCache();
     }
   } catch (err) {
