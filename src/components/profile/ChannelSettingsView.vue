@@ -404,7 +404,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { client } from "@/lib/runtime.js";
 import { configAPI } from "@/lib/configApi.js";
@@ -660,9 +660,12 @@ async function loadData() {
       lastError.value = res.data.lastError || null;
       if (res.data.name) basicName.value = res.data.name;
       if (res.data.avatar) basicAvatar.value = res.data.avatar;
-      if (res.data.provider) selectedProvider.value = res.data.provider;
-      if (res.data.model)
-        selectedModel.value = getCleanModelStr(res.data.model);
+      selectedProvider.value = res.data.provider || "";
+      selectedModel.value = getCleanModelStr(res.data.model || "");
+      if (!props.contactor.options) props.contactor.options = {};
+      props.contactor.options.provider = selectedProvider.value;
+      props.contactor.options.model = selectedModel.value;
+      client.setLocalStorage();
 
       saveToCache();
     }
@@ -812,7 +815,22 @@ async function toggleStatus(action) {
 onMounted(() => {
   loadFromCache();
   loadData();
+  client.on("channel_config_updated", handleChannelConfigUpdated);
 });
+
+onBeforeUnmount(() => {
+  client.off("channel_config_updated", handleChannelConfigUpdated);
+});
+
+function handleChannelConfigUpdated(channel) {
+  if (String(channel?.id) !== String(channelId.value)) return;
+  selectedProvider.value = channel.provider || "";
+  selectedModel.value = getCleanModelStr(channel.model || "");
+  if (!props.contactor.options) props.contactor.options = {};
+  props.contactor.options.provider = selectedProvider.value;
+  props.contactor.options.model = selectedModel.value;
+  saveToCache();
+}
 
 watch(
   () => props.contactor.id,

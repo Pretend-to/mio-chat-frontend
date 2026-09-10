@@ -1014,6 +1014,29 @@ export default class Client extends EventEmitter {
           return;
         }
 
+        // Channel 自主切换模型后，同步管理界面与本地联系人镜像。
+        if (e.type === "channel_config_updated" && e.data?.channel) {
+          const channel = e.data.channel;
+          const store = getStore();
+          const contactor = store?.contactors?.[channel.id];
+          if (contactor) {
+            if (!contactor.options) contactor.options = {};
+            if (Object.hasOwn(channel, "provider")) {
+              contactor.options.provider = channel.provider || "";
+            }
+            if (Object.hasOwn(channel, "model")) {
+              contactor.options.model = channel.model || "";
+            }
+            if (channel.name !== undefined) contactor.name = channel.name;
+            if (channel.avatar !== undefined) contactor.avatar = channel.avatar;
+            store.updateContactor(contactor.id, { ...contactor });
+            store.updateContactorSummary(contactor);
+            this.setLocalStorage();
+          }
+          this.emit("channel_config_updated", channel);
+          return;
+        }
+
         // 处理后端自动总结的标题更新
         if (e.type === "chat_title_updated" && e.data) {
           const { contactorId, title } = e.data;
@@ -1179,9 +1202,12 @@ export default class Client extends EventEmitter {
             existing.lastUpdate = ch.lastActive;
             existing.lastMessageTime = ch.lastActive;
           }
-          if (existing.options) {
-            if (ch.model) existing.options.model = ch.model;
-            if (ch.provider) existing.options.provider = ch.provider;
+          if (!existing.options) existing.options = {};
+          if (Object.hasOwn(ch, "model")) {
+            existing.options.model = ch.model || "";
+          }
+          if (Object.hasOwn(ch, "provider")) {
+            existing.options.provider = ch.provider || "";
           }
         }
       }
