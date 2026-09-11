@@ -16,7 +16,7 @@
           }}</span>
         </div>
         <div class="info-row">
-          <span class="info-label">服务实例 (Provider)</span>
+          <span class="info-label">服务实例</span>
           <span class="info-value">{{
             store.activeTrace.provider || "unknown"
           }}</span>
@@ -46,7 +46,7 @@
 
       <div class="stack-trace-container">
         <div class="stack-header">
-          <span>异常追踪调用栈 (Stack Trace)</span>
+          <span>异常追踪调用栈</span>
         </div>
         <pre
           class="stack-content"

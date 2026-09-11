@@ -53,7 +53,7 @@
     </div>
 
     <!-- Bottom: Full-Width Diagnostics Console Table Card -->
-    <div class="saas-card table-card mt-md">
+    <div class="saas-card table-card">
       <div class="card-header table-header-bar">
         <div class="header-left">
           <span class="card-title">异常诊断控制台</span>
@@ -75,6 +75,7 @@
         >
           <el-table
             :data="store.failures"
+            height="100%"
             size="default"
             class="saas-table"
             style="width: 100%"
@@ -379,12 +380,16 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .top-overview-row {
   display: flex;
   gap: 20px;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .stat-summary-card {
@@ -463,12 +468,17 @@ onUnmounted(() => {
 .table-card {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  margin-top: 0;
 }
 
 .table-header-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .header-left {
@@ -510,6 +520,11 @@ onUnmounted(() => {
 
 .table-card-body {
   padding: 0;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .time-text {
@@ -570,7 +585,10 @@ onUnmounted(() => {
 
 .table-responsive-wrapper {
   width: 100%;
-  overflow-x: auto;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
   -webkit-overflow-scrolling: touch;
 }
 

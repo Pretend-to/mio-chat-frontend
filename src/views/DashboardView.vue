@@ -140,7 +140,7 @@
       <!-- Tab Contents -->
       <div
         class="view-body"
-        :class="{ 'flex-layout': store.activeTab === 'toolcalls' }"
+        :class="{ 'flex-layout': store.activeTab === 'toolcalls' || store.activeTab === 'failures' }"
       >
         <div
           v-show="store.activeTab === 'overview'"
@@ -165,7 +165,7 @@
 
         <div
           v-show="store.activeTab === 'failures'"
-          class="tab-pane-content fade-in"
+          class="tab-pane-content fade-in failures-pane"
         >
           <DashboardFailures />
         </div>
@@ -583,12 +583,14 @@ onUnmounted(() => {
   width: 100%;
 }
 
-.toolcalls-pane {
+.toolcalls-pane,
+.failures-pane {
   height: 100%;
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
 }
 
 /* Animations */
