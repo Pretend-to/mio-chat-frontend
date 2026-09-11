@@ -145,8 +145,8 @@
               class="saas-select"
               style="width: 150px"
             >
-              <el-option label="首字延迟 (TTFT)" value="ttft"></el-option>
-              <el-option label="生成速率 (TPS)" value="tps"></el-option>
+              <el-option label="首响应延迟 (TTFT)" value="ttft"></el-option>
+              <el-option label="端到端输出吞吐" value="tps"></el-option>
             </el-select>
           </div>
           <div class="card-body">
@@ -198,7 +198,7 @@
     <!-- Cache Hit Rate Table -->
     <div class="saas-card mt-lg">
       <div class="card-header">
-        <span class="card-title">模型服务提供商及缓存命中审计</span>
+        <span class="card-title">适配器实例与缓存命中审计</span>
       </div>
       <div class="card-body p-none">
         <el-skeleton
@@ -216,10 +216,7 @@
             style="width: 100%"
             class="saas-table"
           >
-            <el-table-column
-              prop="name"
-              label="Provider / 实例"
-            ></el-table-column>
+            <el-table-column prop="name" label="适配器实例"></el-table-column>
             <el-table-column label="缓存命中率" min-width="120">
               <template #default="scope">
                 <div class="progress-wrapper">
@@ -277,6 +274,15 @@ function formatTokens(t) {
 function formatNumber(num) {
   if (!num && num !== 0) return "0";
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 // 动态根据系统/用户主题生成 ECharts 配置
@@ -343,102 +349,199 @@ function renderCharts() {
       .filter((m) => m.callCount > 0)
       .sort((a, b) => b.callCount - a.callCount);
 
-    const modelLabels = modelList.map((m) => `[${m.provider}] ${m.model}`);
-    const modelValues = modelList.map((m) => {
-      return store.slaMetric === "ttft"
-        ? Math.round(m.avgTtft || 0)
-        : m.avgTps || 0;
-    });
-
-    const hasZoom = modelLabels.length > 7;
-
-    slaChart.setOption(
-      {
-        backgroundColor: theme.backgroundColor,
-        textStyle: theme.textStyle,
-        grid: {
-          ...theme.grid,
-          bottom: hasZoom ? "24%" : "14%",
-          containLabel: true,
-        },
-        tooltip: {
-          ...theme.tooltip,
-          trigger: "axis",
-          axisPointer: { type: "shadow" },
-        },
-        xAxis: {
-          type: "category",
-          data: modelLabels,
-          axisLine: {
-            lineStyle: { color: theme.isDark ? "#475569" : "#cbd5e1" },
-          },
-          axisLabel: {
-            interval: 0,
-            rotate: 30,
-            fontSize: 10,
-            color: theme.isDark ? "#94a3b8" : "#64748b",
-            formatter: function (value) {
-              return value.length > 25 ? value.substring(0, 22) + "..." : value;
+    if (store.slaMetric === "ttft") {
+      const scatterData = modelList
+        .map((model) => {
+          const calls = model.performanceCalls ?? model.callCount ?? 0;
+          const avgPrompt =
+            model.avgPromptTokens ??
+            Math.round((model.promptTokens || 0) / Math.max(calls, 1));
+          const avgUncached =
+            model.avgUncachedInputTokens ??
+            Math.round(
+              Math.max(
+                0,
+                (model.promptTokens || 0) - (model.cacheHitTokens || 0),
+              ) / Math.max(calls, 1),
+            );
+          const cacheRate =
+            model.performanceCacheHitRate ??
+            ((model.promptTokens || 0) > 0
+              ? Math.round(
+                  ((model.cacheHitTokens || 0) / model.promptTokens) * 100,
+                )
+              : 0);
+          return {
+            name: `[${model.adapterName || model.provider}] ${model.model}`,
+            value: [
+              Math.max(1, avgUncached),
+              Number(model.avgTtft || 0),
+              calls,
+              avgPrompt,
+              Math.min(100, cacheRate),
+            ],
+          };
+        })
+        .filter((item) => item.value[1] > 0 && item.value[2] > 0);
+      const inputSizes = scatterData.map((item) => item.value[0]);
+      const minInput = Math.min(...inputSizes);
+      const maxInput = Math.max(...inputSizes);
+      const useLogAxis =
+        scatterData.length > 1 && minInput > 0 && maxInput / minInput >= 10;
+      slaChart.setOption(
+        {
+          backgroundColor: theme.backgroundColor,
+          textStyle: theme.textStyle,
+          grid: { ...theme.grid, bottom: 62, containLabel: true },
+          graphic:
+            scatterData.length > 0
+              ? []
+              : [
+                  {
+                    type: "text",
+                    left: "center",
+                    top: "middle",
+                    style: {
+                      text: "暂无可用的 TTFT 样本",
+                      fill: theme.isDark ? "#94a3b8" : "#64748b",
+                      fontSize: 13,
+                    },
+                  },
+                ],
+          tooltip: {
+            ...theme.tooltip,
+            trigger: "item",
+            formatter: ({ data }) => {
+              const [uncached, ttft, calls, prompt, cacheRate] = data.value;
+              return `<strong>${escapeHtml(data.name)}</strong><br/>平均输入：${formatNumber(prompt)} Token<br/>平均未缓存输入：${formatNumber(uncached)} Token<br/>平均首响应：${formatNumber(ttft)} ms<br/>缓存命中率：${cacheRate}%<br/>成功调用：${formatNumber(calls)}`;
             },
           },
-        },
-        yAxis: {
-          type: "value",
-          name:
-            store.slaMetric === "ttft"
-              ? "平均首字延迟 (ms)"
-              : "平均生成速率 (TPS)",
-          splitLine: {
-            lineStyle: { color: theme.isDark ? "#334155" : "#f1f5f9" },
-          },
-          axisLine: {
-            lineStyle: { color: theme.isDark ? "#475569" : "#cbd5e1" },
-          },
-        },
-        dataZoom: hasZoom
-          ? [
-              {
-                type: "slider",
-                show: true,
-                startValue: 0,
-                endValue: 6,
-                height: 8,
-                bottom: 5,
-                borderColor: "transparent",
-                backgroundColor: theme.isDark ? "#1e293b" : "#f1f5f9",
-                fillerColor: theme.isDark ? "#475569" : "#cbd5e1",
-                handleSize: 0,
-                showDetail: false,
-                moveHandleSize: 0,
-              },
-              {
-                type: "inside",
-                startValue: 0,
-                endValue: 6,
-                zoomOnMouseWheel: false,
-                moveOnMouseMove: true,
-                moveOnMouseWheel: true,
-              },
-            ]
-          : [],
-        series: [
-          {
-            name: store.slaMetric === "ttft" ? "平均延迟" : "生成速率",
-            type: "bar",
-            barWidth: "35%",
-            data: modelValues,
-            itemStyle: {
-              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: "#3b82f6" },
-                { offset: 1, color: "#2563eb" },
-              ]),
-              borderRadius: [4, 4, 0, 0],
+          xAxis: {
+            type: useLogAxis ? "log" : "value",
+            ...(useLogAxis ? { logBase: 10 } : { min: 0 }),
+            name: `平均未缓存输入 Token${useLogAxis ? "（对数轴）" : ""}`,
+            nameLocation: "middle",
+            nameGap: 42,
+            axisLabel: { formatter: (value) => formatTokens(value) },
+            splitLine: {
+              lineStyle: { color: theme.isDark ? "#334155" : "#f1f5f9" },
             },
           },
-        ],
-      },
-      true,
-    );
+          yAxis: {
+            type: "value",
+            name: "平均首响应延迟 (ms)",
+            axisLabel: { formatter: (value) => formatTokens(value) },
+            splitLine: {
+              lineStyle: { color: theme.isDark ? "#334155" : "#f1f5f9" },
+            },
+          },
+          series: [
+            {
+              name: "上下文规模 / 首响应延迟",
+              type: "scatter",
+              data: scatterData,
+              symbolSize: (value) =>
+                Math.min(34, Math.max(10, 8 + Math.sqrt(value[2] || 1) * 2)),
+              itemStyle: { color: "#3b82f6", opacity: 0.78 },
+              emphasis: { focus: "self", scale: 1.15 },
+            },
+          ],
+        },
+        true,
+      );
+    } else {
+      const modelLabels = modelList.map(
+        (m) => `[${m.adapterName || m.provider}] ${m.model}`,
+      );
+      const modelValues = modelList.map((m) => m.avgTps || 0);
+      const hasZoom = modelLabels.length > 7;
+      slaChart.setOption(
+        {
+          backgroundColor: theme.backgroundColor,
+          textStyle: theme.textStyle,
+          grid: {
+            ...theme.grid,
+            bottom: hasZoom ? "24%" : "14%",
+            containLabel: true,
+          },
+          tooltip: {
+            ...theme.tooltip,
+            trigger: "axis",
+            axisPointer: { type: "shadow" },
+          },
+          xAxis: {
+            type: "category",
+            data: modelLabels,
+            axisLine: {
+              lineStyle: { color: theme.isDark ? "#475569" : "#cbd5e1" },
+            },
+            axisLabel: {
+              interval: 0,
+              rotate: 30,
+              fontSize: 10,
+              color: theme.isDark ? "#94a3b8" : "#64748b",
+              formatter: function (value) {
+                return value.length > 25
+                  ? value.substring(0, 22) + "..."
+                  : value;
+              },
+            },
+          },
+          yAxis: {
+            type: "value",
+            name: "输出 Token / 请求秒数",
+            splitLine: {
+              lineStyle: { color: theme.isDark ? "#334155" : "#f1f5f9" },
+            },
+            axisLine: {
+              lineStyle: { color: theme.isDark ? "#475569" : "#cbd5e1" },
+            },
+          },
+          dataZoom: hasZoom
+            ? [
+                {
+                  type: "slider",
+                  show: true,
+                  startValue: 0,
+                  endValue: 6,
+                  height: 8,
+                  bottom: 5,
+                  borderColor: "transparent",
+                  backgroundColor: theme.isDark ? "#1e293b" : "#f1f5f9",
+                  fillerColor: theme.isDark ? "#475569" : "#cbd5e1",
+                  handleSize: 0,
+                  showDetail: false,
+                  moveHandleSize: 0,
+                },
+                {
+                  type: "inside",
+                  startValue: 0,
+                  endValue: 6,
+                  zoomOnMouseWheel: false,
+                  moveOnMouseMove: true,
+                  moveOnMouseWheel: true,
+                },
+              ]
+            : [],
+          series: [
+            {
+              name: "端到端吞吐",
+              type: "bar",
+              barWidth: "35%",
+              data: modelValues,
+              itemStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: "#3b82f6" },
+                  { offset: 1, color: "#2563eb" },
+                ]),
+                borderRadius: [4, 4, 0, 0],
+              },
+            },
+          ],
+        },
+        true,
+      );
+    }
   }
 
   // 2. Trend Chart (时序趋势走势)
@@ -792,13 +895,13 @@ onUnmounted(() => {
 
 .card-body {
   padding: 20px;
-  min-height: 280px;
+  min-height: 320px;
   position: relative;
 }
 
 .chart-container {
   width: 100%;
-  height: 280px;
+  height: 320px;
 }
 
 .mt-lg {
@@ -891,7 +994,7 @@ onUnmounted(() => {
   }
 
   .chart-container {
-    height: 240px;
+    height: 300px;
   }
 }
 </style>

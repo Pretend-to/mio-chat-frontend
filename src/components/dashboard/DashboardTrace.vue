@@ -94,7 +94,8 @@
                       </a>
                     </span>
                     <span>
-                      <i class="fa-solid fa-cube"></i> {{ turn.presetName }}
+                      <i class="fa-solid fa-route"></i>
+                      {{ turn.sourceLabel || "未知来源" }}
                     </span>
                   </div>
                   <div class="turn-footer">
@@ -132,7 +133,7 @@
                 <i class="fa-solid fa-chevron-left"></i> 返回
               </button>
               <span class="card-title">{{
-                isMobile ? "级联链路" : "调用级联链路分析 (Trace)"
+                isMobile ? "级联链路" : "调用级联链路分析"
               }}</span>
             </div>
             <span class="total-tokens-badge" v-if="store.activeTurn">
@@ -235,7 +236,7 @@
                               <strong>{{ step.candidatesTokens }}</strong></span
                             >
                             <span class="metric-item latency" v-if="step.ttft">
-                              首字延迟: <strong>{{ step.ttft }}ms</strong>
+                              首响应延迟: <strong>{{ step.ttft }}ms</strong>
                             </span>
                             <span
                               class="metric-item cache"
@@ -267,11 +268,10 @@
                                 }"
                               >
                                 {{
-                                  step.cacheHitTokens + step.cacheMissTokens > 0
+                                  step.promptTokens > 0
                                     ? Math.round(
                                         (step.cacheHitTokens /
-                                          (step.cacheHitTokens +
-                                            step.cacheMissTokens)) *
+                                          step.promptTokens) *
                                           100,
                                       )
                                     : 0
@@ -543,37 +543,20 @@ function getTurnTitle(turn) {
     return turn.sessionTitle;
   }
 
-  // 2. 如果是系统生成标题的任务
-  if (
-    turn.presetName &&
-    (turn.presetName.toLowerCase().startsWith("system_title") ||
-      turn.presetName.toLowerCase().includes("title"))
-  ) {
-    return "🏷️ 自动生成会话标题";
-  }
+  // 2. 系统任务仅根据稳定的 requestId 判断，不再读取 preset 字段
   if (turn.requestId && turn.requestId.startsWith("system_title")) {
     return "🏷️ 自动生成会话标题";
   }
 
   // 3. 如果是当前用户的会话，尝试联动 LocalStorage 兜底
   if (turn.contactorId && contactorsStore.contactors[turn.contactorId]) {
-    return (
-      contactorsStore.contactors[turn.contactorId].name ||
-      turn.presetName ||
-      "常规对话"
-    );
+    return contactorsStore.contactors[turn.contactorId].name || "常规对话";
   }
 
-  // 4. 兜底显示
-  if (
-    turn.presetName &&
-    turn.presetName !== "Direct Dialogue" &&
-    turn.presetName !== "undefined"
-  ) {
-    return turn.presetName;
-  }
-
-  return truncateRequestId(turn.requestId);
+  // 4. 会话尚未命名时显示来源，再兜底为请求 ID
+  return (
+    turn.channelName || turn.sourceLabel || truncateRequestId(turn.requestId)
+  );
 }
 
 function truncateRequestId(id) {
@@ -613,31 +596,39 @@ function formatTime(timestamp) {
   flex-direction: column;
   height: 100%;
   min-height: 0;
+  overflow: hidden;
 }
 
 .row-flex {
   display: grid;
   grid-template-columns: minmax(280px, 360px) 1fr;
+  grid-template-rows: minmax(0, 1fr);
   gap: 20px;
   flex: 1;
   min-height: 0;
   height: 100%;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 .left-col-4 {
   width: 100%;
   height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
 }
 
 .right-col-8 {
   width: 100%;
   height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
 }
 
 @media (max-width: 900px) {
@@ -756,6 +747,8 @@ function formatTime(timestamp) {
   /* 填满父列高，使内部 .*-scroll 的 flex:1 + overflow-y:auto 具备受限高度，恢复可滚动 */
   height: 100%;
   min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 .card-header {
@@ -765,6 +758,7 @@ function formatTime(timestamp) {
   justify-content: space-between;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .card-title {
@@ -788,6 +782,7 @@ function formatTime(timestamp) {
 /* Turns list scroll styling */
 .turns-list-scroll {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 12px;
 }
@@ -892,6 +887,7 @@ function formatTime(timestamp) {
 
 .trace-timeline-scroll {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 24px;
   background: var(--mio-bg-page, #f8fafc);
@@ -1081,6 +1077,7 @@ function formatTime(timestamp) {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .filter-row {

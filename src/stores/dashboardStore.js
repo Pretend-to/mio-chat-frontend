@@ -31,6 +31,8 @@ export const useDashboardStore = defineStore("dashboard", () => {
 
   // Rankings
   const userRankings = ref([]);
+  const sessionRankings = ref([]);
+  const sourceDistribution = ref([]);
 
   // Tool Call turns list & active trace details
   const toolCallTurns = ref([]);
@@ -63,7 +65,7 @@ export const useDashboardStore = defineStore("dashboard", () => {
 
   const providerStats = computed(() => {
     return modelDistribution.value.reduce((acc, curr) => {
-      const provName = curr.provider || "openai";
+      const provName = curr.adapterName || curr.provider || "历史未识别实例";
       let existing = acc.find((item) => item.name === provName);
       if (!existing) {
         existing = {
@@ -80,13 +82,12 @@ export const useDashboardStore = defineStore("dashboard", () => {
       existing.promptTokens += curr.promptTokens || 0;
       existing.compTokens += curr.candidatesTokens || 0;
       existing.hitTokens += curr.cacheHitTokens || 0;
-      existing.missTokens +=
-        curr.cacheMissTokens ||
-        (curr.promptTokens || 0) +
-          (curr.candidatesTokens || 0) -
-          (curr.cacheHitTokens || 0);
+      existing.missTokens += Math.max(
+        0,
+        (curr.promptTokens || 0) - (curr.cacheHitTokens || 0),
+      );
 
-      const total = existing.hitTokens + existing.missTokens;
+      const total = existing.promptTokens;
       existing.cacheHitRate =
         total > 0 ? Math.round((existing.hitTokens / total) * 100) : 0;
       return acc;
@@ -95,7 +96,7 @@ export const useDashboardStore = defineStore("dashboard", () => {
 
   const groupedProviders = computed(() => {
     const providerGroups = modelDistribution.value.reduce((acc, curr) => {
-      const name = curr.provider || "openai";
+      const name = curr.adapterName || curr.provider || "历史未识别实例";
       acc[name] = (acc[name] || 0) + (curr.totalTokens || 0);
       return acc;
     }, {});
@@ -191,10 +192,20 @@ export const useDashboardStore = defineStore("dashboard", () => {
 
         // Process Rankings
         userRankings.value = (data.userRanking || []).map((item) => ({
+          channelId: item.channelId,
+          channelName: item.channelName,
+          channelType: item.channelType,
           userId: item.userId,
+          calls: item.callCount,
+          sourceType: item.sourceType,
+          tokens: item.totalTokens,
+        }));
+        sessionRankings.value = (data.sessionRanking || []).map((item) => ({
+          ...item,
           calls: item.callCount,
           tokens: item.totalTokens,
         }));
+        sourceDistribution.value = data.sourceDistribution || [];
       }
     } catch (err) {
       if (curSeq === statsSeq) {
@@ -245,8 +256,13 @@ export const useDashboardStore = defineStore("dashboard", () => {
           requestId: t.requestId,
           user: t.userId,
           userIp: t.userIp || "未知",
-          presetName: t.presetName,
+          sourceType: t.sourceType,
+          sourceLabel: t.sourceLabel,
+          channelId: t.channelId,
+          channelName: t.channelName,
+          channelType: t.channelType,
           contactorId: t.contactorId,
+          sessionId: t.sessionId,
           sessionTitle: t.sessionTitle,
           createdAt: t.createdAt,
           totalTokens: t.totalTokens,
@@ -349,6 +365,8 @@ export const useDashboardStore = defineStore("dashboard", () => {
     historicalData,
     selectedProvider,
     userRankings,
+    sessionRankings,
+    sourceDistribution,
     toolCallTurns,
     activeTurn,
     failures,
