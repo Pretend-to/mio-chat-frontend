@@ -151,6 +151,7 @@ export function getValidOpenaiMessage(
 
       const flushAssistant = () => {
         if (currentAssistant) {
+          delete currentAssistant._step;
           if (pendingReasoning) {
             currentAssistant.reasoning_content = pendingReasoning;
             pendingReasoning = "";
@@ -201,22 +202,44 @@ export function getValidOpenaiMessage(
           currentAssistant.content =
             (currentAssistant.content || "") + (elm.data.text || "");
         } else if (elm.type === "tool_call") {
+          const currentStep = elm.data?.step;
+          if (
+            currentAssistant &&
+            currentAssistant.tool_calls &&
+            currentAssistant.tool_calls.length > 0 &&
+            currentAssistant._step !== undefined &&
+            currentStep !== undefined &&
+            currentAssistant._step !== currentStep
+          ) {
+            flushAssistant();
+          }
+
           if (!currentAssistant) {
             currentAssistant = { role: "assistant" };
+            if (currentStep !== undefined) {
+              currentAssistant._step = currentStep;
+            }
           }
           if (!currentAssistant.tool_calls) {
             currentAssistant.tool_calls = [];
+            if (currentStep !== undefined) {
+              currentAssistant._step = currentStep;
+            }
           }
-          currentAssistant.tool_calls.push({
+          const toolCallObj = {
             id: elm.data.id,
             type: "function",
             function: {
               name: elm.data.name,
               arguments: elm.data.parameters,
             },
-          });
+          };
+          if (elm.data.thoughtSignature) {
+            toolCallObj.thoughtSignature = elm.data.thoughtSignature;
+          }
+          currentAssistant.tool_calls.push(toolCallObj);
 
-          pendingToolMessages.push({
+          const toolMsgObj = {
             role: "tool",
             content:
               typeof elm.data.result === "string"
@@ -224,7 +247,11 @@ export function getValidOpenaiMessage(
                 : JSON.stringify(elm.data.result),
             tool_call_id: elm.data.id,
             name: elm.data.name,
-          });
+          };
+          if (elm.data.thoughtSignature) {
+            toolMsgObj.thoughtSignature = elm.data.thoughtSignature;
+          }
+          pendingToolMessages.push(toolMsgObj);
         }
       });
 
