@@ -306,6 +306,7 @@ function getChartTheme() {
       borderColor: isDark ? "#334155" : "#f1f5f9",
     },
     tooltip: {
+      appendTo: "body",
       backgroundColor: isDark ? "#1e293b" : "#ffffff",
       borderColor: isDark ? "#334155" : "#e2e8f0",
       borderWidth: 1,
@@ -314,6 +315,9 @@ function getChartTheme() {
         fontFamily: "Plus Jakarta Sans, sans-serif",
       },
       borderRadius: 8,
+      confine: false,
+      extraCssText: "z-index: 10000;",
+      renderMode: "html",
       boxShadow: isDark
         ? "0 4px 12px rgba(0, 0, 0, 0.4)"
         : "0 4px 12px rgba(0, 0, 0, 0.05)",
