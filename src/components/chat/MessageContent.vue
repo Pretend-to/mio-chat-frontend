@@ -1,7 +1,7 @@
 <template>
   <div
     v-for="(element, elmIndex) of content"
-    :key="elmIndex"
+    :key="element.data?.id ? `${element.type}-${element.data.id}` : `${element.type}-${elmIndex}`"
     class="inner-content"
   >
     <MdRenderer
@@ -44,6 +44,7 @@
     />
     <div
       v-else-if="element.type === 'blank'"
+      key="blank-message"
       class="blank-message"
       style="width: 10rem; height: 28.8px; position: relative"
     >
@@ -51,6 +52,7 @@
     </div>
     <div
       v-else-if="element.type === 'tool_call'"
+      :key="element.data?.id || ('tool-call-' + elmIndex)"
       class="tool-call-container-wrapper"
       style="align-self: flex-start; max-width: 100%"
     >
@@ -205,7 +207,13 @@
       v-else-if="element.type === 'crystallize_event'"
       iconClass="mio-icon-memory"
       title="整理记忆"
-      :statusText="element.data.status === 'running' ? '整理中' : '完成'"
+      :statusText="
+        element.data.status === 'running'
+          ? '整理中'
+          : element.data.status === 'failed'
+            ? '失败'
+            : '完成'
+      "
       :isLoading="element.data.status === 'running'"
       :collapsible="!!element.data.summary"
       :defaultExpanded="isCrystallizeExpanded(elmIndex)"

@@ -865,6 +865,23 @@ export const useContactorsStore = defineStore("contactors", () => {
           }
         }
       }
+    } else if (status === "failed") {
+      // 压缩失败只关闭状态条。不能覆盖已提交结晶，也不能清空待压缩记忆，
+      // 否则一次临时 LLM 故障就会造成事实丢失。
+      const message = getOrCreateMessage(contactorId, messageId);
+      if (message) {
+        const eventElm = message.content.find(
+          (c) => c.type === "crystallize_event",
+        );
+        if (eventElm) {
+          eventElm.data.status = "failed";
+        } else {
+          message.content.push({
+            type: "crystallize_event",
+            data: { status: "failed", summary: "" },
+          });
+        }
+      }
     } else if (status === "finished") {
       const displaySummary = summary || "";
 
