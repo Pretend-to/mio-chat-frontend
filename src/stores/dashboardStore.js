@@ -26,8 +26,9 @@ export const useDashboardStore = defineStore("dashboard", () => {
   // Historical data cache
   const historicalData = ref(null);
 
-  // Provider selection
+  // Provider & User selection
   const selectedProvider = ref("All");
+  const selectedUser = ref("All");
 
   // Rankings
   const userRankings = ref([]);
@@ -170,8 +171,12 @@ export const useDashboardStore = defineStore("dashboard", () => {
     const curSeq = ++statsSeq;
     loadingOverview.value = true;
     try {
+      const userParam =
+        selectedUser.value && selectedUser.value !== "All"
+          ? `&userId=${encodeURIComponent(selectedUser.value)}`
+          : "";
       const res = await configAPI.request(
-        `/api/admin/dashboard/stats?range=${timeRange.value}`,
+        `/api/admin/dashboard/stats?range=${timeRange.value}${userParam}`,
       );
       // 竞态丢弃：若已有更新的请求发出，丢弃当前滞后响应
       if (curSeq !== statsSeq) return;
@@ -196,9 +201,16 @@ export const useDashboardStore = defineStore("dashboard", () => {
           channelName: item.channelName,
           channelType: item.channelType,
           userId: item.userId,
+          rawUserId: item.rawUserId || item.userId,
           calls: item.callCount,
           sourceType: item.sourceType,
           tokens: item.totalTokens,
+          promptTokens: item.promptTokens || 0,
+          candidatesTokens: item.candidatesTokens || 0,
+          cacheHitTokens: item.cacheHitTokens || 0,
+          avgTokensPerCall: Math.round(
+            (item.totalTokens || 0) / Math.max(item.callCount || 1, 1),
+          ),
         }));
         sessionRankings.value = (data.sessionRanking || []).map((item) => ({
           ...item,
@@ -346,6 +358,11 @@ export const useDashboardStore = defineStore("dashboard", () => {
     }
   }
 
+  function setSelectedUser(userId) {
+    selectedUser.value = userId || "All";
+    return fetchHistoricalStats();
+  }
+
   function refreshData() {
     fetchHistoricalStats();
     fetchFailures();
@@ -364,6 +381,7 @@ export const useDashboardStore = defineStore("dashboard", () => {
     stats,
     historicalData,
     selectedProvider,
+    selectedUser,
     userRankings,
     sessionRankings,
     sourceDistribution,
@@ -395,6 +413,7 @@ export const useDashboardStore = defineStore("dashboard", () => {
     fetchTurns,
     fetchUserDetail,
     selectTurn,
+    setSelectedUser,
     refreshData,
   };
 });
