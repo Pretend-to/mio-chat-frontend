@@ -238,6 +238,9 @@
                             <span class="metric-item latency" v-if="step.ttft">
                               首响应延迟: <strong>{{ step.ttft }}ms</strong>
                             </span>
+                            <span class="metric-item tps" v-if="getStepTps(step)">
+                              端到端吞吐: <strong>{{ getStepTps(step) }} tok/s</strong>
+                            </span>
                             <span
                               class="metric-item cache"
                               v-if="step.cacheHitTokens !== undefined"
@@ -569,6 +572,14 @@ function truncateRequestId(id) {
 function formatNumber(num) {
   if (!num && num !== 0) return "0";
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+function getStepTps(step) {
+  if (step.tps !== undefined && step.tps !== null) return step.tps;
+  if (step.latency > 0 && step.candidatesTokens > 0) {
+    return Number(((step.candidatesTokens * 1000) / step.latency).toFixed(1));
+  }
+  return null;
 }
 // 紧凑 token 显示：≥1k 显示小数 k，≥1M 显示小数 M，与详情右上角 badge 一致
 function formatTokens(num) {
@@ -1014,6 +1025,10 @@ function formatTime(timestamp) {
 
 .metric-item.latency strong {
   color: #e6a23c;
+}
+
+.metric-item.tps strong {
+  color: #3b82f6;
 }
 
 .tools-called-box {

@@ -65,7 +65,7 @@ export const useDashboardStore = defineStore("dashboard", () => {
   });
 
   const providerStats = computed(() => {
-    return modelDistribution.value.reduce((acc, curr) => {
+    const list = modelDistribution.value.reduce((acc, curr) => {
       const provName = curr.adapterName || curr.provider || "历史未识别实例";
       let existing = acc.find((item) => item.name === provName);
       if (!existing) {
@@ -76,6 +76,7 @@ export const useDashboardStore = defineStore("dashboard", () => {
           calls: 0,
           promptTokens: 0,
           compTokens: 0,
+          totalTokens: 0,
         };
         acc.push(existing);
       }
@@ -87,12 +88,23 @@ export const useDashboardStore = defineStore("dashboard", () => {
         0,
         (curr.promptTokens || 0) - (curr.cacheHitTokens || 0),
       );
+      existing.totalTokens +=
+        curr.totalTokens ||
+        (curr.promptTokens || 0) + (curr.candidatesTokens || 0);
 
       const total = existing.promptTokens;
       existing.cacheHitRate =
         total > 0 ? Math.round((existing.hitTokens / total) * 100) : 0;
       return acc;
     }, []);
+
+    return list.sort((a, b) => {
+      const aUsage =
+        a.totalTokens || (a.promptTokens || 0) + (a.compTokens || 0);
+      const bUsage =
+        b.totalTokens || (b.promptTokens || 0) + (b.compTokens || 0);
+      return bUsage - aUsage;
+    });
   });
 
   const groupedProviders = computed(() => {

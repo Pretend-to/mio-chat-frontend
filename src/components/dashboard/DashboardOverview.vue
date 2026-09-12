@@ -216,34 +216,80 @@
             style="width: 100%"
             class="saas-table"
           >
-            <el-table-column prop="name" label="适配器实例"></el-table-column>
-            <el-table-column label="缓存命中率" min-width="120">
+            <el-table-column
+              prop="name"
+              label="适配器实例"
+              min-width="140"
+            ></el-table-column>
+            <el-table-column
+              prop="calls"
+              label="调用次数"
+              min-width="100"
+              align="center"
+              sortable
+            >
+              <template #default="scope">{{
+                formatNumber(scope.row.calls)
+              }}</template>
+            </el-table-column>
+            <el-table-column
+              prop="promptTokens"
+              label="输入 Tokens"
+              min-width="120"
+              align="center"
+              sortable
+            >
               <template #default="scope">
-                <div class="progress-wrapper">
-                  <span class="progress-num"
-                    >{{ scope.row.cacheHitRate }}%</span
+                <span :title="formatNumber(scope.row.promptTokens)">
+                  {{ formatTokens(scope.row.promptTokens) }}
+                </span>
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="compTokens"
+              label="输出 Tokens"
+              min-width="120"
+              align="center"
+              sortable
+            >
+              <template #default="scope">
+                <span :title="formatNumber(scope.row.compTokens)">
+                  {{ formatTokens(scope.row.compTokens) }}
+                </span>
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="cacheHitRate"
+              label="缓存命中率"
+              min-width="160"
+              align="center"
+              sortable
+            >
+              <template #default="scope">
+                <div
+                  class="progress-wrapper"
+                  :title="`命中: ${formatNumber(scope.row.hitTokens)} / 输入: ${formatNumber(scope.row.promptTokens)}`"
+                >
+                  <span
+                    class="progress-num"
+                    :class="{
+                      'rate-high': scope.row.cacheHitRate >= 70,
+                      'rate-mid':
+                        scope.row.cacheHitRate >= 40 &&
+                        scope.row.cacheHitRate < 70,
+                      'rate-low': scope.row.cacheHitRate < 40,
+                    }"
                   >
+                    {{ scope.row.cacheHitRate }}%
+                  </span>
                   <el-progress
                     :percentage="scope.row.cacheHitRate"
                     :stroke-width="6"
-                    :color="scope.row.cacheHitRate > 50 ? '#10b981' : '#3b82f6'"
+                    :color="getHitRateColor(scope.row.cacheHitRate)"
                     :show-text="false"
                   />
                 </div>
               </template>
-            </el-table-column>
-            <el-table-column prop="hitTokens" label="命中 Token 数">
-              <template #default="scope">{{
-                formatNumber(scope.row.hitTokens)
-              }}</template>
-            </el-table-column>
-            <el-table-column prop="missTokens" label="未命中 Token 数">
-              <template #default="scope">{{
-                formatNumber(scope.row.missTokens)
-              }}</template>
-            </el-table-column>
-            <el-table-column prop="calls" label="总调用次数">
-              <template #default="scope">{{ scope.row.calls }}</template>
             </el-table-column>
           </el-table>
         </div>
@@ -266,9 +312,22 @@ let themeObserver = null;
 // Helper formatters
 function formatTokens(t) {
   if (!t && t !== 0) return "0";
-  if (t >= 1000000) return (t / 1000000).toFixed(2) + "m";
-  if (t >= 1000) return (t / 1000).toFixed(1) + "k";
-  return t.toString();
+  const num = Number(t);
+  if (isNaN(num) || num === 0) return "0";
+  if (num >= 1000000000)
+    return (num / 1000000000).toFixed(2).replace(/\.?0+$/, "") + "b";
+  if (num >= 1000000)
+    return (num / 1000000).toFixed(2).replace(/\.?0+$/, "") + "m";
+  if (num >= 1000)
+    return (num / 1000).toFixed(1).replace(/\.?0+$/, "") + "k";
+  return num.toString();
+}
+
+function getHitRateColor(rate) {
+  if (rate >= 70) return "#10b981";
+  if (rate >= 40) return "#34d399";
+  if (rate > 0) return "#60a5fa";
+  return "#cbd5e1";
 }
 
 function formatNumber(num) {
@@ -918,16 +977,47 @@ onUnmounted(() => {
 
 /* Cache hit table & progress bar styling */
 .progress-wrapper {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 170px;
+  margin: 0 auto;
+}
+
+.progress-wrapper :deep(.el-progress) {
+  flex: 1;
+  min-width: 60px;
+  max-width: 110px;
+}
+
+:deep(.saas-table td.el-table__cell.is-center .cell) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .progress-num {
   font-size: 13px;
   font-weight: 600;
-  width: 36px;
-  color: var(--mio-text-primary, #334155);
+  min-width: 38px;
+  text-align: right;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+.progress-num.rate-high {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.progress-num.rate-mid {
+  color: #059669;
+  font-weight: 600;
+}
+
+.progress-num.rate-low {
+  color: var(--mio-text-secondary, #64748b);
 }
 
 :deep(.saas-table) {

@@ -191,7 +191,11 @@
 
             <el-table-column label="Token 构成" min-width="170">
               <template #default="scope">
-                <el-tooltip placement="top" :show-after="50">
+                <el-tooltip
+                  placement="top"
+                  :show-after="50"
+                  popper-class="model-bar-tooltip-popper"
+                >
                   <template #content>
                     <div class="model-bar-tooltip">
                       <div class="tooltip-header">
@@ -202,8 +206,11 @@
                           <span class="tooltip-label">
                             <i class="legend-dot output"></i>输出:
                           </span>
-                          <span class="tooltip-val">
-                            {{ formatNumber(scope.row.candidatesTokens) }} Token
+                          <span
+                            class="tooltip-val"
+                            :title="formatNumber(scope.row.candidatesTokens)"
+                          >
+                            {{ formatTokens(scope.row.candidatesTokens) }} Tokens
                             ({{
                               scope.row.tokens > 0
                                 ? Math.round(
@@ -219,8 +226,9 @@
                           <span class="tooltip-label">
                             <i class="legend-dot input"></i>输入:
                           </span>
-                          <span class="tooltip-val">
-                            {{
+                          <span
+                            class="tooltip-val"
+                            :title="
                               formatNumber(
                                 Math.max(
                                   0,
@@ -228,8 +236,18 @@
                                     scope.row.cacheHitTokens,
                                 ),
                               )
+                            "
+                          >
+                            {{
+                              formatTokens(
+                                Math.max(
+                                  0,
+                                  scope.row.promptTokens -
+                                    scope.row.cacheHitTokens,
+                                ),
+                              )
                             }}
-                            Token ({{
+                            Tokens ({{
                               scope.row.tokens > 0
                                 ? Math.round(
                                     (Math.max(
@@ -248,8 +266,11 @@
                           <span class="tooltip-label">
                             <i class="legend-dot cache"></i>缓存输入:
                           </span>
-                          <span class="tooltip-val">
-                            {{ formatNumber(scope.row.cacheHitTokens) }} Token
+                          <span
+                            class="tooltip-val"
+                            :title="formatNumber(scope.row.cacheHitTokens)"
+                          >
+                            {{ formatTokens(scope.row.cacheHitTokens) }} Tokens
                             ({{
                               scope.row.tokens > 0
                                 ? Math.round(
@@ -264,8 +285,10 @@
                         <div class="tooltip-divider"></div>
                         <div class="tooltip-row total">
                           <span class="tooltip-label">总计:</span>
-                          <span class="tooltip-val"
-                            >{{ formatNumber(scope.row.tokens) }} Token</span
+                          <span
+                            class="tooltip-val"
+                            :title="formatNumber(scope.row.tokens)"
+                            >{{ formatTokens(scope.row.tokens) }} Tokens</span
                           >
                         </div>
                       </div>
@@ -537,7 +560,11 @@
               <span :title="row.model">{{ row.model }}</span
               ><small>{{ row.adapterName }}</small>
             </div>
-            <el-tooltip placement="top" :show-after="50">
+            <el-tooltip
+              placement="top"
+              :show-after="50"
+              popper-class="model-bar-tooltip-popper"
+            >
               <template #content>
                 <div class="model-bar-tooltip">
                   <div class="tooltip-header">
@@ -551,31 +578,42 @@
                       <span class="tooltip-label">
                         <i class="legend-dot output"></i>输出:
                       </span>
-                      <span class="tooltip-val"
-                        >{{ formatNumber(row.candidatesTokens) }} Token</span
+                      <span
+                        class="tooltip-val"
+                        :title="formatNumber(row.candidatesTokens)"
+                        >{{ formatTokens(row.candidatesTokens) }} Tokens</span
                       >
                     </div>
                     <div class="tooltip-row">
                       <span class="tooltip-label">
                         <i class="legend-dot input"></i>输入:
                       </span>
-                      <span class="tooltip-val"
-                        >{{ formatNumber(row.uncachedInputTokens) }} Token</span
+                      <span
+                        class="tooltip-val"
+                        :title="formatNumber(row.uncachedInputTokens)"
+                        >{{
+                          formatTokens(row.uncachedInputTokens)
+                        }}
+                        Tokens</span
                       >
                     </div>
                     <div class="tooltip-row">
                       <span class="tooltip-label">
                         <i class="legend-dot cache"></i>缓存输入:
                       </span>
-                      <span class="tooltip-val"
-                        >{{ formatNumber(row.cacheHitTokens) }} Token</span
+                      <span
+                        class="tooltip-val"
+                        :title="formatNumber(row.cacheHitTokens)"
+                        >{{ formatTokens(row.cacheHitTokens) }} Tokens</span
                       >
                     </div>
                     <div class="tooltip-divider"></div>
                     <div class="tooltip-row total">
                       <span class="tooltip-label">总计:</span>
-                      <span class="tooltip-val"
-                        >{{ formatNumber(row.totalTokens) }} Token</span
+                      <span
+                        class="tooltip-val"
+                        :title="formatNumber(row.totalTokens)"
+                        >{{ formatTokens(row.totalTokens) }} Tokens</span
                       >
                     </div>
                   </div>
@@ -880,8 +918,12 @@ function segmentStyle(value) {
 
 function formatTokens(value) {
   const number = Number(value || 0);
-  if (number >= 1_000_000) return `${(number / 1_000_000).toFixed(1)}M`;
-  if (number >= 1_000) return `${(number / 1_000).toFixed(1)}K`;
+  if (number >= 1_000_000_000)
+    return `${(number / 1_000_000_000).toFixed(2).replace(/\.?0+$/, "")}B`;
+  if (number >= 1_000_000)
+    return `${(number / 1_000_000).toFixed(2).replace(/\.?0+$/, "")}M`;
+  if (number >= 1_000)
+    return `${(number / 1_000).toFixed(1).replace(/\.?0+$/, "")}k`;
   return number.toLocaleString("zh-CN");
 }
 
@@ -1231,11 +1273,37 @@ function formatNumber(value) {
 .bar.cache {
   background: #8fa0ee;
 }
+:global(.el-popper.model-bar-tooltip-popper) {
+  background: #18181b !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5) !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+}
+
+:global(.el-popper.model-bar-tooltip-popper .el-popper__arrow::before) {
+  background: #18181b !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+:global(html:not(.dark):not([data-theme="dark"]) .el-popper.model-bar-tooltip-popper) {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #334155 !important;
+}
+
+:global(html:not(.dark):not([data-theme="dark"]) .el-popper.model-bar-tooltip-popper .el-popper__arrow::before) {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+}
+
 .model-bar-tooltip {
   min-width: 170px;
-  padding: 3px 1px;
+  padding: 2px 0;
   font-size: 12px;
   line-height: 1.5;
+  color: #f8fafc;
 }
 .tooltip-header {
   font-weight: 600;
@@ -1246,10 +1314,12 @@ function formatNumber(value) {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  color: #ffffff;
 }
 .tooltip-header small {
   opacity: 0.7;
   font-weight: normal;
+  color: rgba(255, 255, 255, 0.7);
 }
 .tooltip-list {
   display: flex;
@@ -1266,19 +1336,26 @@ function formatNumber(value) {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  color: #cbd5e1;
 }
 .tooltip-val {
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-weight: 600;
+  color: #ffffff;
 }
 .tooltip-divider {
   height: 1px;
-  background: rgba(255, 255, 255, 0.12);
-  margin: 3px 0;
+  background: rgba(255, 255, 255, 0.14);
+  margin: 4px 0;
 }
 .tooltip-row.total {
   font-weight: 700;
-  opacity: 0.95;
+  opacity: 1;
+  color: #ffffff;
+}
+.tooltip-row.total .tooltip-label {
+  color: #ffffff;
+  font-weight: 700;
 }
 .model-bars {
   padding: 16px 20px 22px;

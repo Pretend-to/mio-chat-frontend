@@ -50,3 +50,19 @@
     overflow: hidden !important;
   }
 }
+
+// Tooltip & Popper Dark Theme Consistency
+[data-theme="dark"],
+html.dark {
+  .el-popper.is-dark {
+    background: #18181b !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+
+    .el-popper__arrow::before {
+      background: #18181b !important;
+      border-color: rgba(255, 255, 255, 0.14) !important;
+    }
+  }
+}
