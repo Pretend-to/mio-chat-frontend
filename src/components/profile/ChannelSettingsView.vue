@@ -174,6 +174,7 @@
           <div class="field-label">工具插件</div>
           <div class="field-value">
             <el-tag type="success" effect="plain">ai-plugin</el-tag>
+            <el-tag type="success" effect="plain">terminal-pty</el-tag>
           </div>
         </div>
         <div class="setting-field">
@@ -181,8 +182,8 @@
           <div class="field-value">AUTO（固定）</div>
         </div>
         <div class="card-desc">
-          Channel 固定启用完整 ai-plugin，不支持按渠道增删工具。普通 Web
-          会话的工具配置不受影响。
+          Channel 固定启用完整 ai-plugin 与
+          terminal-pty，不支持按渠道增删工具。普通 Web 会话的工具配置不受影响。
         </div>
       </div>
     </div>
