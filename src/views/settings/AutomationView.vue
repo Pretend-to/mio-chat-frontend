@@ -22,12 +22,13 @@
         label-width="140px"
         label-position="left"
       >
-        <el-form-item label="任务执行渠道" prop="system_llm_channel">
+        <el-form-item label="系统任务渠道" prop="system_llm_channel">
           <el-select
             v-model="formData.system_llm_channel"
             placeholder="默认使用第一个可用渠道"
             clearable
             style="width: 400px"
+            @change="handleChannelChange"
           >
             <el-option
               v-for="adapter in allAdapters"
@@ -48,7 +49,42 @@
           </el-select>
           <template #extra>
             <span class="form-item-tip">
-              指定用于执行自动化任务的 LLM 渠道。留空则自动选择第一个可用渠道。
+              用于标题生成等后台系统任务。留空则自动选择第一个可用渠道。
+            </span>
+          </template>
+        </el-form-item>
+
+        <el-form-item label="系统任务模型" prop="system_llm_model">
+          <el-select
+            v-model="formData.system_llm_model"
+            placeholder="默认使用渠道首选模型"
+            clearable
+            filterable
+            style="width: 400px"
+          >
+            <el-option-group
+              v-for="group in channelModelGroups"
+              :key="group.label"
+              :label="group.label"
+            >
+              <el-option
+                v-for="model in group.models"
+                :key="model"
+                :label="model"
+                :value="model"
+              />
+            </el-option-group>
+            <el-option
+              v-for="model in flatChannelModels"
+              :key="model"
+              :label="model"
+              :value="model"
+            />
+          </el-select>
+          <template #extra>
+            <span class="form-item-tip">
+              指定后台系统任务使用的模型；渠道定时任务仍继承各自 Channel
+              的模型。留空则使用所选渠道的首选模型。
             </span>
           </template>
         </el-form-item>
@@ -434,6 +470,7 @@ const saving = ref(false);
 // 通用配置数据
 const formData = reactive({
   system_llm_channel: "",
+  system_llm_model: "",
   system_llm_title_prompt: "",
 });
 const originalData = reactive({});
@@ -543,11 +580,64 @@ const allAdapters = computed(() => {
   }));
 });
 
+// 获取当前有效选中的渠道（留空时取首个可用渠道）
+const currentEffectiveChannel = computed(() => {
+  return formData.system_llm_channel || allAdapters.value[0]?.id || "";
+});
+
+// 级联获取当前渠道的分组模型列表
+const channelModelGroups = computed(() => {
+  const channel = currentEffectiveChannel.value;
+  if (!channel) return [];
+  const modelGroups = config.getLlmModels(channel);
+  if (
+    Array.isArray(modelGroups) &&
+    modelGroups.length > 0 &&
+    modelGroups[0]?.models
+  ) {
+    return modelGroups.map((group) => ({
+      label: group.owner || group.group || "常用模型",
+      models: group.models || [],
+    }));
+  }
+  return [];
+});
+
+// 平铺模型列表（兼容无分组场景）
+const flatChannelModels = computed(() => {
+  if (channelModelGroups.value.length > 0) return [];
+  const channel = currentEffectiveChannel.value;
+  if (!channel) return [];
+  const modelGroups = config.getLlmModels(channel);
+  if (Array.isArray(modelGroups)) {
+    return modelGroups.flatMap((g) =>
+      typeof g === "string" ? [g] : g.models || [],
+    );
+  }
+  return [];
+});
+
+// 渠道变更时，如果已选模型不在新渠道可用模型中，重置模型选择
+const handleChannelChange = () => {
+  const allAvailable = [
+    ...channelModelGroups.value.flatMap((g) => g.models),
+    ...flatChannelModels.value,
+  ];
+  if (
+    formData.system_llm_model &&
+    allAvailable.length > 0 &&
+    !allAvailable.includes(formData.system_llm_model)
+  ) {
+    formData.system_llm_model = "";
+  }
+};
+
 // 加载配置与任务
 const loadData = async () => {
   try {
     const systemConfig = await configStore.fetchConfigSection("system");
     formData.system_llm_channel = systemConfig.system_llm_channel || "";
+    formData.system_llm_model = systemConfig.system_llm_model || "";
     formData.system_llm_title_prompt =
       systemConfig.system_llm_title_prompt || "";
     Object.assign(originalData, formData);
@@ -591,6 +681,7 @@ const handleSave = async () => {
   try {
     await configStore.updateConfigSection("system", {
       system_llm_channel: formData.system_llm_channel,
+      system_llm_model: formData.system_llm_model,
       system_llm_title_prompt: formData.system_llm_title_prompt,
     });
     Object.assign(originalData, formData);
