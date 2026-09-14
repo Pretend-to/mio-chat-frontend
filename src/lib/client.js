@@ -61,6 +61,7 @@ export default class Client extends EventEmitter {
     this.id = null; // Loaded from storage
     this.code = null; // Loaded from storage
     this.isConnected = false; // Dynamic
+    this.isConnecting = false; // Dynamic
     this.socket = null; // Dynamic
     this.qq = null; // Web
     this.bot_qq = null; // Web
@@ -142,31 +143,32 @@ export default class Client extends EventEmitter {
    */
   async preInit() {
     const localBaseInfo = this.config.getBaseConfig();
+    let baseInfoPromise;
     if (Object.keys(localBaseInfo).length === 0) {
-      await this.loadOriginBaseInfo();
+      baseInfoPromise = this.loadOriginBaseInfo();
     } else {
-      this.loadOriginBaseInfo();
       this.loadBaseInfo(localBaseInfo);
+      baseInfoPromise = this.loadOriginBaseInfo();
     }
 
-    const localStorage = await this.getLocalStorage();
+    // Only credentials, contact metadata and the previous boot id gate reconnect.
+    // Base info, profile settings and message shards can hydrate in parallel.
+    const [localStorage, storedBootId] = await Promise.all([
+      this.getLocalStorage(),
+      localforage.getItem("mio_boot_id").catch(() => null),
+    ]);
     if (localStorage) {
-      await this.loadLocalStorage(localStorage);
+      await this.loadLocalStorage(localStorage, { hydrateMessages: false });
     }
-
-    // 读取上次登录时记录的后端进程启动标识（用于重启检测）
-    try {
-      const storedBootId = await localforage.getItem("mio_boot_id");
-      this._bootId = storedBootId || null;
-    } catch (e) {
-      this._bootId = null;
-    }
-
-    // 加载客户端本地设置，覆盖硬编码的 name / title / avatar
-    await this.loadClientSettings();
+    this._bootId = storedBootId || null;
 
     this.inited = true;
     this.emit("loaded");
+
+    this._backgroundInitPromise = Promise.allSettled([
+      baseInfoPromise,
+      this.loadClientSettings(),
+    ]);
   }
 
   async genDefaultConctor(info) {
@@ -574,10 +576,20 @@ export default class Client extends EventEmitter {
     if (this.everLogin()) {
       console.log("Detected cache, attempting automatic reconnection");
       this.isConnected = false;
-      this.login(this.code);
+      this.isConnecting = true;
+      this.emit("connection_connecting", true);
+      this.login(this.code).catch(() => undefined);
     } else {
       console.log("Not logged in before, please login first");
     }
+
+    // Socket setup is synchronous up to the handshake. Defer the heavier message
+    // shard reads until after it has started so local history cannot delay online.
+    setTimeout(() => {
+      this.hydrateLocalMessages().catch((error) => {
+        console.warn("[Client] 后台恢复本地消息失败:", error);
+      });
+    }, 0);
   }
 
   getContactors() {
@@ -636,66 +648,83 @@ export default class Client extends EventEmitter {
    * Load user information from localStorage
    * @param {object} client User information
    */
-  async loadLocalStorage(client) {
+  async loadLocalStorage(client, { hydrateMessages = true } = {}) {
     this.id = client.id || this.id || this.genFakeId();
     this.code = client.code;
+
+    const storedContactors = Array.isArray(client.contactList)
+      ? client.contactList
+      : [];
+    const metadataContactors = storedContactors.map((item) => ({
+      ...item,
+      messageChain: [],
+    }));
+    this._pendingMessageHydrationSource = storedContactors;
 
     const store = getStore();
     if (!store) {
       // Pinia not ready yet — cache for replay once mounted
-      this._pendingContactList = client.contactList || [];
+      this._pendingContactList = metadataContactors;
       return;
     }
-    if (client.contactList && client.contactList.length !== 0) {
-      let needsMigration = false;
-      const contactList = await Promise.all(
-        client.contactList.map(async (item) => {
-          // 渠道 Bot 本地绝对不存储任何历史消息，保持空链等待进入会话时由 Socket 实时拉取
-          if (item.platform === "channel") {
-            return { ...item, messageChain: [] };
+    store.loadContactors(metadataContactors);
+    if (hydrateMessages) {
+      await this.hydrateLocalMessages();
+    }
+  }
+
+  async hydrateLocalMessages() {
+    const source = this._pendingMessageHydrationSource;
+    if (!Array.isArray(source) || source.length === 0) return;
+
+    const store = getStore();
+    if (!store) return;
+    this._pendingMessageHydrationSource = undefined;
+
+    let needsMigration = false;
+    await Promise.all(
+      source.map(async (item) => {
+        if (item.platform === "channel") return;
+
+        let messageChain = null;
+        if (Array.isArray(item.messageChain) && item.messageChain.length > 0) {
+          messageChain = item.messageChain;
+          needsMigration = true;
+          try {
+            await localforage.setItem(
+              `mio_msg_${item.id}`,
+              JSON.stringify(messageChain),
+            );
+          } catch (error) {
+            console.error(`[Client] 自动迁移会话 ${item.id} 消息失败:`, error);
           }
-          // 1. 如果旧版数据中内嵌了 messageChain，无感自动迁移至独立分片 mio_msg_*
-          if (
-            Array.isArray(item.messageChain) &&
-            item.messageChain.length > 0
-          ) {
-            needsMigration = true;
-            try {
-              await localforage.setItem(
-                `mio_msg_${item.id}`,
-                JSON.stringify(item.messageChain),
-              );
-            } catch (e) {
-              console.error(`[Client] 自动迁移会话 ${item.id} 消息失败:`, e);
-            }
-            return item;
-          }
-          // 2. 如果是新版分片存储，从 mio_msg_* 并发读取独立消息链
+        } else {
           try {
             const splitRaw = await localforage.getItem(`mio_msg_${item.id}`);
-            if (splitRaw) {
-              const splitChain =
-                typeof splitRaw === "string" ? JSON.parse(splitRaw) : splitRaw;
-              if (Array.isArray(splitChain)) {
-                return { ...item, messageChain: splitChain };
-              }
-            }
-          } catch (e) {
-            console.error(`[Client] 加载分片消息失败 (${item.id}):`, e);
+            const splitChain =
+              typeof splitRaw === "string" ? JSON.parse(splitRaw) : splitRaw;
+            if (Array.isArray(splitChain)) messageChain = splitChain;
+          } catch (error) {
+            console.error(`[Client] 加载分片消息失败 (${item.id}):`, error);
           }
-          return { ...item, messageChain: [] };
-        }),
-      );
-      store.loadContactors(contactList);
+        }
 
-      if (needsMigration) {
-        console.log(
-          "[Client] 自动完成历史会话消息分片迁移，正在同步瘦身元数据...",
-        );
-        this._setLocalStorage();
-      }
-    } else {
-      store.loadContactors([]);
+        const current = store.contactors[String(item.id)];
+        // Do not overwrite messages that arrived from the server or user while
+        // background hydration was running.
+        if (
+          current &&
+          current.messageChain.length === 0 &&
+          messageChain?.length
+        ) {
+          store.hydrateContactorMessages(String(item.id), messageChain);
+        }
+      }),
+    );
+
+    if (needsMigration) {
+      console.log("[Client] 已在后台完成历史会话消息分片迁移");
+      await this._setLocalStorage();
     }
   }
   /**
@@ -809,6 +838,8 @@ export default class Client extends EventEmitter {
    */
   async login(code) {
     this.code = code;
+    this.isConnecting = true;
+    this.emit("connection_connecting", true);
 
     return new Promise((resolve, reject) => {
       const socket = new Socket(
@@ -820,11 +851,13 @@ export default class Client extends EventEmitter {
       socket.on("connect", async (info) => {
         console.log("Login successful");
         this.isConnected = true;
+        this.isConnecting = false;
         this.socket = socket;
         const connStore = getStore("connection");
         if (connStore) connStore.setConnected(true);
         this.emit("socket_ready", socket);
         this.emit("connection_changed", true);
+        this.emit("connection_connecting", false);
         this.config.setLlmModels(info.models);
         // 模型规格元数据（登录即下发，按权限筛选），供 MemoryManager 等展示动态压缩上限
         const configStore = getStore("config");
@@ -850,6 +883,10 @@ export default class Client extends EventEmitter {
         }
         this._bootId = info.bootId || this._bootId;
         this.saveNow(); // 立即持久化新 bootId
+
+        // Connection status is already online; wait only before configuration-
+        // dependent post-login setup such as default contact creation.
+        await this._backgroundInitPromise;
 
         if (this.contactList.length == 0) {
           this.genDefaultConctor(info);
@@ -915,18 +952,31 @@ export default class Client extends EventEmitter {
       socket.on("connect_error", (error) => {
         console.log("Login failed", error);
         this.isConnected = false;
+        this.isConnecting = false;
         const connStore = getStore("connection");
         if (connStore) connStore.setConnected(false);
         this.emit("connection_changed", false);
+        this.emit("connection_connecting", false);
         this.emit("connect_error", error);
         reject(error.message);
+      });
+
+      socket.on("connecting", (status) => {
+        this.isConnecting = !!status;
+        const connStore = getStore("connection");
+        if (connStore) connStore.setConnecting(!!status);
+        this.emit("connection_connecting", !!status);
       });
 
       // 监听连接状态变化并同步到 client
       socket.on("connection_changed", (status) => {
         this.isConnected = !!status;
+        if (status) this.isConnecting = false;
         const connStore = getStore("connection");
-        if (connStore) connStore.setConnected(!!status);
+        if (connStore) {
+          connStore.setConnected(!!status);
+          if (status) connStore.setConnecting(false);
+        }
         this.emit("connection_changed", status);
       });
 

@@ -34,6 +34,7 @@ export const useConnectionStore = defineStore("connection", () => {
         client.isConnected,
       );
       isConnected.value = client.isConnected;
+      isConnecting.value = client.isConnecting;
     };
 
     // 初始同步
@@ -43,8 +44,16 @@ export const useConnectionStore = defineStore("connection", () => {
     client.on("connection_changed", (status) => {
       console.log("[connectionStore] connection_changed received:", status);
       isConnected.value = !!status;
-      if (!status) {
+      if (!status && !client.isConnecting) {
         isConnecting.value = false;
+      }
+    });
+
+    client.on("connection_connecting", (status) => {
+      isConnecting.value = !!status;
+      if (status) {
+        isConnected.value = false;
+        error.value = null;
       }
     });
 

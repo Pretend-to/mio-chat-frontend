@@ -53,40 +53,39 @@ connectionStore.initSync(client);
 
 app.mount("#app");
 
-// 注册 Service Worker
+// 现有 worker 会在导航阶段直接接管；尽早注册可让首次访问在 UI 挂载后
+// 立即预热 app shell，而不必再等待 window.load。
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/service-worker.v5.js")
-      .then((registration) => {
-        console.log("Service Worker registered: ", registration);
+  navigator.serviceWorker
+    .register("/service-worker.v5.js", { updateViaCache: "none" })
+    .then((registration) => {
+      console.log("Service Worker registered: ", registration);
 
-        // 发送消息到 Service Worker
-        const isLocalhost =
-          window.location.hostname === "localhost" ||
-          window.location.hostname === "127.0.0.1";
-        const isDev = process.env.NODE_ENV === "development" || isLocalhost;
+      // 发送消息到 Service Worker
+      const isLocalhost =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1";
+      const isDev = process.env.NODE_ENV === "development" || isLocalhost;
 
-        if (registration.active) {
-          // 确保 active 已经存在
-          registration.active.postMessage({
-            type: "SET_DEV_MODE",
-            isDevMode: isDev,
-          });
-        } else {
-          // 如果 active 为 null，等待激活后再发送消息 (可选)
-          navigator.serviceWorker.addEventListener("controllerchange", () => {
-            if (navigator.serviceWorker.controller) {
-              navigator.serviceWorker.controller.postMessage({
-                type: "SET_DEV_MODE",
-                isDevMode: isDev,
-              });
-            }
-          });
-        }
-      })
-      .catch((error) => {
-        console.log("Service Worker registration failed: ", error);
-      });
-  });
+      if (registration.active) {
+        // 确保 active 已经存在
+        registration.active.postMessage({
+          type: "SET_DEV_MODE",
+          isDevMode: isDev,
+        });
+      } else {
+        // 如果 active 为 null，等待激活后再发送消息 (可选)
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+              type: "SET_DEV_MODE",
+              isDevMode: isDev,
+            });
+          }
+        });
+      }
+    })
+    .catch((error) => {
+      console.log("Service Worker registration failed: ", error);
+    });
 }

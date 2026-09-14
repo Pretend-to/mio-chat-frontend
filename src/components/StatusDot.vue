@@ -20,6 +20,10 @@ const isOnline = computed(() => {
   return connectionStore.isConnected || client.isConnected;
 });
 
+const isConnecting = computed(
+  () => !isOnline.value && connectionStore.isConnecting,
+);
+
 const dotStyle = computed(() => ({
   width: props.size,
   height: props.size,
@@ -30,7 +34,11 @@ const dotStyle = computed(() => ({
 <template>
   <div
     class="status-dot"
-    :class="{ online: isOnline, offline: !isOnline }"
+    :class="{
+      online: isOnline,
+      connecting: isConnecting,
+      offline: !isOnline && !isConnecting,
+    }"
     :style="dotStyle"
   ></div>
 </template>
@@ -47,7 +55,27 @@ const dotStyle = computed(() => ({
   background: linear-gradient(to bottom, #34ee8f, #36dd96);
 }
 
+.status-dot.connecting {
+  background: #e6a23c;
+  animation: status-dot-pulse 1s ease-in-out infinite alternate;
+}
+
 .status-dot.offline {
   background: #ccc;
+}
+
+@keyframes status-dot-pulse {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-dot.connecting {
+    animation: none;
+  }
 }
 </style>

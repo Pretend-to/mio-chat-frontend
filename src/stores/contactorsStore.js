@@ -1365,6 +1365,20 @@ export const useContactorsStore = defineStore("contactors", () => {
     client.setLocalStorage();
   }
 
+  function hydrateContactorMessages(id, messages) {
+    const contactor = contactors.value[id];
+    if (!contactor || contactor.messageChain.length > 0 || !messages.length) {
+      return false;
+    }
+    contactor.messageChain = messages.map((message) =>
+      message && (message.status === "completed" || message.status === "failed")
+        ? markRaw(message)
+        : message,
+    );
+    updateContactorSummary(contactor);
+    return true;
+  }
+
   /**
    * 仅提取联系人纯元数据（不含巨型 messageChain，体积通常仅 1~5 KB）
    */
@@ -1439,6 +1453,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     loadContactorName,
     updateContactorSummary,
     updateContactor,
+    hydrateContactorMessages,
     appendOrUpdateMessage,
     updateMessageUsage,
     getOrCreateMessage,

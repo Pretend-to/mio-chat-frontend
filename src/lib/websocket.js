@@ -67,12 +67,8 @@ export default class Socket extends EventEmitter {
     console.log(
       `SocketIO transport established via: ${transport}. Session is active.`,
     );
-    // 如果是意外断连后的重连成功，通知上层显示提示
-    if (this._unexpectedDisconnect) {
-      this._unexpectedDisconnect = false;
-      this.emit("connection_restored");
-    }
-    this.emit("connection_changed", true);
+    // Transport ready is not the same as business authentication complete.
+    // Keep the UI in "connecting" until the system login frame arrives.
     this.sendPendingInterrupts();
   }
 
@@ -86,6 +82,7 @@ export default class Socket extends EventEmitter {
     // 标记意外断连（传输层错误或连接被关闭，非主动断开），重连成功后给用户提示
     if (reason === "transport error" || reason === "transport close") {
       this._unexpectedDisconnect = true;
+      this.emit("connecting", true);
     }
     this.emit("connection_changed", false); // 改名
     // 如果是 'io server disconnect'，Socket.IO 客户端不会自动重连，必须手动调用 connect()
@@ -103,7 +100,6 @@ export default class Socket extends EventEmitter {
    * @param {Error} error - The error object
    */
   handleConnectError(error) {
-    this.emit("connect_error", error);
     // error 对象可能包含 transport 信息，例如 error.transport
     console.log(
       `Error occurred during ${this.isAttemptingWebSocket ? "WebSocket" : "Polling"} attempt.`,
@@ -124,6 +120,7 @@ export default class Socket extends EventEmitter {
         this.socket.disconnect(); // 或 .close()
         this.socket = null;
       }
+      this.emit("connecting", true);
 
       // 延迟一小段时间再尝试 Polling，避免立即重试可能遇到的瞬时问题
       setTimeout(() => {
@@ -134,6 +131,8 @@ export default class Socket extends EventEmitter {
       // Polling 尝试也失败了
       console.error("Polling connection attempt also failed.");
       this.available = false;
+      this.emit("connecting", false);
+      this.emit("connect_error", error);
       // 这里可以决定是否彻底放弃，或者依赖 Socket.IO 的 reconnection 机制（如果开启）
       // 如果 Socket.IO 的 reconnection 开启，它会继续尝试用 polling 重连
       this.emit("connection_changed", false);
@@ -142,6 +141,8 @@ export default class Socket extends EventEmitter {
       // 理论上不应该发生，但作为保险
       console.warn("Unexpected state in handleConnectError.");
       this.available = false;
+      this.emit("connecting", false);
+      this.emit("connect_error", error);
       this.emit("connection_changed", false);
     }
   }
@@ -184,6 +185,7 @@ export default class Socket extends EventEmitter {
     }
     this.isAttemptingWebSocket = true; // Mark that we are starting with WebSocket
     this.hasAttemptedPollingFallback = false; // Reset fallback state
+    this.emit("connecting", true);
     this._connectWithTransport(["websocket"]); // Start with WebSocket only
   }
 
@@ -221,7 +223,12 @@ export default class Socket extends EventEmitter {
         if (e.type === "login") {
           console.log("Business login successful");
           this.available = true;
+          this.emit("connecting", false);
           this.emit("connection_changed", true);
+          if (this._unexpectedDisconnect) {
+            this._unexpectedDisconnect = false;
+            this.emit("connection_restored");
+          }
           this.emit("connect", e.data);
         }
         this.emit("system_message", e);
