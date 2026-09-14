@@ -146,6 +146,7 @@
       <!-- Tab: Tools -->
       <ContactorToolsTab
         v-if="
+          activeContactorPlatform !== 'channel' &&
           !(activeContactorPlatform === 'group' && !isGroupMember) &&
           activeTab === 'tools'
         "
@@ -158,6 +159,7 @@
       <!-- Tab: Skills -->
       <ContactorSkillsTab
         v-if="
+          activeContactorPlatform !== 'channel' &&
           !(activeContactorPlatform === 'group' && !isGroupMember) &&
           activeTab === 'skills'
         "
@@ -167,6 +169,7 @@
       <!-- Tab: Presets -->
       <div
         v-if="
+          activeContactorPlatform !== 'channel' &&
           !(activeContactorPlatform === 'group' && !isGroupMember) &&
           activeTab === 'presets'
         "
@@ -184,6 +187,7 @@
       <!-- Tab: Memory Crystallization -->
       <div
         v-if="
+          activeContactorPlatform !== 'channel' &&
           !(activeContactorPlatform === 'group' && !isGroupMember) &&
           activeTab === 'memory'
         "
@@ -204,6 +208,7 @@
       <!-- Tab: Automation (定时任务) -->
       <ContactorAutomationTab
         v-if="
+          activeContactorPlatform !== 'channel' &&
           !(activeContactorPlatform === 'group' && !isGroupMember) &&
           activeTab === 'automation'
         "
@@ -215,6 +220,7 @@
       <!-- Tab: Advanced -->
       <ContactorAdvancedTab
         v-if="
+          activeContactorPlatform !== 'channel' &&
           !(activeContactorPlatform === 'group' && !isGroupMember) &&
           activeTab === 'advanced'
         "
