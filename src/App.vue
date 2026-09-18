@@ -1,10 +1,12 @@
 <script>
 import { client, config } from "@/lib/runtime.js";
 import sideBar from "@/components/SideBar.vue";
+import GlobalInteractionQueue from "@/components/GlobalInteractionQueue.vue";
 import { ElMessage } from "element-plus";
 
 export default {
   components: {
+    GlobalInteractionQueue,
     sideBar,
   },
   data() {
@@ -82,6 +84,7 @@ export default {
       >{{ beian }}</a
     >
   </template>
+  <GlobalInteractionQueue />
 </template>
 <style scoped>
 .app-full-viewport {

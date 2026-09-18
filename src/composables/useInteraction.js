@@ -2,22 +2,9 @@ import { computed, ref, watch } from "vue";
 import { useInteractionStore } from "@/stores/interactionStore";
 import { client } from "@/lib/runtime.js";
 
-export function useInteraction(contactorIdRef) {
+export function useInteraction() {
   const store = useInteractionStore();
-
-  const activeInteraction = computed(() => {
-    if (!contactorIdRef) return store.activeInteraction;
-    const cid =
-      contactorIdRef.value !== undefined
-        ? contactorIdRef.value
-        : contactorIdRef;
-    if (cid === undefined || cid === null) return null;
-    return (
-      store.interactionsQueue.find(
-        (item) => String(item.contactorId) === String(cid),
-      ) || null
-    );
-  });
+  const activeInteraction = computed(() => store.activeInteraction);
 
   const hasActiveInteraction = computed(() => !!activeInteraction.value);
   const submittingInteractionId = ref(null);
