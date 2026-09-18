@@ -187,4 +187,146 @@ describe("Split Storage & Auto-Migration Test Suite", () => {
     await new Promise((r) => setTimeout(r, 10));
     expect(mockStorage.has("mio_msg_c_dynamic")).toBe(false);
   });
+
+  it("4. SubAgent 联系人按 child Session 去重且消息不落本地", async () => {
+    const first = store.upsertSubAgentContactor({
+      agentId: "agent_1",
+      createdAt: "2026-09-17T00:00:00.000Z",
+      groupId: "group_1",
+      id: "run_1",
+      jobKey: "disk_research",
+      objective: "检查磁盘情况",
+      parentSessionId: "session_parent",
+      sessionId: "session_child",
+      startedAt: "2026-09-17T00:00:01.000Z",
+      status: "running",
+    });
+    first.messageChain.push({
+      id: "prompt_1",
+      role: "user",
+      status: "completed",
+      content: [{ type: "text", data: { text: "唤起 prompt" } }],
+    });
+
+    const revised = store.upsertSubAgentContactor({
+      agentId: "agent_1",
+      groupId: "group_1",
+      id: "run_2",
+      jobKey: "disk_research",
+      parentSessionId: "session_parent",
+      sessionId: "session_child",
+      startedAt: "2026-09-17T00:00:02.000Z",
+      status: "result_ready",
+    });
+
+    expect(
+      Object.values(store.contactors).filter(
+        (item) => item.sessionId === "session_child",
+      ),
+    ).toHaveLength(1);
+    expect(revised.id).toBe("sub_agent_session_child");
+    expect(revised.runId).toBe("run_2");
+    expect(revised.readOnly).toBe(true);
+    expect(revised.messageChain[0].role).toBe("user");
+    expect(store.toMessagesJSON(revised.id)).toEqual([]);
+
+    await client._saveContactorMessagesNow(revised.id);
+    expect(mockStorage.has(`mio_msg_${revised.id}`)).toBe(false);
+  });
+
+  it("5. 实时流、历史回放与终态统一经过消息事件入口", () => {
+    store.addContactor("openai", { id: "canonical", name: "Canonical" });
+
+    store.applyMessageEvent({
+      type: "message.upsert",
+      contactorId: "canonical",
+      message: {
+        id: "assistant-1",
+        role: "other",
+        status: "streaming",
+        content: [{ type: "blank", data: {} }],
+      },
+    });
+    store.applyMessageEvent({
+      type: "message.chunk",
+      contactorId: "canonical",
+      messageId: "assistant-1",
+      chunkType: "content",
+      data: { chunk: "live" },
+    });
+    store.applyMessageEvent({
+      type: "history.reconcile",
+      contactorId: "canonical",
+      mode: "replace",
+      messages: [
+        {
+          id: "assistant-1",
+          role: "other",
+          status: "streaming",
+          content: [{ type: "text", data: { text: "old" } }],
+        },
+      ],
+    });
+
+    const chain = store.contactors.canonical.messageChain;
+    expect(chain).toHaveLength(1);
+    expect(chain[0].content[0].data.text).toBe("live");
+
+    store.applyMessageEvent({
+      type: "message.complete",
+      contactorId: "canonical",
+      messageId: "assistant-1",
+    });
+    const late = store.applyMessageEvent({
+      type: "message.chunk",
+      contactorId: "canonical",
+      messageId: "assistant-1",
+      chunkType: "content",
+      data: { chunk: " late" },
+    });
+
+    expect(late.accepted).toBe(false);
+    expect(chain[0].status).toBe("completed");
+    expect(chain[0].content[0].data.text).toBe("live");
+  });
+
+  it("6. 流式 chunk 热路径不计算摘要或调度持久化", () => {
+    store.addContactor("openai", { id: "stream-hot-path", name: "Stream" });
+    store.applyMessageEvent({
+      type: "message.upsert",
+      contactorId: "stream-hot-path",
+      message: {
+        id: "assistant-stream",
+        role: "other",
+        status: "streaming",
+        content: [{ type: "blank", data: {} }],
+      },
+    });
+    const persist = vi.spyOn(client, "setLocalStorage");
+    persist.mockClear();
+
+    store.applyMessageEvent({
+      type: "message.chunk",
+      contactorId: "stream-hot-path",
+      messageId: "assistant-stream",
+      chunkType: "content",
+      data: { chunk: "streaming text" },
+    });
+
+    expect(persist).not.toHaveBeenCalled();
+    expect(
+      store.contactors["stream-hot-path"].messageChain[0].content[0].data.text,
+    ).toBe("streaming text");
+
+    store.applyMessageEvent({
+      type: "message.complete",
+      contactorId: "stream-hot-path",
+      messageId: "assistant-stream",
+    });
+    expect(persist).toHaveBeenCalled();
+    expect(store.contactors["stream-hot-path"].lastMessageSummary).toBe(
+      "streaming text",
+    );
+    persist.mockRestore();
+  });
 });

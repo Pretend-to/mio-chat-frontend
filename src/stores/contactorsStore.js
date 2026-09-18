@@ -4,6 +4,12 @@ import { getAvatarByAdapterType } from "@/utils/avatar.js";
 import { numberString } from "@/utils/generate.js";
 import { config, client } from "@/lib/runtime.js";
 import { resolveUnhandledMentions } from "@/lib/groupGateway.js";
+import { isLegacyInteractionBubble } from "@/lib/interactionFrames.js";
+import {
+  isTerminalMessage,
+  mergeMessageHistory,
+  upsertMessage,
+} from "@/lib/messageState.js";
 import {
   addGlobalMemoryItem,
   updateGlobalMemoryItem,
@@ -193,6 +199,13 @@ export const useContactorsStore = defineStore("contactors", () => {
       newContactors[item.id] = {
         platform: item.platform,
         id: String(item.id),
+        agentId: item.agentId,
+        sessionId: item.sessionId,
+        parentSessionId: item.parentSessionId,
+        runId: item.runId,
+        groupId: item.groupId,
+        runStatus: item.runStatus,
+        readOnly: item.readOnly === true || item.platform === "sub_agent",
         namePolicy: item.namePolicy ?? 0,
         avatarPolicy: item.avatarPolicy ?? 0,
         title: item.title,
@@ -212,11 +225,13 @@ export const useContactorsStore = defineStore("contactors", () => {
               : (item.priority ?? 1),
         firstMessageIndex: item.firstMessageIndex ?? 0,
         messageChain: Array.isArray(item.messageChain)
-          ? item.messageChain.map((m) =>
-              m && (m.status === "completed" || m.status === "failed")
-                ? markRaw(m)
-                : m,
-            )
+          ? item.messageChain
+              .filter((message) => !isLegacyInteractionBubble(message))
+              .map((m) =>
+                m && (m.status === "completed" || m.status === "failed")
+                  ? markRaw(m)
+                  : m,
+              )
           : [],
         active: false,
         lastUpdate: item.lastUpdate ?? Date.now(),
@@ -335,12 +350,11 @@ export const useContactorsStore = defineStore("contactors", () => {
     return newGroup;
   }
 
-  async function addChannelContactor({
+  async function addAgentContactor({
     id,
-    channelId,
     name,
     avatar,
-    agentId,
+    defaultSessionId,
     model,
     provider,
     intro,
@@ -348,21 +362,21 @@ export const useContactorsStore = defineStore("contactors", () => {
     lastMessageSummary = "",
     lastUpdate = Date.now(),
   }) {
-    const contactorId = id || channelId || `chn_${numberString(8)}`;
+    const contactorId = id || `agent_${numberString(8)}`;
     if (contactors.value[contactorId]) {
       return contactors.value[contactorId];
     }
     const newChannel = {
-      platform: "channel",
+      platform: "agent",
       id: contactorId,
-      channelId: channelId || contactorId,
-      agentId: agentId || "wechat-master",
-      name: name || "微信助手",
+      agentId: contactorId,
+      sessionId: defaultSessionId || "",
+      name: name || "Agent",
       avatar: avatar || "/static/icons/512x512.png",
-      title: "channel",
+      title: "agent",
       namePolicy: 1,
       avatarPolicy: 1,
-      intro: intro || "服务端持久化渠道 Bot",
+      intro: intro || "Agent",
       notice: "",
       priority: priority ?? 0,
       firstMessageIndex: 0,
@@ -382,6 +396,84 @@ export const useContactorsStore = defineStore("contactors", () => {
     contactors.value[contactorId] = newChannel;
     client.setLocalStorage();
     return newChannel;
+  }
+
+  function upsertSubAgentContactor(run, { avatar = "" } = {}) {
+    if (!run?.sessionId || !run?.agentId) return null;
+
+    const id = `sub_agent_${run.sessionId}`;
+    const existing = contactors.value[id];
+    const lastUpdate = new Date(
+      run.finishedAt || run.startedAt || run.createdAt || Date.now(),
+    ).getTime();
+    const name =
+      run.role ||
+      run.subagentRole ||
+      run.title ||
+      run.subagentKey ||
+      run.jobKey ||
+      "SubAgent";
+
+    if (existing) {
+      Object.assign(existing, {
+        agentId: String(run.agentId),
+        sessionId: String(run.sessionId),
+        parentSessionId: String(run.parentSessionId || ""),
+        runId: String(run.id || existing.runId || ""),
+        groupId: String(run.groupId || existing.groupId || ""),
+        runStatus: run.status || existing.runStatus || "",
+        readOnly: true,
+        name,
+        title: run.status ? `SubAgent · ${run.status}` : "SubAgent",
+        lastUpdate: Math.max(existing.lastUpdate || 0, lastUpdate || 0),
+      });
+      if (avatar) existing.avatar = avatar;
+      if (run.model || run.provider) {
+        existing.options = {
+          ...(existing.options || {}),
+          model: run.model || existing.options?.model || "",
+          provider: run.provider || existing.options?.provider || "",
+        };
+      }
+      return existing;
+    }
+
+    const contactor = {
+      platform: "sub_agent",
+      id,
+      agentId: String(run.agentId),
+      sessionId: String(run.sessionId),
+      parentSessionId: String(run.parentSessionId || ""),
+      runId: String(run.id || ""),
+      groupId: String(run.groupId || ""),
+      runStatus: run.status || "",
+      readOnly: true,
+      name,
+      title: run.status ? `SubAgent · ${run.status}` : "SubAgent",
+      namePolicy: 1,
+      avatarPolicy: 1,
+      avatar:
+        avatar ||
+        getAvatarByModel(run.model || "", run.provider || null) ||
+        "/static/icons/512x512.png",
+      intro: run.objective || "只读 SubAgent Session",
+      priority: 1,
+      firstMessageIndex: 0,
+      messageChain: [],
+      active: false,
+      lastUpdate: lastUpdate || Date.now(),
+      createTime: new Date(run.createdAt || Date.now()).getTime(),
+      hasPendingTask: false,
+      draft: "",
+      options: {
+        model: run.model || "",
+        provider: run.provider || "",
+      },
+      lastMessageSummary: run.objective || "",
+    };
+    contactors.value[id] = contactor;
+    client.setLocalStorage();
+    return contactor;
   }
 
   function removeContactor(id) {
@@ -440,7 +532,7 @@ export const useContactorsStore = defineStore("contactors", () => {
   }
 
   function loadContactorAvatar(contactor) {
-    if (contactor.platform === "channel") {
+    if (contactor.platform === "agent" || contactor.platform === "sub_agent") {
       return;
     }
     let avatar = "/static/icons/512x512.png";
@@ -459,7 +551,7 @@ export const useContactorsStore = defineStore("contactors", () => {
   }
 
   function loadContactorName(contactor) {
-    if (contactor.platform === "channel") {
+    if (contactor.platform === "agent" || contactor.platform === "sub_agent") {
       return;
     }
     let name = contactor.name ?? "未命名 Bot";
@@ -478,7 +570,10 @@ export const useContactorsStore = defineStore("contactors", () => {
     const summary = getLastMessageSummary(contactor.messageChain);
     if (summary) {
       contactor.lastMessageSummary = summary;
-    } else if (contactor.platform !== "channel") {
+    } else if (
+      contactor.platform !== "agent" &&
+      contactor.platform !== "sub_agent"
+    ) {
       contactor.lastMessageSummary = "";
     }
   }
@@ -502,12 +597,167 @@ export const useContactorsStore = defineStore("contactors", () => {
     return message;
   }
 
-  function appendOrUpdateMessage(contactorId, messageId, data, type) {
+  /**
+   * The only ingress for message state coming from UI, Socket.IO, stream-cache
+   * replay, or persisted history. Compatibility helpers below remain available
+   * for old callers, but transports must dispatch an event here instead of
+   * mutating messageChain themselves.
+   */
+  function applyMessageEvent(event) {
+    const contactorId = event?.contactorId;
     const contactor = contactors.value[contactorId];
-    if (!contactor) return;
+    if (!contactor) return { accepted: false, message: null };
 
-    const message = getOrCreateMessage(contactorId, messageId);
-    if (!message) return;
+    let result = { accepted: false, message: null };
+    switch (event.type) {
+      case "message.upsert":
+        result = upsertMessage(contactor.messageChain, event.message, {
+          authority: event.authority,
+          index: event.index,
+          prepend: event.prepend,
+        });
+        break;
+      case "message.patch": {
+        const current = contactor.messageChain.find(
+          (message) => String(message?.id) === String(event.messageId),
+        );
+        if (!current) break;
+        result = upsertMessage(
+          contactor.messageChain,
+          { ...current, ...event.patch, id: current.id },
+          { authority: "replace" },
+        );
+        break;
+      }
+      case "history.reconcile": {
+        const merged = mergeMessageHistory(
+          contactor.messageChain,
+          event.messages,
+          event.mode || "replace",
+        );
+        result = { accepted: true, ...merged };
+        break;
+      }
+      case "message.chunk": {
+        // 流式热路径必须保持纯内存、只做一次消息定位。摘要计算和持久化
+        // 统一留到 complete/failed，避免每个 80ms chunk 重复扫描与序列化。
+        const current = contactor.messageChain.find(
+          (message) => String(message?.id) === String(event.messageId),
+        );
+        if (isTerminalMessage(current)) {
+          return { accepted: false, message: null };
+        }
+        const message = appendOrUpdateMessage(
+          contactorId,
+          event.messageId,
+          event.data,
+          event.chunkType,
+          { message: current, updateSummary: false },
+        );
+        result = {
+          accepted: Boolean(message),
+          message,
+        };
+        break;
+      }
+      case "message.snapshot":
+        syncMessage(contactorId, {
+          ...event.snapshot,
+          messageId: event.messageId,
+        });
+        result = {
+          accepted: true,
+          message: getOrCreateMessage(contactorId, event.messageId),
+        };
+        break;
+      case "message.complete":
+        completeMessage(contactorId, event.messageId, event.options);
+        result = {
+          accepted: true,
+          message: getOrCreateMessage(contactorId, event.messageId),
+        };
+        break;
+      case "message.failed":
+        failedMessage(contactorId, event.messageId, event.error);
+        result = {
+          accepted: true,
+          message: getOrCreateMessage(contactorId, event.messageId),
+        };
+        break;
+      case "message.usage":
+        updateMessageUsage(contactorId, event.messageId, event.usage);
+        result = {
+          accepted: true,
+          message: getOrCreateMessage(contactorId, event.messageId),
+        };
+        break;
+      case "message.crystallize":
+        handleCrystallizeEvent(contactorId, event.messageId, event.data);
+        result = {
+          accepted: true,
+          message: getOrCreateMessage(contactorId, event.messageId),
+        };
+        break;
+      case "message.remove": {
+        const index = contactor.messageChain.findIndex(
+          (message) => String(message?.id) === String(event.messageId),
+        );
+        if (index !== -1) {
+          contactor.messageChain.splice(index, 1);
+          result = { accepted: true, message: null };
+        }
+        break;
+      }
+      case "message.rekey": {
+        const message = contactor.messageChain.find(
+          (item) => String(item?.id) === String(event.messageId),
+        );
+        if (message && event.nextMessageId) {
+          message.id = String(event.nextMessageId);
+          result = { accepted: true, message };
+        }
+        break;
+      }
+      default:
+        return result;
+    }
+
+    if (result.accepted && event.type === "message.chunk") {
+      return result;
+    }
+
+    const lifecycleHandledByMutation = [
+      "message.snapshot",
+      "message.complete",
+      "message.failed",
+      "message.usage",
+      "message.crystallize",
+    ].includes(event.type);
+
+    if (result.accepted && !lifecycleHandledByMutation) {
+      contactor.lastUpdate = event.time || Date.now();
+      if (event.markPending && !contactor.active) {
+        contactor.hasPendingTask = true;
+      }
+      updateContactorSummary(contactor);
+      if (event.persist !== false) client.setLocalStorage();
+    }
+    return result;
+  }
+
+  function appendOrUpdateMessage(
+    contactorId,
+    messageId,
+    data,
+    type,
+    options = {},
+  ) {
+    const contactor = contactors.value[contactorId];
+    if (!contactor) return null;
+
+    const message =
+      options.message || getOrCreateMessage(contactorId, messageId);
+    if (!message) return null;
 
     contactor.lastUpdate = Date.now();
     if (!contactor.active) {
@@ -580,7 +830,8 @@ export const useContactorsStore = defineStore("contactors", () => {
       }
     }
 
-    updateContactorSummary(contactor);
+    if (options.updateSummary !== false) updateContactorSummary(contactor);
+    return message;
   }
 
   function updateMessageUsage(contactorId, messageId, usage) {
@@ -762,6 +1013,20 @@ export const useContactorsStore = defineStore("contactors", () => {
     // 否则所有成员的记忆会串到一起。解析不到宿主就直接放弃，不要退化成写群对象。
     const host = getCrystalHost(contactorId, memberId);
     if (!host) return;
+
+    const question =
+      params.question ||
+      params.target ||
+      params.topic ||
+      params.key ||
+      "";
+    const answer =
+      params.answer ||
+      params.content ||
+      params.value ||
+      (typeof result === "string"
+        ? result
+        : result?.content || result?.message || "");
 
     // 1. 如果开启了记忆结晶功能：
     // 为了保护大模型 Prompt Cache 输入缓存的稳定性，单次对话内的局部记忆变动（add/update/delete）
@@ -971,6 +1236,9 @@ export const useContactorsStore = defineStore("contactors", () => {
     if (message) {
       message.triggerType =
         metaData?.triggerType || (metaData?.isTask ? "task" : "chat");
+      if (metaData?.wakeType) {
+        message.wakeType = metaData.wakeType;
+      }
       if (metaData?.timestamp) {
         message.time = metaData.timestamp;
       }
@@ -1080,9 +1348,9 @@ export const useContactorsStore = defineStore("contactors", () => {
     };
 
     if (
-      isCompletedOrFailed ||
       isBlank ||
-      getLen(newContent) >= getLen(message.content)
+      getLen(newContent) >= getLen(message.content) ||
+      (isCompletedOrFailed && getLen(newContent) > 0)
     ) {
       message.content = newContent;
     }
@@ -1260,6 +1528,20 @@ export const useContactorsStore = defineStore("contactors", () => {
     }
   }
 
+  function discardTransientMessage(contactorId, messageId) {
+    const contactor = contactors.value[contactorId];
+    if (!contactor) return false;
+    const message = contactor.messageChain.find(
+      (item) => item.id === messageId,
+    );
+    if (!message) return false;
+    // Avoid sending an abort for a UI-only placeholder created by an older
+    // client before interaction-only frames were separated from chat streams.
+    message.status = "completed";
+    deleteMessageById(contactorId, messageId);
+    return true;
+  }
+
   /**
    * 后端重启清扫：把消息链中仍处于"执行中"且没有结果的 tool_call
    * 直接置为 failed 终态，避免 UI 上永远显示"执行中"。
@@ -1370,11 +1652,14 @@ export const useContactorsStore = defineStore("contactors", () => {
     if (!contactor || contactor.messageChain.length > 0 || !messages.length) {
       return false;
     }
-    contactor.messageChain = messages.map((message) =>
-      message && (message.status === "completed" || message.status === "failed")
-        ? markRaw(message)
-        : message,
-    );
+    contactor.messageChain = messages
+      .filter((message) => !isLegacyInteractionBubble(message))
+      .map((message) =>
+        message &&
+        (message.status === "completed" || message.status === "failed")
+          ? markRaw(message)
+          : message,
+      );
     updateContactorSummary(contactor);
     return true;
   }
@@ -1388,6 +1673,12 @@ export const useContactorsStore = defineStore("contactors", () => {
       id: item.id,
       channelId: item.channelId,
       agentId: item.agentId,
+      sessionId: item.sessionId,
+      parentSessionId: item.parentSessionId,
+      runId: item.runId,
+      groupId: item.groupId,
+      runStatus: item.runStatus,
+      readOnly: item.readOnly,
       options: item.options,
       namePolicy: item.namePolicy,
       avatarPolicy: item.avatarPolicy,
@@ -1420,7 +1711,8 @@ export const useContactorsStore = defineStore("contactors", () => {
     // 零本地存储：渠道 Bot 绝不导出消息链用于持久化
     if (
       !contactor ||
-      contactor.platform === "channel" ||
+      contactor.platform === "agent" ||
+      contactor.platform === "sub_agent" ||
       !Array.isArray(contactor.messageChain)
     )
       return [];
@@ -1444,7 +1736,8 @@ export const useContactorsStore = defineStore("contactors", () => {
     loadContactors,
     addContactor,
     addGroupContactor,
-    addChannelContactor,
+    addAgentContactor,
+    upsertSubAgentContactor,
     removeContactor,
     selectContactor,
     updateDraft,
@@ -1454,6 +1747,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     updateContactorSummary,
     updateContactor,
     hydrateContactorMessages,
+    applyMessageEvent,
     appendOrUpdateMessage,
     updateMessageUsage,
     getOrCreateMessage,
@@ -1462,6 +1756,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     failedMessage,
     deleteMessage,
     deleteMessageById,
+    discardTransientMessage,
     markInterruptedToolCalls,
     clearHistory,
     insertSystemMessage,

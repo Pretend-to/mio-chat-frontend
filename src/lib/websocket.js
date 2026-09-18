@@ -217,6 +217,9 @@ export default class Socket extends EventEmitter {
       if (e.protocol === "channel") {
         this.emit("channel_message", e);
       }
+      if (e.protocol === "agent") {
+        this.emit("agent_message", e);
+      }
       if (e.protocol === "onebot") {
         this.emit("onebot_message", e);
       } else if (e.protocol === "system") {

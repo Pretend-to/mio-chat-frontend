@@ -656,31 +656,39 @@ export async function sendGroupCompletions(
 
     if (i > 0) {
       msgId = numberString(16);
-      group.messageChain.push({
-        id: msgId,
-        role: "other",
-        status: "pending",
-        time: Date.now(),
-        content: [{ type: "blank", data: {} }],
-        sender_id: member.id,
-        sender_name: member.name,
-        sender_avatar: member.avatar,
-        senderMemberId: member.id,
-        senderName: member.name,
-        senderAvatar: member.avatar,
+      useContactorsStore().applyMessageEvent({
+        type: "message.upsert",
+        contactorId: group.id,
+        message: {
+          id: msgId,
+          role: "other",
+          status: "pending",
+          time: Date.now(),
+          content: [{ type: "blank", data: {} }],
+          sender_id: member.id,
+          sender_name: member.name,
+          sender_avatar: member.avatar,
+          senderMemberId: member.id,
+          senderName: member.name,
+          senderAvatar: member.avatar,
+        },
       });
     } else {
-      const placeholder = group.messageChain.find(
-        (m) => m.id === assistantMsgId,
-      );
-      if (placeholder) {
-        placeholder.sender_id = member.id;
-        placeholder.sender_name = member.name;
-        placeholder.sender_avatar = member.avatar;
-        placeholder.senderMemberId = member.id;
-        placeholder.senderName = member.name;
-        placeholder.senderAvatar = member.avatar;
-      }
+      useContactorsStore().applyMessageEvent({
+        type: "message.upsert",
+        contactorId: group.id,
+        message: {
+          id: assistantMsgId,
+          role: "other",
+          status: "pending",
+          sender_id: member.id,
+          sender_name: member.name,
+          sender_avatar: member.avatar,
+          senderMemberId: member.id,
+          senderName: member.name,
+          senderAvatar: member.avatar,
+        },
+      });
     }
 
     const finalMessages = formatGroupMessagesForMember(group, member);
@@ -910,19 +918,23 @@ export function resolveUnhandledMentions(
       if (isStillBusy) return;
 
       const assistantMsgId = numberString(16);
-      reactiveGroup.messageChain.push({
-        id: assistantMsgId,
-        role: "other",
-        status: "pending",
-        time: Date.now(),
-        content: [{ type: "blank", data: {} }],
-        sender_id: member.id,
-        sender_name: member.name,
-        sender_avatar: member.avatar,
-        senderMemberId: member.id,
-        senderName: member.name,
-        senderAvatar: member.avatar,
-        invocationDepth: nextDepth,
+      contactorsStore.applyMessageEvent({
+        type: "message.upsert",
+        contactorId: reactiveGroup.id,
+        message: {
+          id: assistantMsgId,
+          role: "other",
+          status: "pending",
+          time: Date.now(),
+          content: [{ type: "blank", data: {} }],
+          sender_id: member.id,
+          sender_name: member.name,
+          sender_avatar: member.avatar,
+          senderMemberId: member.id,
+          senderName: member.name,
+          senderAvatar: member.avatar,
+          invocationDepth: nextDepth,
+        },
       });
 
       sendGroupCompletions(reactiveGroup, assistantMsgId, member.id).catch(

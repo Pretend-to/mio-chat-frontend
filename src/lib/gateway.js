@@ -4,6 +4,12 @@ import { client } from "@/lib/runtime.js";
 import { assembleSystemPrompt } from "@/utils/SystemPromptAssembler.js";
 import { buildUserProfileXml } from "@/lib/clientSettings.js";
 import { sendGroupCompletions } from "@/lib/groupGateway.js";
+import {
+  buildInteractionMeta,
+  extractInteractionAction,
+  isInteractionOnlyFrame,
+} from "@/lib/interactionFrames.js";
+import { collectAgentTurnPayload } from "@/lib/agentTurnPayload.js";
 
 /**
  * 消息落盘后再向服务端发送 ACK，通知其清除 streamCache。
@@ -556,30 +562,32 @@ class StreamBuffer {
     let updated = false;
 
     if (this.pendingReason) {
-      this.store.appendOrUpdateMessage(
-        this.contactorId,
-        this.messageId,
-        {
+      this.store.applyMessageEvent({
+        type: "message.chunk",
+        contactorId: this.contactorId,
+        messageId: this.messageId,
+        chunkType: "reason",
+        data: {
           reasoning_content: this.pendingReason,
           startTime: this.reasonMetadata?.startTime,
           duration: this.reasonMetadata?.duration || 0,
         },
-        "reason",
-      );
+      });
       this.pendingReason = "";
       this.reasonMetadata = null;
       updated = true;
     }
 
     if (this.pendingContent) {
-      this.store.appendOrUpdateMessage(
-        this.contactorId,
-        this.messageId,
-        {
+      this.store.applyMessageEvent({
+        type: "message.chunk",
+        contactorId: this.contactorId,
+        messageId: this.messageId,
+        chunkType: "content",
+        data: {
           chunk: this.pendingContent,
         },
-        "content",
-      );
+      });
       this.pendingContent = "";
       updated = true;
     }
@@ -647,49 +655,33 @@ export const gateway = {
       const targetMemberId =
         targetMsg?.sender_id || targetMsg?.senderMemberId || null;
       await sendGroupCompletions(contactor, messageId, targetMemberId);
-    } else if (platform === "channel") {
+    } else if (platform === "agent") {
       if (!client.isConnected || !client.socket) {
         throw new Error("连接已断开，请检查网络或刷新页面");
       }
       const contactorStore = useContactorsStore();
       const contactor = contactorStore.contactors[contactorId];
       if (!contactor) {
-        throw new Error("渠道联系人未找到");
+        throw new Error("Agent 联系人未找到");
       }
 
-      // 获取当前用户发送的最新一条消息（极轻量纯净当前轮输入，零上下文拼接）
-      const lastUserMsg = (messagesChain || [])
-        .filter((m) => m.role === "user")
-        .pop();
-      const text =
-        lastUserMsg?.content?.find((c) => c.type === "text")?.data?.text ||
-        lastUserMsg?.text ||
-        "";
-      const images = [];
-      const files = [];
-
-      if (Array.isArray(lastUserMsg?.content)) {
-        for (const c of lastUserMsg.content) {
-          if (c.type === "image" && (c.data?.file || c.data?.url)) {
-            images.push(c.data.file || c.data.url);
-          }
-          if (c.type === "file" && c.data?.url) {
-            files.push({ name: c.data.name || "file", url: c.data.url });
-          }
-        }
-      }
+      // 服务端 Agent 只需要当前轮；但独立上传的附件消息也属于这一轮。
+      const { files, images, lastUserMsg, text } =
+        collectAgentTurnPayload(messagesChain);
 
       // 预先建立 StreamBuffer 确保实时流上屏
       getOrCreateBuffer(contactorId, messageId, contactorStore);
 
-      const targetChannelId = contactor.channelId || contactor.id;
+      const targetAgentId = contactor.agentId || contactor.id;
       const res = await client.socket.fetch(
-        `/api/channel/message/${targetChannelId}`,
+        `/api/agent/message/${targetAgentId}`,
         {
           text,
           images,
           files,
           messageId,
+          userMessageId: lastUserMsg?.id || null,
+          sessionId: contactor.sessionId,
         },
       );
 
@@ -793,8 +785,11 @@ export const gateway = {
         contactorName: contactor?.name || null,
       };
 
-      // 在 settings 中注入结晶相关参数
+      // 在 settings 中注入结晶与 YOLO 等会话级参数
       const enrichedOptions = { ...options };
+      if (contactor?.options?.yolo === true) {
+        enrichedOptions.yolo = true;
+      }
       if (crystallizationEnabled) {
         enrichedOptions.crystallization_token_watermark =
           crystallization.tokenWatermark ?? "auto";
@@ -867,8 +862,11 @@ export const gateway = {
     // Set message status to completed locally immediately to stop the spinner
     const contactorStore = useContactorsStore();
     // 用户主动中断，不应触发群聊 Agent 连锁唤起
-    contactorStore.completeMessage(contactorId, messageId, {
-      triggerInvocation: false,
+    contactorStore.applyMessageEvent({
+      type: "message.complete",
+      contactorId,
+      messageId,
+      options: { triggerInvocation: false },
     });
 
     if (platform === "openai" || platform === "group") {
@@ -892,34 +890,94 @@ export const gateway = {
     if (!contactorId) return;
 
     const contactorStore = useContactorsStore();
-
-    // Ensure the message has triggerType populated in the store
-    const message = contactorStore.getOrCreateMessage(contactorId, messageId, {
-      time: metaData?.timestamp,
-    });
-    if (message) {
-      if (!message.triggerType) {
-        message.triggerType =
-          metaData?.triggerType || (metaData?.isTask ? "task" : "chat");
-      }
-      if (metaData?.timestamp) {
-        message.time = metaData.timestamp;
-      }
-      if (metaData?.memberId || metaData?.memberName) {
-        if (metaData.memberId) {
-          message.sender_id = metaData.memberId;
-          message.senderMemberId = metaData.memberId;
+    if (isInteractionOnlyFrame(metaData)) {
+      // Approval transport is not an assistant message. Older clients created
+      // an empty pending bubble for this request ID; remove it opportunistically.
+      contactorStore.discardTransientMessage(contactorId, messageId);
+      const terminal =
+        ["complete", "failed"].includes(e.message) ||
+        (e.message === "sync" &&
+          ["completed", "failed"].includes(data?.status));
+      import("@/stores/interactionStore.js").then(({ useInteractionStore }) => {
+        const store = useInteractionStore();
+        if (terminal) {
+          store.resolveRequest(messageId);
+          return;
         }
-        if (metaData.memberName) {
-          message.sender_name = metaData.memberName;
-          message.senderName = metaData.memberName;
+        const action = extractInteractionAction(data);
+        if (!action) return;
+        const contactor = contactorStore.contactors[contactorId];
+        if (
+          action.actionType === "REQUEST_APPROVAL" &&
+          contactor?.options?.yolo === true
+        ) {
+          console.log(
+            `[gateway] 联系人 ${contactorId} 已开启 YOLO 模式，静默放行审批:`,
+            action.interactionId,
+          );
+          client.socket?.socket?.emit("tool:interact", {
+            interactionId: action.interactionId,
+            requestId: messageId,
+            payload: { approved: true, yolo: true },
+          });
+          return;
         }
-        if (metaData.memberAvatar) {
-          message.sender_avatar = metaData.memberAvatar;
-          message.senderAvatar = metaData.memberAvatar;
-        }
-      }
+        store.setInteraction({
+          contactorId,
+          actionType: action.actionType,
+          interactionId: action.interactionId,
+          requestId: messageId,
+          options: action.options,
+          prompt: action.prompt,
+          meta: buildInteractionMeta(action.meta, metaData),
+        });
+      });
+      return;
     }
+    if (metaData?.subagentContact) {
+      contactorStore.upsertSubAgentContactor({
+        ...metaData.subagentContact,
+        status:
+          e.message === "complete" || data?.status === "completed"
+            ? "result_ready"
+            : e.message === "failed" || data?.status === "failed"
+              ? "failed"
+              : metaData.subagentContact.status || "running",
+      });
+    }
+
+    contactorStore.applyMessageEvent({
+      type: "message.upsert",
+      contactorId,
+      persist: false,
+      message: {
+        id: messageId,
+        role: "other",
+        status: "streaming",
+        time: metaData?.timestamp,
+        triggerType:
+          metaData?.triggerType || (metaData?.isTask ? "task" : "chat"),
+        ...(metaData?.wakeType ? { wakeType: metaData.wakeType } : {}),
+        ...(metaData?.memberId
+          ? {
+              sender_id: metaData.memberId,
+              senderMemberId: metaData.memberId,
+            }
+          : {}),
+        ...(metaData?.memberName
+          ? {
+              sender_name: metaData.memberName,
+              senderName: metaData.memberName,
+            }
+          : {}),
+        ...(metaData?.memberAvatar
+          ? {
+              sender_avatar: metaData.memberAvatar,
+              senderAvatar: metaData.memberAvatar,
+            }
+          : {}),
+      },
+    });
 
     if (["update", "sync"].includes(e.message)) {
       if (e.message === "sync") {
@@ -928,12 +986,16 @@ export const gateway = {
           buffer.flush();
           streamBuffers.delete(messageId);
         }
-        contactorStore.syncMessage(contactorId, {
-          chunks: data.chunks,
-          status: data.status,
+        contactorStore.applyMessageEvent({
+          type: "message.snapshot",
+          contactorId,
           messageId,
-          metaData,
-          error: data.error,
+          snapshot: {
+            chunks: data.chunks,
+            status: data.status,
+            metaData,
+            error: data.error,
+          },
         });
 
         // 如果同步回来的是已完成/已失败的终态消息，也给后端发 ACK 清除流缓存
@@ -948,20 +1010,39 @@ export const gateway = {
         ) {
           const actionChunk = data.chunks.find((c) => c.type === "action");
           if (actionChunk) {
-            import("@/stores/interactionStore.js").then(
-              ({ useInteractionStore }) => {
-                const store = useInteractionStore();
-                store.setInteraction({
-                  contactorId,
-                  actionType: actionChunk.content.actionType,
-                  interactionId: actionChunk.content.interactionId,
-                  requestId: messageId,
-                  options: actionChunk.content.options,
-                  prompt: actionChunk.content.prompt,
-                  meta: actionChunk.content.meta,
-                });
-              },
-            );
+            const contactor = contactorStore.contactors[contactorId];
+            if (
+              actionChunk.content?.actionType === "REQUEST_APPROVAL" &&
+              contactor?.options?.yolo === true
+            ) {
+              console.log(
+                `[gateway] 断线恢复检测到联系人 ${contactorId} 已开启 YOLO 模式，静默放行:`,
+                actionChunk.content.interactionId,
+              );
+              client.socket?.socket?.emit("tool:interact", {
+                interactionId: actionChunk.content.interactionId,
+                requestId: messageId,
+                payload: { approved: true, yolo: true },
+              });
+            } else {
+              import("@/stores/interactionStore.js").then(
+                ({ useInteractionStore }) => {
+                  const store = useInteractionStore();
+                  store.setInteraction({
+                    contactorId,
+                    actionType: actionChunk.content.actionType,
+                    interactionId: actionChunk.content.interactionId,
+                    requestId: messageId,
+                    options: actionChunk.content.options,
+                    prompt: actionChunk.content.prompt,
+                    meta: buildInteractionMeta(
+                      actionChunk.content.meta,
+                      metaData,
+                    ),
+                  });
+                },
+              );
+            }
           }
         }
       } else {
@@ -984,59 +1065,91 @@ export const gateway = {
           if (buffer) {
             buffer.flush();
           }
-          contactorStore.appendOrUpdateMessage(
+          contactorStore.applyMessageEvent({
+            type: "message.chunk",
             contactorId,
             messageId,
-            {
+            chunkType: "tool_call",
+            data: {
               tool_call: data.content,
             },
-            "tool_call",
-          );
+          });
         } else if (data.type === "crystallize") {
           // 结晶事件：通知 store 更新 latestSummary 和 UI 事件条
           const buffer = streamBuffers.get(messageId);
           if (buffer) {
             buffer.flush();
           }
-          contactorStore.handleCrystallizeEvent(
+          contactorStore.applyMessageEvent({
+            type: "message.crystallize",
             contactorId,
             messageId,
-            data.content,
-          );
+            data: data.content,
+          });
         } else if (data.type === "action") {
-          // 原子动作拦截器：捕获长连接双向指令并存入 Store，驱动输入框上方就地交互面板渲染
-          import("@/stores/interactionStore.js").then(
-            ({ useInteractionStore }) => {
-              const store = useInteractionStore();
-              store.setInteraction({
-                contactorId, // 绑定联系人ID
-                actionType: data.content.actionType,
-                interactionId: data.content.interactionId,
-                requestId: messageId,
-                options: data.content.options,
-                prompt: data.content.prompt,
-                meta: data.content.meta,
-              });
-            },
-          );
+          const actionContent = data.content;
+          const contactor = contactorStore.contactors[contactorId];
+          if (
+            actionContent?.actionType === "REQUEST_APPROVAL" &&
+            contactor?.options?.yolo === true
+          ) {
+            console.log(
+              `[gateway] 联系人 ${contactorId} 已开启 YOLO 模式，静默放行实时审批:`,
+              actionContent.interactionId,
+            );
+            client.socket?.socket?.emit("tool:interact", {
+              interactionId: actionContent.interactionId,
+              requestId: messageId,
+              payload: { approved: true, yolo: true },
+            });
+          } else {
+            // 原子动作拦截器：捕获长连接双向指令并存入 Store，驱动输入框上方就地交互面板渲染
+            import("@/stores/interactionStore.js").then(
+              ({ useInteractionStore }) => {
+                const store = useInteractionStore();
+                store.setInteraction({
+                  contactorId, // 绑定联系人ID
+                  actionType: data.content.actionType,
+                  interactionId: data.content.interactionId,
+                  requestId: messageId,
+                  options: data.content.options,
+                  prompt: data.content.prompt,
+                  meta: buildInteractionMeta(data.content.meta, metaData),
+                });
+              },
+            );
+          }
         } else if (data.type === "usage" && data.content) {
-          contactorStore.updateMessageUsage(
+          contactorStore.applyMessageEvent({
+            type: "message.usage",
             contactorId,
             messageId,
-            data.content,
-          );
+            usage: data.content,
+          });
         }
       }
     } else if (["complete", "failed"].includes(e.message)) {
+      import("@/stores/interactionStore.js").then(({ useInteractionStore }) => {
+        useInteractionStore().resolveRequest(messageId);
+      });
       const buffer = streamBuffers.get(messageId);
       if (buffer) {
         buffer.flush();
         streamBuffers.delete(messageId);
       }
       if (e.message === "complete") {
-        contactorStore.completeMessage(contactorId, messageId);
+        contactorStore.applyMessageEvent({
+          type: "message.complete",
+          contactorId,
+          messageId,
+        });
       } else if (e.message === "failed") {
-        contactorStore.failedMessage(contactorId, messageId, e.data);
+        contactorStore.applyMessageEvent({
+          type: "message.failed",
+          contactorId,
+          messageId,
+          error: e.data,
+        });
       }
       ackPersistedMessage(contactorId, messageId);
     }
@@ -1055,18 +1168,14 @@ export const gateway = {
 
     if (type === "message") {
       let contactor = contactorStore.contactors[id];
-      if (!contactor) {
-        // 兜底机制：若因 ID 不匹配（例如前端生成了随机 Fake ID），则匹配列表中首个 platform === "onebot" 的联系人
-        contactor = Object.values(contactorStore.contactors).find(
-          (c) => c.platform === "onebot",
-        );
-      }
       if (contactor) {
         const webMessage = convertOnebotMessage(content);
-        contactor.messageChain.push(webMessage);
-        contactor.lastUpdate = Date.now();
-        contactorStore.updateContactorSummary(contactor);
-        client.setLocalStorage();
+        contactorStore.applyMessageEvent({
+          type: "message.upsert",
+          contactorId: contactor.id,
+          message: webMessage,
+          markPending: true,
+        });
       }
     } else if (type === "del_msg") {
       const onebotContactors = Object.values(contactorStore.contactors).filter(
@@ -1099,7 +1208,11 @@ export const gateway = {
                 },
               ],
             };
-            onebotContactor.messageChain.splice(index, 1, systemMsg);
+            contactorStore.applyMessageEvent({
+              type: "message.upsert",
+              contactorId: onebotContactor.id,
+              message: systemMsg,
+            });
           }
           contactorStore.updateContactorSummary(onebotContactor);
           client.setLocalStorage();
@@ -1112,19 +1225,22 @@ export const gateway = {
 
   handleChannelMessageEvent(e) {
     if (e.type === "channel_user_message") {
-      const { contactorId, userMessage, assistantMessageId } = e.data || {};
+      const { contactorId, userMessage, assistantMessageId, subagentContact } =
+        e.data || {};
       if (!contactorId || !userMessage) return;
 
       const contactorStore = useContactorsStore();
+      if (subagentContact) {
+        contactorStore.upsertSubAgentContactor(subagentContact);
+      }
       const contactor = contactorStore.contactors[contactorId];
       if (!contactor) return;
 
       // 1. 检查并追加用户在渠道（微信等）端发送的消息
-      const existsUser = contactor.messageChain.some(
-        (m) => m.id === userMessage.id,
-      );
-      if (!existsUser) {
-        const userContainer = {
+      contactorStore.applyMessageEvent({
+        type: "message.upsert",
+        contactorId,
+        message: {
           role: "user",
           id: userMessage.id || `msg_u_${Date.now()}`,
           time: userMessage.time || Date.now(),
@@ -1133,31 +1249,26 @@ export const gateway = {
             { type: "text", data: { text: userMessage.text || "" } },
           ],
           text: userMessage.text || "",
-        };
-        contactor.messageChain.push(userContainer);
-      }
+        },
+        markPending: true,
+      });
 
       // 2. 检查并创建 AI 回复的 Blank 占位及 StreamBuffer
       if (assistantMessageId) {
-        const existsAi = contactor.messageChain.some(
-          (m) => m.id === assistantMessageId,
-        );
-        if (!existsAi) {
-          const aiContainer = {
+        contactorStore.applyMessageEvent({
+          type: "message.upsert",
+          contactorId,
+          message: {
             role: "other",
             id: assistantMessageId,
             time: Date.now(),
             status: "running",
             content: [{ type: "blank", data: {} }],
-          };
-          contactor.messageChain.push(aiContainer);
-          getOrCreateBuffer(contactor.id, assistantMessageId, contactorStore);
-        }
+          },
+          markPending: true,
+        });
+        getOrCreateBuffer(contactor.id, assistantMessageId, contactorStore);
       }
-
-      contactor.lastUpdate = Date.now();
-      contactorStore.updateContactorSummary(contactor);
-      client.setLocalStorage();
     }
   },
 

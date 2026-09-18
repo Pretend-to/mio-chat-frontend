@@ -684,7 +684,7 @@ export default class Client extends EventEmitter {
     let needsMigration = false;
     await Promise.all(
       source.map(async (item) => {
-        if (item.platform === "channel") return;
+        if (item.platform === "agent" || item.platform === "sub_agent") return;
 
         let messageChain = null;
         if (Array.isArray(item.messageChain) && item.messageChain.length > 0) {
@@ -775,7 +775,10 @@ export default class Client extends EventEmitter {
 
     // 零本地历史原则：渠道 Bot 历史由服务端 MemoryStore 单一真实源管理，前端绝不写入 localforage
     const contactor = store.contactors[contactorId];
-    if (contactor?.platform === "channel") {
+    if (
+      contactor?.platform === "agent" ||
+      contactor?.platform === "sub_agent"
+    ) {
       return;
     }
 
@@ -1220,49 +1223,57 @@ export default class Client extends EventEmitter {
       const store = getStore();
       if (!store) return;
       const { configAPI } = await import("@/lib/configApi.js");
-      const res = await configAPI.request("/api/channels");
-      const channels = res?.data?.channels || [];
+      const res = await configAPI.request("/api/agents");
+      const agents = res?.data?.agents || [];
+      const agentIds = new Set(agents.map((agent) => String(agent.id)));
 
-      for (const ch of channels) {
-        let existing = store.contactors[ch.id];
+      // Channel is transport only. Drop contacts produced by the removed
+      // channel-as-agent model, including the synthetic web-default contact.
+      for (const [id, contactor] of Object.entries(store.contactors)) {
+        if (
+          contactor?.platform === "channel" ||
+          (contactor?.platform === "agent" && !agentIds.has(String(id)))
+        ) {
+          store.removeContactor(id);
+        }
+      }
+
+      for (const agent of agents) {
+        let existing = store.contactors[agent.id];
         if (!existing) {
-          existing = await store.addChannelContactor({
-            id: ch.id,
-            channelId: ch.id,
-            name: ch.name || "微信助手",
-            avatar: ch.avatar || "/static/icons/512x512.png",
-            agentId: ch.agentId || "wechat-master",
-            model: ch.model || "",
-            provider: ch.provider || "",
-            intro: `微信渠道 Bot (${ch.id})`,
+          existing = await store.addAgentContactor({
+            id: agent.id,
+            name: agent.name || "Agent",
+            avatar: agent.avatar || "/static/icons/512x512.png",
+            defaultSessionId: agent.defaultSessionId,
+            model: agent.model || "",
+            provider: agent.provider || "",
+            intro: agent.description || "Agent",
             priority: 0,
-            lastMessageSummary: ch.lastMessage || "",
-            lastUpdate: ch.lastActive || Date.now(),
+            lastUpdate: agent.updatedAt || Date.now(),
           });
         } else {
+          existing.platform = "agent";
+          existing.agentId = agent.id;
+          existing.sessionId = agent.defaultSessionId;
           existing.namePolicy = 1;
           existing.avatarPolicy = 1;
-          if (ch.name) existing.name = ch.name;
-          if (ch.avatar) existing.avatar = ch.avatar;
+          if (agent.name) existing.name = agent.name;
+          if (agent.avatar) existing.avatar = agent.avatar;
+          existing.intro = agent.description || "Agent";
           if (existing.priority === undefined) existing.priority = 0;
-          if (ch.lastMessage) {
-            existing.lastMessageSummary = ch.lastMessage;
-          }
-          if (ch.lastActive) {
-            existing.lastUpdate = ch.lastActive;
-            existing.lastMessageTime = ch.lastActive;
-          }
+          existing.lastUpdate = agent.updatedAt || existing.lastUpdate;
           if (!existing.options) existing.options = {};
-          if (Object.hasOwn(ch, "model")) {
-            existing.options.model = ch.model || "";
+          if (Object.hasOwn(agent, "model")) {
+            existing.options.model = agent.model || "";
           }
-          if (Object.hasOwn(ch, "provider")) {
-            existing.options.provider = ch.provider || "";
+          if (Object.hasOwn(agent, "provider")) {
+            existing.options.provider = agent.provider || "";
           }
         }
       }
       this.setLocalStorage();
-      this.emit("channel_bots_synced", channels);
+      this.emit("agent_contacts_synced", agents);
     } catch (err) {
       console.warn("[Client] 自动同步渠道 Bot 失败:", err.message);
     }

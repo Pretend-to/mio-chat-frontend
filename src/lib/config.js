@@ -126,7 +126,6 @@ export default class Config {
     const configToSave = {
       localPresets: this.localPresets,
       toolsConfig: this.toolsConfig,
-      llmTools: this.llmTools, // 注意：频繁保存从API获取的数据可能不是最佳实践，取决于更新频率
       onebotConfig: this.onebotConfig,
       llmModels: this.llmModels,
       baseConfig: this.baseConfig,
@@ -147,7 +146,9 @@ export default class Config {
       // 使用 nullish coalescing (??) 为缺失的属性提供默认值
       this.localPresets = loadedConfig.localPresets ?? [];
       this.toolsConfig = loadedConfig.toolsConfig ?? {};
-      this.llmTools = loadedConfig.llmTools ?? [];
+      // Tool visibility is context-sensitive and server-authoritative. Never
+      // restore a stale catalog that may contain tools revoked since last run.
+      this.llmTools = [];
       this.onebotConfig = loadedConfig.onebotConfig ?? null;
       this.llmModels = loadedConfig.llmModels ?? {};
       this.baseConfig = loadedConfig.baseConfig ?? {};
@@ -793,7 +794,10 @@ export default class Config {
    */
   async loadllmTools() {
     try {
-      const response = await fetch("/api/openai/tools");
+      const adminCode = localStorage.getItem("admin_code") || "";
+      const response = await fetch("/api/openai/tools", {
+        headers: adminCode ? { "X-Admin-Code": adminCode } : {},
+      });
       if (!response.ok) {
         throw new Error(
           `请求 LLM 工具失败: ${response.status} ${response.statusText}`,
