@@ -21,7 +21,8 @@ import ScreenshotPreview from "@/components/chat/ScreenshotPreview.vue";
 import InputEditor from "@/components/InputEditor.vue";
 import ContextMenu from "@/components/ContextMenu.vue";
 import MessageDetailDialog from "@/components/chat/MessageDetailDialog.vue";
-import GroupSidebar from "@/components/chat/GroupSidebar.vue";
+import SubAgentDrawer from "@/components/chat/SubAgentDrawer.vue";
+import { useWorkspaceStore } from "@/stores/workspaceStore.js";
 
 // Composables
 import { useChatSelection } from "@/composables/useChatSelection.js";
@@ -42,6 +43,7 @@ import { client } from "@/lib/runtime.js";
 import { shareOrCopy } from "@/utils/tools.js";
 import { gateway } from "@/lib/gateway.js";
 import { numberString } from "@/utils/generate.js";
+import { subagentsAPI } from "@/lib/subagentsApi.js";
 import {
   getClientSettings,
   buildUserProfileXml,
@@ -155,8 +157,11 @@ const activeContactor = computed(() => {
             id: numberString(16),
             status: "completed",
           };
-          target.messageChain.push(systemMsg);
-          client.setLocalStorage();
+          contactorsStore.applyMessageEvent({
+            type: "message.upsert",
+            contactorId: target.id,
+            message: systemMsg,
+          });
         };
       }
       if (prop === "updateFirstMessage") {
@@ -212,6 +217,13 @@ window.__mio = window.__mio || {};
 /** 点击选项直接发送：走底层 webSend 管线，不碰输入框，不弹键盘，保护当前未发送的草稿 */
 window.__mio.sendText = async (text) => {
   if (!text || !activeContactor.value) return;
+  if (
+    activeContactor.value.readOnly ||
+    activeContactor.value.platform === "sub_agent"
+  ) {
+    ElMessage.warning("SubAgent 会话为只读，不能发送消息");
+    return;
+  }
   const strText = String(text).trim();
   if (!strText) return;
 
@@ -262,6 +274,19 @@ const getDelayStatus = computed(() => {
   return isConnected.value ? "ultra" : "offline";
 });
 
+const subAgentDrawerVisible = ref(false);
+const workspaceStore = useWorkspaceStore();
+
+const handleOpenSubAgents = () => {
+  workspaceStore.toggleWorkspace(true);
+  workspaceStore.openOverview();
+};
+
+const handleOpenGroupOverview = () => {
+  if (!activeContactor.value) return;
+  workspaceStore.openGroupTab(activeContactor.value);
+};
+
 const mdOptions = computed(() => {
   return { breaks: true };
 });
@@ -278,10 +303,12 @@ const {
 // 2. Chat Scroll Composable
 const hasMoreServerHistory = ref(true);
 const isLoadingServerHistory = ref(false);
+const isServerSessionContactor = (contactor) =>
+  contactor?.platform === "agent" || contactor?.platform === "sub_agent";
 
 const loadChannelHistory = async (options = {}) => {
   const contactor = activeContactor.value;
-  if (!contactor || contactor.platform !== "channel") return;
+  if (!isServerSessionContactor(contactor)) return;
   if (!client.isConnected || !client.socket || isLoadingServerHistory.value)
     return;
 
@@ -290,31 +317,23 @@ const loadChannelHistory = async (options = {}) => {
 
   isLoadingServerHistory.value = true;
   try {
-    const targetChannelId = contactor.channelId || contactor.id;
+    const targetAgentId = contactor.agentId || contactor.id;
     const res = await client.socket.fetch(
-      `/api/channel/history/${targetChannelId}`,
-      { before, limit },
+      `/api/agent/history/${targetAgentId}`,
+      { before, limit, sessionId: contactor.sessionId },
     );
 
     if (res && Array.isArray(res.messages)) {
       hasMoreServerHistory.value = res.hasMore === true;
       if (!before) {
-        // 首屏拉取：检查本地是否有正在流式生成中的活跃消息（in-flight streaming message）
-        const activeStreamingMsgs = Array.isArray(contactor.messageChain)
-          ? contactor.messageChain.filter((m) => m && m.status === "streaming")
-          : [];
+        contactorsStore.applyMessageEvent({
+          type: "history.reconcile",
+          contactorId: contactor.id,
+          messages: res.messages,
+          mode: "replace",
+        });
 
-        if (activeStreamingMsgs.length > 0) {
-          const serverMsgIds = new Set(res.messages.map((m) => m.id));
-          const uniqueStreamingMsgs = activeStreamingMsgs.filter(
-            (m) => !serverMsgIds.has(m.id),
-          );
-          contactor.messageChain = [...res.messages, ...uniqueStreamingMsgs];
-        } else {
-          contactor.messageChain = res.messages;
-        }
-
-        renderedCount.value = Math.min(20, contactor.messageChain.length);
+        renderedCount.value = Math.max(20, contactor.messageChain.length);
         contactorsStore.updateContactorSummary(contactor);
         client.setLocalStorage();
         nextTick(() => {
@@ -322,13 +341,14 @@ const loadChannelHistory = async (options = {}) => {
         });
       } else {
         // 触顶向前翻页加载
-        const existingIds = new Set(contactor.messageChain.map((m) => m.id));
-        const newUniqueMsgs = res.messages.filter(
-          (m) => !existingIds.has(m.id),
-        );
-        if (newUniqueMsgs.length > 0) {
-          contactor.messageChain.unshift(...newUniqueMsgs);
-          renderedCount.value += newUniqueMsgs.length;
+        const merged = contactorsStore.applyMessageEvent({
+          type: "history.reconcile",
+          contactorId: contactor.id,
+          messages: res.messages,
+          mode: "prepend",
+        });
+        if (merged.added > 0) {
+          renderedCount.value += merged.added;
         } else {
           // 本次翻页没有新消息，视为服务端历史已取尽，避免重复请求
           hasMoreServerHistory.value = false;
@@ -344,10 +364,124 @@ const loadChannelHistory = async (options = {}) => {
 
 const handleLoadMoreChannelHistory = async () => {
   const contactor = activeContactor.value;
-  if (!contactor || contactor.platform !== "channel") return;
+  if (!isServerSessionContactor(contactor)) return;
   const earliestMsg = contactor.messageChain?.[0];
   const before = earliestMsg?.time || null;
   await loadChannelHistory({ before, limit: 20 });
+};
+
+const subAgentSessionLoads = new Set();
+let subAgentSyncing = false;
+
+// Bootstrap/reconnect reconciliation only. Live SubAgent updates arrive through
+// the normal Socket.IO LLM stream and never depend on periodic history polling.
+const pullSubAgentSession = async (contactor) => {
+  if (
+    !contactor?.sessionId ||
+    !contactor?.agentId ||
+    !client.isConnected ||
+    !client.socket ||
+    subAgentSessionLoads.has(contactor.id)
+  )
+    return;
+
+  subAgentSessionLoads.add(contactor.id);
+  try {
+    const res = await client.socket.fetch(
+      `/api/agent/history/${contactor.agentId}`,
+      { limit: 200, sessionId: contactor.sessionId },
+    );
+    if (!Array.isArray(res?.messages)) return;
+
+    const current = contactorsStore.contactors[contactor.id];
+    if (!current || current.sessionId !== contactor.sessionId) return;
+    const previousLastId = current.messageChain?.at(-1)?.id;
+    contactorsStore.applyMessageEvent({
+      type: "history.reconcile",
+      contactorId: current.id,
+      messages: res.messages,
+      mode: "replace",
+      markPending: !current.active,
+    });
+    current.lastUpdate =
+      res.messages.at(-1)?.time || current.lastUpdate || Date.now();
+    contactorsStore.updateContactorSummary(current);
+    if (!current.active && previousLastId !== res.messages.at(-1)?.id) {
+      current.hasPendingTask = true;
+    }
+    if (activeContactor.value?.id === current.id) {
+      renderedCount.value = Math.max(20, res.messages.length);
+    }
+  } catch (error) {
+    console.warn("[ChatView] 拉取 SubAgent Session 失败:", error);
+  } finally {
+    subAgentSessionLoads.delete(contactor.id);
+  }
+};
+
+const discoverSubAgentContacts = async (parent) => {
+  if (!parent?.agentId || !parent?.sessionId) return;
+  try {
+    const response = await subagentsAPI.listGroups(
+      parent.agentId,
+      parent.sessionId,
+    );
+    const groups = response.data?.groups || [];
+    for (const group of groups) {
+      for (const runSummary of group.runs || []) {
+        // queued 只表示已建档；startedAt 才表示这个 child Session 已真正被唤起。
+        if (!runSummary.sessionId || !runSummary.startedAt) continue;
+        const contactorId = `sub_agent_${runSummary.sessionId}`;
+        const existing = contactorsStore.contactors[contactorId];
+        const statusChanged = existing?.runStatus !== runSummary.status;
+        let run = {
+          ...runSummary,
+          agentId: parent.agentId,
+          groupId: group.id,
+          parentSessionId: parent.sessionId,
+        };
+        if (!existing) {
+          const detail = await subagentsAPI.getRun(runSummary.id);
+          run = detail.data || run;
+        }
+        const contactor = contactorsStore.upsertSubAgentContactor(run, {
+          avatar: parent.avatar,
+        });
+        if (contactor && (!existing || statusChanged)) {
+          await pullSubAgentSession(contactor);
+        }
+      }
+    }
+  } catch (error) {
+    console.warn("[ChatView] 同步 SubAgent 联系人失败:", error);
+  }
+};
+
+const syncSubAgentRuntime = async () => {
+  if (subAgentSyncing) return;
+  subAgentSyncing = true;
+  const contactor = activeContactor.value;
+  try {
+    if (contactor?.platform === "agent") {
+      await discoverSubAgentContacts(contactor);
+      return;
+    }
+    if (contactor?.platform === "sub_agent") {
+      if (contactor.runId) {
+        try {
+          const response = await subagentsAPI.getRun(contactor.runId);
+          contactorsStore.upsertSubAgentContactor(response.data || contactor, {
+            avatar: contactor.avatar,
+          });
+        } catch (error) {
+          console.warn("[ChatView] 刷新 SubAgent Run 失败:", error);
+        }
+      }
+      await pullSubAgentSession(contactor);
+    }
+  } finally {
+    subAgentSyncing = false;
+  }
 };
 
 const {
@@ -538,11 +672,6 @@ watch(
 
     cancelSpeech();
 
-    // 清空上一个会话中残留的待处理交互浮层，防止跨会话串屏
-    import("@/stores/interactionStore.js").then(({ useInteractionStore }) => {
-      useInteractionStore().clearInteraction();
-    });
-
     // Deactivate old contactor
     if (oldVal) {
       const oldContactor = contactorsStore.contactors[oldVal];
@@ -554,7 +683,7 @@ watch(
     // Switch to new contactor in store
     contactorsStore.selectContactor(newVal);
 
-    if (activeContactor.value?.platform === "channel") {
+    if (isServerSessionContactor(activeContactor.value)) {
       hasMoreServerHistory.value = true;
       if (
         !activeContactor.value.messageChain ||
@@ -578,6 +707,7 @@ watch(
 
     // Sync with socket for the new contactor
     trySync();
+    syncSubAgentRuntime();
   },
 );
 
@@ -587,7 +717,7 @@ watch(
     if (
       contactorId &&
       isConnected &&
-      activeContactor.value?.platform === "channel"
+      isServerSessionContactor(activeContactor.value)
     ) {
       if (
         !activeContactor.value.messageChain ||
@@ -835,7 +965,7 @@ const trySync = () => {
   const contactor = activeContactor.value;
   if (!contactor) return;
 
-  if (contactor.platform === "channel") {
+  if (isServerSessionContactor(contactor)) {
     if (!contactor.messageChain || contactor.messageChain.length === 0) {
       loadChannelHistory({ limit: 20 });
     }
@@ -996,12 +1126,13 @@ onMounted(() => {
   // Sync with socket on mount
   trySync();
   if (
-    activeContactor.value?.platform === "channel" &&
+    isServerSessionContactor(activeContactor.value) &&
     (!activeContactor.value.messageChain ||
       activeContactor.value.messageChain.length === 0)
   ) {
     loadChannelHistory({ limit: 20 });
   }
+  syncSubAgentRuntime();
   if (client.socket) {
     client.socket.on("connect", trySync);
   }
@@ -1040,6 +1171,7 @@ onMounted(() => {
 watch(isConnected, (val) => {
   if (val) {
     trySync();
+    syncSubAgentRuntime();
   }
 });
 
@@ -1062,7 +1194,6 @@ onBeforeUnmount(() => {
   if (client.socket) {
     client.socket.off("connect", trySync);
   }
-
   // Mark contactor as inactive on leave
   const contactor = contactorsStore.activeContactor;
   if (contactor) {
@@ -1097,7 +1228,16 @@ onBeforeUnmount(() => {
         :active-contactor="activeContactor"
         @back="tolist"
         @to-profile="toProfile"
-        @share="share"
+      />
+
+      <SubAgentDrawer
+        v-model="subAgentDrawerVisible"
+        :agent-id="activeContactor.agentId || activeContactor.id"
+        :session-id="
+          activeContactor.platform === 'sub_agent'
+            ? activeContactor.parentSessionId
+            : activeContactor.sessionId || ''
+        "
       />
 
       <!-- Selection Banners -->
@@ -1146,7 +1286,11 @@ onBeforeUnmount(() => {
           :current-speaking-message-id="currentSpeakingMessageId"
           :can-retry="canRetry"
           :is-group="activeContactor?.platform === 'group'"
-          :is-channel="activeContactor?.platform === 'channel'"
+          :is-channel="
+            activeContactor?.platform === 'agent' ||
+            activeContactor?.platform === 'sub_agent'
+          "
+          :read-only="activeContactor?.readOnly === true"
           @message-option="handleMessageOption"
           @close="showMenu = false"
         />
@@ -1245,7 +1389,7 @@ onBeforeUnmount(() => {
       </div>
 
       <InputEditor
-        v-if="!isMultiSelect"
+        v-if="!isMultiSelect && !activeContactor?.readOnly"
         ref="inputEditor"
         :active-contactor="activeContactor"
         @stroge="client.setLocalStorage()"
@@ -1254,6 +1398,11 @@ onBeforeUnmount(() => {
         @clean-history="cleanHistory"
         @to-buttom="toButtom"
       />
+
+      <div v-else-if="!isMultiSelect" class="sub-agent-readonly-bar">
+        <span>SubAgent Session 只读</span>
+        <small>消息由后端运行过程同步，不能在这里发送或重试。</small>
+      </div>
 
       <div v-else class="multi-select-action-bar">
         <div class="actions">
@@ -1313,12 +1462,6 @@ onBeforeUnmount(() => {
     </div>
     <!-- End of .chat-main-area -->
 
-    <!-- QQ Style Right Sidebar for Group Chat (Desktop only) -->
-    <GroupSidebar
-      v-if="activeContactor.platform === 'group' && !isMobileDevice"
-      :group="activeContactor"
-    />
-
     <!-- Screenshot Preview Dialog & Drawer -->
     <ScreenshotPreview
       v-model="showImagePreview"
@@ -1329,7 +1472,7 @@ onBeforeUnmount(() => {
       :qrUrl="qrUrl"
       :previewShareUrl="previewShareUrl"
       :isMobileDevice="isMobileDevice"
-      :is-channel="activeContactor?.platform === 'channel'"
+      :is-channel="activeContactor?.platform === 'agent'"
       @close="cancelMultiSelect"
       @copy="copyPreviewImage"
       @download="downloadPreviewImage"
@@ -1337,30 +1480,30 @@ onBeforeUnmount(() => {
       @width-mode-change="onExportWidthModeChange"
       @qr-code-change="onQRCodeChange"
     />
-  </div>
 
-  <!-- anyui 全屏图片预览（Teleport 到 body，脱离 Shadow DOM/消息气泡定位上下文） -->
-  <Teleport to="body">
-    <transition name="mio-img-preview-fade">
-      <div
-        v-if="imagePreview.visible"
-        class="mio-img-preview-overlay"
-        @click.self="imagePreview.visible = false"
-      >
-        <img
-          :src="imagePreview.url"
-          class="mio-img-preview-img"
-          alt="preview"
-        />
-        <button
-          class="mio-img-preview-close"
-          @click="imagePreview.visible = false"
+    <!-- anyui 全屏图片预览（Teleport 到 body，脱离 Shadow DOM/消息气泡定位上下文） -->
+    <Teleport to="body">
+      <transition name="mio-img-preview-fade">
+        <div
+          v-if="imagePreview.visible"
+          class="mio-img-preview-overlay"
+          @click.self="imagePreview.visible = false"
         >
-          ×
-        </button>
-      </div>
-    </transition>
-  </Teleport>
+          <img
+            :src="imagePreview.url"
+            class="mio-img-preview-img"
+            alt="preview"
+          />
+          <button
+            class="mio-img-preview-close"
+            @click="imagePreview.visible = false"
+          >
+            ×
+          </button>
+        </div>
+      </transition>
+    </Teleport>
+  </div>
 </template>
 
 <style lang="sass" scoped>
@@ -1811,6 +1954,25 @@ $mobile: 768px
         font-weight: 500
         letter-spacing: 0.5px
         transition: color 0.3s ease
+
+.sub-agent-readonly-bar
+    min-height: 4.5rem
+    padding: 0.85rem 1.25rem
+    border-top: 1px solid var(--mio-border-color-light)
+    background: var(--mio-bg-primary)
+    display: flex
+    flex-direction: column
+    align-items: center
+    justify-content: center
+    gap: 0.25rem
+    color: var(--mio-text-secondary)
+
+    span
+        color: var(--mio-text-primary)
+        font-weight: 600
+
+    small
+        font-size: 0.75rem
 
 @keyframes dot-jump
     0%, 80%, 100%
