@@ -417,7 +417,7 @@ const allMenuItems = [
   { index: "search-adapters", label: "搜索服务", icon: Search },
   { index: "vision-adapters", label: "识图服务", icon: View },
   { index: "shell-policy", label: "Shell 权限", icon: Lock },
-  { index: "channels", label: "渠道管理", icon: Share },
+  { index: "channels", label: "Agent 与渠道", icon: Share },
   { index: "automation", label: "系统任务", icon: Operation },
   { index: "push", label: "推送设置", icon: Bell },
   { index: "server", label: "服务器配置", icon: Monitor },

@@ -122,7 +122,42 @@
         </template>
 
         <template v-else>
-          <el-empty description="本地存储无需额外配置" :image-size="100" />
+          <el-divider>本地存储配置</el-divider>
+
+          <el-alert
+            type="info"
+            :closable="false"
+            show-icon
+            style="margin-bottom: 20px"
+          >
+            <template #title>
+              上传与发布的文件保存在服务端本地磁盘（<code>output/uploaded</code>）。可选配置外部访问域名与端口；若留空，系统将优先自动使用当前用户访问的前端域名，无域名时自动使用本地回环地址与配置端口。
+            </template>
+          </el-alert>
+
+          <el-form-item label="外部访问域名" prop="domain">
+            <el-input
+              v-model="formData.domain"
+              placeholder="例如 https://miochat.com 或 chat.example.com"
+            />
+            <template #extra>
+              <span class="form-item-tip">
+                可选。用于拼接外部访问的文件链接。支持包含协议（如 https://）或纯域名。
+              </span>
+            </template>
+          </el-form-item>
+
+          <el-form-item label="外部访问端口" prop="port">
+            <el-input
+              v-model="formData.port"
+              placeholder="默认使用服务配置端口 (如 3080)"
+            />
+            <template #extra>
+              <span class="form-item-tip">
+                可选。外部服务端口号，留空时默认取系统全局配置里的端口号。
+              </span>
+            </template>
+          </el-form-item>
         </template>
       </el-form>
     </el-card>
@@ -142,6 +177,8 @@ const testing = ref(false);
 // 表单数据
 const formData = reactive({
   type: "local",
+  domain: "",
+  port: "",
   bucket: "",
   endpoint: "",
   accessKeyId: "",
@@ -177,6 +214,8 @@ const loadConfig = async () => {
 
     Object.assign(formData, {
       type: storageType,
+      domain: storageConfig.domain || "",
+      port: storageConfig.port || "",
       bucket: storageConfig.bucket || "",
       endpoint: storageConfig.endpoint || "",
       accessKeyId: storageConfig.accessKeyId || "",
@@ -197,22 +236,29 @@ const handleTest = async () => {
   try {
     if (formData.type !== "local") {
       await formRef.value.validate();
-    } else {
-      ElMessage.success("本地存储无需测试");
-      return;
     }
 
     testing.value = true;
 
     const payload = {
       type: formData.type,
-      bucket: formData.bucket,
-      endpoint: formData.endpoint,
-      accessKeyId: formData.accessKeyId,
-      secretAccessKey: formData.secretAccessKey,
-      baseUrl: formData.baseUrl,
-      region: formData.region,
     };
+
+    if (formData.type === "local") {
+      Object.assign(payload, {
+        domain: formData.domain ? formData.domain.trim() : "",
+        port: formData.port ? String(formData.port).trim() : "",
+      });
+    } else {
+      Object.assign(payload, {
+        bucket: formData.bucket,
+        endpoint: formData.endpoint,
+        accessKeyId: formData.accessKeyId,
+        secretAccessKey: formData.secretAccessKey,
+        baseUrl: formData.baseUrl,
+        region: formData.region,
+      });
+    }
 
     const result = await configStore.testStorageConfig(payload);
 
@@ -245,7 +291,12 @@ const handleSave = async () => {
       type: formData.type,
     };
 
-    if (formData.type !== "local") {
+    if (formData.type === "local") {
+      Object.assign(payload, {
+        domain: formData.domain ? formData.domain.trim() : "",
+        port: formData.port ? String(formData.port).trim() : "",
+      });
+    } else {
       Object.assign(payload, {
         bucket: formData.bucket,
         endpoint: formData.endpoint,

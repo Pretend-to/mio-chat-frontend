@@ -367,7 +367,7 @@ export default {
           // 当名称策略被切换为「跟随模型」(0 / "MODEL") 时，立即同步模型名
           const isNameModelPolicy =
             (newInfo.namePolicy === 0 || newInfo.namePolicy === "MODEL") &&
-            this.activeContactor?.platform !== "channel";
+            this.activeContactor?.platform !== "agent";
           const wasNameModelPolicy =
             oldInfo &&
             (oldInfo.namePolicy === 0 || oldInfo.namePolicy === "MODEL");
@@ -457,22 +457,21 @@ export default {
       const rawId = this.$route.params.id;
       const currentId = isNaN(Number(rawId)) ? String(rawId) : Number(rawId);
       this.activeContactor = client.getContactor(currentId);
-      if (!this.activeContactor && String(rawId).startsWith("c_")) {
+      if (!this.activeContactor && String(rawId).startsWith("agent_")) {
         try {
           const { configAPI } = await import("@/lib/configApi.js");
-          const res = await configAPI.request(`/api/channels/${rawId}`);
+          const res = await configAPI.request(`/api/agents/${rawId}`);
           if (res?.data) {
-            const ch = res.data;
+            const agent = res.data;
             const store = useContactorsStore();
-            this.activeContactor = await store.addChannelContactor({
-              id: ch.id,
-              channelId: ch.id,
-              name: ch.name || "微信助手",
-              avatar: ch.avatar || "/static/icons/512x512.png",
-              agentId: ch.agentId || "wechat-master",
-              model: ch.model || "",
-              provider: ch.provider || "",
-              intro: `微信渠道 Bot (${ch.id})`,
+            this.activeContactor = await store.addAgentContactor({
+              id: agent.id,
+              name: agent.name || "Agent",
+              avatar: agent.avatar || "/static/icons/512x512.png",
+              defaultSessionId: agent.defaultSessionId,
+              model: agent.model || "",
+              provider: agent.provider || "",
+              intro: agent.description || "Agent",
             });
           }
         } catch (e) {
@@ -535,13 +534,13 @@ export default {
         namePolicy:
           namePolicy !== undefined
             ? namePolicy
-            : this.activeContactor.platform === "channel"
+            : this.activeContactor.platform === "agent"
               ? 1
               : 0,
         avatarPolicy:
           avatarPolicy !== undefined
             ? avatarPolicy
-            : this.activeContactor.platform === "channel"
+            : this.activeContactor.platform === "agent"
               ? 1
               : 0,
         priority: priority === 1 ? false : true,

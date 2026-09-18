@@ -141,7 +141,7 @@ const router = createRouter({
           path: "channels",
           name: "settings_channels",
           component: () => import("../views/settings/ChannelManagerView.vue"),
-          meta: { title: "渠道管理" },
+          meta: { title: "Agent 与渠道" },
         },
 
         {

@@ -36,7 +36,7 @@
         :class="{ 'sub-tab': true, active: activeTab === 'status' }"
         @click="activeTab = 'status'"
       >
-        🔌 渠道状态
+        ⚡ Agent 状态
       </div>
     </div>
 
@@ -168,7 +168,7 @@
 
     <!-- Tab 3: Tools -->
     <div v-if="activeTab === 'tools'" class="tab-pane">
-      <div class="group-title">Channel 工具策略</div>
+      <div class="group-title">Agent 工具策略</div>
       <div class="settings-card">
         <div class="setting-field">
           <div class="field-label">工具插件</div>
@@ -183,9 +183,7 @@
           <div class="field-value">AUTO（固定）</div>
         </div>
         <div class="card-desc">
-          Channel 固定启用完整 ai-plugin、terminal-pty 与
-          file-editor-plugin，不支持按渠道增删工具。普通 Web
-          会话的工具配置不受影响。
+          工具能力归属于 Agent，并在 Web、微信等所有绑定渠道中保持一致。
         </div>
       </div>
     </div>
@@ -289,10 +287,10 @@
       </el-skeleton>
     </div>
 
-    <!-- Tab 4: Channel Status -->
+    <!-- Tab 6: Agent Status -->
     <div v-if="activeTab === 'status'" class="tab-pane">
       <div class="group-title">
-        <span>渠道运行状态</span>
+        <span>Agent 运行状态</span>
         <el-button
           size="small"
           :loading="refreshingStatus"
@@ -303,15 +301,15 @@
       </div>
       <div class="settings-card">
         <div class="setting-field">
-          <div class="field-label">渠道 ID</div>
+          <div class="field-label">Agent ID</div>
           <div class="field-value">
-            <code>{{ channelId }}</code>
+            <code>{{ agentId }}</code>
           </div>
         </div>
         <div class="setting-field">
-          <div class="field-label">归属 Agent</div>
+          <div class="field-label">当前 Session</div>
           <div class="field-value">
-            <code>{{ agentId }}</code>
+            <code>{{ sessionId }}</code>
           </div>
         </div>
         <div class="setting-field">
@@ -336,7 +334,7 @@
               :loading="togglingStatus"
               @click="toggleStatus('stop')"
             >
-              停止渠道
+              停用 Agent
             </el-button>
             <el-button
               v-else
@@ -345,12 +343,12 @@
               :loading="togglingStatus"
               @click="toggleStatus('start')"
             >
-              启动渠道
+              启用 Agent
             </el-button>
           </div>
         </div>
         <div class="setting-field">
-          <div class="field-label">微信服务连接</div>
+          <div class="field-label">Agent 可用状态</div>
           <div
             class="field-value"
             style="
@@ -365,16 +363,16 @@
               type="success"
               effect="light"
             >
-              🟢 活跃链接已建立
+              🟢 可接受会话请求
             </el-tag>
             <el-tag
               v-else-if="channelStatus === 'running' && !channelConnected"
               type="danger"
               effect="light"
             >
-              🔴 链接断开 / 异常
+              🔴 Agent 不可用
             </el-tag>
-            <el-tag v-else type="info" effect="plain"> ⚪ 未建立连接 </el-tag>
+            <el-tag v-else type="info" effect="plain"> ⚪ 已停用 </el-tag>
           </div>
         </div>
         <div
@@ -407,7 +405,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { client } from "@/lib/runtime.js";
 import { configAPI } from "@/lib/configApi.js";
@@ -430,12 +428,10 @@ const props = defineProps({
 
 const connectionStore = useConnectionStore();
 const activeTab = ref("soul");
-const channelId = computed(
-  () => props.contactor.channelId || props.contactor.id,
-);
-const agentId = computed(() => props.contactor.agentId || "wechat-master");
+const agentId = computed(() => props.contactor.agentId || props.contactor.id);
+const sessionId = computed(() => props.contactor.sessionId || "");
 const loading = ref(true);
-const cacheKey = computed(() => `mio_channel_cache_${channelId.value}`);
+const cacheKey = computed(() => `mio_agent_cache_${agentId.value}`);
 
 // Basic Info
 const basicName = ref(props.contactor.name || "");
@@ -445,8 +441,8 @@ const savingBasic = ref(false);
 async function saveBasicInfo() {
   savingBasic.value = true;
   try {
-    await configAPI.request(`/api/channels/${channelId.value}`, {
-      method: "PUT",
+    await configAPI.request(`/api/agents/${agentId.value}`, {
+      method: "PATCH",
       body: {
         name: basicName.value,
         avatar: basicAvatar.value,
@@ -651,13 +647,13 @@ async function loadData() {
     availableProviders.value = Object.keys(models);
   } catch {}
 
-  // 2. HTTP 渠道数据（独立于 socket，首屏刷新即可呈现）
+  // 2. HTTP Agent data
   try {
-    const res = await configAPI.request(`/api/channels/${channelId.value}`);
+    const res = await configAPI.request(`/api/agents/${agentId.value}`);
     if (res?.data) {
       channelStatus.value =
-        res.data.status || (res.data.isRunning ? "running" : "stopped");
-      channelConnected.value = !!res.data.connected;
+        res.data.status === "active" ? "running" : "stopped";
+      channelConnected.value = res.data.status === "active";
       lastPollSuccess.value = res.data.lastPollSuccess || null;
       lastActive.value = res.data.lastActive || null;
       lastError.value = res.data.lastError || null;
@@ -673,15 +669,19 @@ async function loadData() {
       saveToCache();
     }
   } catch (err) {
-    console.warn("加载渠道 HTTP 配置失败:", err);
+    console.warn("加载 Agent 配置失败:", err);
   }
 
   // 3. Socket RPC（Soul 与 Memory）
   if (client.socket && client.isConnected) {
     try {
       const [soulRes, memRes] = await Promise.allSettled([
-        client.socket.fetch(`/api/channel/get_soul/${channelId.value}`, {}),
-        client.socket.fetch(`/api/channel/get_memory/${channelId.value}`, {}),
+        client.socket.fetch(`/api/agent/get_soul/${agentId.value}`, {
+          sessionId: sessionId.value,
+        }),
+        client.socket.fetch(`/api/agent/get_memory/${agentId.value}`, {
+          sessionId: sessionId.value,
+        }),
       ]);
       if (soulRes.status === "fulfilled" && soulRes.value) {
         soulContent.value = soulRes.value.soul || "";
@@ -702,8 +702,9 @@ async function loadData() {
 async function saveSoul() {
   savingSoul.value = true;
   try {
-    await client.socket.fetch(`/api/channel/save_soul/${channelId.value}`, {
+    await client.socket.fetch(`/api/agent/save_soul/${agentId.value}`, {
       soul: soulContent.value,
+      sessionId: sessionId.value,
     });
     saveToCache();
     ElMessage.success("灵魂人格设定已保存并落盘！");
@@ -718,8 +719,9 @@ async function saveCrystal() {
   savingCrystal.value = true;
   try {
     const xml = buildXmlFromZones(zoneContents.value);
-    await client.socket.fetch(`/api/channel/save_crystal/${channelId.value}`, {
+    await client.socket.fetch(`/api/agent/save_crystal/${agentId.value}`, {
       crystal: xml,
+      sessionId: sessionId.value,
     });
     saveToCache();
     ElMessage.success("会话结晶已保存！");
@@ -732,9 +734,10 @@ async function saveCrystal() {
 
 async function saveGlobalCategory(category) {
   try {
-    await client.socket.fetch(`/api/channel/save_global/${channelId.value}`, {
+    await client.socket.fetch(`/api/agent/save_global/${agentId.value}`, {
       category,
       content: globalMemories.value[category] || "",
+      sessionId: sessionId.value,
     });
     saveToCache();
     ElMessage.success(`长期记忆 [${category}] 已更新！`);
@@ -767,8 +770,8 @@ async function saveModelConfig() {
   selectedModel.value = modelStr;
 
   try {
-    await configAPI.request(`/api/channels/${channelId.value}`, {
-      method: "PUT",
+    await configAPI.request(`/api/agents/${agentId.value}`, {
+      method: "PATCH",
       body: {
         provider: selectedProvider.value || "",
         model: modelStr,
@@ -789,22 +792,20 @@ async function saveModelConfig() {
 async function toggleStatus(action) {
   togglingStatus.value = true;
   try {
-    const res = await configAPI.request(
-      `/api/channels/${channelId.value}/${action}`,
-      {
-        method: "POST",
-      },
-    );
+    const res = await configAPI.request(`/api/agents/${agentId.value}`, {
+      method: "PATCH",
+      body: { status: action === "start" ? "active" : "disabled" },
+    });
     if (res?.data) {
       channelStatus.value =
-        res.data.status || (action === "start" ? "running" : "stopped");
-      channelConnected.value = !!res.data.connected;
+        res.data.status === "active" ? "running" : "stopped";
+      channelConnected.value = res.data.status === "active";
     } else {
       channelStatus.value = action === "start" ? "running" : "stopped";
       channelConnected.value = action === "start";
     }
     saveToCache();
-    ElMessage.success(action === "start" ? "渠道已启动！" : "渠道已停止");
+    ElMessage.success(action === "start" ? "Agent 已启用！" : "Agent 已停用");
     setTimeout(() => {
       loadData();
     }, 600);
@@ -818,22 +819,7 @@ async function toggleStatus(action) {
 onMounted(() => {
   loadFromCache();
   loadData();
-  client.on("channel_config_updated", handleChannelConfigUpdated);
 });
-
-onBeforeUnmount(() => {
-  client.off("channel_config_updated", handleChannelConfigUpdated);
-});
-
-function handleChannelConfigUpdated(channel) {
-  if (String(channel?.id) !== String(channelId.value)) return;
-  selectedProvider.value = channel.provider || "";
-  selectedModel.value = getCleanModelStr(channel.model || "");
-  if (!props.contactor.options) props.contactor.options = {};
-  props.contactor.options.provider = selectedProvider.value;
-  props.contactor.options.model = selectedModel.value;
-  saveToCache();
-}
 
 watch(
   () => props.contactor.id,
