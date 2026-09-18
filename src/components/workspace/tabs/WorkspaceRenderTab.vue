@@ -30,7 +30,7 @@
 
         <!-- 在新标签页中打开 -->
         <button
-          v-if="hasHtmlSource || isWebEmbed || isOfficeView || isPdfView || isMarkdownView"
+          v-if="hasHtmlSource || isWebEmbed || isFileViewerSupported || isMarkdownView"
           class="action-btn"
           :title="hasHtmlSource ? '在新标签页中打开独立预览' : '在新标签页中打开'"
           @click="openInNewTab"
@@ -42,8 +42,8 @@
           </svg>
         </button>
 
-        <!-- 媒体 / 文件 / Office / PDF / Markdown：下载 -->
-        <template v-if="showMediaActions || isOfficeView || isPdfView || (isMarkdownView && rawUrl)">
+        <!-- 媒体 / 文件 / Office / PDF / 压缩包 / Markdown：下载 -->
+        <template v-if="showMediaActions || isFileViewerSupported || (isMarkdownView && rawUrl)">
           <button class="action-btn" title="下载文件" @click="handleDownload(mediaUrl || rawUrl, tabTitle)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -86,54 +86,13 @@
         </div>
       </template>
 
-      <!-- Office 产物：Word / Excel / PPT 使用微软 Office Online 直链内嵌渲染 -->
-      <template v-else-if="isOfficeView">
-        <div v-if="isLocalhost" class="office-hint-banner">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          <span>Office 预览由微软公网服务提供；当前处于本地开发环境 (localhost)，若预览失败可点击右上角【下载文件】。</span>
-        </div>
-        <iframe
-          class="render-iframe"
-          :src="officeViewerUrl"
-          :title="tabTitle"
-          loading="lazy"
-          referrerpolicy="no-referrer"
-          sandbox="allow-scripts allow-forms allow-popups allow-modals allow-downloads"
-          allow="clipboard-write; fullscreen; autoplay"
-          @load="onIframeLoad"
-        ></iframe>
-        <div v-if="iframeBlocked" class="embed-fallback">
-          <div class="fallback-card">
-            <div class="fallback-title">无法加载 Office 在线预览</div>
-            <div class="fallback-url">{{ rawUrl }}</div>
-            <button class="fallback-btn" @click="handleDownload(rawUrl, tabTitle)">
-              直接下载文件
-            </button>
-          </div>
-        </div>
-        <div v-else-if="!iframeLoaded" class="embed-loading">
-          <el-icon class="is-loading"><Loading /></el-icon>
-          <span style="margin-left: 8px; font-size: 13px;">正在通过微软 Office 服务加载文档...</span>
-        </div>
-      </template>
-
-      <!-- PDF 产物：浏览器原生直接 iframe 渲染 -->
-      <template v-else-if="isPdfView">
-        <iframe
-          class="render-iframe"
-          :src="webUrl || rawUrl"
-          :title="tabTitle"
-          loading="lazy"
-          @load="onIframeLoad"
-        ></iframe>
-        <div v-if="!iframeLoaded" class="embed-loading">
-          <el-icon class="is-loading"><Loading /></el-icon>
-          <span style="margin-left: 8px; font-size: 13px;">正在加载 PDF 文档...</span>
-        </div>
+      <!-- 文档 / Office / PDF / 压缩包产物：使用 AsyncFileViewer 纯前端安全按需预览 -->
+      <template v-else-if="isFileViewerSupported">
+        <AsyncFileViewer
+          :file="rawUrl"
+          :file-name="tabTitle"
+          :file-type="renderType"
+        />
       </template>
 
       <!-- Markdown 产物：使用现有 md 预览器 (mio-previewer) -->
@@ -194,8 +153,12 @@
 
       <!-- Image View -->
       <template v-else-if="renderType === 'image'">
-        <div class="image-view-container">
-          <div class="image-box">
+        <div class="image-view-container" @click="handleImagePreview">
+          <div
+            class="image-box"
+            title="点击全屏预览与手势缩放"
+            style="cursor: pointer"
+          >
             <img :src="mediaUrl" :alt="tabTitle" class="render-image" />
           </div>
         </div>
@@ -288,7 +251,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onBeforeUnmount } from "vue";
+import { ref, computed, watch, onBeforeUnmount, defineAsyncComponent } from "vue";
 import { ElMessage } from "element-plus";
 import { Loading } from "@element-plus/icons-vue";
 import ShadowHtml from "@/components/ShadowHtml.vue";
@@ -300,6 +263,17 @@ import {
 } from "mio-previewer/plugins/custom";
 import { katexPlugin } from "mio-previewer/plugins/markdown-it";
 import { client } from "@/lib/runtime.js";
+import { previewImages } from "@/utils/imageViewer.js";
+
+const AsyncFileViewer = defineAsyncComponent(() =>
+  import("@/components/workspace/viewers/AsyncFileViewer.vue")
+);
+
+const handleImagePreview = () => {
+  if (mediaUrl.value) {
+    previewImages([{ url: mediaUrl.value, title: tabTitle.value || "图片" }]);
+  }
+};
 
 const props = defineProps({
   tab: {
@@ -396,6 +370,18 @@ const isMarkdownView = computed(() => {
   );
 });
 
+const isArchiveView = computed(() => {
+  const ext = detectedExt.value;
+  return (
+    ["zip", "rar", "7z", "tar", "gz", "tgz", "bz2", "xz"].includes(ext) ||
+    renderType.value === "archive"
+  );
+});
+
+const isFileViewerSupported = computed(() => {
+  return isOfficeView.value || isPdfView.value || isArchiveView.value;
+});
+
 const isLocalhost = computed(() => {
   if (typeof window === "undefined") return false;
   return (
@@ -428,6 +414,7 @@ const typeLabel = computed(() => {
     return "Office";
   }
   if (isPdfView.value) return "PDF";
+  if (isArchiveView.value) return "压缩包";
   if (isMarkdownView.value) return "Markdown";
   if (isWebEmbed.value) return "网页";
   switch (renderType.value) {
@@ -490,8 +477,7 @@ const isHtmlView = computed(() => hasHtmlSource.value);
 /** 网页产物视图：有效 URL 且非媒体/文件/Office/PDF/Markdown/内联内容类型，直接用 iframe 渲染 */
 const isWebEmbed = computed(() => {
   if (isHtmlView.value) return false;
-  if (isOfficeView.value) return false;
-  if (isPdfView.value) return false;
+  if (isFileViewerSupported.value) return false;
   if (isMarkdownView.value) return false;
   if (!webUrl.value) return false;
 
@@ -528,7 +514,7 @@ const isWebEmbed = computed(() => {
 });
 
 const isEmbedMode = computed(() => {
-  return isWebEmbed.value || isOfficeView.value || isPdfView.value;
+  return isWebEmbed.value || isFileViewerSupported.value;
 });
 
 /** 媒体 / 文件的操作按钮（外开 + 下载），iframe 嵌入式网页改用单一外开按钮 */
@@ -536,8 +522,7 @@ const showMediaActions = computed(() => {
   return (
     Boolean(mediaUrl.value) &&
     !isWebEmbed.value &&
-    !isOfficeView.value &&
-    !isPdfView.value &&
+    !isFileViewerSupported.value &&
     !isMarkdownView.value
   );
 });
@@ -611,17 +596,12 @@ const clearIframeTimer = () => {
 };
 
 watch(
-  () => [webUrl.value, officeViewerUrl.value, isOfficeView.value, isPdfView.value],
+  () => [webUrl.value, isWebEmbed.value],
   () => {
     clearIframeTimer();
     iframeLoaded.value = false;
     iframeBlocked.value = false;
-    const target = isOfficeView.value
-      ? officeViewerUrl.value
-      : isPdfView.value
-        ? webUrl.value || rawUrl.value
-        : webUrl.value;
-    if (!target) return;
+    if (!webUrl.value || !isWebEmbed.value) return;
     iframeTimer = setTimeout(() => {
       if (!iframeLoaded.value) iframeBlocked.value = true;
     }, 10000);
@@ -644,11 +624,7 @@ const onHtmlUpdated = (newHtml) => {
 };
 
 const openInNewTab = () => {
-  if (isOfficeView.value) {
-    openExternal(officeViewerUrl.value || rawUrl.value);
-    return;
-  }
-  if (isPdfView.value || isWebEmbed.value) {
+  if (isFileViewerSupported.value || isWebEmbed.value) {
     openExternal(webUrl.value || rawUrl.value);
     return;
   }

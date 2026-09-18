@@ -233,7 +233,10 @@
             <div
               v-else
               class="outer-render-card"
-              :class="`card-type-${getOuterItemType(item)}`"
+              :class="[
+                `card-type-${getOuterItemType(item)}`,
+                { 'is-file-card': isFileCardItem(item) },
+              ]"
             >
             <!-- 统一卡片头部 Header -->
             <div class="outer-card-header">
@@ -252,9 +255,9 @@
                 </span>
               </div>
               <div class="outer-card-actions">
-                <!-- 在工作区打开按钮 -->
+                <!-- 在工作区打开按钮 (仅非文件卡片展示，文件卡片已有内部专属交互，避免重复) -->
                 <button
-                  v-if="canOpenInWorkspace(item)"
+                  v-if="canOpenInWorkspace(item) && !isFileCardItem(item)"
                   class="outer-card-btn primary-btn"
                   title="在工作区侧边栏打开"
                   @click.stop="openInWorkspace(item, element.data)"
@@ -336,42 +339,140 @@
             <div class="outer-card-body">
               <!-- Office 文档卡片 -->
               <template v-if="getOuterItemType(item) === 'office'">
-                <div class="outer-file-box">
-                  <div class="file-icon-box office-icon">📊</div>
+                <div
+                  class="outer-file-box"
+                  title="点击在工作区打开预览"
+                  @click.stop="openInWorkspace(item, element.data)"
+                >
+                  <div
+                    class="file-icon-box"
+                    :style="{
+                      color: getFileIconInfo(item, element.data).color,
+                      background: getFileIconInfo(item, element.data).bg,
+                    }"
+                  >
+                    <svg
+                      v-if="getFileIconInfo(item, element.data).type === 'excel'"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <path d="M8 13h8M8 17h8M12 10v10" />
+                    </svg>
+                    <svg
+                      v-else-if="getFileIconInfo(item, element.data).type === 'word'"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                      <line x1="10" y1="9" x2="8" y2="9" />
+                    </svg>
+                    <svg
+                      v-else
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <circle cx="12" cy="14" r="3" />
+                    </svg>
+                  </div>
                   <div class="file-details">
-                    <div class="file-name">
+                    <div
+                      class="file-name"
+                      :title="getOuterItemTitle(item, element.data)"
+                    >
                       {{ getOuterItemTitle(item, element.data) }}
                     </div>
                     <div class="file-subtext">
-                      Office 文档 · 支持微软在线预览
+                      {{ getOuterItemSubtext(item, element.data) }}
                     </div>
                   </div>
                   <button
                     class="file-preview-btn"
+                    title="在工作区打开预览"
                     @click.stop="openInWorkspace(item, element.data)"
                   >
-                    工作区预览
+                    <span>预览</span>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
                   </button>
                 </div>
               </template>
 
               <!-- PDF 文档卡片 -->
               <template v-else-if="getOuterItemType(item) === 'pdf'">
-                <div class="outer-file-box">
-                  <div class="file-icon-box pdf-icon">📕</div>
+                <div
+                  class="outer-file-box"
+                  title="点击在工作区打开预览"
+                  @click.stop="openInWorkspace(item, element.data)"
+                >
+                  <div
+                    class="file-icon-box"
+                    :style="{
+                      color: getFileIconInfo(item, element.data).color,
+                      background: getFileIconInfo(item, element.data).bg,
+                    }"
+                  >
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                    </svg>
+                  </div>
                   <div class="file-details">
-                    <div class="file-name">
+                    <div
+                      class="file-name"
+                      :title="getOuterItemTitle(item, element.data)"
+                    >
                       {{ getOuterItemTitle(item, element.data) }}
                     </div>
                     <div class="file-subtext">
-                      PDF 文档 · 支持工作区与浏览器直读
+                      {{ getOuterItemSubtext(item, element.data) }}
                     </div>
                   </div>
                   <button
                     class="file-preview-btn"
+                    title="在工作区打开预览"
                     @click.stop="openInWorkspace(item, element.data)"
                   >
-                    工作区预览
+                    <span>预览</span>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
                   </button>
                 </div>
               </template>
@@ -390,21 +491,55 @@
                     theme-mode="auto"
                   />
                 </div>
-                <div v-else class="outer-file-box">
-                  <div class="file-icon-box md-icon">📝</div>
+                <div
+                  v-else
+                  class="outer-file-box"
+                  title="点击在工作区打开预览"
+                  @click.stop="openInWorkspace(item, element.data)"
+                >
+                  <div
+                    class="file-icon-box"
+                    :style="{
+                      color: getFileIconInfo(item, element.data).color,
+                      background: getFileIconInfo(item, element.data).bg,
+                    }"
+                  >
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                    </svg>
+                  </div>
                   <div class="file-details">
-                    <div class="file-name">
+                    <div
+                      class="file-name"
+                      :title="getOuterItemTitle(item, element.data)"
+                    >
                       {{ getOuterItemTitle(item, element.data) }}
                     </div>
                     <div class="file-subtext">
-                      Markdown 文档 · 点击在工作区渲染
+                      {{ getOuterItemSubtext(item, element.data) }}
                     </div>
                   </div>
                   <button
                     class="file-preview-btn"
+                    title="在工作区打开预览"
                     @click.stop="openInWorkspace(item, element.data)"
                   >
-                    工作区预览
+                    <span>预览</span>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
                   </button>
                 </div>
               </template>
@@ -730,6 +865,105 @@ function getOuterItemBadge(item) {
   }
 }
 
+function formatFileSize(bytes) {
+  if (bytes === undefined || bytes === null || bytes === "" || isNaN(bytes)) return "";
+  const num = Number(bytes);
+  if (num <= 0) return "";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let i = 0;
+  let s = num;
+  while (s >= 1024 && i < units.length - 1) {
+    s /= 1024;
+    i++;
+  }
+  return `${s.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+}
+
+function getOuterItemSubtext(item, toolData) {
+  const rawUrl = item?.url || item?.src || item?.href || "";
+  const name = item?.fileName || item?.title || item?.name || "";
+  const clean = String(rawUrl || name).split("?")[0].split("#")[0];
+  const dotIndex = clean.lastIndexOf(".");
+  const ext = dotIndex !== -1 ? clean.slice(dotIndex + 1).toLowerCase() : "";
+
+  let typeName = "文档";
+  if (["doc", "docx", "dot", "rtf", "odt", "wps"].includes(ext)) {
+    typeName = "Word 文档";
+  } else if (["xls", "xlsx", "csv", "xlsm", "xlsb", "et"].includes(ext)) {
+    typeName = "Excel 表格";
+  } else if (["ppt", "pptx", "pps", "pptm", "dps"].includes(ext)) {
+    typeName = "PowerPoint 演示文稿";
+  } else if (ext === "pdf") {
+    typeName = "PDF 文档";
+  } else if (ext === "md" || ext === "markdown") {
+    typeName = "Markdown 文档";
+  } else if (["zip", "rar", "7z", "tar", "gz", "tgz", "bz2", "xz"].includes(ext)) {
+    typeName = "压缩归档";
+  } else if (["xmind", "drawio"].includes(ext)) {
+    typeName = "图表导图";
+  } else if (ext) {
+    typeName = `${ext.toUpperCase()} 文件`;
+  }
+
+  // 尝试获取大小（支持多种字段结构）
+  const rawSize =
+    item?.size ||
+    item?.fileSize ||
+    item?.bytes ||
+    item?.length ||
+    item?.meta?.size ||
+    item?.meta?.fileSize ||
+    toolData?.result?.size ||
+    toolData?.result?.fileSize ||
+    toolData?.result?.bytes ||
+    toolData?.args?.size;
+
+  let sizeStr = "";
+  if (typeof rawSize === "string" && /[KkMmGgTt]?[Bb]/.test(rawSize)) {
+    sizeStr = rawSize;
+  } else if (rawSize) {
+    sizeStr = formatFileSize(rawSize);
+  }
+
+  return sizeStr ? `${typeName} · ${sizeStr}` : typeName;
+}
+
+function isFileCardItem(item) {
+  if (!item) return false;
+  const t = getOuterItemType(item);
+  if (["office", "pdf", "archive", "file"].includes(t)) return true;
+  if (t === "markdown" && !getMarkdownText(item)) return true;
+  return false;
+}
+
+function getFileIconInfo(item, toolData) {
+  const rawUrl = item?.url || item?.src || item?.href || "";
+  const name = item?.fileName || item?.title || item?.name || "";
+  const clean = String(rawUrl || name).split("?")[0].split("#")[0];
+  const dotIndex = clean.lastIndexOf(".");
+  const ext = dotIndex !== -1 ? clean.slice(dotIndex + 1).toLowerCase() : "";
+
+  if (["doc", "docx", "dot", "rtf", "odt", "wps"].includes(ext)) {
+    return { type: "word", color: "#2b579a", bg: "rgba(43, 87, 154, 0.12)" };
+  }
+  if (["xls", "xlsx", "csv", "xlsm", "xlsb", "et"].includes(ext)) {
+    return { type: "excel", color: "#217346", bg: "rgba(33, 115, 70, 0.12)" };
+  }
+  if (["ppt", "pptx", "pps", "pptm", "dps"].includes(ext)) {
+    return { type: "ppt", color: "#d24726", bg: "rgba(210, 71, 38, 0.12)" };
+  }
+  if (ext === "pdf") {
+    return { type: "pdf", color: "#e11d48", bg: "rgba(225, 29, 72, 0.12)" };
+  }
+  if (["zip", "rar", "7z", "tar", "gz", "tgz", "bz2", "xz"].includes(ext)) {
+    return { type: "archive", color: "#8b5cf6", bg: "rgba(139, 92, 246, 0.12)" };
+  }
+  if (ext === "md" || ext === "markdown") {
+    return { type: "markdown", color: "#0891b2", bg: "rgba(8, 145, 178, 0.12)" };
+  }
+  return { type: "file", color: "#64748b", bg: "rgba(100, 116, 139, 0.12)" };
+}
+
 function getOuterItemTitle(item, toolData) {
   if (item.title) return item.title;
   if (item.fileName) return item.fileName;
@@ -930,10 +1164,14 @@ onUnmounted(disableIframeResize);
     border-radius: 8px
     background-color: #ffffff
 
+.tool-call-container-wrapper
+  align-self: flex-start
+  width: fit-content
+  max-width: 100%
+
 .outer-render-card
   width: fit-content
   max-width: 100%
-  min-width: min(100%, 240px)
   border-radius: 8px
   border: 1px solid var(--mio-border-color-light, rgba(0, 0, 0, 0.08))
   background: var(--mio-bg-surface, #ffffff)
@@ -945,12 +1183,9 @@ onUnmounted(disableIframeResize);
     border-color: var(--mio-border-color, rgba(0, 0, 0, 0.15))
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06)
 
-  &.card-type-office,
-  &.card-type-pdf,
-  &.card-type-markdown,
-  &.card-type-alert,
-  &.card-type-link
-    width: 100%
+  &.is-file-card
+    width: 330px
+    max-width: 100%
 
 .outer-card-header
   height: 32px
@@ -1060,10 +1295,30 @@ onUnmounted(disableIframeResize);
   display: flex
   align-items: center
   gap: 10px
-  padding: 4px 2px
+  padding: 4px 6px
+  border-radius: 6px
+  cursor: pointer
+  transition: background-color 0.15s ease
+  width: 100%
+  box-sizing: border-box
+
+  &:hover
+    background: var(--mio-bg-hover, rgba(0, 0, 0, 0.04))
+
+    .file-preview-btn
+      background: var(--mio-color-primary, #0099ff)
+      color: #ffffff
+      border-color: var(--mio-color-primary, #0099ff)
 
   .file-icon-box
-    font-size: 20px
+    width: 36px
+    height: 36px
+    min-width: 36px
+    min-height: 36px
+    border-radius: 8px
+    display: flex
+    align-items: center
+    justify-content: center
     flex-shrink: 0
 
   .file-details
@@ -1073,7 +1328,7 @@ onUnmounted(disableIframeResize);
     flex: 1
 
     .file-name
-      font-size: 12.5px
+      font-size: 13px
       font-weight: 600
       color: var(--mio-text-primary, #1e293b)
       white-space: nowrap
@@ -1084,20 +1339,24 @@ onUnmounted(disableIframeResize);
       font-size: 11px
       color: var(--mio-text-secondary, #64748b)
       margin-top: 2px
+      white-space: nowrap
+      overflow: hidden
+      text-overflow: ellipsis
 
   .file-preview-btn
-    padding: 3px 10px
+    display: inline-flex
+    align-items: center
+    gap: 3px
+    padding: 3px 8px
     border-radius: 4px
-    border: 1px solid var(--mio-color-primary, #0099ff)
-    background: var(--mio-bg-primary-light, rgba(0, 153, 255, 0.1))
+    border: 1px solid var(--mio-border-color-light, rgba(0, 153, 255, 0.25))
+    background: var(--mio-bg-primary-light, rgba(0, 153, 255, 0.08))
     color: var(--mio-color-primary, #0099ff)
     font-size: 11px
+    font-weight: 500
     cursor: pointer
+    flex-shrink: 0
     transition: all 0.15s ease
-
-    &:hover
-      background: var(--mio-color-primary, #0099ff)
-      color: #ffffff
 
 .outer-audio-box
   width: 100%

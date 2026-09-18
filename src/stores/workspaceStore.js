@@ -1,10 +1,29 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 
+function calculateDefaultDockedWidth() {
+  if (typeof window === "undefined") return 640;
+  try {
+    const saved = localStorage.getItem("mio_workspace_docked_width");
+    if (saved) {
+      const val = parseInt(saved, 10);
+      if (!isNaN(val) && val >= 380 && val <= window.innerWidth * 0.75) {
+        return val;
+      }
+    }
+  } catch {}
+
+  // Available width for chat + workspace (excluding ~350px left nav and friendlist)
+  const containerWidth = Math.max(500, window.innerWidth - 350);
+  // "比Chatview略小或者持平" -> target ~48% of container
+  const target = Math.round(containerWidth * 0.48);
+  return Math.max(480, Math.min(Math.round(window.innerWidth * 0.65), target));
+}
+
 export const useWorkspaceStore = defineStore("workspace", () => {
   const isOpen = ref(false);
   const isFullscreen = ref(false);
-  const dockedWidth = ref(540);
+  const dockedWidth = ref(calculateDefaultDockedWidth());
   const isResizing = ref(false);
   const windowWidth = ref(
     typeof window !== "undefined" ? window.innerWidth : 1440,
@@ -222,12 +241,20 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     isFullscreen.value = false;
   }
 
+  function setDockedWidth(width) {
+    dockedWidth.value = width;
+    try {
+      localStorage.setItem("mio_workspace_docked_width", String(width));
+    } catch {}
+  }
+
   return {
     isOpen,
     isDocked,
     isFullscreen,
     dockedWidth,
     isResizing,
+    setDockedWidth,
     tabs,
     activeTabId,
     activeTab,

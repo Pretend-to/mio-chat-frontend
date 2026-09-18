@@ -52,7 +52,17 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": fileURLToPath(new URL("./src", import.meta.url)),
+        "@napi-rs/canvas": fileURLToPath(new URL("./src/utils/emptyShim.js", import.meta.url)),
       },
+    },
+    optimizeDeps: {
+      include: [
+        "@open-file-viewer/core",
+        "@open-file-viewer/vue",
+        "pdfjs-dist",
+        "viewerjs",
+      ],
+      exclude: ["@napi-rs/canvas"],
     },
     css: {
       preprocessorOptions: {
@@ -128,11 +138,13 @@ export default defineConfig(({ mode }) => {
                 name: "vendor_misc",
                 // 排除 mio-previewer 包内按需加载的异步 chunk（mermaid 引擎、
                 // viewerjs、prism 语言等位于 mio-previewer/dist/ 下），
-                // 让它们不匹配任何 group，从而保留动态 import 的异步拆分，
-                // 避免被强制合并成 2.4MB 同步大块并在启动时 preload
+                // 以及 @open-file-viewer / pdfjs-dist 等纯按需加载的文件预览重型引擎，
+                // 让它们保留动态 import 的异步拆分，避免污染主 vendor 并在启动时被提前加载
                 test: (id) =>
                   /[\\/]node_modules[\\/]/.test(id) &&
-                  !id.includes('/mio-previewer/dist/'),
+                  !id.includes('/mio-previewer/dist/') &&
+                  !id.includes('@open-file-viewer') &&
+                  !id.includes('pdfjs-dist'),
                 priority: 10,
               },
               {

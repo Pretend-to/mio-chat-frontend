@@ -122,6 +122,7 @@ const onMouseUp = () => {
   workspaceStore.isResizing = false;
   window.removeEventListener("mousemove", onMouseMove);
   window.removeEventListener("mouseup", onMouseUp);
+  workspaceStore.setDockedWidth(workspaceStore.dockedWidth);
 };
 </script>
 

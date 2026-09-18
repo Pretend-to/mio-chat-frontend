@@ -14,8 +14,14 @@
         </button>
       </div>
     </div>
-    <div class="file-content-viewport">
+    <div class="file-content-viewport" :class="{ 'is-viewer-mode': isDocumentFormat }">
+      <AsyncFileViewer
+        v-if="isDocumentFormat"
+        :file="fileSource"
+        :file-name="filePath"
+      />
       <MdRenderer
+        v-else
         :md="markdownCodeBlock"
         :customPlugins="customPlugins"
         theme="github"
@@ -26,10 +32,14 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, defineAsyncComponent } from "vue";
 import { ElMessage } from "element-plus";
 import MdRenderer from "mio-previewer";
 import { codeBlockPlugin } from "mio-previewer/plugins/custom";
+
+const AsyncFileViewer = defineAsyncComponent(() =>
+  import("@/components/workspace/viewers/AsyncFileViewer.vue")
+);
 
 const props = defineProps({
   tab: {
@@ -41,12 +51,22 @@ const props = defineProps({
 const customPlugins = [{ plugin: codeBlockPlugin }];
 
 const filePath = computed(() => {
-  return props.tab.payload?.path || props.tab.title || "File";
+  return props.tab.payload?.path || props.tab.payload?.name || props.tab.title || "File";
 });
 
 const fileExtension = computed(() => {
   const parts = filePath.value.split(".");
-  return parts.length > 1 ? parts.pop() : "";
+  return parts.length > 1 ? parts.pop().toLowerCase() : "";
+});
+
+const isDocumentFormat = computed(() => {
+  const ext = fileExtension.value;
+  return [
+    "pdf",
+    "docx", "doc", "xlsx", "xls", "pptx", "ppt", "csv",
+    "zip", "rar", "7z", "tar", "gz",
+    "xmind", "drawio"
+  ].includes(ext);
 });
 
 const fileRawContent = computed(() => {
@@ -54,6 +74,12 @@ const fileRawContent = computed(() => {
   if (!p) return "";
   if (typeof p === "string") return p;
   return p.content || p.code || p.text || "";
+});
+
+const fileSource = computed(() => {
+  const p = props.tab.payload;
+  if (!p) return "";
+  return p.url || p.src || p.file || p.blob || fileRawContent.value;
 });
 
 const markdownCodeBlock = computed(() => {
@@ -125,5 +151,10 @@ const handleCopy = async () => {
   flex: 1;
   overflow-y: auto;
   padding: 1rem;
+
+  &.is-viewer-mode {
+    padding: 0;
+    overflow: hidden;
+  }
 }
 </style>

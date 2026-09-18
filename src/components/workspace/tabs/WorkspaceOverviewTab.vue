@@ -110,11 +110,100 @@
       </div>
     </div>
 
+    <!-- Images Section -->
+    <div class="overview-section">
+      <div class="section-header" @click="imagesCollapsed = !imagesCollapsed">
+        <div class="header-title">
+          <span>图片资产</span>
+          <span class="count-badge">{{ imagesList.length }}</span>
+        </div>
+        <svg
+          class="collapse-icon"
+          :class="{ 'is-collapsed': imagesCollapsed }"
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </div>
+
+      <div v-show="!imagesCollapsed" class="section-content">
+        <div v-if="!imagesList.length" class="empty-hint">
+          当前会话暂无图片资产
+        </div>
+        <div v-else class="image-gallery-grid">
+          <div
+            v-for="(img, idx) in imagesList"
+            :key="img.id || img.url"
+            class="image-thumb-card"
+            @click="openImageGallery(idx)"
+          >
+            <div class="image-thumb-wrapper">
+              <img
+                :src="img.url"
+                :alt="img.title"
+                loading="lazy"
+                class="gallery-thumb-img"
+              />
+              <div class="thumb-overlay">
+                <span class="thumb-zoom-icon" title="全屏预览与手势缩放">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    <line x1="11" y1="8" x2="11" y2="14" />
+                    <line x1="8" y1="11" x2="14" y2="11" />
+                  </svg>
+                </span>
+                <button
+                  class="thumb-action-pin"
+                  title="在工作区独立标签打开"
+                  @click.stop="openImageInTab(img)"
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
+                    />
+                    <polyline points="15 3 21 3 21 9" />
+                    <line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="image-thumb-caption" :title="img.title">
+              {{ img.title }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Artifacts / Renders Section -->
     <div class="overview-section">
       <div class="section-header" @click="filesCollapsed = !filesCollapsed">
         <div class="header-title">
-          <span>渲染产物与资产</span>
+          <span>渲染产物与文档</span>
           <span class="count-badge">{{ rendersAndArtifactsList.length }}</span>
         </div>
         <svg
@@ -198,11 +287,13 @@ import { useWorkspaceStore } from "@/stores/workspaceStore.js";
 import { useContactorsStore } from "@/stores/contactorsStore.js";
 import { subagentsAPI } from "@/lib/subagentsApi.js";
 import GroupAvatar from "@/components/GroupAvatar.vue";
+import { previewImages } from "@/utils/imageViewer.js";
 
 const workspaceStore = useWorkspaceStore();
 const contactorsStore = useContactorsStore();
 
 const subagentsCollapsed = ref(false);
+const imagesCollapsed = ref(false);
 const filesCollapsed = ref(false);
 const loading = ref(false);
 const groups = ref([]);
@@ -312,15 +403,162 @@ function getFileExtension(urlOrPath = "") {
   }
 }
 
-// 从当前会话消息链中提取产生过的渲染产物 (ExtraRender) 与 Artifacts
+function isImageExtension(ext = "") {
+  return [
+    "png",
+    "jpg",
+    "jpeg",
+    "gif",
+    "webp",
+    "svg",
+    "bmp",
+    "ico",
+    "avif",
+  ].includes(ext);
+}
+
+function isImageFile(urlOrPath = "") {
+  return isImageExtension(getFileExtension(urlOrPath));
+}
+
+// 提取当前会话中的所有图片产物与资产（包括用户/助手图片消息、工具产物、Artifacts）
+const imagesList = computed(() => {
+  const list = [];
+  const seen = new Set();
+  const chain = activeContactor.value?.messageChain || [];
+
+  chain.forEach((msg, msgIndex) => {
+    // 1. 扫描 msg.content 中的原生图片与 tool_call/extraRender
+    const contents = Array.isArray(msg.content) ? msg.content : [];
+    contents.forEach((el, elIndex) => {
+      // 1.1 原生 image 消息
+      if (el.type === "image") {
+        const rawUrl = el.data?.file || el.data?.url || el.url;
+        if (rawUrl && !seen.has(rawUrl)) {
+          seen.add(rawUrl);
+          list.push({
+            id: `msg_img_${msg.id || msgIndex}_${elIndex}`,
+            url: rawUrl,
+            title: el.data?.name || el.data?.fileName || "会话图片",
+            source: msg.sender === "user" ? "用户发送" : "助手发送",
+            timestamp: msg.time || msg.timestamp,
+          });
+        }
+      }
+
+      // 1.2 工具调用 (tool_call) 中的 extraRender
+      let extra = [];
+      let toolTitle = "工具";
+      if (el.type === "tool_call" && el.data) {
+        toolTitle =
+          el.data.displayName ||
+          (el.data.name ? el.data.name.split("_mid_")[0] : "工具");
+        if (toolTitle === "draw") toolTitle = "AI 生图";
+        if (Array.isArray(el.data.extraRender)) {
+          extra = el.data.extraRender;
+        } else if (el.data.extraRender) {
+          extra = [el.data.extraRender];
+        }
+      } else if (el.type === "extraRender" && el.data) {
+        extra = Array.isArray(el.data) ? el.data : [el.data];
+      } else if (el.extraRender) {
+        extra = Array.isArray(el.extraRender) ? el.extraRender : [el.extraRender];
+      }
+
+      extra.forEach((r, rIndex) => {
+        if (!r) return;
+        const rawUrl = r.url || r.src;
+        if (!rawUrl) return;
+        const isImg =
+          r.type === "image" ||
+          isImageFile(rawUrl) ||
+          isImageFile(r.fileName || r.title || r.name);
+        if (isImg && !seen.has(rawUrl)) {
+          seen.add(rawUrl);
+          let title = r.title || r.fileName || r.name || "";
+          if (title.includes("_mid_")) {
+            title = title.split("_mid_")[0];
+          }
+          if (!title || title === "draw") {
+            title = `${toolTitle} 产物`;
+          }
+          list.push({
+            id: `tool_img_${msg.id || msgIndex}_${elIndex}_${rIndex}`,
+            url: rawUrl,
+            title,
+            source: toolTitle,
+            timestamp: msg.time || msg.timestamp || el.data?.startTime,
+          });
+        }
+      });
+    });
+
+    // 2. 扫描 msg 级直接挂载的 extraRender
+    const directExtras = Array.isArray(msg.extraRender)
+      ? msg.extraRender
+      : msg.extraRender
+        ? [msg.extraRender]
+        : [];
+    directExtras.forEach((r, rIndex) => {
+      if (!r) return;
+      const rawUrl = r.url || r.src;
+      if (!rawUrl) return;
+      const isImg =
+        r.type === "image" ||
+        isImageFile(rawUrl) ||
+        isImageFile(r.fileName || r.title || r.name);
+      if (isImg && !seen.has(rawUrl)) {
+        seen.add(rawUrl);
+        list.push({
+          id: `direct_img_${msg.id || msgIndex}_${rIndex}`,
+          url: rawUrl,
+          title: r.title || r.fileName || r.name || "消息图片",
+          source: "消息产物",
+          timestamp: msg.time || msg.timestamp,
+        });
+      }
+    });
+
+    // 3. 扫描 msg.artifacts
+    if (msg.artifacts && Array.isArray(msg.artifacts)) {
+      msg.artifacts.forEach((art, artIndex) => {
+        const rawUrl = art.url || art.path;
+        if (!rawUrl) return;
+        const isImg =
+          art.type === "image" ||
+          isImageFile(rawUrl) ||
+          isImageFile(art.name || art.title);
+        if (isImg && !seen.has(rawUrl)) {
+          seen.add(rawUrl);
+          list.push({
+            id: art.id || `art_img_${msg.id || msgIndex}_${artIndex}`,
+            url: rawUrl,
+            title: art.title || art.name || "产物图片",
+            source: "产物文件",
+            timestamp: msg.time || msg.timestamp,
+          });
+        }
+      });
+    }
+  });
+
+  return list;
+});
+
+// 从当前会话消息链中提取产生过的非图片渲染产物 (ExtraRender) 与 Artifacts
 const rendersAndArtifactsList = computed(() => {
   const list = [];
   const chain = activeContactor.value?.messageChain || [];
 
   chain.forEach((msg, msgIndex) => {
-    // 1. 扫描 msg.artifacts
+    // 1. 扫描 msg.artifacts（排除图片）
     if (msg.artifacts && Array.isArray(msg.artifacts)) {
       msg.artifacts.forEach((art, artIndex) => {
+        const isImg =
+          art.type === "image" ||
+          isImageFile(art.path || art.name || art.url);
+        if (isImg) return;
+
         list.push({
           id: art.id || `art_${msg.id || msgIndex}_${artIndex}`,
           isArtifact: true,
@@ -334,7 +572,7 @@ const rendersAndArtifactsList = computed(() => {
       });
     }
 
-    // 2. 扫描 msg 级直接挂载的 extraRender
+    // 2. 扫描 msg 级直接挂载的 extraRender（排除图片）
     const directExtras = Array.isArray(msg.extraRender)
       ? msg.extraRender
       : msg.extraRender
@@ -344,6 +582,8 @@ const rendersAndArtifactsList = computed(() => {
       if (!r) return;
       const ext = getFileExtension(r.url || r.src || r.fileName || r.title || r.name);
       let rType = (r.type || "html").toLowerCase();
+      if (rType === "image" || isImageExtension(ext)) return;
+
       if (["doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(ext)) {
         rType = "office";
       } else if (ext === "pdf") {
@@ -360,7 +600,6 @@ const rendersAndArtifactsList = computed(() => {
         else if (rType === "pdf") title = "PDF 文档";
         else if (rType === "markdown") title = "Markdown 文档";
         else if (rType === "html" || rType === "iframe") title = "UI 卡片";
-        else if (rType === "image") title = "图片";
         else if (rType === "audio" || rType === "voice") title = "音频";
         else if (rType === "video") title = "视频";
         else title = "渲染项";
@@ -384,7 +623,7 @@ const rendersAndArtifactsList = computed(() => {
       });
     });
 
-    // 3. 扫描 msg.content 中的 tool_call 元素与 extraRender 元素
+    // 3. 扫描 msg.content 中的 tool_call 元素与 extraRender 元素（排除图片）
     const contents = Array.isArray(msg.content) ? msg.content : [];
     contents.forEach((el, elIndex) => {
       let extra = [];
@@ -410,6 +649,8 @@ const rendersAndArtifactsList = computed(() => {
         if (!r) return;
         const ext = getFileExtension(r.url || r.src || r.fileName || r.title || r.name);
         let rType = (r.type || "html").toLowerCase();
+        if (rType === "image" || isImageExtension(ext)) return;
+
         if (["doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(ext)) {
           rType = "office";
         } else if (ext === "pdf") {
@@ -426,7 +667,6 @@ const rendersAndArtifactsList = computed(() => {
           else if (rType === "pdf") title = `${toolTitle} PDF 文档`;
           else if (rType === "markdown") title = `${toolTitle} Markdown 文档`;
           else if (rType === "html" || rType === "iframe") title = `${toolTitle} UI 卡片`;
-          else if (rType === "image") title = `${toolTitle} 图片`;
           else if (rType === "audio" || rType === "voice") title = `${toolTitle} 音频`;
           else if (rType === "video") title = `${toolTitle} 视频`;
           else if (rType === "file" || rType === "document") title = `${toolTitle} 文件`;
@@ -455,6 +695,25 @@ const rendersAndArtifactsList = computed(() => {
 
   return list;
 });
+
+const openImageGallery = (index) => {
+  previewImages(imagesList.value, index);
+};
+
+const openImageInTab = (img) => {
+  workspaceStore.openRenderTab(
+    {
+      type: "image",
+      url: img.url,
+      title: img.title,
+    },
+    {
+      id: img.id,
+      title: img.title,
+      toolTitle: img.source,
+    },
+  );
+};
 
 const openItem = (entry) => {
   if (entry.isArtifact) {
@@ -871,5 +1130,134 @@ const statusText = (status) => {
     margin-left: 0.35rem;
     flex-shrink: 0;
   }
+}
+
+.image-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+}
+
+.image-thumb-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--mio-bg-card, #ffffff);
+  border: 1px solid var(--mio-border-color-light, #e4e7ed);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+  &:hover {
+    border-color: var(--mio-color-primary, #0099ff);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+
+    .thumb-overlay {
+      opacity: 1;
+    }
+
+    .gallery-thumb-img {
+      transform: scale(1.05);
+    }
+  }
+}
+
+.image-thumb-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: var(--mio-bg-surface, #f8f9fa);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gallery-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.25s ease;
+}
+
+.thumb-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.38);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.thumb-zoom-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: #303133;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+.thumb-action-pin {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.92);
+  color: #303133;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: var(--mio-color-primary, #0099ff);
+    color: #ffffff;
+    transform: scale(1.1);
+  }
+}
+
+.thumb-badge {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-size: 0.625rem;
+  padding: 1px 5px;
+  border-radius: 4px;
+  max-width: calc(100% - 8px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.image-thumb-caption {
+  padding: 0.35rem 0.45rem;
+  font-size: 0.72rem;
+  color: var(--mio-text-primary, #303133);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  background: var(--mio-bg-card, #ffffff);
 }
 </style>
