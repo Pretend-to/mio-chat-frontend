@@ -166,7 +166,9 @@ export function useSearch() {
       return { contacts: [], messages: [] };
     }
 
-    const contactList = Object.values(contactorsStore.contactors);
+    const contactList = Object.values(contactorsStore.contactors).filter(
+      (c) => c.platform !== "sub_agent",
+    );
 
     // 1. Search Contacts (by name only)
     const contactFuse = new Fuse(contactList, {

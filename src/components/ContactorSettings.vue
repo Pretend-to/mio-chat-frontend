@@ -58,7 +58,7 @@
       class="tabs-container"
       v-if="
         activeContactorPlatform !== 'onebot' &&
-        activeContactorPlatform !== 'channel' &&
+        activeContactorPlatform !== 'agent' &&
         (activeContactorPlatform !== 'group' || isGroupMember)
       "
     >
@@ -110,9 +110,9 @@
 
     <!-- Settings Content Area -->
     <div class="settings-content">
-      <!-- Channel Platform View -->
+      <!-- Agent Platform View -->
       <ChannelSettingsView
-        v-if="activeContactorPlatform === 'channel'"
+        v-if="activeContactorPlatform === 'agent'"
         :contactor="currentContactor"
       />
 
@@ -125,7 +125,7 @@
       <!-- Tab: Basic -->
       <ContactorBasicTab
         v-if="
-          activeContactorPlatform !== 'channel' &&
+          activeContactorPlatform !== 'agent' &&
           !(activeContactorPlatform === 'group' && !isGroupMember) &&
           activeTab === 'basic'
         "
@@ -146,7 +146,7 @@
       <!-- Tab: Tools -->
       <ContactorToolsTab
         v-if="
-          activeContactorPlatform !== 'channel' &&
+          activeContactorPlatform !== 'agent' &&
           !(activeContactorPlatform === 'group' && !isGroupMember) &&
           activeTab === 'tools'
         "
@@ -159,7 +159,7 @@
       <!-- Tab: Skills -->
       <ContactorSkillsTab
         v-if="
-          activeContactorPlatform !== 'channel' &&
+          activeContactorPlatform !== 'agent' &&
           !(activeContactorPlatform === 'group' && !isGroupMember) &&
           activeTab === 'skills'
         "
@@ -169,7 +169,7 @@
       <!-- Tab: Presets -->
       <div
         v-if="
-          activeContactorPlatform !== 'channel' &&
+          activeContactorPlatform !== 'agent' &&
           !(activeContactorPlatform === 'group' && !isGroupMember) &&
           activeTab === 'presets'
         "
@@ -187,7 +187,7 @@
       <!-- Tab: Memory Crystallization -->
       <div
         v-if="
-          activeContactorPlatform !== 'channel' &&
+          activeContactorPlatform !== 'agent' &&
           !(activeContactorPlatform === 'group' && !isGroupMember) &&
           activeTab === 'memory'
         "
@@ -208,7 +208,7 @@
       <!-- Tab: Automation (定时任务) -->
       <ContactorAutomationTab
         v-if="
-          activeContactorPlatform !== 'channel' &&
+          activeContactorPlatform !== 'agent' &&
           !(activeContactorPlatform === 'group' && !isGroupMember) &&
           activeTab === 'automation'
         "
@@ -220,7 +220,7 @@
       <!-- Tab: Advanced -->
       <ContactorAdvancedTab
         v-if="
-          activeContactorPlatform !== 'channel' &&
+          activeContactorPlatform !== 'agent' &&
           !(activeContactorPlatform === 'group' && !isGroupMember) &&
           activeTab === 'advanced'
         "

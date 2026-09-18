@@ -156,7 +156,49 @@ let startX = 0;
 let startWidth = 0;
 
 // Computed — directly wired to Pinia reactive state, no local copy needed
-const sortedList = computed(() => contactorsStore.sortedContactors);
+const sortedList = computed(() =>
+  contactorsStore.sortedContactors.filter(
+    (item) => item.platform !== "sub_agent",
+  ),
+);
+
+const getContactorTypeInfo = (contactor) => {
+  if (!contactor) return null;
+  const platform = contactor.platform;
+  if (platform === "agent") {
+    return {
+      type: "agent",
+      label: "Agent",
+      badgeIcon: "🤖",
+      badgeClass: "badge-agent",
+    };
+  }
+  if (platform === "onebot") {
+    return {
+      type: "onebot",
+      label: "OneBot",
+      badgeIcon: "💬",
+      badgeClass: "badge-onebot",
+    };
+  }
+  if (platform === "group") {
+    return {
+      type: "group",
+      label: "群聊",
+      badgeIcon: "👥",
+      badgeClass: "badge-group",
+    };
+  }
+  if (platform === "openai" || platform === "llm") {
+    return {
+      type: "model",
+      label: "会话",
+      badgeIcon: "✨",
+      badgeClass: "badge-model",
+    };
+  }
+  return null;
+};
 
 const getMenuStyle = computed(() => {
   const estimatedHeight = 160;
@@ -496,8 +538,8 @@ const resize = (event) => {
   let newWidth = startWidth + (event.clientX - startX);
   const remSize =
     parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-  const maxWidth = 20 * remSize;
-  const minWidth = 12 * remSize;
+  const maxWidth = 24 * remSize;
+  const minWidth = 14 * remSize;
   newWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
   friendlists.value.style.minWidth = newWidth + "px";
   friendlists.value.style.maxWidth = newWidth + "px";
@@ -636,15 +678,34 @@ onBeforeUnmount(() => {
               : {}
           "
         >
-          <div
-            class="mio-contact-item__avatar"
-            :class="item.avatarPolicy == 1 ? 'custom' : 'model'"
-          >
-            <GroupAvatar v-if="item.platform === 'group'" :contactor="item" />
-            <img v-else :src="item.avatar" :alt="item.name" />
+          <div class="mio-contact-item__avatar-wrapper">
+            <div
+              class="mio-contact-item__avatar"
+              :class="item.avatarPolicy == 1 ? 'custom' : 'model'"
+            >
+              <GroupAvatar v-if="item.platform === 'group'" :contactor="item" />
+              <img v-else :src="item.avatar" :alt="item.name" />
+            </div>
+            <span
+              v-if="getContactorTypeInfo(item)"
+              class="mio-contact-item__platform-badge"
+              :class="getContactorTypeInfo(item).badgeClass"
+              :title="getContactorTypeInfo(item).label"
+            >
+              {{ getContactorTypeInfo(item).badgeIcon }}
+            </span>
           </div>
           <div class="mio-contact-item__info">
-            <div class="mio-contact-item__name">{{ item.name }}</div>
+            <div class="mio-contact-item__name">
+              <span
+                v-if="getContactorTypeInfo(item)"
+                class="mio-contact-item__type-tag"
+                :class="getContactorTypeInfo(item).badgeClass"
+              >
+                {{ getContactorTypeInfo(item).label }}
+              </span>
+              <span class="mio-contact-item__name-text">{{ item.name }}</span>
+            </div>
             <div class="mio-contact-item__time">
               {{
                 getContactorLastTime(
@@ -683,6 +744,7 @@ onBeforeUnmount(() => {
             {{ item.priority === 0 ? "取消置顶" : "置顶" }}
           </div>
           <div
+            v-if="!item.readOnly"
             class="action-btn delete"
             @click.stop="handleFriendOption('delete', item)"
           >
@@ -730,8 +792,8 @@ onBeforeUnmount(() => {
 .mio-friend-list {
   height: 100%;
   display: flex;
-  min-width: 14rem;
-  max-width: 14rem;
+  min-width: 16.5rem;
+  max-width: 16.5rem;
   flex-direction: column;
   position: relative;
   background-color: transparent;
@@ -855,14 +917,93 @@ button#searchButton {
   background-color: var(--mio-bg-active-item, var(--mio-color-primary));
 }
 
-.mio-contact-item__avatar {
+.mio-contact-item__avatar-wrapper {
+  position: relative;
   flex-basis: 2.65rem;
   min-width: 2.65rem;
   height: 2.65rem;
+}
+
+.mio-contact-item__avatar {
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   overflow: hidden;
   background-color: #f2f2f2;
   position: relative;
+}
+
+.mio-contact-item__platform-badge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  border: 1.5px solid #ffffff;
+  background-color: #ffffff;
+  user-select: none;
+}
+
+.mio-contact-item__platform-badge.badge-agent {
+  background-color: #f3e8ff !important;
+  border-color: #ffffff !important;
+}
+
+.mio-contact-item__platform-badge.badge-onebot {
+  background-color: #d1fae5 !important;
+  border-color: #ffffff !important;
+}
+
+.mio-contact-item__platform-badge.badge-group {
+  background-color: #fef3c7 !important;
+  border-color: #ffffff !important;
+}
+
+.mio-contact-item__platform-badge.badge-model {
+  background-color: #dbeafe !important;
+  border-color: #ffffff !important;
+}
+
+[data-theme="dark"] .mio-contact-item__platform-badge,
+html.dark .mio-contact-item__platform-badge {
+  background-color: #2a2a30;
+  border-color: #1e1e24 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .mio-contact-item__platform-badge.badge-agent,
+html.dark .mio-contact-item__platform-badge.badge-agent {
+  background-color: #3b1d6b !important;
+  border-color: #1e1e24 !important;
+}
+
+[data-theme="dark"] .mio-contact-item__platform-badge.badge-onebot,
+html.dark .mio-contact-item__platform-badge.badge-onebot {
+  background-color: #064e3b !important;
+  border-color: #1e1e24 !important;
+}
+
+[data-theme="dark"] .mio-contact-item__platform-badge.badge-group,
+html.dark .mio-contact-item__platform-badge.badge-group {
+  background-color: #451a03 !important;
+  border-color: #1e1e24 !important;
+}
+
+[data-theme="dark"] .mio-contact-item__platform-badge.badge-model,
+html.dark .mio-contact-item__platform-badge.badge-model {
+  background-color: #1e3a5f !important;
+  border-color: #1e1e24 !important;
+}
+
+.mio-contact-item--active .mio-contact-item__platform-badge {
+  border-color: var(--mio-bg-active-item, var(--mio-color-primary)) !important;
 }
 
 .mio-contact-item__avatar > img {
@@ -916,9 +1057,88 @@ button#searchButton {
   font-size: 0.875rem;
   margin-left: 0.5rem;
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.2;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.mio-contact-item__name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.mio-contact-item__type-tag {
+  font-size: 0.625rem;
+  line-height: 1;
+  padding: 0.125rem 0.35rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+  margin-right: 0.375rem;
+  margin-left: 0;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+.mio-contact-item__type-tag.badge-agent {
+  background: rgba(139, 92, 246, 0.14) !important;
+  color: #8b5cf6 !important;
+  border: 1px solid rgba(139, 92, 246, 0.28) !important;
+}
+
+.mio-contact-item__type-tag.badge-onebot {
+  background: rgba(16, 185, 129, 0.14) !important;
+  color: #10b981 !important;
+  border: 1px solid rgba(16, 185, 129, 0.28) !important;
+}
+
+.mio-contact-item__type-tag.badge-group {
+  background: rgba(245, 158, 11, 0.14) !important;
+  color: #f59e0b !important;
+  border: 1px solid rgba(245, 158, 11, 0.28) !important;
+}
+
+.mio-contact-item__type-tag.badge-model {
+  background: rgba(59, 130, 246, 0.14) !important;
+  color: #3b82f6 !important;
+  border: 1px solid rgba(59, 130, 246, 0.28) !important;
+}
+
+[data-theme="dark"] .mio-contact-item__type-tag.badge-agent,
+html.dark .mio-contact-item__type-tag.badge-agent {
+  background: rgba(139, 92, 246, 0.25) !important;
+  color: #c4b5fd !important;
+  border-color: rgba(139, 92, 246, 0.45) !important;
+}
+
+[data-theme="dark"] .mio-contact-item__type-tag.badge-onebot,
+html.dark .mio-contact-item__type-tag.badge-onebot {
+  background: rgba(16, 185, 129, 0.22) !important;
+  color: #6ee7b7 !important;
+  border-color: rgba(16, 185, 129, 0.45) !important;
+}
+
+[data-theme="dark"] .mio-contact-item__type-tag.badge-group,
+html.dark .mio-contact-item__type-tag.badge-group {
+  background: rgba(245, 158, 11, 0.22) !important;
+  color: #fcd34d !important;
+  border-color: rgba(245, 158, 11, 0.45) !important;
+}
+
+[data-theme="dark"] .mio-contact-item__type-tag.badge-model,
+html.dark .mio-contact-item__type-tag.badge-model {
+  background: rgba(59, 130, 246, 0.22) !important;
+  color: #93c5fd !important;
+  border-color: rgba(59, 130, 246, 0.45) !important;
+}
+
+.mio-contact-item--active .mio-contact-item__type-tag {
+  background: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
 }
 
 .mio-contact-item__time {
@@ -952,6 +1172,7 @@ button#searchButton {
     display: flex;
     flex-direction: column;
     width: 100%;
+    min-width: 0;
     max-width: none;
     background-color: var(--mio-mobile-bg-list);
     border-left: none;

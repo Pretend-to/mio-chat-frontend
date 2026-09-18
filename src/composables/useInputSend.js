@@ -1,5 +1,6 @@
 import { computed } from "vue";
 import { client, config } from "@/lib/runtime.js";
+import { useContactorsStore } from "@/stores/contactorsStore.js";
 
 export function useInputSend({
   textareaRef,
@@ -14,6 +15,7 @@ export function useInputSend({
   ElMessage,
   emit,
 }) {
+  const contactorsStore = useContactorsStore();
   const hasInput = () => {
     if (!textareaRef.value) return false;
     const clone = textareaRef.value.cloneNode(true);
@@ -83,7 +85,7 @@ export function useInputSend({
           msg = remainingText ? `${preset} ${remainingText}` : preset;
         }
         isCommand = true;
-      } else if (activeContactor.value.platform === "channel") {
+      } else if (activeContactor.value.platform === "agent") {
         const badge = badges[0];
         const type = badge.getAttribute("data-type");
         const preset = badge.getAttribute("data-preset");
@@ -382,7 +384,11 @@ export function useInputSend({
     );
     const hasLocalImages = localImageElements.length > 0;
     container.status = hasLocalImages ? "uploading" : "pending";
-    activeContactor.value.messageChain.push(container);
+    contactorsStore.applyMessageEvent({
+      type: "message.upsert",
+      contactorId: activeContactor.value.id,
+      message: container,
+    });
     clearDraft();
     emit("stroge");
     emit("toButtom");
@@ -415,7 +421,12 @@ export function useInputSend({
           (m) => m.id === container.id,
         );
         if (msgInChain) {
-          msgInChain.status = "pending";
+          contactorsStore.applyMessageEvent({
+            type: "message.patch",
+            contactorId: activeContactor.value.id,
+            messageId: msgInChain.id,
+            patch: { status: "pending" },
+          });
         }
         container.status = "pending";
         emit("stroge");
@@ -428,7 +439,12 @@ export function useInputSend({
           (m) => m.id === container.id,
         );
         if (msgInChain) {
-          msgInChain.status = "failed";
+          contactorsStore.applyMessageEvent({
+            type: "message.patch",
+            contactorId: activeContactor.value.id,
+            messageId: msgInChain.id,
+            patch: { status: "failed" },
+          });
         }
         container.status = "failed";
         emit("stroge");

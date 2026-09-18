@@ -1,5 +1,6 @@
 import { ref } from "vue";
 import { client } from "@/lib/runtime.js";
+import { useContactorsStore } from "@/stores/contactorsStore.js";
 
 export function useInputFileUpload({
   textareaRef,
@@ -10,6 +11,7 @@ export function useInputFileUpload({
   ElMessage,
   emit,
 }) {
+  const contactorsStore = useContactorsStore();
   const pendingImageFiles = new Map();
   const showemoji = ref(false);
 
@@ -234,7 +236,11 @@ export function useInputFileUpload({
       data: { file: fileUrl },
     });
 
-    activeContactor.value.messageChain.push(container);
+    contactorsStore.applyMessageEvent({
+      type: "message.upsert",
+      contactorId: activeContactor.value.id,
+      message: container,
+    });
     emit("stroge");
     emit("toButtom");
 
@@ -247,8 +253,17 @@ export function useInputFileUpload({
         (m) => m.id === container.id,
       );
       if (msgInChain) {
-        msgInChain.content[0].data.file = remoteFileUrl;
-        msgInChain.status = "completed";
+        const content = msgInChain.content.map((block) => ({
+          ...block,
+          data: { ...block.data },
+        }));
+        content[0].data.file = remoteFileUrl;
+        contactorsStore.applyMessageEvent({
+          type: "message.patch",
+          contactorId: activeContactor.value.id,
+          messageId: msgInChain.id,
+          patch: { content, status: "completed" },
+        });
       }
 
       container.content[0].data.file = remoteFileUrl;
@@ -262,7 +277,12 @@ export function useInputFileUpload({
         (m) => m.id === container.id,
       );
       if (msgInChain) {
-        msgInChain.status = "failed";
+        contactorsStore.applyMessageEvent({
+          type: "message.patch",
+          contactorId: activeContactor.value.id,
+          messageId: msgInChain.id,
+          patch: { status: "failed" },
+        });
       }
       container.status = "failed";
     }

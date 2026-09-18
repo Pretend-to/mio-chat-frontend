@@ -15,6 +15,8 @@
   --mio-bg-sidebar-mobile: rgba(241, 244, 254, 0.85);
   --mio-bg-statusbar-friendlist: #f3f5fe;
   --mio-bg-card: #ffffff;
+  --mio-bg-surface: #ffffff;
+  --mio-bg-surface-soft: #f8fafc;
 
   // Mobile Specific UI Colors (Light Mode Default)
   --mio-mobile-bg-main: var(--mio-bg-statusbar-friendlist);
@@ -78,6 +80,8 @@
   --mio-bg-sidebar-mobile: #2d2e2f;
   --mio-bg-statusbar-friendlist: #202325;
   --mio-bg-card: #2f2f2f;
+  --mio-bg-surface: #1e1e24;
+  --mio-bg-surface-soft: #18181b;
 
   // Mobile Specific UI Colors (Dark Mode Override)
   --mio-mobile-bg-main: #202325;

@@ -143,63 +143,363 @@
           v-if="outerItems(element.data).length"
           class="message-level-outer-render"
         >
-          <div
+          <template
             v-for="(item, idx) in outerItems(element.data)"
             :key="idx"
-            class="outer-render-item"
           >
-            <template v-if="item.type === 'audio'">
-              <div class="outer-render-audio-container">
-                <audio :src="item.url" controls class="outer-audio"></audio>
-              </div>
-            </template>
-            <template v-else-if="item.type === 'image'">
-              <MdRenderer
-                :md="`![image](${item.url})`"
-                :custom-plugins="mioPlugins"
-                :markdown-it-plugins="katexPluginList"
-                :theme="'github'"
-                :key="item.url"
-                class="extra-render-image"
-                :auto-cors="corsOption"
-              />
-            </template>
-            <template v-else-if="item.type === 'text'">
-              <div class="outer-render-text">
-                {{ item.content || item.text }}
-              </div>
-            </template>
-            <template v-else-if="item.type === 'alert'">
-              <el-alert
-                :title="item.title"
-                :type="item.alertType || 'info'"
-                :description="item.description"
-                show-icon
-                :closable="false"
-                class="outer-render-alert"
-              />
-            </template>
-            <template v-else-if="item.type === 'link'">
-              <div class="outer-render-link-container">
-                <el-link
-                  :href="item.url"
-                  target="_blank"
-                  type="primary"
-                  class="outer-render-link"
-                >
-                  {{ item.text || "查看链接" }}
-                </el-link>
-              </div>
-            </template>
-            <template
-              v-else-if="item.type === 'iframe' || item.type === 'html'"
+            <!-- 沉浸式无壳渲染 (immersive: true)：直接按原本的直接渲染呈现，不套任何外层卡片与多余边框 -->
+            <div
+              v-if="isImmersive(item)"
+              class="outer-render-item outer-render-immersive"
             >
-              <ShadowHtml
-                :html="item.html"
-                @update:html="handleShadowHtmlUpdate(item, $event)"
-              />
-            </template>
-          </div>
+              <template v-if="item.type === 'image'">
+                <div class="outer-render-image-container">
+                  <MdRenderer
+                    :md="`![image](${item.url})`"
+                    :custom-plugins="mioPlugins"
+                    :markdown-it-plugins="katexPluginList"
+                    :theme="'github'"
+                    :key="item.url"
+                    class="extra-render-image"
+                    :auto-cors="corsOption"
+                  />
+                </div>
+              </template>
+              <template v-else-if="item.type === 'iframe' || item.type === 'html'">
+                <ShadowHtml
+                  v-if="item.html"
+                  :html="item.html"
+                  @update:html="handleShadowHtmlUpdate(item, $event)"
+                />
+                <iframe
+                  v-else-if="item.url"
+                  :src="item.url"
+                  class="outer-inline-iframe"
+                  loading="lazy"
+                  sandbox="allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-same-origin"
+                ></iframe>
+              </template>
+              <template v-else-if="item.type === 'audio'">
+                <div class="outer-render-audio-container">
+                  <audio :src="item.url" controls class="outer-audio"></audio>
+                </div>
+              </template>
+              <template v-else-if="item.type === 'video'">
+                <div class="outer-video-box">
+                  <video
+                    :src="item.url"
+                    controls
+                    preload="metadata"
+                    class="outer-video-player"
+                  ></video>
+                </div>
+              </template>
+              <template v-else-if="item.type === 'alert'">
+                <el-alert
+                  :title="item.title"
+                  :type="item.alertType || 'info'"
+                  :description="item.description"
+                  show-icon
+                  :closable="false"
+                  class="outer-render-alert"
+                />
+              </template>
+              <template v-else-if="item.type === 'link'">
+                <div class="outer-render-link-container">
+                  <el-link
+                    :href="item.url"
+                    target="_blank"
+                    type="primary"
+                    class="outer-render-link"
+                  >
+                    {{ item.text || "查看链接" }}
+                  </el-link>
+                </div>
+              </template>
+              <template v-else-if="item.type === 'text'">
+                <div class="outer-render-text">{{ item.content || item.text }}</div>
+              </template>
+              <template v-else>
+                <ShadowHtml
+                  v-if="item.html"
+                  :html="item.html"
+                  @update:html="handleShadowHtmlUpdate(item, $event)"
+                />
+                <div v-else>{{ item.content || item.text }}</div>
+              </template>
+            </div>
+
+            <!-- 默认套壳渲染 (保留统一卡片头部与在工作区打开等操作) -->
+            <div
+              v-else
+              class="outer-render-card"
+              :class="`card-type-${getOuterItemType(item)}`"
+            >
+            <!-- 统一卡片头部 Header -->
+            <div class="outer-card-header">
+              <div class="outer-card-meta">
+                <span
+                  class="outer-card-badge"
+                  :class="`badge-${getOuterItemType(item)}`"
+                >
+                  {{ getOuterItemBadge(item) }}
+                </span>
+                <span
+                  class="outer-card-title"
+                  :title="getOuterItemTitle(item, element.data)"
+                >
+                  {{ getOuterItemTitle(item, element.data) }}
+                </span>
+              </div>
+              <div class="outer-card-actions">
+                <!-- 在工作区打开按钮 -->
+                <button
+                  v-if="canOpenInWorkspace(item)"
+                  class="outer-card-btn primary-btn"
+                  title="在工作区侧边栏打开"
+                  @click.stop="openInWorkspace(item, element.data)"
+                >
+                  <svg
+                    width="11"
+                    height="11"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect width="18" height="18" x="3" y="3" rx="2" />
+                    <path d="M15 3v18" />
+                  </svg>
+                  <span>在工作区打开</span>
+                </button>
+                <!-- 在新标签页打开 (若有 URL) -->
+                <a
+                  v-if="getOuterItemUrl(item)"
+                  :href="getOuterItemUrl(item)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="outer-card-btn icon-btn"
+                  title="在新标签页中打开"
+                  @click.stop
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
+                    />
+                    <polyline points="15 3 21 3 21 9" />
+                    <line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
+                </a>
+                <!-- 复制按钮 -->
+                <button
+                  v-if="
+                    getOuterItemUrl(item) ||
+                    item.content ||
+                    item.text ||
+                    item.html
+                  "
+                  class="outer-card-btn icon-btn"
+                  title="复制链接或内容"
+                  @click.stop="copyOuterItem(item)"
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                    <path
+                      d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- 统一卡片主体 Body -->
+            <div class="outer-card-body">
+              <!-- Office 文档卡片 -->
+              <template v-if="getOuterItemType(item) === 'office'">
+                <div class="outer-file-box">
+                  <div class="file-icon-box office-icon">📊</div>
+                  <div class="file-details">
+                    <div class="file-name">
+                      {{ getOuterItemTitle(item, element.data) }}
+                    </div>
+                    <div class="file-subtext">
+                      Office 文档 · 支持微软在线预览
+                    </div>
+                  </div>
+                  <button
+                    class="file-preview-btn"
+                    @click.stop="openInWorkspace(item, element.data)"
+                  >
+                    工作区预览
+                  </button>
+                </div>
+              </template>
+
+              <!-- PDF 文档卡片 -->
+              <template v-else-if="getOuterItemType(item) === 'pdf'">
+                <div class="outer-file-box">
+                  <div class="file-icon-box pdf-icon">📕</div>
+                  <div class="file-details">
+                    <div class="file-name">
+                      {{ getOuterItemTitle(item, element.data) }}
+                    </div>
+                    <div class="file-subtext">
+                      PDF 文档 · 支持工作区与浏览器直读
+                    </div>
+                  </div>
+                  <button
+                    class="file-preview-btn"
+                    @click.stop="openInWorkspace(item, element.data)"
+                  >
+                    工作区预览
+                  </button>
+                </div>
+              </template>
+
+              <!-- Markdown 产物卡片 -->
+              <template v-else-if="getOuterItemType(item) === 'markdown'">
+                <div
+                  v-if="getMarkdownText(item)"
+                  class="outer-markdown-box"
+                >
+                  <MdRenderer
+                    :md="getMarkdownText(item)"
+                    :custom-plugins="mioPlugins"
+                    :markdown-it-plugins="katexPluginList"
+                    theme="github"
+                    theme-mode="auto"
+                  />
+                </div>
+                <div v-else class="outer-file-box">
+                  <div class="file-icon-box md-icon">📝</div>
+                  <div class="file-details">
+                    <div class="file-name">
+                      {{ getOuterItemTitle(item, element.data) }}
+                    </div>
+                    <div class="file-subtext">
+                      Markdown 文档 · 点击在工作区渲染
+                    </div>
+                  </div>
+                  <button
+                    class="file-preview-btn"
+                    @click.stop="openInWorkspace(item, element.data)"
+                  >
+                    工作区预览
+                  </button>
+                </div>
+              </template>
+
+              <!-- 音频卡片 -->
+              <template v-else-if="getOuterItemType(item) === 'audio'">
+                <div class="outer-audio-box">
+                  <audio
+                    :src="item.url"
+                    controls
+                    class="outer-audio-player"
+                  ></audio>
+                </div>
+              </template>
+
+              <!-- 视频卡片 -->
+              <template v-else-if="getOuterItemType(item) === 'video'">
+                <div class="outer-video-box">
+                  <video
+                    :src="item.url"
+                    controls
+                    preload="metadata"
+                    class="outer-video-player"
+                  ></video>
+                </div>
+              </template>
+
+              <!-- 图片卡片 -->
+              <template v-else-if="getOuterItemType(item) === 'image'">
+                <div class="outer-image-box">
+                  <img
+                    :src="item.url"
+                    :alt="getOuterItemTitle(item, element.data)"
+                    class="outer-img"
+                    loading="lazy"
+                  />
+                </div>
+              </template>
+
+              <!-- 提示 Alert 卡片 -->
+              <template v-else-if="getOuterItemType(item) === 'alert'">
+                <el-alert
+                  :title="item.title"
+                  :type="item.alertType || 'info'"
+                  :description="item.description"
+                  show-icon
+                  :closable="false"
+                  class="outer-alert"
+                />
+              </template>
+
+              <!-- 纯文本 卡片 -->
+              <template v-else-if="getOuterItemType(item) === 'text'">
+                <div class="outer-text-box">
+                  {{ item.content || item.text }}
+                </div>
+              </template>
+
+              <!-- 链接 卡片 -->
+              <template v-else-if="getOuterItemType(item) === 'link'">
+                <div class="outer-link-box">
+                  <a
+                    :href="item.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="outer-link-btn"
+                  >
+                    <span class="link-label">{{
+                      item.text || getOuterItemTitle(item, element.data)
+                    }}</span>
+                    <span class="link-url-hint">{{ item.url }}</span>
+                  </a>
+                </div>
+              </template>
+
+              <!-- HTML / iframe / ShadowHtml 界面卡片 -->
+              <template v-else>
+                <div class="outer-html-box">
+                  <ShadowHtml
+                    v-if="item.html"
+                    :html="item.html"
+                    @update:html="handleShadowHtmlUpdate(item, $event)"
+                  />
+                  <iframe
+                    v-else-if="item.url"
+                    :src="item.url"
+                    class="outer-inline-iframe"
+                    loading="lazy"
+                    sandbox="allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-same-origin"
+                  ></iframe>
+                </div>
+              </template>
+            </div>
+            </div>
+          </template>
         </div>
       </template>
     </div>
@@ -235,6 +535,7 @@ import {
   onMounted,
   onUnmounted,
 } from "vue";
+import { ElMessage } from "element-plus";
 import { client } from "@/lib/runtime.js";
 import { setupIframeAutoResize } from "@/utils/iframeAutoResize.js";
 import ShadowHtml from "@/components/ShadowHtml.vue";
@@ -243,6 +544,7 @@ import ReasonBlock from "@/components/ReasonBlock.vue";
 import ActionBlock from "@/components/ActionBlock.vue";
 import FileBlock from "@/components/FileBlock.vue";
 import MdRenderer from "mio-previewer";
+import { useWorkspaceStore } from "@/stores/workspaceStore.js";
 
 // Resolve circular dependency by dynamically importing ForwardMsg
 const ForwardMsg = defineAsyncComponent(
@@ -371,8 +673,142 @@ const toggleCrystallizeDetails = (elmIndex) => {
 };
 
 function outerItems(data) {
-  const extra = data.extraRender || [];
-  return extra.filter((r) => r.placement === "outer");
+  const extra = data?.extraRender || [];
+  const list = Array.isArray(extra) ? extra : extra ? [extra] : [];
+  return list.filter((r) => r && r.placement === "outer");
+}
+
+function isImmersive(item) {
+  if (!item) return false;
+  return Boolean(
+    item.immersive === true ||
+    item.frameless === true ||
+    item.seamless === true ||
+    item.bare === true
+  );
+}
+
+function getOuterItemType(item) {
+  if (!item) return "render";
+  const rawUrl = item.url || item.src || item.href || "";
+  const name = item.fileName || item.title || item.name || "";
+  const clean = String(rawUrl || name).split("?")[0].split("#")[0];
+  const dotIndex = clean.lastIndexOf(".");
+  const ext = dotIndex !== -1 ? clean.slice(dotIndex + 1).toLowerCase() : "";
+
+  if (["doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(ext)) return "office";
+  if (ext === "pdf") return "pdf";
+  if (ext === "md" || ext === "markdown") return "markdown";
+  if (ext === "html" || ext === "htm") return "html";
+
+  const t = (item.type || "").toLowerCase();
+  if (t === "iframe" || t === "html") return "html";
+  if (t === "image") return "image";
+  if (t === "audio" || t === "voice") return "audio";
+  if (t === "video") return "video";
+  if (t === "alert") return "alert";
+  if (t === "link") return "link";
+  if (t === "text") return "text";
+  if (rawUrl) return "link";
+  return "render";
+}
+
+function getOuterItemBadge(item) {
+  const t = getOuterItemType(item);
+  switch (t) {
+    case "office": return "Office";
+    case "pdf": return "PDF";
+    case "markdown": return "Markdown";
+    case "html": return "UI 卡片";
+    case "image": return "图片";
+    case "audio": return "音频";
+    case "video": return "视频";
+    case "alert": return "提示";
+    case "link": return "链接";
+    case "text": return "文本";
+    default: return "产物";
+  }
+}
+
+function getOuterItemTitle(item, toolData) {
+  if (item.title) return item.title;
+  if (item.fileName) return item.fileName;
+  if (item.name) return item.name;
+  const toolName = toolData?.displayName || toolData?.name;
+  const badge = getOuterItemBadge(item);
+  return toolName ? `${toolName} · ${badge}` : `${badge}产物`;
+}
+
+function getOuterItemUrl(item) {
+  return (item.url || item.src || item.href || "").trim();
+}
+
+const markdownCache = ref({});
+
+function isValidMarkdownContent(str) {
+  if (typeof str !== "string" || !str.trim()) return false;
+  if (str.includes("文件分享:") && str.includes("下载链接:")) return false;
+  return true;
+}
+
+function getMarkdownText(item) {
+  if (isValidMarkdownContent(item.content)) return item.content;
+  if (isValidMarkdownContent(item.md)) return item.md;
+  if (isValidMarkdownContent(item.markdown)) return item.markdown;
+  if (isValidMarkdownContent(item.text)) return item.text;
+
+  const url = getOuterItemUrl(item);
+  if (url) {
+    if (markdownCache.value[url]) {
+      return markdownCache.value[url];
+    }
+    fetchMarkdownForItem(url);
+  }
+  return "";
+}
+
+async function fetchMarkdownForItem(url) {
+  if (!url || markdownCache.value[url]) return;
+  try {
+    const resp = await fetch(url);
+    if (resp.ok) {
+      markdownCache.value[url] = await resp.text();
+    }
+  } catch (err) {
+    console.warn("[MessageContent] Failed to fetch markdown from url:", err);
+  }
+}
+
+const copyOuterItem = async (item) => {
+  const text =
+    getMarkdownText(item) ||
+    item.content ||
+    item.text ||
+    item.html ||
+    getOuterItemUrl(item) ||
+    "";
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    ElMessage.success("已复制到剪贴板");
+  } catch (err) {
+    ElMessage.error("复制失败");
+  }
+};
+
+const workspaceStore = useWorkspaceStore();
+
+function canOpenInWorkspace(item) {
+  if (!item) return false;
+  return true;
+}
+
+function openInWorkspace(item, toolData) {
+  workspaceStore.openRenderTab(item, {
+    toolName: toolData?.name,
+    toolTitle: toolData?.displayName || toolData?.name,
+    messageIndex: props.messageIndex,
+  });
 }
 
 const handleShadowHtmlUpdate = (item, newHtml) => {
@@ -419,13 +855,36 @@ onUnmounted(disableIframeResize);
   margin-top: 8px
   display: flex
   flex-direction: column
-  gap: 8px
+  gap: 10px
   width: 100%
 
-  .outer-render-item
-    width: 100%
-    display: flex
-    flex-direction: column
+.outer-render-immersive
+  width: 100%
+  display: flex
+  flex-direction: column
+  align-items: flex-start
+
+  .outer-render-image-container
+    width: fit-content
+    max-width: 100%
+    display: inline-block
+
+    :deep(.markdown-body)
+      background: transparent !important
+      padding: 0 !important
+
+      p
+        margin: 0 !important
+
+      img
+        max-width: min(100%, 540px)
+        max-height: 520px
+        width: auto
+        height: auto
+        object-fit: contain
+        border-radius: 8px
+        box-shadow: 0 3px 14px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04)
+        cursor: zoom-in
 
   .outer-render-audio-container
     margin: 6px 0
@@ -442,9 +901,6 @@ onUnmounted(disableIframeResize);
     background-color: var(--el-fill-color-blank)
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04)
 
-  .extra-render-image
-    width: 100%
-
   .outer-render-link-container
     display: inline-flex
     align-items: center
@@ -457,7 +913,6 @@ onUnmounted(disableIframeResize);
 
   .outer-render-alert
     width: 100%
-    border-radius: 6px
 
   .outer-render-text
     padding: 8px 12px
@@ -468,11 +923,299 @@ onUnmounted(disableIframeResize);
     color: var(--el-text-color-regular)
     white-space: pre-wrap
 
-  .extra-render-iframe
+  .outer-inline-iframe
     width: 100%
-    border: 1px solid var(--el-border-color-lighter)
+    min-height: 320px
+    border: 1px solid var(--mio-border-color-light, rgba(0, 0, 0, 0.08))
+    border-radius: 8px
+    background-color: #ffffff
+
+.outer-render-card
+  width: fit-content
+  max-width: 100%
+  min-width: min(100%, 240px)
+  border-radius: 8px
+  border: 1px solid var(--mio-border-color-light, rgba(0, 0, 0, 0.08))
+  background: var(--mio-bg-surface, #ffffff)
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02)
+  overflow: hidden
+  transition: border-color 0.15s ease, box-shadow 0.15s ease
+
+  &:hover
+    border-color: var(--mio-border-color, rgba(0, 0, 0, 0.15))
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06)
+
+  &.card-type-office,
+  &.card-type-pdf,
+  &.card-type-markdown,
+  &.card-type-alert,
+  &.card-type-link
+    width: 100%
+
+.outer-card-header
+  height: 32px
+  padding: 0 10px
+  background: var(--mio-bg-surface-soft, rgba(0, 0, 0, 0.02))
+  border-bottom: 1px solid var(--mio-border-color-light, rgba(0, 0, 0, 0.06))
+  display: flex
+  align-items: center
+  justify-content: space-between
+  gap: 8px
+
+.outer-card-meta
+  display: flex
+  align-items: center
+  gap: 6px
+  overflow: hidden
+  min-width: 0
+  flex: 1
+
+.outer-card-badge
+  font-size: 10px
+  font-weight: 700
+  padding: 1px 5px
+  border-radius: 4px
+  white-space: nowrap
+  letter-spacing: 0.02em
+  flex-shrink: 0
+
+  &.badge-office
+    background: rgba(37, 99, 235, 0.14)
+    color: #2563eb
+  &.badge-pdf
+    background: rgba(239, 68, 68, 0.14)
+    color: #ef4444
+  &.badge-markdown
+    background: rgba(8, 145, 178, 0.14)
+    color: #0891b2
+  &.badge-html
+    background: rgba(139, 92, 246, 0.14)
+    color: #8b5cf6
+  &.badge-link
+    background: rgba(0, 153, 255, 0.14)
+    color: #0099ff
+  &.badge-image
+    background: rgba(245, 158, 11, 0.14)
+    color: #f59e0b
+  &.badge-audio
+    background: rgba(16, 185, 129, 0.14)
+    color: #10b981
+  &.badge-video
+    background: rgba(244, 63, 94, 0.14)
+    color: #f43f5e
+  &.badge-alert
+    background: rgba(234, 88, 12, 0.14)
+    color: #ea580c
+  &.badge-text
+    background: rgba(100, 116, 139, 0.14)
+    color: #64748b
+  &.badge-render
+    background: rgba(99, 102, 241, 0.14)
+    color: #6366f1
+
+.outer-card-title
+  font-size: 11.5px
+  font-weight: 600
+  color: var(--mio-text-primary, #1e293b)
+  white-space: nowrap
+  overflow: hidden
+  text-overflow: ellipsis
+
+.outer-card-actions
+  display: flex
+  align-items: center
+  gap: 4px
+  flex-shrink: 0
+
+.outer-card-btn
+  display: inline-flex
+  align-items: center
+  gap: 4px
+  padding: 2px 7px
+  border-radius: 4px
+  font-size: 11px
+  cursor: pointer
+  border: 1px solid var(--mio-border-color-light, rgba(0, 0, 0, 0.1))
+  background: var(--mio-bg-surface, #ffffff)
+  color: var(--mio-text-secondary, #64748b)
+  transition: all 0.15s ease
+  text-decoration: none
+
+  &:hover
+    color: var(--mio-color-primary, #0099ff)
+    border-color: var(--mio-color-primary, #0099ff)
+    background: var(--mio-bg-hover, rgba(0, 153, 255, 0.06))
+
+  &.icon-btn
+    padding: 3px 5px
+
+  &.primary-btn
+    font-weight: 500
+
+.outer-card-body
+  padding: 8px 10px
+  overflow-x: auto
+
+.outer-file-box
+  display: flex
+  align-items: center
+  gap: 10px
+  padding: 4px 2px
+
+  .file-icon-box
+    font-size: 20px
+    flex-shrink: 0
+
+  .file-details
+    display: flex
+    flex-direction: column
+    min-width: 0
+    flex: 1
+
+    .file-name
+      font-size: 12.5px
+      font-weight: 600
+      color: var(--mio-text-primary, #1e293b)
+      white-space: nowrap
+      overflow: hidden
+      text-overflow: ellipsis
+
+    .file-subtext
+      font-size: 11px
+      color: var(--mio-text-secondary, #64748b)
+      margin-top: 2px
+
+  .file-preview-btn
+    padding: 3px 10px
+    border-radius: 4px
+    border: 1px solid var(--mio-color-primary, #0099ff)
+    background: var(--mio-bg-primary-light, rgba(0, 153, 255, 0.1))
+    color: var(--mio-color-primary, #0099ff)
+    font-size: 11px
+    cursor: pointer
+    transition: all 0.15s ease
+
+    &:hover
+      background: var(--mio-color-primary, #0099ff)
+      color: #ffffff
+
+.outer-audio-box
+  width: 100%
+  display: flex
+  align-items: center
+
+  .outer-audio-player
+    width: 100%
+    height: 32px
+    border-radius: 16px
+
+.outer-video-box
+  width: 100%
+  display: flex
+  justify-content: center
+  background: rgba(0, 0, 0, 0.05)
+  border-radius: 6px
+  overflow: hidden
+
+  .outer-video-player
+    width: 100%
+    max-height: 320px
     border-radius: 6px
-    background-color: #fff
+    outline: none
+
+.outer-image-box
+  display: flex
+  justify-content: center
+  width: fit-content
+  max-width: 100%
+
+  .outer-img
+    max-width: min(100%, 540px)
+    max-height: 520px
+    width: auto
+    height: auto
+    border-radius: 6px
+    object-fit: contain
+
+.outer-text-box
+  font-size: 13px
+  line-height: 1.5
+  color: var(--mio-text-primary, #334155)
+  white-space: pre-wrap
+  word-break: break-word
+
+.outer-link-box
+  width: 100%
+
+  .outer-link-btn
+    display: flex
+    flex-direction: column
+    gap: 2px
+    padding: 6px 10px
+    border-radius: 6px
+    background: var(--mio-bg-surface-soft, rgba(0, 0, 0, 0.02))
+    border: 1px solid var(--mio-border-color-light, rgba(0, 0, 0, 0.08))
+    text-decoration: none
+    transition: all 0.15s ease
+
+    &:hover
+      border-color: var(--mio-color-primary, #0099ff)
+
+    .link-label
+      font-size: 12.5px
+      font-weight: 600
+      color: var(--mio-color-primary, #0099ff)
+
+    .link-url-hint
+      font-size: 11px
+      color: var(--mio-text-secondary, #94a3b8)
+      white-space: nowrap
+      overflow: hidden
+      text-overflow: ellipsis
+
+.outer-html-box
+  width: 100%
+  min-height: 60px
+
+  .outer-inline-iframe
+    width: 100%
+    height: 320px
+    min-height: 240px
+    border: none
+    border-radius: 6px
+    background: #ffffff
+
+.outer-markdown-box
+  width: 100%
+  max-height: 420px
+  overflow-y: auto
+  overflow-x: auto
+  font-size: 13px
+  padding-right: 4px
+
+  &::-webkit-scrollbar
+    width: 6px
+    height: 6px
+
+  &::-webkit-scrollbar-track
+    background: transparent
+
+  &::-webkit-scrollbar-thumb
+    background: var(--mio-border-color-light, rgba(0, 0, 0, 0.15))
+    border-radius: 3px
+
+    &:hover
+      background: var(--mio-border-color, rgba(0, 0, 0, 0.25))
+
+  :deep(.markdown-body)
+    font-size: 13px
+    line-height: 1.6
+
+    > *:first-child
+      margin-top: 0
+
+    > *:last-child
+      margin-bottom: 0
 
 .toolsmanager-detail
   display: flex

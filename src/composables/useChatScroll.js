@@ -371,7 +371,7 @@ export function useChatScroll({
           });
         });
       } else if (
-        activeContactor.value?.platform === "channel" &&
+        activeContactor.value?.platform === "agent" &&
         typeof onLoadMoreChannelHistory === "function"
       ) {
         isLoadingHistory.value = true;

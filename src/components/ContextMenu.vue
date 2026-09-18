@@ -10,11 +10,17 @@
           <i class="iconfont star"></i>
           <span>{{ message.priority === 0 ? "取消置顶" : "置顶" }}</span>
         </div>
-        <div v-if="message.platform !== 'channel'" @click.stop="shareBot">
+        <div
+          v-if="!['agent', 'sub_agent'].includes(message.platform)"
+          @click.stop="shareBot"
+        >
           <i class="iconfont icon-share"></i>
           <span>分享</span>
         </div>
-        <div v-if="message.platform !== 'channel'" @click.stop="deleteBot">
+        <div
+          v-if="!['agent', 'sub_agent'].includes(message.platform)"
+          @click.stop="deleteBot"
+        >
           <i class="iconfont shanchu"></i>
           <span>删除</span>
         </div>
@@ -50,11 +56,11 @@
           <i class="iconfont reset"></i>
           <span>重试</span>
         </div>
-        <div v-if="isStreaming" @click.stop="stopGeneration">
+        <div v-if="isStreaming && !readOnly" @click.stop="stopGeneration">
           <i class="iconfont stop"></i>
           <span>停止</span>
         </div>
-        <div v-if="!isStreaming" @click.stop="replyMessage">
+        <div v-if="!isStreaming && !readOnly" @click.stop="replyMessage">
           <i class="iconfont yinyong"></i>
           <span>引用</span>
         </div>
@@ -94,6 +100,10 @@ export default {
   },
   props: {
     isChannel: {
+      type: Boolean,
+      default: false,
+    },
+    readOnly: {
       type: Boolean,
       default: false,
     },

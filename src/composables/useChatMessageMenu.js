@@ -49,7 +49,10 @@ export function useChatMessageMenu({
         : messageIndex;
 
     validMessageIndex.value = realIndex;
-    canRetry.value = getRetryTargetIndex(chain, realIndex) !== -1;
+    canRetry.value =
+      activeContactor.value?.readOnly !== true &&
+      activeContactor.value?.platform !== "sub_agent" &&
+      getRetryTargetIndex(chain, realIndex) !== -1;
     if (event.preventDefault) event.preventDefault();
     showMenu.value = true;
     menuTop.value = event.clientY;

@@ -46,9 +46,10 @@
       <div
         :id="item.role"
         class="message-body"
+        :class="{ 'no-avatar': hideAvatar }"
         :style="{ pointerEvents: isMultiSelect ? 'none' : 'auto' }"
       >
-        <div v-if="item.role !== 'mio_system'" class="avatar">
+        <div v-if="item.role !== 'mio_system' && !hideAvatar" class="avatar">
           <template v-if="item.role === 'other'">
             <img
               :src="
@@ -393,6 +394,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  hideAvatar: {
+    type: Boolean,
+    default: false,
+  },
   showTimeInfo: {
     type: Object,
     default: () => ({ show: false, time: "" }),
@@ -579,6 +584,11 @@ $mobile: 768px
 
             &:hover:not(.checked)
                 border-color: var(--mio-color-primary)
+
+.message-body.no-avatar
+  padding: 0.35rem 0.5rem !important
+  & > .msg
+    max-width: 100% !important
 
 .message-body > .avatar
   cursor: pointer

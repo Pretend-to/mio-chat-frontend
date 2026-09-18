@@ -278,12 +278,19 @@ const defaultAvatar = "/static/icons/512x512.png";
 
 const wrapperStyle = computed(() => {
   if (!props.size) return {};
-  const sz = typeof props.size === "number" ? `${props.size}px` : props.size;
+  const rawStr = String(props.size).trim();
+  const sz =
+    typeof props.size === "number" || /^\d+(\.\d+)?$/.test(rawStr)
+      ? `${parseFloat(rawStr)}px`
+      : rawStr;
   return {
     width: sz,
     height: sz,
     minWidth: sz,
     minHeight: sz,
+    maxWidth: sz,
+    maxHeight: sz,
+    flexShrink: 0,
   };
 });
 
@@ -317,6 +324,8 @@ function handleImgError(e) {
   position: relative;
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   border-radius: 50%;
   background-color: var(--el-fill-color-darker, #e5e6eb);
   overflow: hidden;
@@ -324,12 +333,16 @@ function handleImgError(e) {
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+  flex-shrink: 0;
 
   .single-avatar {
     width: 100%;
     height: 100%;
+    max-width: 100%;
+    max-height: 100%;
     border-radius: 50%;
     object-fit: cover;
+    display: block;
   }
 
   /* 2 个人: 上下留白，中间 50% 高度横着放略缩版头像 */

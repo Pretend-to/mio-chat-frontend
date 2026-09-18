@@ -44,6 +44,10 @@ export function useChatRetry({ activeContactor, toBottom, inputEditor }) {
   const handleRetryMessage = async (item) => {
     const contactor = activeContactor.value;
     if (!contactor) return;
+    if (contactor.readOnly || contactor.platform === "sub_agent") {
+      ElMessage.warning("SubAgent 会话为只读，不能重试消息");
+      return;
+    }
 
     if (item.triggerType === "task") {
       ElMessage.warning("非聊天来源的消息不支持重试");
@@ -53,8 +57,12 @@ export function useChatRetry({ activeContactor, toBottom, inputEditor }) {
     const uploadFn = inputEditor?.value?.compressAndUploadImage;
 
     if (contactor.platform === "onebot") {
-      item.status = "pending";
-      item.time = Date.now();
+      contactorsStore.applyMessageEvent({
+        type: "message.patch",
+        contactorId: contactor.id,
+        messageId: item.id,
+        patch: { status: "pending", time: Date.now() },
+      });
       client.setLocalStorage();
       try {
         await reuploadBlobImages(item, uploadFn);
@@ -68,8 +76,12 @@ export function useChatRetry({ activeContactor, toBottom, inputEditor }) {
       const idx = contactor.messageChain.findIndex((m) => m.id === item.id);
       if (idx === -1) return;
 
-      item.status = "pending";
-      item.time = Date.now();
+      contactorsStore.applyMessageEvent({
+        type: "message.patch",
+        contactorId: contactor.id,
+        messageId: item.id,
+        patch: { status: "pending", time: Date.now() },
+      });
 
       const targetIndex = idx + 1;
       let assistantMsg = contactor.messageChain[targetIndex];
@@ -82,11 +94,23 @@ export function useChatRetry({ activeContactor, toBottom, inputEditor }) {
           status: "pending",
           triggerType: "chat",
         };
-        contactor.messageChain.splice(targetIndex, 0, assistantMsg);
+        contactorsStore.applyMessageEvent({
+          type: "message.upsert",
+          contactorId: contactor.id,
+          message: assistantMsg,
+          index: targetIndex,
+        });
       } else {
-        assistantMsg.content = [{ type: "blank", data: {} }];
-        assistantMsg.time = Date.now();
-        assistantMsg.status = "pending";
+        contactorsStore.applyMessageEvent({
+          type: "message.patch",
+          contactorId: contactor.id,
+          messageId: assistantMsg.id,
+          patch: {
+            content: [{ type: "blank", data: {} }],
+            time: Date.now(),
+            status: "pending",
+          },
+        });
       }
 
       client.setLocalStorage();
@@ -102,12 +126,27 @@ export function useChatRetry({ activeContactor, toBottom, inputEditor }) {
           assistantMsg.id,
           contactor.options,
         );
-        item.status = "completed";
+        contactorsStore.applyMessageEvent({
+          type: "message.patch",
+          contactorId: contactor.id,
+          messageId: item.id,
+          patch: { status: "completed" },
+        });
         client.setLocalStorage();
       } catch (error) {
         ElMessage.error(error.message || "重试失败");
-        item.status = "failed";
-        assistantMsg.status = "failed";
+        contactorsStore.applyMessageEvent({
+          type: "message.patch",
+          contactorId: contactor.id,
+          messageId: item.id,
+          patch: { status: "failed" },
+        });
+        contactorsStore.applyMessageEvent({
+          type: "message.patch",
+          contactorId: contactor.id,
+          messageId: assistantMsg.id,
+          patch: { status: "failed" },
+        });
         client.setLocalStorage();
       }
     }
@@ -119,6 +158,10 @@ export function useChatRetry({ activeContactor, toBottom, inputEditor }) {
   const handleMenuRetry = async (message, messageIndex) => {
     const contactor = activeContactor.value;
     if (!contactor) return;
+    if (contactor.readOnly || contactor.platform === "sub_agent") {
+      ElMessage.warning("SubAgent 会话为只读，不能重新发送消息");
+      return;
+    }
 
     const uploadFn = inputEditor?.value?.compressAndUploadImage;
 
@@ -153,11 +196,23 @@ export function useChatRetry({ activeContactor, toBottom, inputEditor }) {
           id: numberString(16),
           status: "pending",
         };
-        contactor.messageChain.splice(targetIndex, 0, validMessage);
+        contactorsStore.applyMessageEvent({
+          type: "message.upsert",
+          contactorId: contactor.id,
+          message: validMessage,
+          index: targetIndex,
+        });
         client.setLocalStorage();
       } else {
-        validMessage.content = [{ type: "blank", data: {} }];
-        validMessage.time = Date.now();
+        contactorsStore.applyMessageEvent({
+          type: "message.patch",
+          contactorId: contactor.id,
+          messageId: validMessage.id,
+          patch: {
+            content: [{ type: "blank", data: {} }],
+            time: Date.now(),
+          },
+        });
       }
 
       if (validMessage.status === "retrying") {
@@ -165,7 +220,12 @@ export function useChatRetry({ activeContactor, toBottom, inputEditor }) {
         return;
       }
 
-      validMessage.status = "retrying";
+      contactorsStore.applyMessageEvent({
+        type: "message.patch",
+        contactorId: contactor.id,
+        messageId: validMessage.id,
+        patch: { status: "retrying" },
+      });
       retryList.value.push(validMessage.id);
 
       const userMsg =
@@ -187,7 +247,12 @@ export function useChatRetry({ activeContactor, toBottom, inputEditor }) {
         client.saveNow();
       } catch (error) {
         ElMessage.error(error.message || "重试失败");
-        validMessage.status = "failed";
+        contactorsStore.applyMessageEvent({
+          type: "message.patch",
+          contactorId: contactor.id,
+          messageId: validMessage.id,
+          patch: { status: "failed" },
+        });
       }
     }
 

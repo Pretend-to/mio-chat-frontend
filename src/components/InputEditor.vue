@@ -1,158 +1,5 @@
 <template>
   <div class="input-bar" ref="inputBarRef">
-    <!-- 双向长连接就地交互选择面板 -->
-    <transition name="slide-up">
-      <div v-if="hasActiveInteraction" class="interaction-bar">
-        <div class="interaction-info">
-          <i class="mio-icon mio-icon-tool animate-bounce"></i>
-          <span class="interaction-prompt">
-            {{ activeInteraction.prompt || "请进行选择/授权：" }}
-          </span>
-        </div>
-
-        <!-- A. 选项多项扁平单选 -->
-        <div
-          v-if="activeInteraction.actionType === 'SHOW_SELECT_OVERLAY'"
-          class="interaction-options"
-        >
-          <button
-            v-for="opt in activeInteraction.options"
-            :key="opt.value"
-            class="interaction-btn"
-            :disabled="interactionSubmitting"
-            @click="submitResponse({ selectResult: opt.value })"
-          >
-            {{ opt.label || opt.value }}
-          </button>
-        </div>
-
-        <!-- B. 危险指令 / 配置 / 全局记忆更新二次审批授权 -->
-        <div
-          v-else-if="activeInteraction.actionType === 'REQUEST_APPROVAL'"
-          class="interaction-options"
-        >
-          <!-- 1. Command Code Block -->
-          <div
-            v-if="activeInteraction.meta?.commandPreview"
-            class="command-preview-box"
-          >
-            <code>{{ approvalCommandPreview }}</code>
-          </div>
-
-          <!-- 2. Global Memory Preview Box -->
-          <div
-            v-else-if="
-              activeInteraction.meta?.type === 'global_memory' ||
-              activeInteraction.meta?.scope === 'global'
-            "
-            class="command-preview-box memory-preview-box"
-          >
-            <div class="preview-meta-header">
-              <span class="preview-tag">📁 全局长期记忆</span>
-              <span
-                v-if="activeInteraction.meta?.category"
-                class="preview-category"
-              >
-                分类: {{ activeInteraction.meta.category }}
-              </span>
-              <span
-                v-if="activeInteraction.meta?.action"
-                class="preview-action"
-              >
-                操作: {{ activeInteraction.meta.action }}
-              </span>
-            </div>
-            <code>{{
-              activeInteraction.meta.content || activeInteraction.meta.target
-            }}</code>
-          </div>
-
-          <!-- 3. Plugin / System Config Preview Box -->
-          <div
-            v-else-if="activeInteraction.meta?.config"
-            class="command-preview-box"
-          >
-            <code>{{
-              typeof activeInteraction.meta.config === "string"
-                ? activeInteraction.meta.config
-                : JSON.stringify(activeInteraction.meta.config, null, 2)
-            }}</code>
-          </div>
-
-          <button
-            v-if="
-              !activeInteraction.meta?.commandPreview ||
-              activeInteraction.meta?.rememberable === false
-            "
-            class="interaction-btn approve-btn"
-            :disabled="interactionSubmitting"
-            @click="submitResponse({ approved: true })"
-          >
-            {{
-              activeInteraction.meta?.type === "global_memory" ||
-              activeInteraction.meta?.scope === "global"
-                ? "授权写入"
-                : activeInteraction.meta?.commandPreview
-                  ? "授权执行"
-                  : "授权更新"
-            }}
-          </button>
-          <template
-            v-if="
-              activeInteraction.meta?.commandPreview &&
-              activeInteraction.meta?.rememberable !== false
-            "
-          >
-            <button
-              class="interaction-btn approve-once-btn"
-              :disabled="interactionSubmitting"
-              @click="
-                submitResponse({ approved: true, rememberType: 'prefix2' })
-              "
-            >
-              授权并记住「{{ approvalCommandPreview }}」
-            </button>
-            <button
-              v-if="
-                activeInteraction.meta?.commandPrefix1 &&
-                activeInteraction.meta.commandPrefix1 !== approvalCommandPreview
-              "
-              class="interaction-btn approve-once-btn"
-              :disabled="interactionSubmitting"
-              @click="
-                submitResponse({ approved: true, rememberType: 'prefix1' })
-              "
-            >
-              授权并记住「{{ activeInteraction.meta.commandPrefix1 }}」
-            </button>
-          </template>
-          <div v-if="interactionError" class="interaction-error">
-            {{ interactionError }}
-          </div>
-          <div class="reject-reason-container">
-            <button
-              class="interaction-btn reject-btn"
-              :disabled="interactionSubmitting"
-              @click="
-                submitResponse({ approved: false, reason: rejectReasonText })
-              "
-            >
-              拒绝
-            </button>
-            <input
-              v-model="rejectReasonText"
-              class="reason-input-inline"
-              :disabled="interactionSubmitting"
-              placeholder="拒绝理由（可选）"
-              @keyup.enter="
-                submitResponse({ approved: false, reason: rejectReasonText })
-              "
-            />
-          </div>
-        </div>
-      </div>
-    </transition>
-
     <!-- Command Popup List -->
     <transition name="popup-fade">
       <div
@@ -396,7 +243,6 @@ import { useInputDraft } from "@/composables/useInputDraft.js";
 import { useInputLLMOptions } from "@/composables/useInputLLMOptions.js";
 import { useInputCommandPopup } from "@/composables/useInputCommandPopup.js";
 import { useInputFileUpload } from "@/composables/useInputFileUpload.js";
-import { useInputInteractions } from "@/composables/useInputInteractions.js";
 import { useInputSend } from "@/composables/useInputSend.js";
 
 const props = defineProps({
@@ -518,21 +364,7 @@ const {
   ElMessage,
 });
 
-// 6. Interaction & Approvals Logic
-const {
-  activeInteraction,
-  hasActiveInteraction,
-  interactionError,
-  interactionSubmitting,
-  submitResponse,
-  rejectReasonText,
-} = useInputInteractions({ activeContactor });
-
-const approvalCommandPreview = computed(() => {
-  return activeInteraction.value?.meta?.commandPreview || "";
-});
-
-// 7. Message Format and Sending Logic
+// 6. Message Format and Sending Logic
 const { hasInput, isUploading, presend, send } = useInputSend({
   textareaRef: textarea,
   activeContactor,
@@ -1353,6 +1185,12 @@ i, .input-icon-btn
     display: flex
     flex-wrap: wrap
     gap: 6px
+
+    .approval-source-badge
+      width: 100%
+      color: var(--mio-color-warning)
+      font-size: 11px
+      font-weight: 600
 
     .command-preview-box
       width: 100%

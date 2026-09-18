@@ -16,13 +16,21 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
   const sendMessage = async (msg, toServer = true) => {
     const contactor = activeContactor.value;
     if (!contactor) return;
+    if (contactor.readOnly || contactor.platform === "sub_agent") {
+      if (toServer) ElMessage.warning("SubAgent 会话为只读，不能发送消息");
+      return null;
+    }
 
     if (autoScroll) autoScroll.value = false;
     contactor.lastUpdate = Date.now();
 
     const exists = contactor.messageChain.some((m) => m.id === msg.id);
     if (!exists) {
-      contactor.messageChain.push(msg);
+      contactorsStore.applyMessageEvent({
+        type: "message.upsert",
+        contactorId: contactor.id,
+        message: msg,
+      });
     }
 
     // carryProfile: 首次发送时插入 <user_profile> 到会话头部
@@ -58,9 +66,19 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
           };
 
           if (userMsgIndex !== -1) {
-            contactor.messageChain.splice(userMsgIndex, 0, systemMsg);
+            contactorsStore.applyMessageEvent({
+              type: "message.upsert",
+              contactorId: contactor.id,
+              message: systemMsg,
+              index: userMsgIndex,
+            });
           } else {
-            contactor.messageChain.unshift(systemMsg);
+            contactorsStore.applyMessageEvent({
+              type: "message.upsert",
+              contactorId: contactor.id,
+              message: systemMsg,
+              prepend: true,
+            });
           }
         }
       }
@@ -85,18 +103,28 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
           msg.id,
         );
         if (msgInChain) {
-          msgInChain.id = messageId;
+          contactorsStore.applyMessageEvent({
+            type: "message.rekey",
+            contactorId: contactor.id,
+            messageId: msgInChain.id,
+            nextMessageId: messageId,
+          });
         }
         msg.id = messageId;
-        contactorsStore.completeMessage(contactor.id, messageId);
+        contactorsStore.applyMessageEvent({
+          type: "message.complete",
+          contactorId: contactor.id,
+          messageId,
+        });
         return messageId;
       } catch (e) {
         ElMessage.error(e.message || "发送失败");
-        contactorsStore.failedMessage(
-          contactor.id,
-          msg.id,
-          e.message || "发送失败",
-        );
+        contactorsStore.applyMessageEvent({
+          type: "message.failed",
+          contactorId: contactor.id,
+          messageId: msg.id,
+          error: e.message || "发送失败",
+        });
         throw e;
       }
     } else if (contactor.platform === "group") {
@@ -109,10 +137,15 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
       }
 
       const assistantMsgId = numberString(16);
-      contactorsStore.getOrCreateMessage(contactor.id, assistantMsgId, {
-        role: "other",
-        status: "pending",
-        content: [{ type: "blank", data: {} }],
+      contactorsStore.applyMessageEvent({
+        type: "message.upsert",
+        contactorId: contactor.id,
+        message: {
+          id: assistantMsgId,
+          role: "other",
+          status: "pending",
+          content: [{ type: "blank", data: {} }],
+        },
       });
 
       contactorsStore.updateContactorSummary(contactor);
@@ -120,30 +153,44 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
       if (toBottom) toBottom();
 
       if (msgInChain) {
-        msgInChain.status = "completed";
+        contactorsStore.applyMessageEvent({
+          type: "message.patch",
+          contactorId: contactor.id,
+          messageId: msgInChain.id,
+          patch: { status: "completed" },
+        });
       }
 
       try {
         const { sendGroupCompletions } = await import("@/lib/groupGateway.js");
         await sendGroupCompletions(contactor, assistantMsgId);
-        contactorsStore.completeMessage(contactor.id, msg.id);
+        contactorsStore.applyMessageEvent({
+          type: "message.complete",
+          contactorId: contactor.id,
+          messageId: msg.id,
+        });
         return msg.id;
       } catch (e) {
         ElMessage.error(e.message || "群聊发送失败");
-        contactorsStore.failedMessage(
-          contactor.id,
-          msg.id,
-          e.message || "群聊发送失败",
-        );
+        contactorsStore.applyMessageEvent({
+          type: "message.failed",
+          contactorId: contactor.id,
+          messageId: msg.id,
+          error: e.message || "群聊发送失败",
+        });
         const asstIdx = contactor.messageChain.findIndex(
           (m) => m.id === assistantMsgId,
         );
         if (asstIdx !== -1) {
-          contactor.messageChain.splice(asstIdx, 1);
+          contactorsStore.applyMessageEvent({
+            type: "message.remove",
+            contactorId: contactor.id,
+            messageId: assistantMsgId,
+          });
         }
         return msg.id;
       }
-    } else if (contactor.platform === "channel") {
+    } else if (contactor.platform === "agent") {
       if (toBottom) toBottom();
 
       if (!toServer) {
@@ -152,22 +199,32 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
       }
 
       const assistantMsgId = numberString(16);
-      contactorsStore.getOrCreateMessage(contactor.id, assistantMsgId, {
-        role: "other",
-        status: "pending",
-        content: [{ type: "blank", data: {} }],
+      contactorsStore.applyMessageEvent({
+        type: "message.upsert",
+        contactorId: contactor.id,
+        message: {
+          id: assistantMsgId,
+          role: "other",
+          status: "pending",
+          content: [{ type: "blank", data: {} }],
+        },
       });
 
       contactorsStore.updateContactorSummary(contactor);
       if (toBottom) toBottom();
 
       if (msgInChain) {
-        msgInChain.status = "completed";
+        contactorsStore.applyMessageEvent({
+          type: "message.patch",
+          contactorId: contactor.id,
+          messageId: msgInChain.id,
+          patch: { status: "completed" },
+        });
       }
 
       try {
         await gateway.send(
-          "channel",
+          "agent",
           contactor.id,
           contactor.messageChain,
           assistantMsgId,
@@ -176,11 +233,12 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
         return msg.id;
       } catch (e) {
         ElMessage.error(e.message || "发送失败");
-        contactorsStore.failedMessage(
-          contactor.id,
-          assistantMsgId,
-          e.message || "发送失败",
-        );
+        contactorsStore.applyMessageEvent({
+          type: "message.failed",
+          contactorId: contactor.id,
+          messageId: assistantMsgId,
+          error: e.message || "发送失败",
+        });
         return msg.id;
       }
     } else {
@@ -194,10 +252,15 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
       }
 
       const assistantMsgId = numberString(16);
-      contactorsStore.getOrCreateMessage(contactor.id, assistantMsgId, {
-        role: "other",
-        status: "pending",
-        content: [{ type: "blank", data: {} }],
+      contactorsStore.applyMessageEvent({
+        type: "message.upsert",
+        contactorId: contactor.id,
+        message: {
+          id: assistantMsgId,
+          role: "other",
+          status: "pending",
+          content: [{ type: "blank", data: {} }],
+        },
       });
 
       contactorsStore.updateContactorSummary(contactor);
@@ -206,7 +269,12 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
       if (toBottom) toBottom();
 
       if (msgInChain) {
-        msgInChain.status = "pending";
+        contactorsStore.applyMessageEvent({
+          type: "message.patch",
+          contactorId: contactor.id,
+          messageId: msgInChain.id,
+          patch: { status: "pending" },
+        });
       }
       try {
         await gateway.send(
@@ -216,20 +284,29 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
           assistantMsgId,
           contactor.options,
         );
-        contactorsStore.completeMessage(contactor.id, msg.id);
+        contactorsStore.applyMessageEvent({
+          type: "message.complete",
+          contactorId: contactor.id,
+          messageId: msg.id,
+        });
         return msg.id;
       } catch (e) {
         ElMessage.error(e.message || "请求失败");
-        contactorsStore.failedMessage(
-          contactor.id,
-          msg.id,
-          e.message || "请求失败",
-        );
+        contactorsStore.applyMessageEvent({
+          type: "message.failed",
+          contactorId: contactor.id,
+          messageId: msg.id,
+          error: e.message || "请求失败",
+        });
         const asstIdx = contactor.messageChain.findIndex(
           (m) => m.id === assistantMsgId,
         );
         if (asstIdx !== -1) {
-          contactor.messageChain.splice(asstIdx, 1);
+          contactorsStore.applyMessageEvent({
+            type: "message.remove",
+            contactorId: contactor.id,
+            messageId: assistantMsgId,
+          });
         }
         throw e;
       }
@@ -267,7 +344,12 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
         message.content[0]?.type === "text" &&
         message.content[0].data.text === clearMessageTip
       ) {
-        contactor.messageChain.splice(i, 1);
+        contactorsStore.applyMessageEvent({
+          type: "message.remove",
+          contactorId: contactor.id,
+          messageId: message.id,
+          persist: false,
+        });
       }
     }
     contactor.makeSystemMessage(clearMessageTip);
@@ -290,7 +372,12 @@ export function useChatSend({ activeContactor, toBottom, autoScroll }) {
     ) {
       activeContactor.value.firstMessageIndex = 0;
     }
-    activeContactor.value.messageChain.splice(realIndex, 1);
+    contactorsStore.applyMessageEvent({
+      type: "message.remove",
+      contactorId: activeContactor.value.id,
+      messageId: message.id,
+      persist: false,
+    });
     client.setLocalStorage();
   };
 

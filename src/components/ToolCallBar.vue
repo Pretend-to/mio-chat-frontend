@@ -33,6 +33,19 @@
         :key="idx"
         class="extra-render-item"
       >
+        <div v-if="canOpenInWorkspace(item)" class="render-item-workspace-action">
+          <button
+            class="open-workspace-pill"
+            title="在工作区大屏打开此渲染项"
+            @click.stop="openInWorkspace(item)"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="18" x="3" y="3" rx="2" />
+              <path d="M15 3v18" />
+            </svg>
+            <span>在工作区打开</span>
+          </button>
+        </div>
         <template v-if="item.type === 'image'">
           <div class="extra-render-image-container">
             <MdRenderer
@@ -83,6 +96,7 @@ import MdRenderer from "mio-previewer";
 import ShadowHtml from "./ShadowHtml.vue";
 import { client } from "@/lib/runtime.js";
 import { setupIframeAutoResize } from "@/utils/iframeAutoResize.js";
+import { useWorkspaceStore } from "@/stores/workspaceStore.js";
 
 export default {
   components: {
@@ -160,10 +174,19 @@ export default {
       if (name.startsWith("Skill_mid_") || name === "Skill") {
         return this.getSkillName(this.toolCall.parameters);
       }
-      if (name.split("_mid_")[0] === "memory") {
+      const baseName = name.split("_mid_")[0];
+      if (baseName === "memory") {
         return "记录记忆";
       }
-      return name.split("_mid_")[0] || "未知工具";
+      if (baseName === "subagent") {
+        const p = this.toolCall.parameters || {};
+        const role = p.role || p.subagentRole || p.subagentKey;
+        if (role) {
+          return `SubAgent · ${role}`;
+        }
+        return "SubAgent";
+      }
+      return baseName || "未知工具";
     },
     durationFormatted() {
       const dur =
@@ -341,6 +364,27 @@ export default {
       navigator.clipboard.writeText(this.formattedResult);
       if (this.$message) this.$message.success("结果已复制");
     },
+    canOpenInWorkspace(item) {
+      if (!item) return false;
+      const t = item.type;
+      return (
+        t === "html" ||
+        t === "iframe" ||
+        t === "image" ||
+        t === "audio" ||
+        t === "voice" ||
+        t === "video" ||
+        t === "file" ||
+        Boolean(item.html || item.url)
+      );
+    },
+    openInWorkspace(item) {
+      const store = useWorkspaceStore();
+      store.openRenderTab(item, {
+        toolName: this.toolCall.name,
+        toolTitle: this.toolTitle,
+      });
+    },
   },
 };
 </script>
@@ -414,6 +458,39 @@ export default {
 
 .extra-render-item {
   width: 100%;
+  position: relative;
+}
+
+.extra-render-item:hover .render-item-workspace-action {
+  opacity: 1;
+}
+
+.render-item-workspace-action {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+  opacity: 0.65;
+  transition: opacity 0.15s ease;
+}
+
+.open-workspace-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--mio-bg-surface, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--mio-border-color-light, rgba(255, 255, 255, 0.12));
+  color: var(--mio-text-secondary, #94a3b8);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.open-workspace-pill:hover {
+  background: var(--mio-color-primary, #8b5cf6);
+  color: #ffffff;
+  border-color: var(--mio-color-primary, #8b5cf6);
 }
 
 .extra-render-image-container {

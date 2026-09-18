@@ -115,7 +115,7 @@ export function useInputCommandPopup({
           description: "显示帮助信息",
         });
       }
-    } else if (contactor.platform === "channel") {
+    } else if (contactor.platform === "agent") {
       const channelCommands = [
         {
           label: "help",
@@ -381,7 +381,7 @@ export function useInputCommandPopup({
     if (
       activeContactor.value?.platform !== "onebot" &&
       activeContactor.value?.platform !== "openai" &&
-      activeContactor.value?.platform !== "channel" &&
+      activeContactor.value?.platform !== "agent" &&
       activeContactor.value?.platform !== "group"
     ) {
       showCommandPopup.value = false;
