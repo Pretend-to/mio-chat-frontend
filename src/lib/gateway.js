@@ -27,6 +27,72 @@ async function ackPersistedMessage(contactorId, messageId) {
   client.socket?.ackMessage(contactorId, messageId);
 }
 
+/**
+ * 静默自动放行 YOLO 审批，带 ACK 确认与弱网超时重试机制
+ */
+function emitSilentApproval({ interactionId, requestId, contactorId, maxRetries = 2 }) {
+  let attempt = 0;
+  const tryEmit = () => {
+    attempt++;
+    const socket = client.socket?.socket;
+    if (!socket || !client.isConnected) {
+      if (attempt <= maxRetries) {
+        setTimeout(tryEmit, 1000);
+      } else {
+        console.warn(`[gateway] 静默放行未就绪 (Socket未连接): ${interactionId}`);
+      }
+      return;
+    }
+
+    let ackTimer = null;
+    let settled = false;
+
+    const onAck = (ack = {}) => {
+      if (settled) return;
+      settled = true;
+      if (ackTimer) clearTimeout(ackTimer);
+      if (ack?.ok === false) {
+        console.warn(`[gateway] 静默放行服务端响应失败 (${interactionId}):`, ack.error);
+        if (attempt <= maxRetries) {
+          setTimeout(tryEmit, 1000);
+        }
+      } else {
+        console.log(`[gateway] 静默放行成功确认: ${interactionId}`);
+      }
+    };
+
+    ackTimer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      if (attempt <= maxRetries) {
+        console.warn(
+          `[gateway] 静默放行 ACK 超时，正在重试第 ${attempt} 次: ${interactionId}`,
+        );
+        tryEmit();
+      }
+    }, 4000);
+
+    try {
+      socket.emit(
+        "tool:interact",
+        {
+          interactionId,
+          requestId,
+          payload: { approved: true, yolo: true },
+        },
+        onAck,
+      );
+    } catch (err) {
+      if (ackTimer) clearTimeout(ackTimer);
+      if (attempt <= maxRetries) {
+        setTimeout(tryEmit, 1000);
+      }
+    }
+  };
+
+  tryEmit();
+}
+
 function getFilePrompt(fileElms) {
   const start = "\n以下是用户上传的文件：\n";
   return start + fileElms.join("\n");
@@ -915,10 +981,10 @@ export const gateway = {
             `[gateway] 联系人 ${contactorId} 已开启 YOLO 模式，静默放行审批:`,
             action.interactionId,
           );
-          client.socket?.socket?.emit("tool:interact", {
+          emitSilentApproval({
             interactionId: action.interactionId,
             requestId: messageId,
-            payload: { approved: true, yolo: true },
+            contactorId,
           });
           return;
         }
@@ -1019,10 +1085,10 @@ export const gateway = {
                 `[gateway] 断线恢复检测到联系人 ${contactorId} 已开启 YOLO 模式，静默放行:`,
                 actionChunk.content.interactionId,
               );
-              client.socket?.socket?.emit("tool:interact", {
+              emitSilentApproval({
                 interactionId: actionChunk.content.interactionId,
                 requestId: messageId,
-                payload: { approved: true, yolo: true },
+                contactorId,
               });
             } else {
               import("@/stores/interactionStore.js").then(
@@ -1097,10 +1163,10 @@ export const gateway = {
               `[gateway] 联系人 ${contactorId} 已开启 YOLO 模式，静默放行实时审批:`,
               actionContent.interactionId,
             );
-            client.socket?.socket?.emit("tool:interact", {
+            emitSilentApproval({
               interactionId: actionContent.interactionId,
               requestId: messageId,
-              payload: { approved: true, yolo: true },
+              contactorId,
             });
           } else {
             // 原子动作拦截器：捕获长连接双向指令并存入 Store，驱动输入框上方就地交互面板渲染
