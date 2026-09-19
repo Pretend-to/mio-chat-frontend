@@ -216,7 +216,6 @@ const onMouseUp = () => {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(2px);
   z-index: 2000;
 }
 
@@ -239,10 +238,18 @@ const onMouseUp = () => {
 }
 
 @media (max-width: 768px) {
+  .workspace-drawer-mask {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    pointer-events: none;
+  }
+
   .workspace-panel--drawer {
     width: 100vw !important;
     border-left: none;
     box-shadow: none;
+    pointer-events: auto;
   }
 
   .workspace-body {

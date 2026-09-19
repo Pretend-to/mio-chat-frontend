@@ -137,63 +137,71 @@
         <div v-if="!imagesList.length" class="empty-hint">
           当前会话暂无图片资产
         </div>
-        <div v-else class="image-gallery-grid">
-          <div
-            v-for="(img, idx) in imagesList"
-            :key="img.id || img.url"
-            class="image-thumb-card"
-            @click="openImageGallery(idx)"
-          >
-            <div class="image-thumb-wrapper">
-              <img
-                :src="img.url"
-                :alt="img.title"
-                loading="lazy"
-                class="gallery-thumb-img"
-              />
-              <div class="thumb-overlay">
-                <span class="thumb-zoom-icon" title="全屏预览与手势缩放">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+        <div v-else class="image-gallery-container">
+          <div class="image-gallery-grid">
+            <div
+              v-for="(img, idx) in displayedImagesList"
+              :key="img.id || img.url"
+              class="image-thumb-card"
+              @click="openImageGallery(idx)"
+            >
+              <div class="image-thumb-wrapper">
+                <img
+                  :src="img.url"
+                  :alt="img.title"
+                  loading="lazy"
+                  decoding="async"
+                  class="gallery-thumb-img"
+                />
+                <div class="thumb-overlay">
+                  <span class="thumb-zoom-icon" title="全屏预览与手势缩放">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <circle cx="11" cy="11" r="8" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                      <line x1="11" y1="8" x2="11" y2="14" />
+                      <line x1="8" y1="11" x2="14" y2="11" />
+                    </svg>
+                  </span>
+                  <button
+                    class="thumb-action-pin"
+                    title="在工作区独立标签打开"
+                    @click.stop="openImageInTab(img)"
                   >
-                    <circle cx="11" cy="11" r="8" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                    <line x1="11" y1="8" x2="11" y2="14" />
-                    <line x1="8" y1="11" x2="14" y2="11" />
-                  </svg>
-                </span>
-                <button
-                  class="thumb-action-pin"
-                  title="在工作区独立标签打开"
-                  @click.stop="openImageInTab(img)"
-                >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path
-                      d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
-                    />
-                    <polyline points="15 3 21 3 21 9" />
-                    <line x1="10" y1="14" x2="21" y2="3" />
-                  </svg>
-                </button>
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
+                      />
+                      <polyline points="15 3 21 3 21 9" />
+                      <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="image-thumb-caption" :title="img.title">
+                {{ img.title }}
               </div>
             </div>
-            <div class="image-thumb-caption" :title="img.title">
-              {{ img.title }}
-            </div>
+          </div>
+          <div v-if="hasMoreImages" class="gallery-load-more">
+            <button class="load-more-btn" @click.stop="loadMoreImages">
+              加载更多图片 (剩余 {{ remainingImageCount }} 张)
+            </button>
           </div>
         </div>
       </div>
@@ -328,28 +336,54 @@ watch(
   () => [activeContactor.value?.agentId, activeContactor.value?.sessionId],
   () => {
     loadSubAgents();
+    imageLimit.value = INITIAL_IMAGE_LIMIT;
   },
 );
 
 const subagentRuns = computed(() => {
-  const runs = [];
-  const liveByRunId = new Map(
-    Object.values(contactorsStore.contactors)
-      .filter(
-        (contactor) =>
-          contactor?.platform === "sub_agent" &&
-          String(contactor.agentId || "") ===
-            String(activeContactor.value?.agentId || "") &&
-          String(contactor.parentSessionId || "") ===
-            String(activeContactor.value?.sessionId || ""),
-      )
-      .map((contactor) => [String(contactor.runId), contactor]),
+  const liveContacts = Object.values(contactorsStore.contactors).filter(
+    (contactor) =>
+      contactor?.platform === "sub_agent" &&
+      String(contactor.agentId || "") ===
+        String(activeContactor.value?.agentId || "") &&
+      String(contactor.parentSessionId || "") ===
+        String(activeContactor.value?.sessionId || ""),
   );
+
+  const liveByRunId = new Map(
+    liveContacts.map((contactor) => [String(contactor.runId), contactor]),
+  );
+
+  const liveBySessionId = new Map(
+    liveContacts
+      .filter((contactor) => contactor.sessionId)
+      .map((contactor) => [String(contactor.sessionId), contactor]),
+  );
+
+  const sessionMap = new Map();
+
+  const parseTime = (val) => (val ? new Date(val).getTime() : 0);
+
+  const getRunScore = (run, group) => {
+    const activeBoost = ["running", "queued"].includes(run.status) ? 1e13 : 0;
+    const time =
+      parseTime(run.finishedAt) ||
+      parseTime(run.startedAt) ||
+      parseTime(run.createdAt) ||
+      parseTime(group?.createdAt) ||
+      0;
+    return activeBoost + time;
+  };
 
   groups.value.forEach((group) => {
     (group.runs || []).forEach((run) => {
-      const live = liveByRunId.get(String(run.id || run.runId));
-      runs.push({
+      const sId = String(run.sessionId || run.id || run.runId);
+      const live =
+        liveByRunId.get(String(run.id || run.runId)) ||
+        (run.sessionId ? liveBySessionId.get(String(run.sessionId)) : null);
+
+      const currentScore = getRunScore(run, group);
+      const normalizedRun = {
         ...run,
         ...(live
           ? {
@@ -364,32 +398,61 @@ const subagentRuns = computed(() => {
           run.session?.subagentRole ||
           run.session?.title ||
           run.subagentKey ||
-          run.jobKey,
+          run.jobKey ||
+          live?.name ||
+          "子智能体",
         groupId: group.id,
         agentId: activeContactor.value?.agentId,
-      });
+        _score: currentScore,
+        _time:
+          parseTime(run.startedAt) ||
+          parseTime(run.finishedAt) ||
+          parseTime(run.createdAt) ||
+          parseTime(group.createdAt) ||
+          0,
+      };
+
+      if (!sessionMap.has(sId)) {
+        sessionMap.set(sId, normalizedRun);
+      } else {
+        const existing = sessionMap.get(sId);
+        if (normalizedRun._score >= existing._score) {
+          normalizedRun.role = normalizedRun.role || existing.role;
+          sessionMap.set(sId, normalizedRun);
+        }
+      }
     });
   });
 
   // A stream event can arrive after the initial group snapshot (or create a
   // run while this tab is already open). Include those contacts immediately;
   // the regular Socket.IO message path is the source of truth for status.
-  for (const live of liveByRunId.values()) {
-    if (runs.some((run) => String(run.id || run.runId) === String(live.runId))) {
-      continue;
+  for (const live of liveContacts) {
+    const sId = String(live.sessionId || live.runId);
+    if (!sessionMap.has(sId)) {
+      sessionMap.set(sId, {
+        id: live.runId,
+        runId: live.runId,
+        sessionId: live.sessionId,
+        status: live.runStatus,
+        objective: live.intro,
+        role: live.name || "子智能体",
+        groupId: live.groupId,
+        agentId: live.agentId,
+        _time: Date.now(),
+      });
+    } else {
+      const existing = sessionMap.get(sId);
+      if (live.runStatus) existing.status = live.runStatus;
+      if (live.runId) existing.runId = live.runId;
+      if (live.name && !existing.role) existing.role = live.name;
     }
-    runs.push({
-      id: live.runId,
-      runId: live.runId,
-      sessionId: live.sessionId,
-      status: live.runStatus,
-      objective: live.intro,
-      role: live.name,
-      groupId: live.groupId,
-      agentId: live.agentId,
-    });
   }
-  return runs;
+
+  // Sort sessions by latest activity timestamp descending
+  return Array.from(sessionMap.values()).sort(
+    (a, b) => (b._time || 0) - (a._time || 0),
+  );
 });
 
 function getFileExtension(urlOrPath = "") {
@@ -544,6 +607,25 @@ const imagesList = computed(() => {
 
   return list;
 });
+
+const INITIAL_IMAGE_LIMIT = 12;
+const imageLimit = ref(INITIAL_IMAGE_LIMIT);
+
+const displayedImagesList = computed(() => {
+  return imagesList.value.slice(0, imageLimit.value);
+});
+
+const hasMoreImages = computed(() => {
+  return imagesList.value.length > imageLimit.value;
+});
+
+const remainingImageCount = computed(() => {
+  return Math.max(0, imagesList.value.length - imageLimit.value);
+});
+
+const loadMoreImages = () => {
+  imageLimit.value += 12;
+};
 
 // 从当前会话消息链中提取产生过的非图片渲染产物 (ExtraRender) 与 Artifacts
 const rendersAndArtifactsList = computed(() => {
@@ -734,7 +816,7 @@ const statusText = (status) => {
     completed: "已完成",
     result_ready: "已完成",
     failed: "失败",
-    cancelled: "已取消",
+    cancelled: "已停止",
     queued: "排队中",
   };
   return map[status] || status || "未知";
@@ -750,11 +832,54 @@ const statusText = (status) => {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--mio-scrollbar-thumb) transparent;
+
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--mio-scrollbar-thumb);
+    border-radius: 4px;
+
+    &:hover {
+      background: var(--mio-scrollbar-thumb-hover);
+    }
+  }
 }
 
 .overview-section {
   display: flex;
   flex-direction: column;
+  min-height: 0;
+}
+
+.section-content {
+  max-height: 280px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2px 4px 4px 2px;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--mio-scrollbar-thumb) transparent;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--mio-scrollbar-thumb);
+    border-radius: 4px;
+
+    &:hover {
+      background: var(--mio-scrollbar-thumb-hover);
+    }
+  }
 }
 
 .section-header {
@@ -1132,11 +1257,40 @@ const statusText = (status) => {
   }
 }
 
+.image-gallery-container {
+  display: flex;
+  flex-direction: column;
+}
+
 .image-gallery-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   gap: 0.65rem;
   margin-top: 0.35rem;
+}
+
+.gallery-load-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.65rem;
+  margin-bottom: 0.35rem;
+
+  .load-more-btn {
+    border: 1px solid var(--mio-border-color-light, #e4e7ed);
+    background: var(--mio-bg-surface, #f8f9fa);
+    color: var(--mio-text-secondary, #909399);
+    font-size: 0.75rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 0.35rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: var(--mio-color-primary, #0099ff);
+      border-color: var(--mio-color-primary, #0099ff);
+      background: var(--mio-bg-hover, rgba(0, 0, 0, 0.04));
+    }
+  }
 }
 
 .image-thumb-card {
@@ -1237,8 +1391,7 @@ const statusText = (status) => {
   position: absolute;
   bottom: 4px;
   left: 4px;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.75);
   color: #ffffff;
   font-size: 0.625rem;
   padding: 1px 5px;
