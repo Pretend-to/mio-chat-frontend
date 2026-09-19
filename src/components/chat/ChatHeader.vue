@@ -14,13 +14,15 @@
         <polyline points="15 18 9 12 15 6" />
       </svg>
     </div>
-    <div
-      class="name-area"
-      :class="{ readonly: activeContactor.readOnly }"
-      @click="activeContactor.readOnly ? null : $emit('to-profile')"
-    >
-      <div class="contactor-name">{{ activeContactor.name }}</div>
-      <StatusDot size="0.8rem" class="status-dot-chat" />
+    <div class="name-area">
+      <div
+        class="name-content"
+        :class="{ readonly: activeContactor.readOnly }"
+        @click="activeContactor.readOnly ? null : $emit('to-profile')"
+      >
+        <div class="contactor-name">{{ activeContactor.name }}</div>
+        <StatusDot size="0.8rem" class="status-dot-chat" />
+      </div>
     </div>
   </div>
 </template>
@@ -79,31 +81,40 @@ $mobile: 768px
             margin-bottom: .8rem
 
     .name-area
-        cursor: pointer
         position: relative
         display: flex
         align-items: center
-        flex-basis: 10rem
-        flex-grow: 1
+        flex: 0 1 auto
+        max-width: calc(100% - 6rem)
         justify-content: flex-start
         margin: 0 0 .5rem 1rem
+        min-width: 0
 
-        &.readonly
-            cursor: default
+        .name-content
+            cursor: pointer
+            display: inline-flex
+            align-items: center
+            max-width: 100%
+            min-width: 0
+            -webkit-app-region: no-drag
 
-        .contactor-name
-            text-overflow: ellipsis
-            white-space: nowrap
-            overflow: hidden
-            max-width: 10rem
+            &.readonly
+                cursor: default
 
-        .status-dot-chat
-            margin-left: .5rem
-            position: relative
-            top: .1rem
+            .contactor-name
+                text-overflow: ellipsis
+                white-space: nowrap
+                overflow: hidden
+                max-width: 12rem
 
-            @media screen and (max-width: $mobile)
-              display: none
+            .status-dot-chat
+                margin-left: .5rem
+                position: relative
+                top: .1rem
+                flex-shrink: 0
+
+                @media screen and (max-width: $mobile)
+                    display: none
 
 @media (max-width: $mobile)
     .upside-bar
@@ -121,9 +132,12 @@ $mobile: 768px
             color: var(--mio-text-primary)
             margin: 0 0 0.65rem 0.8rem
             padding-bottom: 0
-            .contactor-name
-                color: var(--mio-text-primary)
-                font-size: 1rem
-                font-weight: 600
-                max-width: 12rem
+            max-width: calc(100% - 6rem)
+
+            .name-content
+                .contactor-name
+                    color: var(--mio-text-primary)
+                    font-size: 1rem
+                    font-weight: 600
+                    max-width: min(12rem, calc(100vw - 7rem))
 </style>
