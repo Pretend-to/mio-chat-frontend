@@ -266,9 +266,11 @@ const handleCancel = async () => {
 const statusText = (status) => {
   const map = {
     running: "执行中",
+    waiting_tool: "等待工具",
     completed: "已完成",
     result_ready: "已完成",
     failed: "失败",
+    interrupted: "已中断",
     cancelled: "已停止",
     queued: "排队中",
   };
@@ -323,7 +325,8 @@ const statusText = (status) => {
         border-radius: 0.25rem;
         font-weight: 500;
 
-        &.pill-running {
+        &.pill-running,
+        &.pill-waiting_tool {
           background: rgba(0, 153, 255, 0.14);
           color: var(--mio-color-primary, #0099ff);
         }
@@ -333,6 +336,10 @@ const statusText = (status) => {
           color: #10b981;
         }
         &.pill-queued {
+          background: rgba(245, 158, 11, 0.16);
+          color: #f59e0b;
+        }
+        &.pill-interrupted {
           background: rgba(245, 158, 11, 0.16);
           color: #f59e0b;
         }

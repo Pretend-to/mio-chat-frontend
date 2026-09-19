@@ -141,6 +141,7 @@ const statusText = (status) =>
     completed: "已完成",
     dispatched: "已派发",
     failed: "失败",
+    interrupted: "已中断",
     planning: "规划中",
     queued: "排队中",
     result_ready: "结果已就绪",
@@ -155,6 +156,7 @@ const groupTag = (status) =>
     cancelled: "info",
     completed: "success",
     failed: "danger",
+    interrupted: "warning",
   })[status] || "primary";
 
 // The REST response is only the initial snapshot. Once the drawer is open,
