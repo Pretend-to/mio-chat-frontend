@@ -47,7 +47,7 @@
           :loading="actionLoading"
           @click="handleCancel"
         >
-          取消任务
+          停止任务
         </el-button>
       </div>
     </div>
@@ -245,15 +245,19 @@ const handleCancel = async () => {
   const runId = runInfo.value.runId || runInfo.value.id;
   if (!runId) return;
   try {
-    await ElMessageBox.confirm("确定要取消此 SubAgent 任务吗？", "取消任务", {
-      type: "warning",
-    });
+    await ElMessageBox.confirm(
+      "确定要停止此 SubAgent 任务吗？已执行的内容将保留，可随时继续或通过主 Agent 进行调整。",
+      "停止任务",
+      {
+        type: "warning",
+      },
+    );
     actionLoading.value = true;
-    await subagentsAPI.cancelRun(runId, "cancelled_from_workspace");
-    ElMessage.success("任务已取消");
+    await subagentsAPI.cancelRun(runId, "stopped_from_workspace");
+    ElMessage.success("任务已停止");
     await fetchRunDetail();
   } catch (err) {
-    if (err !== "cancel") ElMessage.error(err.message || "取消失败");
+    if (err !== "cancel") ElMessage.error(err.message || "停止失败");
   } finally {
     actionLoading.value = false;
   }
@@ -265,7 +269,7 @@ const statusText = (status) => {
     completed: "已完成",
     result_ready: "已完成",
     failed: "失败",
-    cancelled: "已取消",
+    cancelled: "已停止",
     queued: "排队中",
   };
   return map[status] || status || "未知";

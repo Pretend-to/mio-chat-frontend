@@ -51,7 +51,7 @@
               type="danger"
               @click="cancelRun(run)"
             >
-              取消
+              停止
             </el-button>
           </article>
         </div>
@@ -64,7 +64,7 @@
             type="danger"
             @click="cancelGroup(group)"
           >
-            全部取消
+            全部停止
           </el-button>
         </footer>
       </section>
@@ -137,7 +137,7 @@ const formatTime = (value) => (value ? new Date(value).toLocaleString() : "");
 const statusText = (status) =>
   ({
     blocked: "已阻塞",
-    cancelled: "已取消",
+    cancelled: "已停止",
     completed: "已完成",
     dispatched: "已派发",
     failed: "失败",
@@ -219,13 +219,13 @@ const openRun = async (runId) => {
 const cancelRun = async (run) => {
   try {
     await ElMessageBox.confirm(
-      `取消 SubAgent Run「${run.jobKey}」？`,
-      "取消任务",
+      `停止 SubAgent 任务「${run.jobKey}」？已执行的内容将保留，可随时继续或调整。`,
+      "停止任务",
       {
         type: "warning",
       },
     );
-    await subagentsAPI.cancelRun(run.id, "cancelled_from_web");
+    await subagentsAPI.cancelRun(run.id, "stopped_from_web");
     await load();
   } catch (error) {
     if (error !== "cancel") ElMessage.error(error.message);
@@ -235,13 +235,13 @@ const cancelRun = async (run) => {
 const cancelGroup = async (group) => {
   try {
     await ElMessageBox.confirm(
-      "取消这个 RunGroup 中所有尚未完成的任务？",
-      "全部取消",
+      "停止这个 RunGroup 中所有尚未完成的任务？已执行的内容将保留。",
+      "全部停止",
       {
         type: "warning",
       },
     );
-    await subagentsAPI.cancelGroup(group.id, "cancelled_from_web");
+    await subagentsAPI.cancelGroup(group.id, "stopped_from_web");
     await load();
   } catch (error) {
     if (error !== "cancel") ElMessage.error(error.message);
