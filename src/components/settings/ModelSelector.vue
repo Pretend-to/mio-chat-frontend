@@ -68,15 +68,36 @@
         >
           获取模型
         </el-button>
+        <el-button
+          v-if="showTestButton"
+          type="success"
+          plain
+          :icon="Connection"
+          :loading="testingConnection"
+          @click="handleTestConnection"
+          class="test-button"
+        >
+          测试连接
+        </el-button>
       </div>
       <template #extra>
-        <span class="form-item-tip">
-          {{
-            availableModels.length > 0
-              ? "为所有用户设置的默认模型"
-              : "暂无模型列表，请先获取或手动输入"
-          }}
-        </span>
+        <div class="model-extra-tip">
+          <span class="form-item-tip">
+            {{
+              availableModels.length > 0
+                ? "为所有用户设置的默认模型，亦作为连通性测试的目标模型"
+                : "请先指定默认模型（或点击「获取模型」后选择），点击「测试连接」将对该模型进行连通性探活"
+            }}
+          </span>
+          <el-tag
+            v-if="connectionStatus"
+            :type="connectionStatus.type"
+            size="small"
+            class="connection-status-tag"
+          >
+            {{ connectionStatus.text }}
+          </el-tag>
+        </div>
       </template>
     </el-form-item>
 
@@ -219,7 +240,7 @@
 
 <script setup>
 import { ref, computed } from "vue";
-import { Plus, Refresh } from "@element-plus/icons-vue";
+import { Connection, Plus, Refresh } from "@element-plus/icons-vue";
 
 const props = defineProps({
   modelValue: {
@@ -248,6 +269,18 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  showTestButton: {
+    type: Boolean,
+    default: true,
+  },
+  testingConnection: {
+    type: Boolean,
+    default: false,
+  },
+  connectionStatus: {
+    type: Object,
+    default: null,
+  },
   modelsMeta: {
     type: Object,
     default: () => ({}),
@@ -258,13 +291,22 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["update:modelValue", "fetch-models"]);
+const emit = defineEmits([
+  "update:modelValue",
+  "fetch-models",
+  "test-connection",
+]);
 
 const newKeyword = ref("");
 
 // 获取模型列表
 const handleFetchModels = () => {
   emit("fetch-models");
+};
+
+// 连通性测试
+const handleTestConnection = () => {
+  emit("test-connection", props.modelValue?.default);
 };
 
 // ===== 模型规格元数据（来自后端 Registry 决策，前端零硬编码）=====
@@ -385,21 +427,35 @@ const updateFullNames = (value) => {
   display: flex;
   gap: 8px;
   width: 100%;
+  align-items: center;
 
   .model-select {
     flex: 1;
+    min-width: 0;
   }
 
-  .fetch-button {
+  .fetch-button,
+  .test-button {
     flex-shrink: 0;
-    width: 100px;
   }
+}
+
+.model-extra-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
 }
 
 .form-item-tip {
   color: var(--mio-text-secondary);
   font-size: 12px;
   line-height: 1.5;
+}
+
+.connection-status-tag {
+  font-weight: 500;
 }
 
 .keyword-input-wrapper {

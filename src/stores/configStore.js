@@ -5,7 +5,7 @@
  */
 
 import { configAPI, skillAPI } from "@/lib/configApi.js";
-import { getClientSettings, setClientSettings } from "@/lib/clientSettings.js";
+import { getClientSettings } from "@/lib/clientSettings.js";
 import { getAdminAvatarUrl } from "@/utils/avatar.js";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
@@ -413,9 +413,8 @@ export const useConfigStore = defineStore("config", () => {
   /**
    * 更新适配器实例
    */
-  async function updateAdapter(type, index, data) {
-    try {
-      const response = await configAPI.updateAdapter(type, index, data);
+  async function updateAdapter(type, instanceId, data) {
+    const applyUpdateResponse = (response) => {
       // 用接口返回的完整适配器列表和模型列表直接更新本地状态
       if (response.data.llm_adapters) {
         adapters.value = response.data.llm_adapters;
@@ -423,9 +422,29 @@ export const useConfigStore = defineStore("config", () => {
       if (response.data.models) {
         models.value = response.data.models;
       }
-      // 可选：同步 providers 等其他字段
       return response.data;
+    };
+
+    try {
+      const response = await configAPI.updateAdapter(type, instanceId, data);
+      return applyUpdateResponse(response);
     } catch (error) {
+      // 页面可能是在适配器类型迁移前打开的：ID 仍然有效，但 type 已变成
+      // 真实类型。刷新一次配置后按全局稳定 ID 重试，不回退到数组下标。
+      if (/适配器实例 ID .*不存在|适配器配置不存在/.test(error.message || "")) {
+        try {
+          await fetchConfig();
+          const actualType = Object.entries(adapters.value).find(([, instances]) =>
+            Array.isArray(instances) && instances.some((adapter) => adapter?.id === instanceId),
+          )?.[0];
+          if (actualType && actualType !== type) {
+            const response = await configAPI.updateAdapter(actualType, instanceId, data);
+            return applyUpdateResponse(response);
+          }
+        } catch (retryError) {
+          console.error("按最新适配器类型重试更新失败:", retryError);
+        }
+      }
       console.error("更新适配器失败:", error);
       throw error;
     }
@@ -434,13 +453,16 @@ export const useConfigStore = defineStore("config", () => {
   /**
    * 删除适配器实例
    */
-  async function deleteAdapter(type, index) {
+  async function deleteAdapter(type, instanceId) {
     try {
-      const response = await configAPI.deleteAdapter(type, index);
+      const response = await configAPI.deleteAdapter(type, instanceId);
 
       // 更新本地状态
       if (adapters.value[type]) {
-        adapters.value[type].splice(index, 1);
+        const position = adapters.value[type].findIndex(
+          (adapter) => adapter.id === instanceId,
+        );
+        if (position >= 0) adapters.value[type].splice(position, 1);
       }
       models.value = response.data.models || {};
 
@@ -476,10 +498,19 @@ export const useConfigStore = defineStore("config", () => {
 
     for (const adapter of adaptersList) {
       try {
-        const adapterData = adapters.value[adapter.type][adapter.index];
+        const adapterData = adapters.value[adapter.type]?.find(
+          (item) => item.id === adapter.id,
+        );
+        if (!adapterData || !adapter.id) {
+          throw new Error("批量操作失败：适配器缺少稳定实例 ID");
+        }
         const updatedData = { ...adapterData, enable };
 
-        await updateAdapter(adapter.type, adapter.index, updatedData);
+        await updateAdapter(
+          adapter.type,
+          adapter.id,
+          updatedData,
+        );
         results.push({ success: true, adapter });
       } catch (error) {
         results.push({ success: false, adapter, error: error.message });
@@ -506,9 +537,9 @@ export const useConfigStore = defineStore("config", () => {
   /**
    * 刷新单个适配器实例模型列表
    */
-  async function refreshAdapterModels(type, index) {
+  async function refreshAdapterModels(type, instanceId) {
     try {
-      const response = await configAPI.refreshAdapterModels(type, index);
+      const response = await configAPI.refreshAdapterModels(type, instanceId);
       models.value = response.data.models || {};
       return response.data;
     } catch (error) {
@@ -598,16 +629,19 @@ export const useConfigStore = defineStore("config", () => {
   /**
    * 切换适配器选中状态
    */
-  function toggleAdapterSelection(type, index) {
-    const key = `${type}-${index}`;
+  function toggleAdapterSelection(type, instanceId) {
+    const key = `${type}-${instanceId}`;
     const idx = selectedAdapters.value.findIndex(
-      (a) => `${a.type}-${a.index}` === key,
+      (a) => `${a.type}-${a.id}` === key,
     );
 
     if (idx > -1) {
       selectedAdapters.value.splice(idx, 1);
     } else {
-      selectedAdapters.value.push({ type, index });
+      selectedAdapters.value.push({
+        type,
+        id: instanceId || "",
+      });
     }
   }
 
@@ -621,9 +655,9 @@ export const useConfigStore = defineStore("config", () => {
   /**
    * 检查适配器是否被选中
    */
-  function isAdapterSelected(type, index) {
-    const key = `${type}-${index}`;
-    return selectedAdapters.value.some((a) => `${a.type}-${a.index}` === key);
+  function isAdapterSelected(type, instanceId) {
+    const key = `${type}-${instanceId}`;
+    return selectedAdapters.value.some((a) => `${a.type}-${a.id}` === key);
   }
 
   /**

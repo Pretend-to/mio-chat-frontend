@@ -67,9 +67,9 @@
             <el-button
               type="primary"
               :icon="Plus"
-              @click="showAddSelector = true"
+              @click="handleAdd"
             >
-              添加适配器
+              添加服务商
             </el-button>
           </div>
 
@@ -88,7 +88,7 @@
               type="primary"
               :icon="Plus"
               size="small"
-              @click="showAddSelector = true"
+              @click="handleAdd"
             >
               添加
             </el-button>
@@ -138,160 +138,33 @@
           </div>
         </div>
 
-        <!-- 适配器列表 -->
+        <!-- 适配器卡片网格列表 -->
         <div class="adapters-list">
           <div v-if="allAdapters.length === 0" class="empty-state">
-            <el-empty description="暂无适配器实例">
+            <el-empty description="暂无服务商实例">
               <el-button
                 type="primary"
                 :icon="Plus"
-                @click="showAddSelector = true"
+                @click="handleAdd"
               >
-                添加适配器
+                添加服务商
               </el-button>
             </el-empty>
           </div>
 
-          <el-table
-            v-else-if="!isMobile"
-            :data="allAdapters"
-            style="width: 100%"
-            @selection-change="handleSelectionChange"
-          >
-            <el-table-column type="selection" width="55" />
-
-            <el-table-column label="类型" width="120">
-              <template #default="{ row }">
-                <el-tag
-                  :style="{
-                    color: getThemeColor(row.type),
-                    borderColor: getThemeColor(row.type) + '33',
-                    backgroundColor: getThemeColor(row.type) + '11',
-                  }"
-                  effect="plain"
-                >
-                  {{ formatTypeLabel(row.type) }}
-                </el-tag>
-              </template>
-            </el-table-column>
-
-            <el-table-column label="名称" min-width="150">
-              <template #default="{ row }">
-                <div class="adapter-name">
-                  <span class="name">{{
-                    row.adapter.name || `${row.type}-${row.index + 1}`
-                  }}</span>
-                  <el-tag
-                    v-if="!row.adapter.enable"
-                    type="info"
-                    size="small"
-                    effect="plain"
-                  >
-                    已禁用
-                  </el-tag>
-                </div>
-              </template>
-            </el-table-column>
-
-            <el-table-column label="默认模型" min-width="200">
-              <template #default="{ row }">
-                <span class="model-name">{{
-                  row.adapter.default_model || "-"
-                }}</span>
-              </template>
-            </el-table-column>
-
-            <el-table-column label="可用模型" width="120" align="center">
-              <template #default="{ row }">
-                <el-tag
-                  size="small"
-                  :type="getModelCountType(row.modelCount)"
-                  effect="plain"
-                  round
-                >
-                  {{ row.modelCount }} 个
-                </el-tag>
-              </template>
-            </el-table-column>
-
-            <el-table-column label="模型规格" min-width="200" align="center">
-              <template #default="{ row }">
-                <div v-if="row.registrySummary" class="registry-summary">
-                  <el-tag
-                    v-if="row.registrySummary.visionCount > 0"
-                    size="small"
-                    type="success"
-                    effect="plain"
-                  >
-                    视觉 {{ row.registrySummary.visionCount }}
-                  </el-tag>
-                  <el-tooltip
-                    :content="row.registrySummary.sourceText"
-                    placement="top"
-                  >
-                    <el-tag size="small" effect="plain">
-                      ctx {{ row.registrySummary.ctxRange }}
-                    </el-tag>
-                  </el-tooltip>
-                </div>
-                <span v-else class="registry-empty">-</span>
-              </template>
-            </el-table-column>
-
-            <el-table-column label="状态" width="100" align="center">
-              <template #default="{ row }">
-                <el-switch
-                  v-model="row.adapter.enable"
-                  @change="handleToggle(row)"
-                />
-              </template>
-            </el-table-column>
-
-            <el-table-column label="操作" width="200" align="center">
-              <template #default="{ row }">
-                <div class="action-buttons">
-                  <el-button
-                    size="small"
-                    type="primary"
-                    text
-                    @click="handleEdit(row)"
-                  >
-                    编辑
-                  </el-button>
-                  <el-button
-                    size="small"
-                    type="success"
-                    text
-                    @click="handleRefresh(row)"
-                  >
-                    刷新
-                  </el-button>
-                  <el-button
-                    size="small"
-                    type="danger"
-                    text
-                    @click="handleDelete(row)"
-                  >
-                    删除
-                  </el-button>
-                </div>
-              </template>
-            </el-table-column>
-          </el-table>
-          <!-- 移动端卡片列表 -->
-          <div v-else class="mobile-cards">
+          <div v-else class="adapter-cards-grid">
             <adapter-card
               v-for="item in allAdapters"
-              :key="`${item.type}-${item.index}`"
+              :key="item.instanceId"
               :adapter="item.adapter"
               :type="item.type"
-              :index="item.index"
+              :instance-id="item.instanceId"
               :models="item.models"
               :models-meta="configStore.modelsMeta"
               :provider-name="item.providerName"
               selectable
               :is-selected="
-                configStore.isAdapterSelected(item.type, item.index)
+                configStore.isAdapterSelected(item.type, item.instanceId)
               "
               @edit="handleCardEdit"
               @delete="handleCardDelete"
@@ -304,67 +177,16 @@
       </div>
     </transition>
 
-    <!-- 编辑器对话框 -->
+    <!-- 统一服务商编辑器对话框 (添加与编辑完全复用) -->
     <adapter-editor
       :visible="editorVisible"
       :mode="editorMode"
       :type="editorType"
       :adapter="editorAdapter"
-      :index="editorIndex"
+      :instance-id="editorInstanceId"
       @close="handleEditorClose"
       @submit="handleEditorSubmit"
     />
-
-    <!-- 适配器类型选择器对话框 -->
-    <!-- 适配器类型选择器对话框 -->
-    <el-dialog
-      v-model="showAddSelector"
-      title="选择适配器类型"
-      width="900px"
-      destroy-on-close
-      class="adapter-selector-dialog"
-      :align-center="true"
-    >
-      <div class="selector-container">
-        <div class="selector-header">
-          <div class="search-box">
-            <el-input
-              v-model="selectorSearch"
-              placeholder="输入关键词搜索适配器..."
-              :prefix-icon="Search"
-              clearable
-            />
-          </div>
-        </div>
-
-        <el-scrollbar max-height="460px" class="selector-scrollbar">
-          <div class="grid-container">
-            <div
-              v-for="type in filteredSelectorTypes"
-              :key="type"
-              class="selector-card"
-              :style="{
-                '--card-theme-color': getThemeColor(type),
-                '--card-bg-color': getProviderBgColor(type),
-              }"
-              @click="handleSelectType(type)"
-            >
-              <div class="card-glow"></div>
-              <div class="card-icon">
-                <img :src="getAvatarByAdapterType(type)" alt="Icon" />
-              </div>
-              <div class="card-info">
-                <div class="card-title">{{ formatTypeLabel(type) }}</div>
-                <div class="card-desc">{{ getProviderDesc(type) }}</div>
-              </div>
-              <div class="card-action">
-                <el-icon><Plus /></el-icon>
-              </div>
-            </div>
-          </div>
-        </el-scrollbar>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
@@ -372,16 +194,12 @@
 import AdapterCard from "@/components/settings/AdapterCard.vue";
 import AdapterEditor from "@/components/settings/AdapterEditor.vue";
 import { useConfigStore } from "@/stores/configStore.js";
-import { getAvatarByAdapterType } from "@/utils/avatar.js";
 import {
-  ArrowDown,
   Check,
   Close,
-  Connection,
   Delete,
   Plus,
   Refresh,
-  Search,
 } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, onUnmounted, ref } from "vue";
@@ -401,7 +219,15 @@ const isMobile = ref(false);
 const checkMobile = () => {
   isMobile.value = window.innerWidth <= 768;
 };
-const editorIndex = ref(-1);
+const editorInstanceId = ref("");
+
+function getAdapterProviderName(adapter, instances, index, type) {
+  if (adapter.name) return adapter.name;
+  const enabledCount = instances
+    .slice(0, index + 1)
+    .filter((instance) => instance?.enable).length;
+  return `${type}-${enabledCount}`;
+}
 
 // 获取所有适配器类型
 const adapterTypes = computed(() => {
@@ -413,7 +239,7 @@ const allAdapters = computed(() => {
   const adapters = [];
   Object.entries(configStore.adapters).forEach(([type, instances]) => {
     instances.forEach((adapter, index) => {
-      const providerName = adapter.name || `${type}-${index + 1}`;
+      const providerName = getAdapterProviderName(adapter, instances, index, type);
       const models = configStore.models[providerName] || [];
       const modelCount = models.reduce((count, group) => {
         return count + (group.models ? group.models.length : 0);
@@ -422,6 +248,7 @@ const allAdapters = computed(() => {
       adapters.push({
         type,
         index,
+        instanceId: adapter.id || "",
         adapter,
         providerName,
         models,
@@ -479,6 +306,16 @@ function formatCtx(n) {
       : `${n}`;
 }
 
+// 编辑器需要的是实例配置里的平铺模型名；旧配置可能没有 models 字段，
+// 此时从当前运行时模型列表（按 providerName 分组）回填。
+function flattenModelGroups(groups) {
+  if (!Array.isArray(groups)) return [];
+  return groups
+    .flatMap((group) => (Array.isArray(group?.models) ? group.models : []))
+    .map((model) => (typeof model === "string" ? model : model?.id || model?.name))
+    .filter(Boolean);
+}
+
 // 获取已启用的适配器数量
 const enabledCount = computed(() => {
   return allAdapters.value.filter((item) => item.adapter.enable).length;
@@ -486,7 +323,8 @@ const enabledCount = computed(() => {
 
 // 获取适配器的模型列表
 const getAdapterModels = (adapter, type, index) => {
-  const providerName = adapter.name || `${type}-${index + 1}`;
+  const instances = configStore.adapters[type] || [];
+  const providerName = getAdapterProviderName(adapter, instances, index, type);
   return configStore.models[providerName] || [];
 };
 
@@ -516,12 +354,21 @@ const getModelCountType = (count) => {
   return "success";
 };
 
-// 添加适配器
-const handleAddAdapter = (type) => {
+// 添加服务商（一跳直接打开统一编辑器）
+const handleAdd = () => {
+  editorMode.value = "add";
+  editorType.value = "openai";
+  editorAdapter.value = null;
+  editorInstanceId.value = "";
+  editorVisible.value = true;
+};
+
+// 添加适配器 (指定类型)
+const handleAddAdapter = (type = "openai") => {
   editorMode.value = "add";
   editorType.value = type;
   editorAdapter.value = null;
-  editorIndex.value = -1;
+  editorInstanceId.value = "";
   editorVisible.value = true;
 };
 
@@ -530,8 +377,13 @@ const handleEdit = (row) => {
   const { type, index, adapter } = row;
   editorMode.value = "edit";
   editorType.value = type;
-  editorAdapter.value = adapter;
-  editorIndex.value = index;
+  const storedModels = Array.isArray(adapter.models) ? adapter.models : [];
+  const runtimeModels = flattenModelGroups(row.models);
+  editorAdapter.value = {
+    ...adapter,
+    models: storedModels.length > 0 ? storedModels : runtimeModels,
+  };
+  editorInstanceId.value = requireInstanceId(row);
   editorVisible.value = true;
 };
 
@@ -551,7 +403,7 @@ const handleDelete = async (row) => {
       },
     );
 
-    await configStore.deleteAdapter(type, index);
+    await configStore.deleteAdapter(type, requireInstanceId(row));
     ElMessage.success("删除成功");
   } catch (error) {
     if (error !== "cancel") {
@@ -562,9 +414,9 @@ const handleDelete = async (row) => {
 
 // 刷新单个适配器模型
 const handleRefresh = async (row) => {
-  const { type, index } = row;
+  const { type, index, instanceId } = row;
   try {
-    await configStore.refreshAdapterModels(type, index);
+    await configStore.refreshAdapterModels(type, requireInstanceId({ instanceId }));
     ElMessage.success("模型列表刷新成功");
   } catch (error) {
     ElMessage.error("刷新失败：" + error.message);
@@ -579,7 +431,7 @@ const handleToggle = async (row) => {
   try {
     // 只更新 enable 字段
     const updatedData = { ...adapter, enable };
-    await configStore.updateAdapter(type, index, updatedData);
+    await configStore.updateAdapter(type, requireInstanceId(row), updatedData);
     ElMessage.success(enable ? "已启用" : "已禁用");
   } catch (error) {
     // 如果失败，恢复原状态
@@ -590,41 +442,51 @@ const handleToggle = async (row) => {
 
 // ===== 移动端卡片事件适配 =====
 // 根据 type/index 找到适配器行数据
-const findAdapterRow = (type, index) => {
+const findAdapterRow = (type, instanceId) => {
   return allAdapters.value.find(
-    (item) => item.type === type && item.index === index,
+    (item) => item.type === type && item.instanceId === instanceId,
   );
 };
+
+const requireInstanceId = (row) => {
+  const instanceId = row?.instanceId || row?.adapter?.id;
+  if (!instanceId) {
+    throw new Error("适配器数据缺少稳定实例 ID，请刷新页面后重试");
+  }
+  return instanceId;
+};
 // 编辑（卡片）
-const handleCardEdit = ({ type, index }) => {
-  const row = findAdapterRow(type, index);
+const handleCardEdit = ({ type, instanceId }) => {
+  const row = findAdapterRow(type, instanceId);
   if (row) handleEdit(row);
 };
 // 删除（卡片，确认弹窗由卡片内部处理）
-const handleCardDelete = async ({ type, index }) => {
+const handleCardDelete = async ({ type, instanceId }) => {
   try {
-    await configStore.deleteAdapter(type, index);
+    const row = findAdapterRow(type, instanceId);
+    await configStore.deleteAdapter(type, requireInstanceId(row));
     ElMessage.success("删除成功");
   } catch (error) {
     ElMessage.error("删除失败：" + error.message);
   }
 };
 // 刷新（卡片）
-const handleCardRefresh = async ({ type, index }) => {
+const handleCardRefresh = async ({ type, instanceId }) => {
   try {
-    await configStore.refreshAdapterModels(type, index);
+    const row = findAdapterRow(type, instanceId);
+    await configStore.refreshAdapterModels(type, requireInstanceId(row));
     ElMessage.success("模型列表刷新成功");
   } catch (error) {
     ElMessage.error("刷新失败：" + error.message);
   }
 };
 // 切换启用/禁用（卡片）
-const handleCardToggle = async ({ type, index, enable }) => {
-  const row = findAdapterRow(type, index);
+const handleCardToggle = async ({ type, instanceId, enable }) => {
+  const row = findAdapterRow(type, instanceId);
   if (!row) return;
   const original = row.adapter.enable;
   try {
-    await configStore.updateAdapter(type, index, { ...row.adapter, enable });
+    await configStore.updateAdapter(type, requireInstanceId(row), { ...row.adapter, enable });
     ElMessage.success(enable ? "已启用" : "已禁用");
   } catch (error) {
     row.adapter.enable = original;
@@ -632,9 +494,9 @@ const handleCardToggle = async ({ type, index, enable }) => {
   }
 };
 // 选择/取消选择（卡片，与批量操作栏联动）
-const handleCardSelect = ({ type, index, selected }) => {
-  if (selected !== configStore.isAdapterSelected(type, index)) {
-    configStore.toggleAdapterSelection(type, index);
+const handleCardSelect = ({ type, instanceId, selected }) => {
+  if (selected !== configStore.isAdapterSelected(type, instanceId)) {
+    configStore.toggleAdapterSelection(type, instanceId);
   }
 };
 // 处理表格选择变化
@@ -644,7 +506,7 @@ const handleSelectionChange = (selection) => {
 
   // 添加新选择
   selection.forEach((item) => {
-    configStore.toggleAdapterSelection(item.type, item.index);
+    configStore.toggleAdapterSelection(item.type, item.instanceId);
   });
 };
 
@@ -750,13 +612,16 @@ const handleEditorClose = () => {
 };
 
 // 编辑器提交
-const handleEditorSubmit = async ({ type, index, data, mode }) => {
+const handleEditorSubmit = async ({ type, instanceId, data, mode }) => {
   try {
     if (mode === "add") {
       await configStore.addAdapter(type, data);
       ElMessage.success("添加成功");
     } else {
-      await configStore.updateAdapter(type, index, data);
+      if (!instanceId) {
+        throw new Error("更新适配器失败：缺少稳定实例 ID，请刷新页面后重试");
+      }
+      await configStore.updateAdapter(type, instanceId, data);
       ElMessage.success("更新成功");
     }
   } catch (error) {
@@ -766,62 +631,7 @@ const handleEditorSubmit = async ({ type, index, data, mode }) => {
     throw error; // 重新抛出错误，让编辑器保持打开
   }
 };
-// 适配器选择器状态
-const showAddSelector = ref(false);
-const selectorSearch = ref("");
 
-const getProviderDesc = (type) => {
-  if (configStore?.adapterTypes?.adapters) {
-    const info = configStore.adapterTypes.adapters.find((a) => a.type === type);
-    if (info?.description) {
-      const desc = info.description.split("\n\n")[0] || info.description;
-      return desc.replace(/\*\*.*?\*\*/g, "").replace(/\[.*?\]\(.*?\)/g, ""); // 移除 markdown
-    }
-  }
-  return "通用大语言模型接口适配器。";
-};
-
-const getThemeColor = (type) => {
-  const name = type.toLowerCase();
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const h = Math.abs(hash % 360);
-  return `hsl(${h}, 75%, 60%)`;
-};
-
-const getProviderBgColor = (type) => {
-  const name = type.toLowerCase();
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const h = Math.abs(hash % 360);
-  return `hsla(${h}, 70%, 97%, 0.45)`;
-};
-
-const filteredSelectorTypes = computed(() => {
-  const allTypes = adapterTypes.value;
-  if (!selectorSearch.value.trim()) {
-    return allTypes;
-  }
-  const keyword = selectorSearch.value.toLowerCase();
-  return allTypes.filter((type) => {
-    const label = formatTypeLabel(type).toLowerCase();
-    const desc = getProviderDesc(type).toLowerCase();
-    return (
-      label.includes(keyword) ||
-      type.toLowerCase().includes(keyword) ||
-      desc.includes(keyword)
-    );
-  });
-});
-
-const handleSelectType = (type) => {
-  showAddSelector.value = false;
-  handleAddAdapter(type);
-};
 // 初始化
 onMounted(async () => {
   // 检测移动端
@@ -1206,212 +1016,19 @@ onUnmounted(() => {
   }
 }
 
-// 适配器选择器高级样式 (Glassmorphism & Harmonious Layout)
-.adapter-selector-dialog {
-  :deep(.el-dialog) {
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(235, 238, 245, 0.6);
-  }
-
-  :deep(.el-dialog__header) {
-    margin-right: 0;
-    padding: 20px 24px 10px;
-    border-bottom: 1px solid var(--mio-border-color-light);
-
-    .el-dialog__title {
-      font-weight: 600;
-      font-size: 18px;
-      color: var(--mio-text-primary);
-    }
-  }
-
-  :deep(.el-dialog__body) {
-    padding: 16px 24px 24px;
-  }
-}
-
-.selector-container {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-
-  .search-box {
-    margin-bottom: 4px;
-
-    :deep(.el-input__wrapper) {
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-      border: 1px solid var(--mio-border-color-light);
-      transition: all 0.3s;
-
-      &:hover,
-      &.is-focus {
-        border-color: #409eff;
-        box-shadow: 0 4px 12px rgba(64, 158, 255, 0.1);
-      }
-    }
-  }
-}
-
-.category-tabs {
-  :deep(.el-tabs__header) {
-    margin-bottom: 16px;
-  }
-
-  :deep(.el-tabs__item) {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--mio-text-regular);
-    padding: 0 20px;
-    height: 40px;
-    line-height: 40px;
-
-    &.is-active {
-      color: #409eff;
-      font-weight: 600;
-    }
-  }
-
-  :deep(.el-tabs__active-bar) {
-    height: 3px;
-    border-radius: 2px;
-  }
-}
-
-.selector-scrollbar {
-  max-height: 460px;
-  padding-right: 4px;
-}
-
-.grid-container {
+// 响应式卡片网格布局
+.adapter-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 16px;
-  padding: 4px 2px 16px;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+  align-items: stretch;
+  margin-top: 8px;
 }
 
-.selector-card {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px;
-  border-radius: 12px;
-  background: var(--mio-bg-card);
-  border: 1px solid var(--mio-border-color-light);
-  cursor: pointer;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
-
-  .card-glow {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border-radius: 12px;
-    opacity: 0;
-    background: var(--card-bg-color);
-    transition: opacity 0.3s ease;
-    z-index: 1;
-  }
-
-  .card-icon {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
-    background: var(--mio-bg-hover);
-    border: 1px solid var(--mio-border-color-light);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
-    transition: all 0.3s;
-
-    img {
-      width: 28px;
-      height: 28px;
-      object-fit: contain;
-    }
-  }
-
-  .card-info {
-    position: relative;
-    z-index: 2;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    overflow: hidden;
-
-    .card-title {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--mio-text-primary);
-      transition: color 0.3s;
-    }
-
-    .card-desc {
-      font-size: 12px;
-      color: var(--mio-text-secondary);
-      line-height: 1.4;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-  }
-
-  .card-action {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: var(--mio-bg-hover);
-    color: var(--mio-text-secondary);
-    font-size: 12px;
-    opacity: 0;
-    transform: translateX(10px);
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  }
-
-  &:hover {
-    border-color: var(--card-theme-color);
-    box-shadow:
-      0 8px 20px rgba(0, 0, 0, 0.05),
-      0 0 0 1px var(--card-theme-color);
-
-    .card-glow {
-      opacity: 1;
-    }
-
-    .card-icon {
-      border-color: var(--card-theme-color);
-      transform: scale(1.05);
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
-    }
-
-    .card-info .card-title {
-      color: var(--card-theme-color);
-    }
-
-    .card-action {
-      opacity: 1;
-      transform: translateX(0);
-      background: var(--card-theme-color);
-      color: #ffffff;
-    }
+@media (max-width: 768px) {
+  .adapter-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
   }
 }
 </style>

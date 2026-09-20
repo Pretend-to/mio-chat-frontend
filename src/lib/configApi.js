@@ -230,12 +230,15 @@ class ConfigAPI {
   /**
    * 更新适配器实例
    * @param {string} type - 适配器类型
-   * @param {number} index - 实例索引
+   * @param {string} instanceId - 稳定实例 ID
    * @param {object} data - 适配器配置数据
    * @returns {Promise<object>} 响应数据
    */
-  async updateAdapter(type, index, data) {
-    return this.request(`/api/config/llm/${type}/${index}`, {
+  async updateAdapter(type, instanceId, data) {
+    if (!instanceId || typeof instanceId !== "string") {
+      throw new Error("更新适配器失败：缺少稳定实例 ID");
+    }
+    return this.request(`/api/config/llm/${type}/${encodeURIComponent(instanceId)}`, {
       method: "PUT",
       body: JSON.stringify(data),
     });
@@ -244,28 +247,30 @@ class ConfigAPI {
   /**
    * 删除适配器实例
    * @param {string} type - 适配器类型
-   * @param {number} index - 实例索引
+   * @param {string} instanceId - 稳定实例 ID
    * @returns {Promise<object>} 响应数据
    */
-  async deleteAdapter(type, index) {
-    return this.request(`/api/config/llm/${type}/${index}`, {
+  async deleteAdapter(type, instanceId) {
+    if (!instanceId || typeof instanceId !== "string") {
+      throw new Error("删除适配器失败：缺少稳定实例 ID");
+    }
+    return this.request(`/api/config/llm/${type}/${encodeURIComponent(instanceId)}`, {
       method: "DELETE",
     });
   }
 
   /**
    * 批量删除适配器实例
-   * @param {Array<{type: string, index: number}>} adapters - 要删除的适配器列表
+   * @param {Array<{type: string, id?: string, instanceId?: string}>} adapters - 要删除的适配器列表
    * @returns {Promise<Array>} 删除结果
    */
   async batchDeleteAdapters(adapters) {
-    // 按索引降序排序，避免删除后索引变化
-    const sorted = [...adapters].sort((a, b) => b.index - a.index);
     const results = [];
 
-    for (const adapter of sorted) {
+    for (const adapter of adapters) {
       try {
-        const result = await this.deleteAdapter(adapter.type, adapter.index);
+        const instanceId = adapter.id || adapter.instanceId;
+        const result = await this.deleteAdapter(adapter.type, instanceId);
         results.push({ success: true, adapter, result });
       } catch (error) {
         results.push({ success: false, adapter, error: error.message });
@@ -290,12 +295,41 @@ class ConfigAPI {
   /**
    * 刷新单个适配器实例模型列表
    * @param {string} type - 适配器类型
-   * @param {number} index - 实例索引
+   * @param {string} instanceId - 稳定实例 ID
    * @returns {Promise<object>} 响应数据
    */
-  async refreshAdapterModels(type, index) {
-    return this.request(`/api/config/llm/${type}/${index}/refresh-models`, {
+  async refreshAdapterModels(type, instanceId) {
+    if (!instanceId || typeof instanceId !== "string") {
+      throw new Error("刷新模型失败：缺少稳定实例 ID");
+    }
+    return this.request(`/api/config/llm/${type}/${encodeURIComponent(instanceId)}/refresh-models`, {
       method: "POST",
+    });
+  }
+
+  /**
+   * 测试 LLM 适配器连通性（发送极小对话测算真实延迟）
+   * @param {string} type - 适配器类型
+   * @param {object} config - 包含当前表单配置以及选中的 model
+   * @returns {Promise<object>} 响应数据 ({ success, latencyMs, model, message })
+   */
+  async testLLMConnection(type, config) {
+    return this.request(`/api/config/llm/${type}/test-connection`, {
+      method: "POST",
+      body: config,
+    });
+  }
+
+  /**
+   * 拉取 LLM 适配器文本模型列表
+   * @param {string} type - 适配器类型
+   * @param {object} config - 配置参数
+   * @returns {Promise<object>} 响应数据 ({ success, models })
+   */
+  async fetchLLMModels(type, config) {
+    return this.request(`/api/config/llm/${type}/fetch-models`, {
+      method: "POST",
+      body: config,
     });
   }
 

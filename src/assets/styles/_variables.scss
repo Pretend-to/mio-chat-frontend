@@ -100,9 +100,10 @@
   --mio-text-secondary: #acacac;
   --mio-text-placeholder: #7c7c7c;
 
-  --mio-border-color: #2f2f2f;
-  --mio-border-color-light: #2f2f2f;
-  --mio-border-color-lighter: #222222;
+  // 暗色背景上的结构线不能与页面背景同色，否则卡片和输入区会失去层次。
+  --mio-border-color: #464650;
+  --mio-border-color-light: #3d3d47;
+  --mio-border-color-lighter: #35353e;
 
   // Scrollbar Tokens
   --mio-scrollbar-thumb: rgba(255, 255, 255, 0.25);
