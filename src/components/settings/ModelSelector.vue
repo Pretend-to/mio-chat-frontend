@@ -560,6 +560,31 @@ const updateFullNames = (value) => {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
+
+    .el-tag {
+      font-size: 11px;
+      height: 19px;
+      line-height: 17px;
+      padding: 0 6px;
+    }
+  }
+}
+
+// 暗色主题下下拉框选项与标签
+html.dark .model-select-popper,
+[data-theme="dark"] .model-select-popper {
+  .model-tags {
+    .el-tag.el-tag--plain {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.16);
+      color: #cfd3dc;
+    }
+
+    .el-tag.el-tag--success.el-tag--plain {
+      background: rgba(103, 194, 58, 0.15);
+      border-color: rgba(103, 194, 58, 0.35);
+      color: #95d475;
+    }
   }
 }
 </style>

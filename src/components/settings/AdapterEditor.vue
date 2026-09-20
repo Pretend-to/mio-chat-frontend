@@ -530,26 +530,8 @@
             <span class="mod-title">高级设置</span>
             <span class="tag-badge gray">可选</span>
           </div>
-          <div class="summary-right">
-            <span class="summary-meta" v-if="currentExtraSettingsSchema && Object.keys(currentExtraSettingsSchema).length > 0">
-              包含厂商特化项
-            </span>
-          </div>
         </summary>
         <div class="modular-content">
-          <!-- 厂商特化扩展配置 (根据当前适配器类型动态展示) -->
-          <div v-if="currentExtraSettingsSchema && Object.keys(currentExtraSettingsSchema).length > 0" class="adv-sub-block">
-            <div class="adv-block-title">
-              <span>厂商特化扩展配置</span>
-              <span class="tag-badge blue">{{ currentTargetAdapterType }}</span>
-            </div>
-            <DynamicSettingsForm
-              :schema="currentExtraSettingsSchema"
-              :values="extraSettingsKey ? (formData.extraSettings[extraSettingsKey] || {}) : formData.extraSettings"
-              @update:values="handleExtraSettingsChange"
-            />
-          </div>
-
           <div class="field-box">
             <label class="field-lbl">搜索关键词 / 中文别名</label>
             <div class="input-wrap">
@@ -636,7 +618,6 @@ import { configAPI } from "@/lib/configApi.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { getAvatarByAdapterType } from "@/utils/avatar.js";
 import { ElMessage } from "element-plus";
-import DynamicSettingsForm from "@/components/DynamicSettingsForm.vue";
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -1386,28 +1367,6 @@ const determineBackendAdapterType = () => {
 const currentTargetAdapterType = computed(() => {
   return determineBackendAdapterType();
 });
-
-const extraSettingsKey = computed(() => {
-  const meta = adapterMetadata.value.find((m) => m.type === currentTargetAdapterType.value);
-  const schemaWrap = meta?.extraSettingsSchema || {};
-  const keys = Object.keys(schemaWrap);
-  return keys.length > 0 ? keys[0] : null;
-});
-
-const currentExtraSettingsSchema = computed(() => {
-  const meta = adapterMetadata.value.find((m) => m.type === currentTargetAdapterType.value);
-  const schemaWrap = meta?.extraSettingsSchema || {};
-  const key = extraSettingsKey.value;
-  return key ? schemaWrap[key] : {};
-});
-
-const handleExtraSettingsChange = (newValues) => {
-  if (extraSettingsKey.value) {
-    formData.value.extraSettings[extraSettingsKey.value] = newValues;
-  } else {
-    formData.value.extraSettings = newValues;
-  }
-};
 
 // 探活与测试 Payload 构建
 const buildProbePayload = () => {
@@ -3036,8 +2995,21 @@ watch(
   }
 
   .chip-item {
-    .remove-btn:hover {
-      background: #3a3034;
+    background: rgba(64, 158, 255, 0.16);
+    border-color: rgba(64, 158, 255, 0.35);
+    color: #79bbff;
+
+    .nm {
+      color: #a0cfff;
+    }
+
+    .remove-btn {
+      color: #79bbff;
+
+      &:hover {
+        color: #f56c6c;
+        background: rgba(245, 108, 108, 0.22);
+      }
     }
   }
 
@@ -3083,17 +3055,6 @@ watch(
     background: rgba(103, 194, 58, 0.14);
     border-color: rgba(103, 194, 58, 0.4);
     color: #b5e69f;
-  }
-
-  :deep(.dynamic-form) {
-    .settings-card {
-      background: #202027;
-      border-color: #41414b;
-    }
-
-    .setting-field {
-      border-bottom-color: #3b3b44;
-    }
   }
 
   .dialog-footer-v4 {

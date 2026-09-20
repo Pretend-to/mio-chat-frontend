@@ -96,8 +96,72 @@ export default {
 };
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .dynamic-form {
   width: 100%;
+}
+
+.settings-group {
+  margin-bottom: 18px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.group-title {
+  padding: 0 4px 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--mio-text-primary, #303133);
+}
+
+.settings-card {
+  background: var(--mio-bg-card, #ffffff);
+  border: 1px solid var(--mio-border-color-light, #ebeef5);
+  border-radius: 10px;
+  padding: 8px 16px;
+  box-shadow: var(--mio-shadow-light, 0 1px 4px rgba(0, 0, 0, 0.04));
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.setting-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--mio-border-color-lighter, #f2f6fc);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.field-label {
+  font-size: 13px;
+  color: var(--mio-text-regular, #606266);
+}
+
+// 暗色主题适配
+:global([data-theme="dark"] .dynamic-form .group-title),
+:global(html.dark .dynamic-form .group-title) {
+  color: #e5eaf3;
+}
+
+:global([data-theme="dark"] .dynamic-form .settings-card),
+:global(html.dark .dynamic-form .settings-card) {
+  background: #25252b;
+  border-color: #41414b;
+  box-shadow: none;
+}
+
+:global([data-theme="dark"] .dynamic-form .setting-field),
+:global(html.dark .dynamic-form .setting-field) {
+  border-bottom-color: #383842;
+}
+
+:global([data-theme="dark"] .dynamic-form .field-label),
+:global(html.dark .dynamic-form .field-label) {
+  color: #cfd3dc;
 }
 </style>

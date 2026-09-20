@@ -727,21 +727,45 @@ const handleSelect = (value) => {
 
 :global([data-theme="dark"] .adapter-card .chip-preview-tag),
 :global(html.dark .adapter-card .chip-preview-tag) {
-  background: rgba(64, 158, 255, 0.14);
-  border-color: rgba(64, 158, 255, 0.36);
+  background: rgba(64, 158, 255, 0.16);
+  border-color: rgba(64, 158, 255, 0.35);
+  color: #79bbff;
 }
 
 :global([data-theme="dark"] .adapter-card .chip-more-tag),
 :global(html.dark .adapter-card .chip-more-tag) {
-  background: rgba(144, 147, 153, 0.14);
-  border-color: #41414b;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #4a4a55;
+  color: #a8abb2;
 }
 
 :global([data-theme="dark"] .adapter-card .avatar-badge),
 :global(html.dark .adapter-card .avatar-badge) {
-  background: #fff;
-  border-color: #dcdfe6;
-  color: #303133;
+  background: #2b2b35;
+  border-color: #484856;
+  color: #e5eaf3;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+:global([data-theme="dark"] .adapter-card .el-tag.el-tag--plain),
+:global(html.dark .adapter-card .el-tag.el-tag--plain) {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #cfd3dc;
+}
+
+:global([data-theme="dark"] .adapter-card .el-tag.el-tag--success.el-tag--plain),
+:global(html.dark .adapter-card .el-tag.el-tag--success.el-tag--plain) {
+  background: rgba(103, 194, 58, 0.15);
+  border-color: rgba(103, 194, 58, 0.35);
+  color: #95d475;
+}
+
+:global([data-theme="dark"] .adapter-card .el-tag.el-tag--info.el-tag--plain),
+:global(html.dark .adapter-card .el-tag.el-tag--info.el-tag--plain) {
+  background: rgba(144, 147, 153, 0.12);
+  border-color: rgba(144, 147, 153, 0.28);
+  color: #a8abb2;
 }
 
 :global([data-theme="dark"] .adapter-card .el-button.is-plain),
