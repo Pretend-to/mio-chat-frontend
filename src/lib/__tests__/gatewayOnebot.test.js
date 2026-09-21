@@ -81,4 +81,22 @@ describe("gateway OneBot message routing", () => {
     });
 
   });
+
+  it("creates channel assistant placeholder with canonical streaming status", () => {
+    contactors["ch-1"] = { id: "ch-1", platform: "agent", messageChain: [] };
+    gateway.handleChannelMessageEvent({
+      type: "channel_user_message",
+      data: {
+        assistantMessageId: "am-1",
+        contactorId: "ch-1",
+        userMessage: { id: "u-1", text: "hi" },
+      },
+    });
+
+    const placeholder = applyMessageEvent.mock.calls
+      .map((call) => call[0])
+      .find((event) => event.message?.id === "am-1");
+    expect(placeholder).toBeTruthy();
+    expect(placeholder.message.status).toBe("streaming");
+  });
 });

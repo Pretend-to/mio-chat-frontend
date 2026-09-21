@@ -191,12 +191,7 @@
               <MessageContent
                 :content="item.content"
                 :contactor="activeContactor"
-                :isStreaming="
-                  item.role === 'other' &&
-                  ['pending', 'running', 'streaming', 'retrying'].includes(
-                    item.status,
-                  )
-                "
+                :isStreaming="item.role === 'other' && isStreamingMessage(item)"
                 :messageIndex="index"
                 :mioPlugins="mioPlugins"
                 :katexPluginList="katexPluginList"
@@ -229,6 +224,7 @@ import { useConfigStore } from "@/stores/configStore.js";
 import { getAvatarByModel } from "@/stores/contactorsStore.js";
 import MessageContent from "@/components/chat/MessageContent.vue";
 import GroupAvatar from "@/components/GroupAvatar.vue";
+import { isStreamingMessage } from "@/lib/messageState.js";
 import { ElMessage } from "element-plus";
 
 const configStore = useConfigStore();

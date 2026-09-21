@@ -1335,7 +1335,7 @@ export const gateway = {
             role: "other",
             id: assistantMessageId,
             time: Date.now(),
-            status: "running",
+            status: "streaming",
             content: [{ type: "blank", data: {} }],
           },
           markPending: true,

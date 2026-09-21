@@ -1,13 +1,17 @@
 const TERMINAL_STATUSES = new Set(["completed", "failed"]);
 const ACTIVE_STATUSES = new Set([
   "pending",
-  "processing",
   "retrying",
-  "running",
   "streaming",
   "uploading",
 ]);
 
+/**
+ * 状态别名归一化（写侧与水合侧均经过这里）：
+ * - final → completed
+ * - processing / running → streaming（历史别名：早期渠道占位与旧管线用过这两个名字，
+ *   存量数据在被 upsert 或水合时就地吸收，链内不再保留这两个值）
+ */
 export function normalizeMessageStatus(status, fallback = "pending") {
   if (status === "final") return "completed";
   if (status === "processing" || status === "running") return "streaming";
@@ -20,6 +24,18 @@ export function isTerminalMessage(message) {
 
 export function isActiveMessage(message) {
   return ACTIVE_STATUSES.has(normalizeMessageStatus(message?.status, ""));
+}
+
+/**
+ * UI 层「消息仍在生成中」的统一判定（打字机光标 / 右键停止 / 中断删除等入口共用）。
+ * 规范三态：pending / streaming / retrying；历史别名（running / processing）经
+ * normalizeMessageStatus 在读时吸收，避免旁路数据掉入"既无光标、也无停止入口"的空档。
+ * 注意：uploading 是用户侧上传态，不属于生成态，刻意为 false。
+ */
+export function isStreamingMessage(message) {
+  return ["pending", "streaming", "retrying"].includes(
+    normalizeMessageStatus(message?.status, ""),
+  );
 }
 
 export function normalizeMessage(message, defaults = {}) {

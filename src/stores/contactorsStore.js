@@ -6,8 +6,10 @@ import { config, client } from "@/lib/runtime.js";
 import { resolveUnhandledMentions } from "@/lib/groupGateway.js";
 import { isLegacyInteractionBubble } from "@/lib/interactionFrames.js";
 import {
+  isStreamingMessage,
   isTerminalMessage,
   mergeMessageHistory,
+  normalizeMessage,
   unmarkRaw,
   upsertMessage,
 } from "@/lib/messageState.js";
@@ -227,6 +229,9 @@ export const useContactorsStore = defineStore("contactors", () => {
         firstMessageIndex: item.firstMessageIndex ?? 0,
         messageChain: Array.isArray(item.messageChain)
           ? item.messageChain
+              // 存量数据清洗：历史状态别名（running / processing / final 等）就地归一，
+              // 防止旧数据以非规范状态进入消息链
+              .map((m) => (m && m.id ? normalizeMessage(m) : m))
               .filter((message) => !isLegacyInteractionBubble(message))
               .map((m) =>
                 m && (m.status === "completed" || m.status === "failed")
@@ -1473,12 +1478,8 @@ export const useContactorsStore = defineStore("contactors", () => {
     const contactor = contactors.value[contactorId];
     if (contactor && contactor.messageChain[index]) {
       const message = contactor.messageChain[index];
-      // 删除进行中的消息时中断服务端生成（含 streaming/running 流式状态）
-      if (
-        ["pending", "running", "streaming", "retrying"].includes(
-          message.status,
-        )
-      ) {
+      // 删除进行中的消息时中断服务端生成（生成态判定与光标/停止入口共用）
+      if (isStreamingMessage(message)) {
         client.socket?.interruptGeneration(message.id, contactorId);
       }
       contactor.messageChain.splice(index, 1);
@@ -1665,6 +1666,10 @@ export const useContactorsStore = defineStore("contactors", () => {
       return false;
     }
     contactor.messageChain = messages
+      // 存量数据清洗：与主加载路径一致，先归一化历史状态别名再标记终态
+      .map((message) =>
+        message && message.id ? normalizeMessage(message) : message,
+      )
       .filter((message) => !isLegacyInteractionBubble(message))
       .map((message) =>
         message &&

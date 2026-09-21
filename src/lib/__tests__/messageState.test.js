@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { isReactive, markRaw, reactive } from "vue";
 import {
+  isStreamingMessage,
   mergeMessageHistory,
   mergeSameMessage,
   normalizeMessage,
@@ -118,5 +119,19 @@ describe("canonical message state", () => {
     // 验证流式追加可以正常运作在响应式对象上
     chain[0].content = text("new streaming chunk");
     expect(chain[0].content[0].data.text).toBe("new streaming chunk");
+  });
+
+  it("isStreamingMessage resolves canonical states and absorbs historical aliases", () => {
+    expect(isStreamingMessage({ status: "pending" })).toBe(true);
+    expect(isStreamingMessage({ status: "streaming" })).toBe(true);
+    expect(isStreamingMessage({ status: "retrying" })).toBe(true);
+    // 历史别名读时吸收：running / processing → streaming
+    expect(isStreamingMessage({ status: "running" })).toBe(true);
+    expect(isStreamingMessage({ status: "processing" })).toBe(true);
+    // 非生成态
+    expect(isStreamingMessage({ status: "completed" })).toBe(false);
+    expect(isStreamingMessage({ status: "failed" })).toBe(false);
+    expect(isStreamingMessage({ status: "uploading" })).toBe(false);
+    expect(isStreamingMessage(null)).toBe(false);
   });
 });
