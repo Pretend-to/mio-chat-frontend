@@ -98,6 +98,18 @@ export function mergeSameMessage(current, incoming, authority = "event") {
   return merged;
 }
 
+export function unmarkRaw(target) {
+  if (!target || typeof target !== "object") return target;
+  if (Array.isArray(target)) {
+    return target.map((item) => unmarkRaw(item));
+  }
+  const clean = {};
+  for (const key of Object.keys(target)) {
+    clean[key] = unmarkRaw(target[key]);
+  }
+  return clean;
+}
+
 function replaceObject(target, source) {
   for (const key of Object.keys(target)) {
     if (!(key in source)) delete target[key];
@@ -112,20 +124,39 @@ export function upsertMessage(chain, incoming, options = {}) {
 
   const index = chain.findIndex((item) => String(item?.id) === normalized.id);
   if (index === -1) {
+    const clean = unmarkRaw(normalized);
     if (Number.isInteger(options.index)) {
-      chain.splice(Math.max(0, options.index), 0, normalized);
+      chain.splice(Math.max(0, options.index), 0, clean);
     } else if (options.prepend) {
-      chain.unshift(normalized);
+      chain.unshift(clean);
     } else {
-      chain.push(normalized);
+      chain.push(clean);
     }
-    return { accepted: true, message: normalized, created: true };
+    return { accepted: true, message: clean, created: true };
   }
 
-  const merged = mergeSameMessage(chain[index], normalized, options.authority);
+  const current = chain[index];
+  const merged = mergeSameMessage(current, normalized, options.authority);
+
+  // 关键：若当前消息曾被打上 markRaw（__v_skip），或者正在从终态重新激活为活跃态/非终态
+  // 必须通过 splice 替换纯净对象，让 Vue 3 重新为此消息建立深度响应式代理
+  const shouldReactivate =
+    Boolean(current?.__v_skip) ||
+    (isTerminalMessage(current) && !isTerminalMessage(merged));
+
+  if (shouldReactivate) {
+    const clean = unmarkRaw(merged);
+    chain.splice(index, 1, clean);
+    return {
+      accepted: true,
+      message: chain[index],
+      created: false,
+    };
+  }
+
   return {
     accepted: true,
-    message: replaceObject(chain[index], merged),
+    message: replaceObject(current, merged),
     created: false,
   };
 }

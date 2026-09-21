@@ -8,6 +8,7 @@ import { isLegacyInteractionBubble } from "@/lib/interactionFrames.js";
 import {
   isTerminalMessage,
   mergeMessageHistory,
+  unmarkRaw,
   upsertMessage,
 } from "@/lib/messageState.js";
 import {
@@ -641,11 +642,18 @@ export const useContactorsStore = defineStore("contactors", () => {
       case "message.chunk": {
         // 流式热路径必须保持纯内存、只做一次消息定位。摘要计算和持久化
         // 统一留到 complete/failed，避免每个 80ms chunk 重复扫描与序列化。
-        const current = contactor.messageChain.find(
+        let current = contactor.messageChain.find(
           (message) => String(message?.id) === String(event.messageId),
         );
         if (isTerminalMessage(current)) {
           return { accepted: false, message: null };
+        }
+        if (current?.__v_skip) {
+          const idx = contactor.messageChain.indexOf(current);
+          if (idx !== -1) {
+            contactor.messageChain.splice(idx, 1, unmarkRaw(current));
+            current = contactor.messageChain[idx];
+          }
         }
         const message = appendOrUpdateMessage(
           contactorId,

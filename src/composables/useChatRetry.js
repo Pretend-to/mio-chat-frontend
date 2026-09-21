@@ -188,13 +188,19 @@ export function useChatRetry({ activeContactor, toBottom, inputEditor }) {
       }
 
       let validMessage = contactor.messageChain[targetIndex];
+      if (validMessage?.status === "retrying") {
+        ElMessage.warning("该消息正在重试中");
+        return;
+      }
+
       if (!validMessage || validMessage.role !== "other") {
         validMessage = {
           role: "other",
           time: Date.now(),
           content: [{ type: "blank", data: {} }],
           id: numberString(16),
-          status: "pending",
+          status: "retrying",
+          triggerType: "chat",
         };
         contactorsStore.applyMessageEvent({
           type: "message.upsert",
@@ -210,22 +216,12 @@ export function useChatRetry({ activeContactor, toBottom, inputEditor }) {
           messageId: validMessage.id,
           patch: {
             content: [{ type: "blank", data: {} }],
+            status: "retrying",
             time: Date.now(),
           },
         });
       }
 
-      if (validMessage.status === "retrying") {
-        ElMessage.warning("该消息正在重试中");
-        return;
-      }
-
-      contactorsStore.applyMessageEvent({
-        type: "message.patch",
-        contactorId: contactor.id,
-        messageId: validMessage.id,
-        patch: { status: "retrying" },
-      });
       retryList.value.push(validMessage.id);
 
       const userMsg =

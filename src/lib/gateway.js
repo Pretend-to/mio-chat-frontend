@@ -693,6 +693,13 @@ export const gateway = {
    * 发送消息给对应的平台
    */
   async send(platform, contactorId, messagesChain, messageId, options) {
+    // 若此前该 messageId 存在未完成的流缓存，先清理防止内容粘连
+    const existingBuffer = streamBuffers.get(messageId);
+    if (existingBuffer) {
+      existingBuffer.flush();
+      streamBuffers.delete(messageId);
+    }
+
     if (platform === "onebot") {
       if (!client.isConnected) {
         throw new Error("连接已断开，请检查网络或刷新页面");
