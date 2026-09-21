@@ -102,7 +102,7 @@ export default {
 }
 
 .settings-group {
-  margin-bottom: 18px;
+  margin-bottom: 24px;
 
   &:last-child {
     margin-bottom: 0;
@@ -110,27 +110,27 @@ export default {
 }
 
 .group-title {
-  padding: 0 4px 10px;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--mio-text-primary, #303133);
+  padding: 0 4px 12px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--mio-text-primary);
+  text-align: left;
 }
 
 .settings-card {
-  background: var(--mio-bg-card, #ffffff);
-  border: 1px solid var(--mio-border-color-light, #ebeef5);
-  border-radius: 10px;
-  padding: 8px 16px;
-  box-shadow: var(--mio-shadow-light, 0 1px 4px rgba(0, 0, 0, 0.04));
-  transition: background 0.2s, border-color 0.2s;
+  background: var(--mio-bg-card);
+  border-radius: 12px;
+  padding: 8px 24px;
+  margin-bottom: 0;
+  box-shadow: var(--mio-shadow-light);
 }
 
 .setting-field {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--mio-border-color-lighter, #f2f6fc);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--mio-border-color-lighter);
 
   &:last-child {
     border-bottom: none;
@@ -138,30 +138,19 @@ export default {
 }
 
 .field-label {
+  width: 14rem;
   font-size: 13px;
-  color: var(--mio-text-regular, #606266);
+  color: var(--mio-text-secondary);
+  flex-shrink: 0;
+  text-align: left;
 }
 
-// 暗色主题适配
-:global([data-theme="dark"] .dynamic-form .group-title),
-:global(html.dark .dynamic-form .group-title) {
-  color: #e5eaf3;
-}
-
-:global([data-theme="dark"] .dynamic-form .settings-card),
-:global(html.dark .dynamic-form .settings-card) {
-  background: #25252b;
-  border-color: #41414b;
-  box-shadow: none;
-}
-
-:global([data-theme="dark"] .dynamic-form .setting-field),
-:global(html.dark .dynamic-form .setting-field) {
-  border-bottom-color: #383842;
-}
-
-:global([data-theme="dark"] .dynamic-form .field-label),
-:global(html.dark .dynamic-form .field-label) {
-  color: #cfd3dc;
+.field-value {
+  flex: 1;
+  max-width: 60%;
+  text-align: right;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
 }
 </style>

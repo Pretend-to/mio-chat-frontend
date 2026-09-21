@@ -166,6 +166,7 @@ import { computed, ref } from "vue";
 import { ElMessageBox } from "element-plus";
 import { Delete, Edit, Refresh } from "@element-plus/icons-vue";
 import { getAvatarByAdapterType } from "@/utils/avatar.js";
+import { matchPreset } from "@/utils/adapterPresets.js";
 
 const props = defineProps({
   adapter: {
@@ -207,7 +208,15 @@ const emit = defineEmits(["edit", "delete", "refresh", "toggle", "select"]);
 const toggling = ref(false);
 const refreshing = ref(false);
 const avatarFailed = ref(false);
-const avatarUrl = computed(() => getAvatarByAdapterType(props.type));
+
+const matchedPreset = computed(() => matchPreset(props.adapter, props.type));
+
+const avatarUrl = computed(() => {
+  if (matchedPreset.value) {
+    return getAvatarByAdapterType(matchedPreset.value.avatarId || matchedPreset.value.id);
+  }
+  return getAvatarByAdapterType(props.type);
+});
 
 // 显示名称
 const displayName = computed(() => {
@@ -216,6 +225,20 @@ const displayName = computed(() => {
 
 // 协议信息映射
 const protoInfo = computed(() => {
+  const p = props.adapter?.proto;
+  if (p === "openai-responses") {
+    return { short: "OpenAI Responses", color: "#7c5cff" };
+  }
+  if (p === "anthropic-messages" || p === "anthropic") {
+    return { short: "Anthropic Messages", color: "#c1613e" };
+  }
+  if (p === "gemini") {
+    return { short: "Gemini", color: "#2f9e6f" };
+  }
+  if (p === "openai-chat" || p === "openai") {
+    return { short: "OpenAI Chat", color: "#409eff" };
+  }
+
   const t = props.type;
   if (t === "anthropic") {
     return { short: "Anthropic Messages", color: "#c1613e" };
@@ -231,6 +254,12 @@ const protoInfo = computed(() => {
 
 // 品牌图标与主色
 const brandInfo = computed(() => {
+  if (matchedPreset.value) {
+    return {
+      letter: matchedPreset.value.letter,
+      color: matchedPreset.value.color,
+    };
+  }
   const t = props.type.toLowerCase();
   const presetsMap = {
     deepseek: { letter: "D", color: "#4d6bfe" },

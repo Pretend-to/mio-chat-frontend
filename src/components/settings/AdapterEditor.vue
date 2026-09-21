@@ -206,7 +206,7 @@
             </div>
           </div>
           <div class="hint-txt">
-            Express 模式 = 用 API Key 直连 Vertex，端点固定 <b>https://aiplatform.googleapis.com</b>（无 region 前缀）；后端对应 <code>block_express: false</code>。
+            Express 模式 = 用 API Key 直连 Vertex（支持自定义 Base URL 反代，默认端点为 <b>https://aiplatform.googleapis.com</b>）；后端对应 <code>block_express: false</code>。
           </div>
         </div>
 
@@ -260,7 +260,68 @@
             </div>
           </div>
           <div class="hint-txt">
-            ADC 模式下后端走 <code>block_express: true</code>，只需要 project_id；端点同样固定 <b>https://aiplatform.googleapis.com</b>。
+            ADC 模式下后端走 <code>block_express: true</code>，只需要 project_id（同样支持自定义 Base URL 反代）。
+          </div>
+        </div>
+
+        <!-- 独立模型列表拉取配置（Vertex 专用：配置独立 AI Studio 端点与 Key 绕过权限限制拉取模型） -->
+        <div
+          v-if="formData.conn === 'vertex-express' || formData.conn === 'vertex-adc'"
+          class="cred-card cred-studio-models"
+        >
+          <div
+            class="studio-models-head"
+            @click="showModelsConfig = !showModelsConfig"
+          >
+            <div class="head-left">
+              <span class="toggle-arrow">{{ showModelsConfig ? '▼' : '▶' }}</span>
+              <span class="sub-lbl" style="margin: 0; cursor: pointer;">
+                独立模型获取配置（Google AI Studio 端口/端点与 Key）
+              </span>
+              <span class="tag-badge" :class="hasCustomModelsConfig ? 'blue' : 'gray'">
+                {{ hasCustomModelsConfig ? '已配置' : '可选' }}
+              </span>
+            </div>
+            <div class="head-right">
+              <span class="hint-txt" style="margin: 0; cursor: pointer;">
+                {{ showModelsConfig ? '收起配置' : '展开配置' }}
+              </span>
+            </div>
+          </div>
+
+          <div v-show="showModelsConfig" class="studio-models-body">
+            <div class="row-two" style="margin-top: 10px;">
+              <div>
+                <div class="sub-lbl">模型拉取 Base URL / 端口</div>
+                <div class="input-wrap">
+                  <input
+                    v-model="formData.models_base_url"
+                    placeholder="https://generativelanguage.googleapis.com"
+                    autocomplete="off"
+                  />
+                </div>
+                <div class="hint-txt">
+                  留空默认为 AI Studio 官方端点，支持单独配置反代或指定本地端口
+                </div>
+              </div>
+              <div>
+                <div class="sub-lbl">模型拉取 API Key</div>
+                <div class="input-wrap">
+                  <input
+                    v-model="formData.models_api_key"
+                    :type="showModelsKeyText ? 'text' : 'password'"
+                    placeholder="AIzaSy... (Google AI Studio Key)"
+                    autocomplete="off"
+                  />
+                  <span class="addon-btn" @click="showModelsKeyText = !showModelsKeyText">
+                    {{ showModelsKeyText ? '隐藏' : '显示' }}
+                  </span>
+                </div>
+                <div class="hint-txt">
+                  填入 Google AI Studio Key 可绕过 Google Cloud 权限限制获取完整模型列表
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -269,31 +330,56 @@
           <div class="oauth-card" :class="oauthCardClass">
             <!-- 未授权 (Idle) -->
             <div v-if="oauthState === 'idle'" class="oa-state">
-              <button type="button" class="btn primary oauth-btn" @click="startOAuth">
-                连接 Google 账号
-              </button>
-              <div class="hint-txt">将打开 Google 授权页，授权后可随时撤销</div>
+              <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <button type="button" class="btn primary oauth-btn" @click="startOAuth" :disabled="fetchingOAuthUrl">
+                  <span v-if="fetchingOAuthUrl" class="spin"></span>
+                  连接 Google 账号
+                </button>
+                <a
+                  v-if="currentOAuthUrl"
+                  :href="currentOAuthUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="oa-link"
+                >
+                  在新标签页打开 ↗
+                </a>
+              </div>
+              <div class="hint-txt">将打开 Google 官方授权页，授权后可随时撤销</div>
             </div>
 
             <!-- 授权中 (Pending) -->
             <div v-else-if="oauthState === 'pending'" class="oa-state oa-pending-row">
-              <span class="usercode">{{ oauthUserCode }}</span>
-              <button type="button" class="btn sm" @click="copyOAuthCode">复制</button>
-              <button type="button" class="btn sm" @click="openOAuthPage">打开授权页</button>
+              <button type="button" class="btn primary sm" @click="openOAuthPage" :disabled="fetchingOAuthUrl">
+                <span v-if="fetchingOAuthUrl" class="spin"></span>
+                打开授权页
+              </button>
+              <button v-if="currentOAuthUrl" type="button" class="btn sm" @click="copyOAuthCode">
+                复制授权链接
+              </button>
+              <a
+                v-if="currentOAuthUrl"
+                :href="currentOAuthUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="oa-link"
+              >
+                直接打开链接 ↗
+              </a>
               <span class="spacer"></span>
               <span class="spin"></span>
-              <span class="hint-txt" style="margin:0;">等待授权中…</span>
+              <span class="hint-txt" style="margin:0;">等待授权回填中…</span>
             </div>
 
             <!-- 已授权 (Done) -->
             <div v-else-if="oauthState === 'done'" class="oa-state oa-done-row">
               <span class="dot g"></span>
               <b>{{ oauthAccountEmail }}</b>
-              <span class="tag-badge gray">刷新令牌有效</span>
+              <span class="tag-badge gray">授权就绪</span>
               <span class="spacer"></span>
-              <button type="button" class="btn sm" @click="startOAuth">重新授权</button>
+              <button type="button" class="btn sm" @click="openOAuthPage">重新打开授权页</button>
               <button type="button" class="btn sm" @click="oauthExpireDemo">模拟过期</button>
-              <button type="button" class="btn sm" @click="disconnectOAuth">断开</button>
+              <button type="button" class="btn sm" @click="disconnectOAuth">重置</button>
             </div>
 
             <!-- 已过期 (Expired - 不阻断保存) -->
@@ -302,8 +388,8 @@
               <b class="oa-warn">授权已过期，请重新授权</b>
               <span class="oa-warn hint-txt">（过期只影响运行时可用，不影响你继续编辑表单）</span>
               <span class="spacer"></span>
-              <button type="button" class="btn sm" @click="startOAuth">重新授权</button>
-              <button type="button" class="btn sm" @click="disconnectOAuth">断开</button>
+              <button type="button" class="btn sm" @click="openOAuthPage">重新打开授权页</button>
+              <button type="button" class="btn sm" @click="disconnectOAuth">重置</button>
             </div>
           </div>
 
@@ -652,35 +738,12 @@ const PROTO_OPTIONS = [
 
 const CONN_OPTIONS = [
   { value: "api-key", label: "API Key（默认）", endpoint: null, locked: false, allowedProtos: ["openai-chat", "openai-responses", "anthropic-messages", "gemini"] },
-  { value: "vertex-express", label: "Vertex Express（API Key）", endpoint: VERTEX_URL, locked: true, allowedProtos: ["gemini"] },
-  { value: "vertex-adc", label: "Vertex ADC（应用默认凭据）", endpoint: VERTEX_URL, locked: true, allowedProtos: ["gemini"] },
+  { value: "vertex-express", label: "Vertex Express（API Key）", endpoint: VERTEX_URL, locked: false, allowedProtos: ["gemini"] },
+  { value: "vertex-adc", label: "Vertex ADC（应用默认凭据）", endpoint: VERTEX_URL, locked: false, allowedProtos: ["gemini"] },
   { value: "oauth", label: "OAuth 授权", endpoint: OAUTH_URL, locked: true, allowedProtos: ["gemini"] },
 ];
 
-const PRESETS = [
-  { id: "deepseek", name: "DeepSeek", url: "https://api.deepseek.com/v1", proto: "openai-chat", conn: "api-key", group: "常用", letter: "D", color: "#4d6bfe", kw: "deepseek 深度求索 ds" },
-  { id: "zhipu", name: "智谱 GLM", url: "https://open.bigmodel.cn/api/paas/v4/", proto: "openai-chat", conn: "api-key", group: "常用", letter: "智", color: "#3b6ef6", kw: "zhipu 智谱 清言 bigmodel glm" },
-  { id: "volcengine", name: "火山方舟（豆包）", url: "https://ark.cn-beijing.volces.com/api/v3", proto: "openai-chat", conn: "api-key", group: "常用", letter: "火", color: "#2b6cf6", kw: "volcengine 火山 方舟 豆包 ark 字节" },
-  { id: "xiaomimimo", name: "小米 MiMo", url: "https://api.xiaomimimo.com/v1", proto: "openai-chat", conn: "api-key", group: "常用", letter: "M", color: "#ff6900", kw: "xiaomimimo 小米 mimo" },
-  { id: "moonshot", name: "月之暗面 Kimi", url: "https://api.moonshot.cn/v1", proto: "openai-chat", conn: "api-key", group: "常用", letter: "K", color: "#1f1f1f", kw: "moonshot 月之暗面 kimi" },
-  { id: "minimax", name: "MiniMax 海螺", url: "https://api.minimax.chat/v1", proto: "openai-chat", conn: "api-key", group: "常用", letter: "M", color: "#e8443a", kw: "minimax 海螺 abab" },
-  { id: "baichuan", name: "Baichuan 百川智能", url: "https://api.baichuan-ai.com/v1", proto: "openai-chat", conn: "api-key", group: "常用", letter: "百", color: "#2f6fed", kw: "baichuan 百川 百川智能" },
-  { id: "stepfun", name: "Stepfun 阶跃星辰", url: "https://api.stepfun.com/v1", proto: "openai-chat", conn: "api-key", group: "常用", letter: "阶", color: "#5b5bd6", kw: "stepfun 阶跃 跃问" },
-  { id: "zeroone", name: "01.AI 零一万物", url: "https://api.lingyiwanwu.com/v1", proto: "openai-chat", conn: "api-key", group: "常用", letter: "01", color: "#0f9d8f", kw: "01.ai 零一万物 yi zeroone" },
-  { id: "openai", name: "OpenAI 官方", url: "https://api.openai.com/v1", proto: "openai-chat", conn: "api-key", group: "国际主流", letter: "O", color: "#10a37f", kw: "openai gpt chatgpt 官方" },
-  { id: "anthropic", name: "Anthropic Claude", url: "https://api.anthropic.com", proto: "anthropic-messages", conn: "api-key", group: "国际主流", letter: "A", color: "#c1613e", kw: "anthropic claude 克劳德" },
-  { id: "gemini", name: "Google Gemini", url: "https://generativelanguage.googleapis.com", proto: "gemini", conn: "api-key", group: "国际主流", letter: "G", color: "#2f9e6f", kw: "gemini google 谷歌 双子星" },
-  { id: "xai", name: "xAI Grok", url: "https://api.x.ai/v1", proto: "openai-responses", conn: "api-key", group: "国际主流", letter: "X", color: "#1c1c1c", kw: "xai grok 马斯克" },
-  { id: "openrouter", name: "OpenRouter", url: "https://openrouter.ai/api/v1", proto: "openai-chat", conn: "api-key", group: "国际主流", letter: "R", color: "#6b4ee6", kw: "openrouter or 聚合" },
-  { id: "groq", name: "Groq", url: "https://api.groq.com/openai/v1", proto: "openai-chat", conn: "api-key", group: "国际主流", letter: "Q", color: "#f55036", kw: "groq 高速推理" },
-  { id: "perplexity", name: "Perplexity", url: "https://api.perplexity.ai", proto: "openai-chat", conn: "api-key", group: "国际主流", letter: "P", color: "#20808d", kw: "perplexity pplx 搜索" },
-  { id: "github", name: "GitHub Models", url: "https://models.inference.ai.azure.com", proto: "openai-chat", conn: "api-key", group: "云端 / 企业", letter: "GH", color: "#24292f", kw: "github models copilot gh 微软" },
-  { id: "agentplatform", name: "Vertex AI / Agent Platform", url: "https://aiplatform.googleapis.com", proto: "gemini", conn: "vertex-express", group: "云端 / 企业", letter: "V", color: "#4285f4", kw: "vertex aiplatform google cloud express adc 应用默认凭据 agent platform" },
-  { id: "cloudcode", name: "Gemini Code Assist（OAuth）", url: "https://cloudcode-pa.googleapis.com", proto: "gemini", conn: "oauth", group: "云端 / 企业", letter: "GC", color: "#1a73e8", kw: "cloudcode code assist gemini oauth 谷歌 授权" },
-].map((preset) => ({
-  ...preset,
-  avatar: getAvatarByAdapterType(preset.id),
-}));
+import { matchPreset, PRESETS } from "@/utils/adapterPresets.js";
 
 // 表单响应式数据
 const formData = ref({
@@ -695,10 +758,18 @@ const formData = ref({
   adc_src: "adc",
   adc_json: "",
   oauth_code: "",
+  models_api_key: "",
+  models_base_url: "",
   default_model: "",
   alias: "",
   enable: true,
   extraSettings: {},
+});
+
+const showModelsConfig = ref(false);
+const showModelsKeyText = ref(false);
+const hasCustomModelsConfig = computed(() => {
+  return !!(formData.value.models_api_key?.trim() || formData.value.models_base_url?.trim());
 });
 
 // 适配器元数据与动态厂商特化 Schema
@@ -835,6 +906,9 @@ const enforceMatrix = () => {
 const onConnChange = () => {
   enforceMatrix();
   updateUrlLockState();
+  if (formData.value.conn === "oauth") {
+    resolveOAuthUrl();
+  }
 };
 
 const onProtoChange = () => {
@@ -842,16 +916,19 @@ const onProtoChange = () => {
   updateUrlLockState();
 };
 
-// URL 锁定逻辑
+// URL 锁定逻辑（仅 OAuth 强制锁定官方端点，Vertex 允许自定义 Base URL 反代）
 const isUrlLocked = computed(() => {
   const conn = formData.value.conn;
-  return conn === "vertex-express" || conn === "vertex-adc" || conn === "oauth";
+  return conn === "oauth";
 });
 
 const updateUrlLockState = () => {
   const conn = formData.value.conn;
   if (conn === "vertex-express" || conn === "vertex-adc") {
-    formData.value.url = VERTEX_URL;
+    // 若当前 URL 为空或为 OAuth 端点，赋默认 Vertex 官方端点；不覆盖用户手写的自定义反代地址
+    if (!formData.value.url || formData.value.url === OAUTH_URL) {
+      formData.value.url = VERTEX_URL;
+    }
   } else if (conn === "oauth") {
     formData.value.url = OAUTH_URL;
   }
@@ -877,7 +954,10 @@ const urlHasError = computed(() => {
 
 const urlHasWarning = ref(false);
 const urlHintText = computed(() => {
-  if (isUrlLocked.value) return "官方固定端点（无 region 模板），只读自动生成";
+  if (isUrlLocked.value) return "官方固定端点，只读自动生成";
+  if (formData.value.conn === "vertex-express" || formData.value.conn === "vertex-adc") {
+    return "默认端点 https://aiplatform.googleapis.com，支持填写自定义反代或网关地址";
+  }
   if (!formData.value.url) return "粘贴或手写端点均可 —— 地址不参与协议判断";
   if (!isValidHttpUrl(formData.value.url)) return "请输入合法的 http:// 或 https:// 端点地址";
   return "粘贴或手写端点均可 —— 地址不参与协议判断";
@@ -948,7 +1028,9 @@ const onAdcJsonInput = () => {
 // OAuth 授权状态机
 const oauthState = ref("idle"); // 'idle' | 'pending' | 'done' | 'expired'
 const oauthUserCode = ref("");
-const oauthAccountEmail = ref("service@gmail.com");
+const oauthAccountEmail = ref("已授权 Google 账号");
+const currentOAuthUrl = ref("");
+const fetchingOAuthUrl = ref(false);
 
 const oauthCardClass = computed(() => {
   if (oauthState.value === "done") return "on";
@@ -956,22 +1038,65 @@ const oauthCardClass = computed(() => {
   return "";
 });
 
-const startOAuth = () => {
+const resolveOAuthUrl = async () => {
+  if (currentOAuthUrl.value) return currentOAuthUrl.value;
+  fetchingOAuthUrl.value = true;
+  try {
+    let adapters = configStore?.adapterTypes?.adapters || [];
+    let oauthAdapter = adapters.find((a) => a.type === "geminiOauth");
+    if (!oauthAdapter?.authUrl) {
+      const res = await configStore.fetchAdapterTypes();
+      adapters = res?.adapters || [];
+      oauthAdapter = adapters.find((a) => a.type === "geminiOauth");
+    }
+    let url = oauthAdapter?.authUrl;
+    if (!url && oauthAdapter?.description) {
+      const match = oauthAdapter.description.match(/https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth[^\s\)]+/);
+      if (match) url = match[0];
+    }
+    if (url) {
+      currentOAuthUrl.value = url;
+      return url;
+    }
+  } catch (err) {
+    console.error("[OAuth] 获取授权链接失败:", err);
+  } finally {
+    fetchingOAuthUrl.value = false;
+  }
+  return "";
+};
+
+const openOAuthPage = async () => {
+  const url = await resolveOAuthUrl();
+  if (url) {
+    try {
+      const newWin = window.open(url, "_blank", "noopener,noreferrer");
+      if (!newWin || newWin.closed || typeof newWin.closed === "undefined") {
+        ElMessage.warning("浏览器已拦截弹窗，请点击界面中的备用链接手动打开");
+      } else {
+        ElMessage.success("已打开 Google 授权窗口，完成授权后请将浏览器跳转地址或 Code 粘贴回填");
+      }
+    } catch {
+      ElMessage.warning("请点击'直接打开链接 ↗'完成授权");
+    }
+  } else {
+    ElMessage.error("未获取到 Google 授权链接，请检查后端服务是否正常");
+  }
+};
+
+const startOAuth = async () => {
   oauthState.value = "pending";
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = "";
-  for (let i = 0; i < 8; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
-  oauthUserCode.value = code;
-  ElMessage.info("已发起授权（点击打开授权页完成授权）");
+  await openOAuthPage();
 };
 
 const copyOAuthCode = () => {
-  navigator.clipboard?.writeText(oauthUserCode.value);
-  ElMessage.success("已复制 User Code: " + oauthUserCode.value);
-};
-
-const openOAuthPage = () => {
-  ElMessage.info("已尝试打开 Google 授权窗口，完成授权后请回填 Authorization Code");
+  if (currentOAuthUrl.value) {
+    navigator.clipboard?.writeText(currentOAuthUrl.value);
+    ElMessage.success("已复制 Google 授权链接");
+  } else if (oauthUserCode.value) {
+    navigator.clipboard?.writeText(oauthUserCode.value);
+    ElMessage.success("已复制 User Code: " + oauthUserCode.value);
+  }
 };
 
 const oauthExpireDemo = () => {
@@ -983,7 +1108,8 @@ const disconnectOAuth = () => {
   oauthState.value = "idle";
   oauthUserCode.value = "";
   formData.value.oauth_code = "";
-  ElMessage.info("已断开 Google 账号授权");
+  formData.value.key = "";
+  ElMessage.info("已重置 Google 账号授权状态");
 };
 
 const oauthForceReauth = () => {
@@ -996,9 +1122,9 @@ const oauthForceReauth = () => {
 
 const onOAuthCodeInput = () => {
   const v = (formData.value.oauth_code || "").trim();
-  if (v.includes("4/0Ad") || v.includes("code=")) {
+  if (v.includes("4/0Ad") || v.includes("4/") || v.includes("code=")) {
     oauthState.value = "done";
-    oauthAccountEmail.value = "google-user@gmail.com";
+    oauthAccountEmail.value = "已识别授权码";
     ElMessage.success("已识别 Authorization Code，授权完成");
   }
 };
@@ -1353,7 +1479,7 @@ const determineBackendAdapterType = () => {
 
   // conn === 'api-key'
   // 唯独 xAI 拥有独有的推文搜索与参数修剪逻辑，走定制适配器类
-  if (selectedPresetId.value === "xai" || (props.mode === "edit" && props.type === "xai")) {
+  if ((selectedPresetId.value === "xai" || (props.mode === "edit" && props.type === "xai")) && formData.value.proto === "openai-responses") {
     return "xai";
   }
 
@@ -1382,12 +1508,26 @@ const buildProbePayload = () => {
     payload.project_id = formData.value.vx_project.trim();
     payload.api_key = formData.value.vx_key.trim();
     payload.block_express = false;
+    if (formData.value.models_api_key?.trim()) {
+      payload.models_api_key = formData.value.models_api_key.trim();
+    }
+    if (formData.value.models_base_url?.trim()) {
+      payload.models_base_url = formData.value.models_base_url.trim();
+    }
   } else if (c === "vertex-adc") {
     payload.project_id = formData.value.adc_project.trim();
     payload.block_express = true;
     if (formData.value.adc_src === "json") {
       payload.credentials = formData.value.adc_json.trim();
     }
+    if (formData.value.models_api_key?.trim()) {
+      payload.models_api_key = formData.value.models_api_key.trim();
+    }
+    if (formData.value.models_base_url?.trim()) {
+      payload.models_base_url = formData.value.models_base_url.trim();
+    }
+  } else if (c === "oauth") {
+    payload.api_key = formData.value.oauth_code?.trim() || formData.value.key?.trim() || "";
   }
   return payload;
 };
@@ -1406,6 +1546,8 @@ const handleSave = async () => {
       name: formData.value.name.trim() || autoGenerateName(),
       enable: formData.value.enable,
       base_url: formData.value.url.trim(),
+      proto: formData.value.proto,
+      conn: formData.value.conn,
       default_model: formData.value.default_model,
       models: modelChips.value.slice(),
       guest_models: guestModelList.value.slice(),
@@ -1423,13 +1565,29 @@ const handleSave = async () => {
       finalPayload.project_id = formData.value.vx_project.trim();
       finalPayload.api_key = formData.value.vx_key.trim();
       finalPayload.block_express = false;
+      if (formData.value.models_api_key?.trim()) {
+        finalPayload.models_api_key = formData.value.models_api_key.trim();
+      }
+      if (formData.value.models_base_url?.trim()) {
+        finalPayload.models_base_url = formData.value.models_base_url.trim();
+      }
     } else if (c === "vertex-adc") {
       finalPayload.project_id = formData.value.adc_project.trim();
       finalPayload.block_express = true;
       if (formData.value.adc_src === "json" && formData.value.adc_json.trim()) {
         finalPayload.credentials = formData.value.adc_json.trim();
       }
+      if (formData.value.models_api_key?.trim()) {
+        finalPayload.models_api_key = formData.value.models_api_key.trim();
+      }
+      if (formData.value.models_base_url?.trim()) {
+        finalPayload.models_base_url = formData.value.models_base_url.trim();
+      }
     } else if (c === "oauth") {
+      const codeOrKey = formData.value.oauth_code?.trim() || formData.value.key?.trim() || "";
+      if (codeOrKey) {
+        finalPayload.api_key = codeOrKey;
+      }
       if (formData.value.oauth_code?.trim()) {
         finalPayload.oauth_code = formData.value.oauth_code.trim();
       }
@@ -1489,11 +1647,15 @@ const resetFormToClean = () => {
     adc_src: "adc",
     adc_json: "",
     oauth_code: "",
+    models_api_key: "",
+    models_base_url: "",
     default_model: "",
     alias: "",
     enable: true,
     extraSettings: {},
   };
+  showModelsConfig.value = false;
+  showModelsKeyText.value = false;
   modelChips.value = [];
   chipInputText.value = "";
   guestModelList.value = [];
@@ -1502,6 +1664,7 @@ const resetFormToClean = () => {
   defaultModelSearch.value = "";
   oauthState.value = "idle";
   oauthUserCode.value = "";
+  currentOAuthUrl.value = "";
   adcJsonParsed.value = { valid: false, project_id: "", client_email: "", hasKey: false };
   fetchStatus.value = { state: "idle", text: "模型列表：未获取" };
   testStatus.value = { state: "idle", text: "连接：未测试" };
@@ -1515,27 +1678,38 @@ const initFromProps = () => {
     const a = props.adapter;
     const t = props.type;
 
-    // 1. 判断连接方式与协议
-    let conn = "api-key";
-    let proto = "openai-chat";
+    // 1. 判断连接方式与协议（优先从实例自身已保存的 proto / conn 读取）
+    let conn = a.conn || "";
+    let proto = a.proto || "";
 
-    if (t === "geminiOauth") {
-      conn = "oauth";
-      proto = "gemini";
-      oauthState.value = "done";
-    } else if (t === "agentPlatform" || t === "vertexExpress" || t === "vertex") {
-      proto = "gemini";
-      conn = (a.block_express || !a.api_key) ? "vertex-adc" : "vertex-express";
-    } else if (t === "anthropic") {
-      proto = "anthropic-messages";
-    } else if (t === "openai-responses" || t === "volcengine" || t === "xai") {
-      proto = "openai-responses";
-    } else if (t === "gemini") {
-      proto = "gemini";
+    if (!conn) {
+      if (t === "geminiOauth") {
+        conn = "oauth";
+      } else if (t === "agentPlatform" || t === "vertexExpress" || t === "vertex") {
+        conn = (a.block_express || !a.api_key) ? "vertex-adc" : "vertex-express";
+      } else {
+        conn = "api-key";
+      }
     }
 
-    // 匹配预设
-    const matchedPreset = PRESETS.find((p) => p.id === t);
+    if (t === "geminiOauth" || conn === "oauth") {
+      oauthState.value = "done";
+      proto = "gemini";
+      resolveOAuthUrl();
+    } else if (!proto) {
+      if (t === "gemini" || t === "agentPlatform" || t === "vertexExpress" || t === "vertex") {
+        proto = "gemini";
+      } else if (t === "anthropic") {
+        proto = "anthropic-messages";
+      } else if (t === "openai-responses" || t === "volcengine" || t === "xai") {
+        proto = "openai-responses";
+      } else {
+        proto = "openai-chat";
+      }
+    }
+
+    // 匹配预设 (智能按 URL/关键词/类型匹配对应品牌预设)
+    const matchedPreset = matchPreset(a, t);
     selectedPresetId.value = matchedPreset ? matchedPreset.id : null;
 
     formData.value.name = a.name || "";
@@ -1548,6 +1722,9 @@ const initFromProps = () => {
     formData.value.adc_project = a.project_id || "";
     formData.value.adc_src = a.credentials ? "json" : "adc";
     formData.value.adc_json = typeof a.credentials === "string" ? a.credentials : a.credentials ? JSON.stringify(a.credentials, null, 2) : "";
+    formData.value.models_api_key = a.models_api_key || "";
+    formData.value.models_base_url = a.models_base_url || "";
+    showModelsConfig.value = !!(a.models_api_key || a.models_base_url);
     formData.value.default_model = a.default_model || "";
     formData.value.alias = a.alias || "";
     formData.value.enable = a.enable !== false;
@@ -1997,6 +2174,52 @@ watch(
   padding: 12px;
 }
 
+.cred-studio-models {
+  margin-top: 12px;
+  border: 1px dashed #dcdfe6;
+  background: #fafbfc;
+  transition: all 0.2s ease;
+
+  .studio-models-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    padding: 2px 0;
+
+    .head-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .toggle-arrow {
+        font-size: 11px;
+        color: #909399;
+        transition: transform 0.2s;
+        display: inline-block;
+        width: 14px;
+      }
+    }
+
+    .head-right {
+      .hint-txt {
+        color: #409eff;
+        font-size: 12px;
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+
+  .studio-models-body {
+    padding-top: 4px;
+    border-top: 1px solid #f0f2f5;
+    margin-top: 8px;
+  }
+}
+
 .ta-json {
   width: 100%;
   min-height: 96px;
@@ -2084,6 +2307,24 @@ watch(
 .oa-warn {
   color: #b88230;
   font-size: 12.5px;
+}
+
+.oa-link {
+  font-size: 13px;
+  color: var(--primary-color, #409eff);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(64, 158, 255, 0.08);
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(64, 158, 255, 0.16);
+    text-decoration: underline;
+  }
 }
 
 // 按钮

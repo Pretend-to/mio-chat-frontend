@@ -97,7 +97,9 @@
             placement="top"
             popper-class="mio-hint-popper"
           >
-            <span class="label-hint-icon danger">⚠️</span>
+            <el-icon class="label-hint-icon danger">
+              <WarningFilled />
+            </el-icon>
           </el-tooltip>
         </div>
         <div class="field-value">
@@ -116,11 +118,7 @@
         Object.keys(currentExtraSettingsSchema).length > 0
       "
       :schema="currentExtraSettingsSchema"
-      :values="
-        extraSettingsKey
-          ? localExtraSettings[extraSettingsKey] || {}
-          : localExtraSettings
-      "
+      :values="localExtraSettings"
       @update:values="handleExtraSettingsChange"
     />
     <div v-else class="settings-card no-skills" style="padding: 20px 0">
@@ -133,7 +131,7 @@
 import { ref, watch, computed } from "vue";
 import { config } from "@/lib/runtime.js";
 import { useConfigStore } from "@/stores/configStore.js";
-import { InfoFilled } from "@element-plus/icons-vue";
+import { InfoFilled, WarningFilled } from "@element-plus/icons-vue";
 import DynamicSettingsForm from "@/components/DynamicSettingsForm.vue";
 
 const configStore = useConfigStore();
@@ -168,9 +166,6 @@ const localLlmGeneralKeys = ref(
 );
 const localStream = ref(props.modelValue?.base?.stream ?? true);
 const localYoloMode = ref(props.modelValue?.yolo || false);
-const localExtraSettings = ref(
-  JSON.parse(JSON.stringify(props.modelValue?.extraSettings || {})),
-);
 
 // Vision override state ('auto' | 'true' | 'false')
 const getInitialVisionSetting = () => {
@@ -235,24 +230,50 @@ const getShownKey = (key) => {
   return shownNameMap[key] || key;
 };
 
-const extraSettingsKey = computed(() => {
-  const provider = props.modelValue?.provider;
-  if (!provider) return null;
-  const adapterType = config.getProviderAdapterType(provider);
-  const meta = props.adapterMetadata.find((m) => m.type === adapterType);
-  const schemaWrap = meta?.extraSettingsSchema || {};
-  const keys = Object.keys(schemaWrap);
-  return keys.length > 0 ? keys[0] : null;
-});
+// 提取扁平化额外设置（自动兼容存量嵌套格式）
+const extractFlatSettings = (rawSettings, provider, adapterType) => {
+  if (!rawSettings || typeof rawSettings !== "object") return {};
+  if (provider && rawSettings[provider] && typeof rawSettings[provider] === "object") {
+    return JSON.parse(JSON.stringify(rawSettings[provider]));
+  }
+  if (adapterType && rawSettings[adapterType] && typeof rawSettings[adapterType] === "object") {
+    return JSON.parse(JSON.stringify(rawSettings[adapterType]));
+  }
+  return JSON.parse(JSON.stringify(rawSettings));
+};
+
+// 内存草稿字典：供用户在前端来回横跳切换服务商时保留各自配置
+const draftsByProvider = ref({});
+
+const initialProvider = props.modelValue?.provider || "";
+const initialAdapterType = initialProvider ? config.getProviderAdapterType(initialProvider) : "";
+const localExtraSettings = ref(
+  extractFlatSettings(props.modelValue?.extraSettings, initialProvider, initialAdapterType),
+);
+if (initialProvider) {
+  draftsByProvider.value[initialProvider] = JSON.parse(JSON.stringify(localExtraSettings.value));
+}
 
 const currentExtraSettingsSchema = computed(() => {
   const provider = props.modelValue?.provider;
   if (!provider) return {};
   const adapterType = config.getProviderAdapterType(provider);
   const meta = props.adapterMetadata.find((m) => m.type === adapterType);
-  const schemaWrap = meta?.extraSettingsSchema || {};
-  const key = extraSettingsKey.value;
-  return key ? schemaWrap[key] : {};
+  const schema = meta?.extraSettingsSchema || {};
+  const keys = Object.keys(schema);
+  if (keys.length === 0) return {};
+  // 兼容老版本可能包裹的单个 adapterType key: { [adapterType]: { ... } }
+  const firstVal = schema[keys[0]];
+  if (
+    keys.length === 1 &&
+    firstVal &&
+    typeof firstVal === "object" &&
+    !firstVal.type &&
+    !firstVal.fields
+  ) {
+    return firstVal;
+  }
+  return schema;
 });
 
 const emitUpdate = () => {
@@ -290,13 +311,41 @@ const updateGeneralSettings = () => {
 };
 
 const handleExtraSettingsChange = (newValues) => {
-  if (extraSettingsKey.value) {
-    localExtraSettings.value[extraSettingsKey.value] = newValues;
-  } else {
-    localExtraSettings.value = newValues;
+  localExtraSettings.value = newValues;
+  const provider = props.modelValue?.provider;
+  if (provider) {
+    draftsByProvider.value[provider] = JSON.parse(JSON.stringify(newValues));
   }
   emitUpdate();
 };
+
+watch(
+  () => props.modelValue?.provider,
+  (newProvider, oldProvider) => {
+    if (oldProvider && localExtraSettings.value) {
+      draftsByProvider.value[oldProvider] = JSON.parse(
+        JSON.stringify(localExtraSettings.value),
+      );
+    }
+    if (newProvider) {
+      if (draftsByProvider.value[newProvider]) {
+        localExtraSettings.value = JSON.parse(
+          JSON.stringify(draftsByProvider.value[newProvider]),
+        );
+      } else {
+        const adapterType = config.getProviderAdapterType(newProvider);
+        localExtraSettings.value = extractFlatSettings(
+          props.modelValue?.extraSettings,
+          newProvider,
+          adapterType,
+        );
+        draftsByProvider.value[newProvider] = JSON.parse(
+          JSON.stringify(localExtraSettings.value),
+        );
+      }
+    }
+  },
+);
 
 watch(
   () => props.modelValue,
@@ -306,9 +355,26 @@ watch(
       localStream.value = newVal.base?.stream ?? true;
       localVisionSetting.value = getInitialVisionSetting();
       localYoloMode.value = newVal.yolo || false;
-      localExtraSettings.value = JSON.parse(
-        JSON.stringify(newVal.extraSettings || {}),
-      );
+      const provider = newVal.provider;
+      const adapterType = provider
+        ? config.getProviderAdapterType(provider)
+        : "";
+      if (draftsByProvider.value[provider]) {
+        localExtraSettings.value = JSON.parse(
+          JSON.stringify(draftsByProvider.value[provider]),
+        );
+      } else {
+        localExtraSettings.value = extractFlatSettings(
+          newVal.extraSettings,
+          provider,
+          adapterType,
+        );
+        if (provider) {
+          draftsByProvider.value[provider] = JSON.parse(
+            JSON.stringify(localExtraSettings.value),
+          );
+        }
+      }
     }
   },
   { deep: true },
