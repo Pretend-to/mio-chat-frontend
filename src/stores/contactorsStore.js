@@ -1473,8 +1473,12 @@ export const useContactorsStore = defineStore("contactors", () => {
     const contactor = contactors.value[contactorId];
     if (contactor && contactor.messageChain[index]) {
       const message = contactor.messageChain[index];
-      // Interrupt stream if it's pending/retrying
-      if (["pending", "retrying"].includes(message.status)) {
+      // 删除进行中的消息时中断服务端生成（含 streaming/running 流式状态）
+      if (
+        ["pending", "running", "streaming", "retrying"].includes(
+          message.status,
+        )
+      ) {
         client.socket?.interruptGeneration(message.id, contactorId);
       }
       contactor.messageChain.splice(index, 1);

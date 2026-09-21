@@ -150,7 +150,12 @@ export default {
      * 而且移动端是网格布局，条目一多就会撑成三行，很难看。
      */
     isStreaming() {
-      return ["pending", "retrying"].includes(this.message?.status);
+      // 生成中的状态集合必须与 MessageItem 的 isStreaming 判定保持一致：
+      // 流式过程中消息状态已改为 streaming（部分来源 running），遗漏会导致
+      // 「停止生成」入口在生成期间不渲染。
+      return ["pending", "running", "streaming", "retrying"].includes(
+        this.message?.status,
+      );
     },
     /**
      * 可 @ 的成员名。仅群聊里 Agent 成员发的消息才有，
