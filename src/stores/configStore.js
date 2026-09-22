@@ -434,11 +434,17 @@ export const useConfigStore = defineStore("config", () => {
       if (/适配器实例 ID .*不存在|适配器配置不存在/.test(error.message || "")) {
         try {
           await fetchConfig();
-          const actualType = Object.entries(adapters.value).find(([, instances]) =>
-            Array.isArray(instances) && instances.some((adapter) => adapter?.id === instanceId),
+          const actualType = Object.entries(adapters.value).find(
+            ([, instances]) =>
+              Array.isArray(instances) &&
+              instances.some((adapter) => adapter?.id === instanceId),
           )?.[0];
           if (actualType && actualType !== type) {
-            const response = await configAPI.updateAdapter(actualType, instanceId, data);
+            const response = await configAPI.updateAdapter(
+              actualType,
+              instanceId,
+              data,
+            );
             return applyUpdateResponse(response);
           }
         } catch (retryError) {
@@ -506,11 +512,7 @@ export const useConfigStore = defineStore("config", () => {
         }
         const updatedData = { ...adapterData, enable };
 
-        await updateAdapter(
-          adapter.type,
-          adapter.id,
-          updatedData,
-        );
+        await updateAdapter(adapter.type, adapter.id, updatedData);
         results.push({ success: true, adapter });
       } catch (error) {
         results.push({ success: false, adapter, error: error.message });
@@ -622,6 +624,19 @@ export const useConfigStore = defineStore("config", () => {
       return response.data;
     } catch (error) {
       console.error("获取 OneBot 连接状态失败:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * 手动触发一次 OneBot 重新连接（会真实发起连接尝试）
+   */
+  async function reconnectOneBot() {
+    try {
+      const response = await configAPI.reconnectOneBot();
+      return response.data;
+    } catch (error) {
+      console.error("OneBot 重新连接失败:", error);
       throw error;
     }
   }
@@ -761,6 +776,7 @@ export const useConfigStore = defineStore("config", () => {
     importConfig,
     fetchOneBotPlugins,
     fetchOneBotStatus,
+    reconnectOneBot,
     toggleAdapterSelection,
     clearAdapterSelection,
     isAdapterSelected,

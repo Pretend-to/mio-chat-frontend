@@ -114,19 +114,46 @@
               <span class="status-text">{{ statusLabel }}</span>
             </div>
           </div>
-          <el-button
-            type="primary"
-            link
-            :icon="Refresh"
-            :loading="connectionStatus.loading"
-            @click="fetchConnectionStatus(true)"
-          >
-            手动刷新
-          </el-button>
+          <div class="status-actions">
+            <el-button
+              link
+              :icon="Refresh"
+              :loading="connectionStatus.loading"
+              @click="fetchConnectionStatus(true)"
+            >
+              刷新状态
+            </el-button>
+            <el-button
+              type="primary"
+              :icon="Connection"
+              :loading="reconnecting"
+              @click="handleReconnect"
+            >
+              重新连接
+            </el-button>
+          </div>
         </div>
       </template>
 
       <div class="status-content">
+        <el-alert
+          v-if="
+            connectionStatus.enable && connectionStatus.configMissing.length
+          "
+          class="status-alert"
+          type="warning"
+          :closable="false"
+          show-icon
+          :title="`配置不完整，无法发起连接：缺少 ${connectionStatus.configMissing.join(' / ')}`"
+        />
+        <el-alert
+          v-else-if="connectionStatus.enable && connectionStatus.lastError"
+          class="status-alert"
+          type="error"
+          :closable="false"
+          show-icon
+          :title="`最近一次连接失败：${connectionStatus.lastError}`"
+        />
         <div class="status-grid">
           <div class="status-item">
             <span class="status-item-label">协议启用状态</span>
@@ -143,15 +170,44 @@
           <div class="status-item">
             <span class="status-item-label">连接状态</span>
             <span class="status-item-value">
-              <el-tag
-                :type="connectionStatus.connected ? 'success' : 'danger'"
-                size="small"
-                effect="dark"
-              >
-                {{
-                  connectionStatus.connected ? "正常连接中" : "未连接/已离线"
-                }}
+              <el-tag :type="connectedTagType" size="small" effect="dark">
+                {{ statusLabel }}
               </el-tag>
+            </span>
+          </div>
+          <div class="status-item">
+            <span class="status-item-label">上次发起连接</span>
+            <span class="status-item-value">
+              {{ lastAttemptText }}
+              <span
+                v-if="connectionStatus.lastConnectAttempt"
+                class="muted-text"
+              >
+                · {{ formatTime(connectionStatus.lastConnectAttempt.at) }}
+              </span>
+            </span>
+          </div>
+          <div class="status-item">
+            <span class="status-item-label">连接尝试次数</span>
+            <span class="status-item-value">
+              {{ connectionStatus.attemptCount }}
+              <span v-if="connectionStatus.reconnecting" class="muted-text">
+                · 等待重连
+              </span>
+            </span>
+          </div>
+          <div class="status-item">
+            <span class="status-item-label">连接建立于</span>
+            <span class="status-item-value">
+              {{ formatTime(connectionStatus.connectedAt) }}
+            </span>
+          </div>
+          <div class="status-item">
+            <span class="status-item-label">最近错误</span>
+            <span class="status-item-value">
+              <span :class="{ 'error-text': connectionStatus.lastError }">
+                {{ connectionStatus.lastError || "—" }}
+              </span>
             </span>
           </div>
           <div class="status-item full-width">
@@ -344,6 +400,7 @@ import {
   Plus,
   Delete,
   Refresh,
+  Connection,
   QuestionFilled,
 } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
@@ -367,12 +424,47 @@ const formData = reactive({
 const connectionStatus = reactive({
   enable: false,
   connected: false,
+  connecting: false,
+  phase: "disabled",
+  configured: false,
+  configMissing: [],
   bot_qq: "",
   admin_qq: "",
   reverse_ws_url: "",
+  attemptCount: 0,
+  lastAttemptAt: null,
+  lastConnectAttempt: null,
+  lastError: null,
+  connectedAt: null,
+  reconnecting: false,
   loading: false,
   lastChecked: null,
 });
+
+// 手动重连的 loading
+const reconnecting = ref(false);
+
+// 状态映射的唯一入口（轮询 / 手动重连 / 保存后回填共用）
+const applyStatus = (status = {}) => {
+  Object.assign(connectionStatus, {
+    enable: status.enable ?? false,
+    connected: status.connected ?? false,
+    connecting: status.connecting ?? false,
+    phase: status.phase ?? "offline",
+    configured: status.configured ?? false,
+    configMissing: status.configMissing ?? [],
+    bot_qq: status.bot_qq || "",
+    admin_qq: status.admin_qq || "",
+    reverse_ws_url: status.reverse_ws_url || "",
+    attemptCount: status.attemptCount ?? 0,
+    lastAttemptAt: status.lastAttemptAt ?? null,
+    lastConnectAttempt: status.lastConnectAttempt ?? null,
+    lastError: status.lastError ?? null,
+    connectedAt: status.connectedAt ?? null,
+    reconnecting: status.reconnecting ?? false,
+    lastChecked: new Date().toLocaleTimeString(),
+  });
+};
 
 // 预设前缀分类数据
 const presetCategories = ref([]);
@@ -381,34 +473,81 @@ const presetCategories = ref([]);
 const originalData = reactive({});
 let originalOnebotConfig = null;
 
-// 状态计算属性
+// 状态计算属性（phase 由后端统一给出，前端只负责呈现）
 const statusClass = computed(() => {
-  if (!connectionStatus.enable) return "disabled";
-  return connectionStatus.connected ? "online" : "offline";
+  if (connectionStatus.phase === "online") return "online";
+  if (connectionStatus.phase === "connecting") return "connecting";
+  if (connectionStatus.phase === "disabled") return "disabled";
+  return "offline";
 });
 
 const statusLabel = computed(() => {
-  if (!connectionStatus.enable) return "协议已禁用";
-  return connectionStatus.connected ? "正常在线中" : "未连接/已离线";
+  switch (connectionStatus.phase) {
+    case "online":
+      return "已连接";
+    case "connecting":
+      return "连接中…";
+    case "disabled":
+      return "协议已禁用";
+    case "incomplete":
+      return "配置不完整";
+    default:
+      return "未连接";
+  }
+});
+
+const connectedTagType = computed(() => {
+  switch (connectionStatus.phase) {
+    case "online":
+      return "success";
+    case "connecting":
+      return "warning";
+    default:
+      return "danger";
+  }
+});
+
+// 时间戳 → 本地时间
+const formatTime = (ts) => (ts ? new Date(ts).toLocaleTimeString() : "—");
+
+// 最近一次「发起连接」的结果描述（包含被配置校验拦下、压根没发起的情况）
+const lastAttemptText = computed(() => {
+  const attempt = connectionStatus.lastConnectAttempt;
+  if (!attempt) return "尚未发起";
+  return attempt.ok ? "已发起" : `未发起 · ${attempt.reason}`;
 });
 
 // 获取连接状态
 const fetchConnectionStatus = async (showLoading = false) => {
   if (showLoading) connectionStatus.loading = true;
   try {
-    const status = await configStore.fetchOneBotStatus();
-    Object.assign(connectionStatus, {
-      enable: status.enable ?? false,
-      connected: status.connected ?? false,
-      bot_qq: status.bot_qq || "",
-      admin_qq: status.admin_qq || "",
-      reverse_ws_url: status.reverse_ws_url || "",
-      lastChecked: new Date().toLocaleTimeString(),
-    });
+    applyStatus(await configStore.fetchOneBotStatus());
   } catch (error) {
     console.error("获取 OneBot 状态失败:", error);
   } finally {
     if (showLoading) connectionStatus.loading = false;
+  }
+};
+
+// 手动重连：真实发起一次连接尝试，并把结果反馈出来
+const handleReconnect = async () => {
+  reconnecting.value = true;
+  try {
+    const state = await configStore.reconnectOneBot();
+    applyStatus(state);
+    const reason =
+      state.attempt?.ok === false ? state.attempt.reason : state.lastError;
+    if (state.connected) {
+      ElMessage.success("OneBot 已连接");
+    } else if (reason) {
+      ElMessage.error(`连接未成功：${reason}`);
+    } else {
+      ElMessage.warning("已发起连接，仍在等待结果…");
+    }
+  } catch (error) {
+    ElMessage.error("重新连接失败：" + error.message);
+  } finally {
+    reconnecting.value = false;
   }
 };
 
@@ -543,12 +682,21 @@ const handleSave = async () => {
       },
     });
 
-    ElMessage.success("OneBot 配置保存成功");
-
-    // 重新加载配置，同步最新状态
+    // 重新加载配置，同步最新状态（后端保存后会按新配置重建连接）
     await loadConfig();
-    // 立即刷新状态
     await fetchConnectionStatus(true);
+
+    if (!connectionStatus.enable) {
+      ElMessage.success("OneBot 配置保存成功（协议未启用，未发起连接）");
+    } else if (connectionStatus.configMissing.length) {
+      ElMessage.warning(
+        `配置已保存，但无法发起连接：缺少 ${connectionStatus.configMissing.join(" / ")}`,
+      );
+    } else {
+      ElMessage.success("配置已保存，已按新配置发起连接");
+      // 连接是异步的，稍后再抓一次结果
+      setTimeout(() => fetchConnectionStatus(true), 1500);
+    }
   } catch (error) {
     if (error !== "cancel") {
       ElMessage.error("保存失败：" + error.message);
@@ -812,6 +960,25 @@ onUnmounted(() => {
   }
 }
 
+.status-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-alert {
+  margin-bottom: 12px;
+}
+
+.muted-text {
+  color: var(--mio-text-secondary);
+  font-size: 12px;
+}
+
+.error-text {
+  color: #f56c6c;
+}
+
 .status-pulsing-badge {
   display: inline-flex;
   align-items: center;
@@ -856,6 +1023,17 @@ onUnmounted(() => {
     }
   }
 
+  &.connecting {
+    background: rgba(230, 162, 60, 0.1);
+    color: #e6a23c;
+    border: 1px solid rgba(230, 162, 60, 0.2);
+
+    .pulse-dot {
+      background-color: #e6a23c;
+      animation: pulse-orange 1.4s infinite;
+    }
+  }
+
   .pulse-dot {
     width: 8px;
     height: 8px;
@@ -891,6 +1069,20 @@ onUnmounted(() => {
   100% {
     transform: scale(0.95);
     box-shadow: 0 0 0 0 rgba(245, 108, 108, 0);
+  }
+}
+@keyframes pulse-orange {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(230, 162, 60, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(230, 162, 60, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(230, 162, 60, 0);
   }
 }
 

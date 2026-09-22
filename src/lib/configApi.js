@@ -238,10 +238,13 @@ class ConfigAPI {
     if (!instanceId || typeof instanceId !== "string") {
       throw new Error("更新适配器失败：缺少稳定实例 ID");
     }
-    return this.request(`/api/config/llm/${type}/${encodeURIComponent(instanceId)}`, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    });
+    return this.request(
+      `/api/config/llm/${type}/${encodeURIComponent(instanceId)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+      },
+    );
   }
 
   /**
@@ -254,9 +257,12 @@ class ConfigAPI {
     if (!instanceId || typeof instanceId !== "string") {
       throw new Error("删除适配器失败：缺少稳定实例 ID");
     }
-    return this.request(`/api/config/llm/${type}/${encodeURIComponent(instanceId)}`, {
-      method: "DELETE",
-    });
+    return this.request(
+      `/api/config/llm/${type}/${encodeURIComponent(instanceId)}`,
+      {
+        method: "DELETE",
+      },
+    );
   }
 
   /**
@@ -302,9 +308,12 @@ class ConfigAPI {
     if (!instanceId || typeof instanceId !== "string") {
       throw new Error("刷新模型失败：缺少稳定实例 ID");
     }
-    return this.request(`/api/config/llm/${type}/${encodeURIComponent(instanceId)}/refresh-models`, {
-      method: "POST",
-    });
+    return this.request(
+      `/api/config/llm/${type}/${encodeURIComponent(instanceId)}/refresh-models`,
+      {
+        method: "POST",
+      },
+    );
   }
 
   /**
@@ -373,6 +382,13 @@ class ConfigAPI {
    */
   async getOneBotStatus() {
     return this.request("/api/onebot/status");
+  }
+
+  /**
+   * 手动触发一次 OneBot 连接尝试（后端按当前配置重建连接）
+   */
+  async reconnectOneBot() {
+    return this.request("/api/onebot/reconnect", { method: "POST" });
   }
 
   // ========== 配置导出/导入 ==========
