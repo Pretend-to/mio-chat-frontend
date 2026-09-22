@@ -30,13 +30,19 @@ describe("gateway OneBot message routing", () => {
     applyMessageEvent.mockClear();
   });
 
-  it("does not route an unknown contact ID to another OneBot contactor", () => {
+  it("存在多个 OneBot 联系人时，未知 contact ID 不得跳投给其他联系人", () => {
     const firstContactor = {
       id: "onebot-a",
       platform: "onebot",
       messageChain: [],
     };
+    const secondContactor = {
+      id: "onebot-b",
+      platform: "onebot",
+      messageChain: [],
+    };
     contactors[firstContactor.id] = firstContactor;
+    contactors[secondContactor.id] = secondContactor;
 
     gateway.handleOnebotMessageEvent({
       data: {
@@ -50,8 +56,60 @@ describe("gateway OneBot message routing", () => {
     });
 
     expect(applyMessageEvent).not.toHaveBeenCalled();
-    expect(firstContactor.messageChain).toEqual([]);
+  });
 
+  it("唯一的 OneBot 联系人应兜底渲染（后端下发真实 QQ 号，与前端 Fake ID 永不相等）", () => {
+    const contactor = {
+      id: "fake-1758500000000123",
+      platform: "onebot",
+      messageChain: [],
+    };
+    contactors[contactor.id] = contactor;
+
+    gateway.handleOnebotMessageEvent({
+      data: {
+        type: "message",
+        id: "1099834705", // 后端 data.id = params.user_id
+        content: {
+          message_id: "incoming-real",
+          message: [{ type: "text", data: { text: "hi" } }],
+        },
+      },
+    });
+
+    expect(applyMessageEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "message.upsert",
+        contactorId: contactor.id,
+      }),
+    );
+  });
+
+  it("转发消息 id 为 undefined 时，唯一的 OneBot 联系人也应兜底渲染", () => {
+    const contactor = {
+      id: "fake-1758500000000123",
+      platform: "onebot",
+      messageChain: [],
+    };
+    contactors[contactor.id] = contactor;
+
+    gateway.handleOnebotMessageEvent({
+      data: {
+        type: "message",
+        id: undefined, // send_private_forward_msg 曾误用 data.user_id
+        content: {
+          message_id: "incoming-fwd",
+          message: [{ type: "nodes", data: { messages: [] } }],
+        },
+      },
+    });
+
+    expect(applyMessageEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "message.upsert",
+        contactorId: contactor.id,
+      }),
+    );
   });
 
   it("routes a message only to the contactor with the matching ID", () => {

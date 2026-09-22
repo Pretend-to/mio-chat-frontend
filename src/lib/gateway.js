@@ -1241,6 +1241,22 @@ export const gateway = {
 
     if (type === "message") {
       let contactor = contactorStore.contactors[id];
+      if (!contactor) {
+        // 前端默认 OneBot 联系人用的是随机 Fake ID（见 client.genDefaultConctor），
+        // 与后端下发的真实 QQ / 群号（data.id = params.user_id || params.group_id）
+        // 永远不可能相等。仅当全场只有一个 OneBot 联系人时才兜底，
+        // 避免把消息误投到另一个无关会话（多个时宁可不渲染，也不猜）。
+        const onebotContactors = Object.values(contactorStore.contactors).filter(
+          (c) => c.platform === "onebot",
+        );
+        if (onebotContactors.length === 1) {
+          contactor = onebotContactors[0];
+        } else if (onebotContactors.length > 1) {
+          console.warn(
+            `[gateway] OneBot 消息无法定位联系人 (data.id=${id})，当前存在 ${onebotContactors.length} 个 OneBot 联系人，已丢弃`,
+          );
+        }
+      }
       if (contactor) {
         const webMessage = convertOnebotMessage(content);
         contactorStore.applyMessageEvent({
