@@ -210,7 +210,8 @@ const wraperPresets = ref({});
 const selectedOption = ref(null);
 const fullScreen = ref(false);
 const inputBarTop = ref(0);
-const inputEditor = ref(null); // 「滚动到底」按钮到视口底部的距离 = 输入框上边界到视口底部的距离，
+const inputEditor = ref(null);
+// 「滚动到底」按钮到视口底部的距离 = 输入框上边界到视口底部的距离，
 // 输入框长高时必须重算（否则多行输入会把按钮盖住）。
 const updateInputBarTop = () => {
   const element = document.querySelector(".input-bar");
