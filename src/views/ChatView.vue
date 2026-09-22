@@ -1066,11 +1066,21 @@ const handleImageLoad = (e) => {
       }
     }
 
-    const isNearBottom =
-      elm.scrollHeight - elm.scrollTop - elm.clientHeight < 150;
-    if (isNearBottom) {
-      toButtom();
-    }
+    // 图片是“加载完才知道多高”的元素：这里不能再用“距底 < 150px”判定 ——
+    // 长图（OneBot 的图即使被 CSS 压到 ≤520px）加载瞬间高度就涨几百 px，
+    // 那时 distanceFromBottom 必然 > 150，会被当成“用户已经滚上去了”而放弃跟随，
+    // 表现就是“图超出屏幕后得自己往下滚两下”。改为跟随状态（autoScroll）判定：
+    // 用户真的滚上去了就不会被拽，处于贴底状态就跟着到底。
+    if (!autoScroll.value) return;
+
+    toButtom();
+    // decode / 布局可能晚于 load 事件，补两次跟随（每次都重新确认仍在跟随状态）
+    setTimeout(() => {
+      if (autoScroll.value) toButtom();
+    }, 120);
+    setTimeout(() => {
+      if (autoScroll.value) toButtom();
+    }, 350);
   }
 };
 
