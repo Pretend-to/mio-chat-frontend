@@ -754,14 +754,21 @@ const imageSlotStyle = (element) => {
     return {
       aspectRatio: IMAGE_PLACEHOLDER_RATIO,
       maxHeight: `${IMAGE_MAX_HEIGHT}px`,
+      maxWidth: `${IMAGE_MAX_WIDTH}px`,
       width: "100%",
     };
   }
+  // 宽度必须自带上限：aspect-ratio 只在另一边是 auto 时才能推出这边，
+  // 若给确定性宽度再配 max-height，宽度不会回缩，比例被破坏 → contain 补白。
+  const fittedWidth = Math.min(
+    size.width,
+    IMAGE_MAX_WIDTH,
+    (IMAGE_MAX_HEIGHT * size.width) / size.height,
+  );
   return {
     aspectRatio: `${size.width} / ${size.height}`,
-    maxHeight: `${IMAGE_MAX_HEIGHT}px`,
     maxWidth: "100%",
-    width: `${Math.min(size.width, IMAGE_MAX_WIDTH)}px`,
+    width: `${Math.round(fittedWidth)}px`,
   };
 };
 
