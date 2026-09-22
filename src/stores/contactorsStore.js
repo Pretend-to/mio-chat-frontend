@@ -589,13 +589,24 @@ export const useContactorsStore = defineStore("contactors", () => {
     const contactor = contactors.value[contactorId];
     if (!contactor) return null;
 
-    let message = contactor.messageChain.find((msg) => msg.id === messageId);
+    // ID 归一化：消息链内 id 恒为字符串（normalizeMessage / message.rekey 都做过 String()），
+    // 但部分来源的 messageId 是后端数字型 id（如 OneBot 的 genMessageID() 返回值）。
+    // 必须统一 String() 后再比较：否则严格相等失配会“找不到”消息，
+    // 进而凭空 push 出一条 role:"other" 的幻影气泡，而真正的消息永远停在 pending。
+    const targetId =
+      messageId === undefined || messageId === null
+        ? messageId
+        : String(messageId);
+
+    let message = contactor.messageChain.find(
+      (msg) => String(msg?.id) === String(targetId),
+    );
     if (!message) {
       message = {
         role: defaults.role || "other",
         time: defaults.time || Date.now(),
         status: defaults.status || "pending",
-        id: messageId,
+        id: targetId,
         content: defaults.content || [{ type: "blank", data: {} }],
       };
       contactor.messageChain.push(message);
@@ -1534,7 +1545,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     const contactor = contactors.value[contactorId];
     if (!contactor) return;
     const index = contactor.messageChain.findIndex(
-      (msg) => msg.id === messageId,
+      (msg) => String(msg?.id) === String(messageId),
     );
     if (index !== -1) {
       deleteMessage(contactorId, index);
@@ -1545,7 +1556,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     const contactor = contactors.value[contactorId];
     if (!contactor) return false;
     const message = contactor.messageChain.find(
-      (item) => item.id === messageId,
+      (item) => String(item?.id) === String(messageId),
     );
     if (!message) return false;
     // Avoid sending an abort for a UI-only placeholder created by an older
