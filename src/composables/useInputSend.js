@@ -421,11 +421,19 @@ export function useInputSend({
           (m) => m.id === container.id,
         );
         if (msgInChain) {
+          // 关键：applyMessageEvent 入链时会对消息做深拷贝，container 与链内对象已非同一引用。
+          // 上面 `elm.data.file = remoteUrl` 只改了游离的 container，必须把「已替换为远端 URL」
+          // 的 content 通过 message.patch 回写到链里；否则链中会残留 blob: 本地地址，
+          // 之后每一轮请求都会把它当图片发给模型（上游报 Invalid base64 data）。
+          const content = container.content.map((block) => ({
+            ...block,
+            data: { ...block.data },
+          }));
           contactorsStore.applyMessageEvent({
             type: "message.patch",
             contactorId: activeContactor.value.id,
             messageId: msgInChain.id,
-            patch: { status: "pending" },
+            patch: { content, status: "pending" },
           });
         }
         container.status = "pending";
