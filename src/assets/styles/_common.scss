@@ -394,6 +394,14 @@ figure {
   display: block;
 }
 
+/* .image-slot 已按图片固有尺寸算出精确盒子（见 MessageContent.vue::imageSlotStyle），
+   内部 img 只需填满；否则上面的 20rem 上限会再限一次，比例被破坏 → contain 补白 */
+.content > .inner-content .image-slot img {
+  max-width: none;
+  max-height: none;
+  margin: 0;
+}
+
 // 3. Message Loading Animations
 #message-loading-icon {
   width: 1rem;

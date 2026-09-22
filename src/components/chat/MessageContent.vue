@@ -1502,6 +1502,8 @@ onUnmounted(disableIframeResize);
   display: flex
   justify-content: center
   overflow: hidden
+  /* 沿用图片原本的上下间距，避免挤紧相邻文字 */
+  margin: 0.5rem 0
   border-radius: 8px
   background: linear-gradient(100deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.04))
 
