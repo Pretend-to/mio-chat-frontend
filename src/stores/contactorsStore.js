@@ -662,7 +662,21 @@ export const useContactorsStore = defineStore("contactors", () => {
           (message) => String(message?.id) === String(event.messageId),
         );
         if (isTerminalMessage(current)) {
-          return { accepted: false, message: null };
+          // 用户中止时前端会“乐观地”先把消息置为终态，而服务端随后仍会补发这条
+          // toolCall 的终态帧（action: finished + status: aborted）。这类终态更新
+          // 必须放行，否则工具条永远停在 running，计时器会一直跑。
+          const incoming = event.data?.tool_call;
+          const isTerminalToolCallFrame =
+            event.chunkType === "tool_call" &&
+            incoming &&
+            (incoming.action === "finished" ||
+              incoming.action === "failed" ||
+              incoming.status === "aborted" ||
+              incoming.status === "failed" ||
+              Boolean(incoming.result));
+          if (!isTerminalToolCallFrame) {
+            return { accepted: false, message: null };
+          }
         }
         if (current?.__v_skip) {
           const idx = contactor.messageChain.indexOf(current);
