@@ -5,8 +5,7 @@ import { useContactorsStore } from "@/stores/contactorsStore.js";
 export function useInputFileUpload({
   textareaRef,
   activeContactor,
-  insertHtmlAtCursor,
-  textToHtml,
+  insertAtCursor,
   adjustTextareaHeight,
   ElMessage,
   emit,
@@ -22,8 +21,8 @@ export function useInputFileUpload({
   };
 
   const getemoji = (e) => {
-    const unicode = e.detail.unicode;
-    insertHtmlAtCursor(textToHtml(unicode));
+    // 纯文本插入：走光标 + 可撤销（表情面板会抢焦点，光标由 selectionchange 记住）
+    insertAtCursor(e.detail.unicode);
     ctrlEmojiPanel();
   };
 
@@ -33,24 +32,7 @@ export function useInputFileUpload({
     imageElement.alt = imageName;
     imageElement.style.maxWidth = "10rem";
     imageElement.style.maxHeight = "10rem";
-    const range = document.createRange();
-    range.selectNodeContents(textareaRef.value);
-    range.collapse(false);
-    const selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
-    const fragment = range.createContextualFragment(
-      `<span>${imageElement.outerHTML}</span>`,
-    );
-    range.insertNode(fragment);
-    setTimeout(() => {
-      const newRange = document.createRange();
-      newRange.selectNodeContents(textareaRef.value);
-      newRange.collapse(false);
-      const newSelection = window.getSelection();
-      newSelection.removeAllRanges();
-      newSelection.addRange(newRange);
-    }, 0);
+    insertAtCursor(`<span>${imageElement.outerHTML}</span>`, { html: true });
   };
 
   const handleLocalImageInsert = (file) => {
@@ -60,14 +42,12 @@ export function useInputFileUpload({
   };
 
   const handlePaste = (e) => {
-    e.preventDefault();
     const clipboardData = e.clipboardData || window.clipboardData;
-    const items = clipboardData.items;
-    let pastedText = "";
+    const items = clipboardData ? Array.from(clipboardData.items) : [];
     const imageFiles = [];
+    let pastedText = "";
 
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
+    for (const item of items) {
       if (item.type.indexOf("image") !== -1) {
         imageFiles.push(item.getAsFile());
       } else if (item.type === "text/plain") {
@@ -75,17 +55,22 @@ export function useInputFileUpload({
       }
     }
 
+    // 文本按原样插入（交给浏览器编辑管线）：markdown 符号 / 缩进 / 换行一个不丢，
+    // 也不再经过 textToHtml 把空格换成 &nbsp;、把引号转义成实体。
     if (pastedText) {
-      const html = textToHtml(pastedText);
-      insertHtmlAtCursor(html);
+      e.preventDefault();
+      insertAtCursor(pastedText);
     }
 
+    // 图片走自己的上传流程（浏览器原生粘贴无法带上传态）
     if (imageFiles.length) {
+      e.preventDefault();
       imageFiles.forEach((file) => {
         handleLocalImageInsert(file);
       });
-      adjustTextareaHeight();
     }
+
+    if (pastedText || imageFiles.length) adjustTextareaHeight();
   };
 
   const handleDroppedFile = (file) => {

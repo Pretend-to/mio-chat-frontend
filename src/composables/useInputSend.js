@@ -71,7 +71,9 @@ export function useInputSend({
         b.remove();
       }
     });
-    const remainingText = getSafeText(clone.innerText).trim();
+    // 注意传的是节点而不是 innerText：克隆节点脱离文档后 innerText 退化成
+    // textContent，<br> / 块级边界产生的换行会全丢（粘贴的 md 会粘成一坨）
+    const remainingText = getSafeText(clone).trim();
     msg = remainingText;
 
     const badges = textareaRef.value.querySelectorAll(".command-badge");

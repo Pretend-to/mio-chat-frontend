@@ -210,7 +210,13 @@ const wraperPresets = ref({});
 const selectedOption = ref(null);
 const fullScreen = ref(false);
 const inputBarTop = ref(0);
-const inputEditor = ref(null);
+const inputEditor = ref(null); // 「滚动到底」按钮到视口底部的距离 = 输入框上边界到视口底部的距离，
+// 输入框长高时必须重算（否则多行输入会把按钮盖住）。
+const updateInputBarTop = () => {
+  const element = document.querySelector(".input-bar");
+  if (!element) return;
+  inputBarTop.value = window.innerHeight - element.offsetTop;
+};
 const imagePreview = ref({ visible: false, url: "" });
 /** UI 白名单接口：Shadow DOM 内的内联 onclick 交互能力 */
 window.__mio = window.__mio || {};
@@ -250,6 +256,7 @@ window.__mio.previewImage = (url) => {
 };
 
 let resizeObserver = null;
+let inputBarObserver = null;
 let isObservingResize = false;
 let oldInnerHeight = 0;
 let observeTimer = null;
@@ -1167,6 +1174,7 @@ onMounted(() => {
 
   resizeHandler.value = () => {
     isMobileDevice.value = window.innerWidth < 768;
+    updateInputBarTop();
   };
   window.addEventListener("resize", resizeHandler.value);
 
@@ -1177,10 +1185,13 @@ onMounted(() => {
   };
   window.addEventListener("blur", focusHandler.value);
 
-  const element = document.querySelector(".input-bar");
-  if (element) {
-    const pageHeight = window.innerHeight;
-    inputBarTop.value = pageHeight - element.offsetTop;
+  // 输入框长高（多行 / 回复徽标 / 附件预览）会把「滚动到底」按钮盖住，
+  // 所以按钮的 bottom 必须跟着输入框上边界实时重算，而不是只在挂载时算一次。
+  const inputBarEl = document.querySelector(".input-bar");
+  updateInputBarTop();
+  if (window.ResizeObserver && inputBarEl) {
+    inputBarObserver = new ResizeObserver(() => updateInputBarTop());
+    inputBarObserver.observe(inputBarEl);
   }
 });
 
@@ -1228,6 +1239,8 @@ onBeforeUnmount(() => {
   if (resizeObserver) {
     resizeObserver.disconnect();
     resizeObserver = null;
+    inputBarObserver?.disconnect();
+    inputBarObserver = null;
   }
   if (observeTimer) {
     clearTimeout(observeTimer);

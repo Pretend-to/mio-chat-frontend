@@ -273,9 +273,7 @@ const {
   adjustTextareaHeight,
   updateCursorPosition,
   getCaretCoordinates,
-  textToHtml,
-  setCursorToEnd,
-  insertHtmlAtCursor,
+  insertAtCursor,
   getPureTextOfTextNodes,
   replaceTextRangeWithElements,
   updateEditorText,
@@ -320,8 +318,7 @@ const {
 } = useInputFileUpload({
   textareaRef: textarea,
   activeContactor,
-  insertHtmlAtCursor,
-  textToHtml,
+  insertAtCursor,
   adjustTextareaHeight,
   ElMessage,
   emit,
@@ -801,6 +798,9 @@ i, .input-icon-btn
         max-height: 20rem
         resize: none
         font-size: 1rem
+        /* 保留空格与换行：粘贴 markdown（缩进、代码块）时不被折叠 */
+        white-space: pre-wrap
+        word-break: break-word
         background-color: var(--mio-bg-page)
         color: var(--mio-text-primary)
         border: 0
