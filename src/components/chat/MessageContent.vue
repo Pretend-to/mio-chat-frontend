@@ -1,7 +1,11 @@
 <template>
   <div
     v-for="(element, elmIndex) of content"
-    :key="element.data?.id ? `${element.type}-${element.data.id}` : `${element.type}-${elmIndex}`"
+    :key="
+      element.data?.id
+        ? `${element.type}-${element.data.id}`
+        : `${element.type}-${elmIndex}`
+    "
     class="inner-content"
   >
     <MdRenderer
@@ -14,15 +18,21 @@
       :markdown-it-options="mdOptions"
       :auto-cors="corsOption"
     />
-    <MdRenderer
+    <div
       v-else-if="element.type === 'image'"
-      :md="`![image](${element.data.file})`"
-      :custom-plugins="mioPlugins"
-      :markdown-it-plugins="katexPluginList"
-      :theme="'github'"
-      :key="element.data.file"
-      :auto-cors="corsOption"
-    />
+      class="image-slot"
+      :class="{ 'is-sized': !!imageSizeOf(element) }"
+      :style="imageSlotStyle(element)"
+    >
+      <MdRenderer
+        :md="`![image](${element.data.file})`"
+        :custom-plugins="mioPlugins"
+        :markdown-it-plugins="katexPluginList"
+        :theme="'github'"
+        :key="element.data.file"
+        :auto-cors="corsOption"
+      />
+    </div>
     <span v-else-if="element.type === 'reply'" />
     <ForwardMsg
       v-else-if="element.type === 'nodes'"
@@ -52,7 +62,7 @@
     </div>
     <div
       v-else-if="element.type === 'tool_call'"
-      :key="element.data?.id || ('tool-call-' + elmIndex)"
+      :key="element.data?.id || 'tool-call-' + elmIndex"
       class="tool-call-container-wrapper"
       style="align-self: flex-start; max-width: 100%"
     >
@@ -143,10 +153,7 @@
           v-if="outerItems(element.data).length"
           class="message-level-outer-render"
         >
-          <template
-            v-for="(item, idx) in outerItems(element.data)"
-            :key="idx"
-          >
+          <template v-for="(item, idx) in outerItems(element.data)" :key="idx">
             <!-- 沉浸式无壳渲染 (immersive: true)：直接按原本的直接渲染呈现，不套任何外层卡片与多余边框 -->
             <div
               v-if="isImmersive(item)"
@@ -165,7 +172,9 @@
                   />
                 </div>
               </template>
-              <template v-else-if="item.type === 'iframe' || item.type === 'html'">
+              <template
+                v-else-if="item.type === 'iframe' || item.type === 'html'"
+              >
                 <ShadowHtml
                   v-if="item.html"
                   :html="item.html"
@@ -217,7 +226,9 @@
                 </div>
               </template>
               <template v-else-if="item.type === 'text'">
-                <div class="outer-render-text">{{ item.content || item.text }}</div>
+                <div class="outer-render-text">
+                  {{ item.content || item.text }}
+                </div>
               </template>
               <template v-else>
                 <ShadowHtml
@@ -238,208 +249,33 @@
                 { 'is-file-card': isFileCardItem(item) },
               ]"
             >
-            <!-- 统一卡片头部 Header -->
-            <div class="outer-card-header">
-              <div class="outer-card-meta">
-                <span
-                  class="outer-card-badge"
-                  :class="`badge-${getOuterItemType(item)}`"
-                >
-                  {{ getOuterItemBadge(item) }}
-                </span>
-                <span
-                  class="outer-card-title"
-                  :title="getOuterItemTitle(item, element.data)"
-                >
-                  {{ getOuterItemTitle(item, element.data) }}
-                </span>
-              </div>
-              <div class="outer-card-actions">
-                <!-- 在工作区打开按钮 (仅非文件卡片展示，文件卡片已有内部专属交互，避免重复) -->
-                <button
-                  v-if="canOpenInWorkspace(item) && !isFileCardItem(item)"
-                  class="outer-card-btn primary-btn"
-                  title="在工作区侧边栏打开"
-                  @click.stop="openInWorkspace(item, element.data)"
-                >
-                  <svg
-                    width="11"
-                    height="11"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+              <!-- 统一卡片头部 Header -->
+              <div class="outer-card-header">
+                <div class="outer-card-meta">
+                  <span
+                    class="outer-card-badge"
+                    :class="`badge-${getOuterItemType(item)}`"
                   >
-                    <rect width="18" height="18" x="3" y="3" rx="2" />
-                    <path d="M15 3v18" />
-                  </svg>
-                  <span>在工作区打开</span>
-                </button>
-                <!-- 在新标签页打开 (若有 URL) -->
-                <a
-                  v-if="getOuterItemUrl(item)"
-                  :href="getOuterItemUrl(item)"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="outer-card-btn icon-btn"
-                  title="在新标签页中打开"
-                  @click.stop
-                >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+                    {{ getOuterItemBadge(item) }}
+                  </span>
+                  <span
+                    class="outer-card-title"
+                    :title="getOuterItemTitle(item, element.data)"
                   >
-                    <path
-                      d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
-                    />
-                    <polyline points="15 3 21 3 21 9" />
-                    <line x1="10" y1="14" x2="21" y2="3" />
-                  </svg>
-                </a>
-                <!-- 复制按钮 -->
-                <button
-                  v-if="
-                    getOuterItemUrl(item) ||
-                    item.content ||
-                    item.text ||
-                    item.html
-                  "
-                  class="outer-card-btn icon-btn"
-                  title="复制链接或内容"
-                  @click.stop="copyOuterItem(item)"
-                >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-                    <path
-                      d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <!-- 统一卡片主体 Body -->
-            <div class="outer-card-body">
-              <!-- Office 文档卡片 -->
-              <template v-if="getOuterItemType(item) === 'office'">
-                <div
-                  class="outer-file-box"
-                  title="点击在工作区打开预览"
-                  @click.stop="openInWorkspace(item, element.data)"
-                >
-                  <div
-                    class="file-icon-box"
-                    :style="{
-                      color: getFileIconInfo(item, element.data).color,
-                      background: getFileIconInfo(item, element.data).bg,
-                    }"
-                  >
-                    <svg
-                      v-if="getFileIconInfo(item, element.data).type === 'excel'"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-                      <polyline points="14 2 14 8 20 8" />
-                      <path d="M8 13h8M8 17h8M12 10v10" />
-                    </svg>
-                    <svg
-                      v-else-if="getFileIconInfo(item, element.data).type === 'word'"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-                      <polyline points="14 2 14 8 20 8" />
-                      <line x1="16" y1="13" x2="8" y2="13" />
-                      <line x1="16" y1="17" x2="8" y2="17" />
-                      <line x1="10" y1="9" x2="8" y2="9" />
-                    </svg>
-                    <svg
-                      v-else
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-                      <polyline points="14 2 14 8 20 8" />
-                      <circle cx="12" cy="14" r="3" />
-                    </svg>
-                  </div>
-                  <div class="file-details">
-                    <div
-                      class="file-name"
-                      :title="getOuterItemTitle(item, element.data)"
-                    >
-                      {{ getOuterItemTitle(item, element.data) }}
-                    </div>
-                    <div class="file-subtext">
-                      {{ getOuterItemSubtext(item, element.data) }}
-                    </div>
-                  </div>
+                    {{ getOuterItemTitle(item, element.data) }}
+                  </span>
+                </div>
+                <div class="outer-card-actions">
+                  <!-- 在工作区打开按钮 (仅非文件卡片展示，文件卡片已有内部专属交互，避免重复) -->
                   <button
-                    class="file-preview-btn"
-                    title="在工作区打开预览"
+                    v-if="canOpenInWorkspace(item) && !isFileCardItem(item)"
+                    class="outer-card-btn primary-btn"
+                    title="在工作区侧边栏打开"
                     @click.stop="openInWorkspace(item, element.data)"
                   >
-                    <span>预览</span>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
-                  </button>
-                </div>
-              </template>
-
-              <!-- PDF 文档卡片 -->
-              <template v-else-if="getOuterItemType(item) === 'pdf'">
-                <div
-                  class="outer-file-box"
-                  title="点击在工作区打开预览"
-                  @click.stop="openInWorkspace(item, element.data)"
-                >
-                  <div
-                    class="file-icon-box"
-                    :style="{
-                      color: getFileIconInfo(item, element.data).color,
-                      background: getFileIconInfo(item, element.data).bg,
-                    }"
-                  >
                     <svg
-                      width="20"
-                      height="20"
+                      width="11"
+                      height="11"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -447,192 +283,405 @@
                       stroke-linecap="round"
                       stroke-linejoin="round"
                     >
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                      <line x1="16" y1="13" x2="8" y2="13" />
-                      <line x1="16" y1="17" x2="8" y2="17" />
+                      <rect width="18" height="18" x="3" y="3" rx="2" />
+                      <path d="M15 3v18" />
                     </svg>
-                  </div>
-                  <div class="file-details">
-                    <div
-                      class="file-name"
-                      :title="getOuterItemTitle(item, element.data)"
-                    >
-                      {{ getOuterItemTitle(item, element.data) }}
-                    </div>
-                    <div class="file-subtext">
-                      {{ getOuterItemSubtext(item, element.data) }}
-                    </div>
-                  </div>
-                  <button
-                    class="file-preview-btn"
-                    title="在工作区打开预览"
-                    @click.stop="openInWorkspace(item, element.data)"
-                  >
-                    <span>预览</span>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
+                    <span>在工作区打开</span>
                   </button>
-                </div>
-              </template>
-
-              <!-- Markdown 产物卡片 -->
-              <template v-else-if="getOuterItemType(item) === 'markdown'">
-                <div
-                  v-if="getMarkdownText(item)"
-                  class="outer-markdown-box"
-                >
-                  <MdRenderer
-                    :md="getMarkdownText(item)"
-                    :custom-plugins="mioPlugins"
-                    :markdown-it-plugins="katexPluginList"
-                    theme="github"
-                    theme-mode="auto"
-                  />
-                </div>
-                <div
-                  v-else
-                  class="outer-file-box"
-                  title="点击在工作区打开预览"
-                  @click.stop="openInWorkspace(item, element.data)"
-                >
-                  <div
-                    class="file-icon-box"
-                    :style="{
-                      color: getFileIconInfo(item, element.data).color,
-                      background: getFileIconInfo(item, element.data).bg,
-                    }"
-                  >
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-                      <polyline points="14 2 14 8 20 8" />
-                      <line x1="16" y1="13" x2="8" y2="13" />
-                      <line x1="16" y1="17" x2="8" y2="17" />
-                    </svg>
-                  </div>
-                  <div class="file-details">
-                    <div
-                      class="file-name"
-                      :title="getOuterItemTitle(item, element.data)"
-                    >
-                      {{ getOuterItemTitle(item, element.data) }}
-                    </div>
-                    <div class="file-subtext">
-                      {{ getOuterItemSubtext(item, element.data) }}
-                    </div>
-                  </div>
-                  <button
-                    class="file-preview-btn"
-                    title="在工作区打开预览"
-                    @click.stop="openInWorkspace(item, element.data)"
-                  >
-                    <span>预览</span>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
-                  </button>
-                </div>
-              </template>
-
-              <!-- 音频卡片 -->
-              <template v-else-if="getOuterItemType(item) === 'audio'">
-                <div class="outer-audio-box">
-                  <audio
-                    :src="item.url"
-                    controls
-                    class="outer-audio-player"
-                  ></audio>
-                </div>
-              </template>
-
-              <!-- 视频卡片 -->
-              <template v-else-if="getOuterItemType(item) === 'video'">
-                <div class="outer-video-box">
-                  <video
-                    :src="item.url"
-                    controls
-                    preload="metadata"
-                    class="outer-video-player"
-                  ></video>
-                </div>
-              </template>
-
-              <!-- 图片卡片 -->
-              <template v-else-if="getOuterItemType(item) === 'image'">
-                <div class="outer-image-box">
-                  <img
-                    :src="item.url"
-                    :alt="getOuterItemTitle(item, element.data)"
-                    class="outer-img"
-                    loading="lazy"
-                  />
-                </div>
-              </template>
-
-              <!-- 提示 Alert 卡片 -->
-              <template v-else-if="getOuterItemType(item) === 'alert'">
-                <el-alert
-                  :title="item.title"
-                  :type="item.alertType || 'info'"
-                  :description="item.description"
-                  show-icon
-                  :closable="false"
-                  class="outer-alert"
-                />
-              </template>
-
-              <!-- 纯文本 卡片 -->
-              <template v-else-if="getOuterItemType(item) === 'text'">
-                <div class="outer-text-box">
-                  {{ item.content || item.text }}
-                </div>
-              </template>
-
-              <!-- 链接 卡片 -->
-              <template v-else-if="getOuterItemType(item) === 'link'">
-                <div class="outer-link-box">
+                  <!-- 在新标签页打开 (若有 URL) -->
                   <a
-                    :href="item.url"
+                    v-if="getOuterItemUrl(item)"
+                    :href="getOuterItemUrl(item)"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="outer-link-btn"
+                    class="outer-card-btn icon-btn"
+                    title="在新标签页中打开"
+                    @click.stop
                   >
-                    <span class="link-label">{{
-                      item.text || getOuterItemTitle(item, element.data)
-                    }}</span>
-                    <span class="link-url-hint">{{ item.url }}</span>
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
+                      />
+                      <polyline points="15 3 21 3 21 9" />
+                      <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
                   </a>
+                  <!-- 复制按钮 -->
+                  <button
+                    v-if="
+                      getOuterItemUrl(item) ||
+                      item.content ||
+                      item.text ||
+                      item.html
+                    "
+                    class="outer-card-btn icon-btn"
+                    title="复制链接或内容"
+                    @click.stop="copyOuterItem(item)"
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                      <path
+                        d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"
+                      />
+                    </svg>
+                  </button>
                 </div>
-              </template>
+              </div>
 
-              <!-- HTML / iframe / ShadowHtml 界面卡片 -->
-              <template v-else>
-                <div class="outer-html-box">
-                  <ShadowHtml
-                    v-if="item.html"
-                    :html="item.html"
-                    @update:html="handleShadowHtmlUpdate(item, $event)"
+              <!-- 统一卡片主体 Body -->
+              <div class="outer-card-body">
+                <!-- Office 文档卡片 -->
+                <template v-if="getOuterItemType(item) === 'office'">
+                  <div
+                    class="outer-file-box"
+                    title="点击在工作区打开预览"
+                    @click.stop="openInWorkspace(item, element.data)"
+                  >
+                    <div
+                      class="file-icon-box"
+                      :style="{
+                        color: getFileIconInfo(item, element.data).color,
+                        background: getFileIconInfo(item, element.data).bg,
+                      }"
+                    >
+                      <svg
+                        v-if="
+                          getFileIconInfo(item, element.data).type === 'excel'
+                        "
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"
+                        />
+                        <polyline points="14 2 14 8 20 8" />
+                        <path d="M8 13h8M8 17h8M12 10v10" />
+                      </svg>
+                      <svg
+                        v-else-if="
+                          getFileIconInfo(item, element.data).type === 'word'
+                        "
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"
+                        />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                        <line x1="10" y1="9" x2="8" y2="9" />
+                      </svg>
+                      <svg
+                        v-else
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"
+                        />
+                        <polyline points="14 2 14 8 20 8" />
+                        <circle cx="12" cy="14" r="3" />
+                      </svg>
+                    </div>
+                    <div class="file-details">
+                      <div
+                        class="file-name"
+                        :title="getOuterItemTitle(item, element.data)"
+                      >
+                        {{ getOuterItemTitle(item, element.data) }}
+                      </div>
+                      <div class="file-subtext">
+                        {{ getOuterItemSubtext(item, element.data) }}
+                      </div>
+                    </div>
+                    <button
+                      class="file-preview-btn"
+                      title="在工作区打开预览"
+                      @click.stop="openInWorkspace(item, element.data)"
+                    >
+                      <span>预览</span>
+                      <svg
+                        width="10"
+                        height="10"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </button>
+                  </div>
+                </template>
+
+                <!-- PDF 文档卡片 -->
+                <template v-else-if="getOuterItemType(item) === 'pdf'">
+                  <div
+                    class="outer-file-box"
+                    title="点击在工作区打开预览"
+                    @click.stop="openInWorkspace(item, element.data)"
+                  >
+                    <div
+                      class="file-icon-box"
+                      :style="{
+                        color: getFileIconInfo(item, element.data).color,
+                        background: getFileIconInfo(item, element.data).bg,
+                      }"
+                    >
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                        />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                      </svg>
+                    </div>
+                    <div class="file-details">
+                      <div
+                        class="file-name"
+                        :title="getOuterItemTitle(item, element.data)"
+                      >
+                        {{ getOuterItemTitle(item, element.data) }}
+                      </div>
+                      <div class="file-subtext">
+                        {{ getOuterItemSubtext(item, element.data) }}
+                      </div>
+                    </div>
+                    <button
+                      class="file-preview-btn"
+                      title="在工作区打开预览"
+                      @click.stop="openInWorkspace(item, element.data)"
+                    >
+                      <span>预览</span>
+                      <svg
+                        width="10"
+                        height="10"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </button>
+                  </div>
+                </template>
+
+                <!-- Markdown 产物卡片 -->
+                <template v-else-if="getOuterItemType(item) === 'markdown'">
+                  <div v-if="getMarkdownText(item)" class="outer-markdown-box">
+                    <MdRenderer
+                      :md="getMarkdownText(item)"
+                      :custom-plugins="mioPlugins"
+                      :markdown-it-plugins="katexPluginList"
+                      theme="github"
+                      theme-mode="auto"
+                    />
+                  </div>
+                  <div
+                    v-else
+                    class="outer-file-box"
+                    title="点击在工作区打开预览"
+                    @click.stop="openInWorkspace(item, element.data)"
+                  >
+                    <div
+                      class="file-icon-box"
+                      :style="{
+                        color: getFileIconInfo(item, element.data).color,
+                        background: getFileIconInfo(item, element.data).bg,
+                      }"
+                    >
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"
+                        />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                      </svg>
+                    </div>
+                    <div class="file-details">
+                      <div
+                        class="file-name"
+                        :title="getOuterItemTitle(item, element.data)"
+                      >
+                        {{ getOuterItemTitle(item, element.data) }}
+                      </div>
+                      <div class="file-subtext">
+                        {{ getOuterItemSubtext(item, element.data) }}
+                      </div>
+                    </div>
+                    <button
+                      class="file-preview-btn"
+                      title="在工作区打开预览"
+                      @click.stop="openInWorkspace(item, element.data)"
+                    >
+                      <span>预览</span>
+                      <svg
+                        width="10"
+                        height="10"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </button>
+                  </div>
+                </template>
+
+                <!-- 音频卡片 -->
+                <template v-else-if="getOuterItemType(item) === 'audio'">
+                  <div class="outer-audio-box">
+                    <audio
+                      :src="item.url"
+                      controls
+                      class="outer-audio-player"
+                    ></audio>
+                  </div>
+                </template>
+
+                <!-- 视频卡片 -->
+                <template v-else-if="getOuterItemType(item) === 'video'">
+                  <div class="outer-video-box">
+                    <video
+                      :src="item.url"
+                      controls
+                      preload="metadata"
+                      class="outer-video-player"
+                    ></video>
+                  </div>
+                </template>
+
+                <!-- 图片卡片 -->
+                <template v-else-if="getOuterItemType(item) === 'image'">
+                  <div class="outer-image-box">
+                    <img
+                      :src="item.url"
+                      :alt="getOuterItemTitle(item, element.data)"
+                      class="outer-img"
+                      loading="lazy"
+                    />
+                  </div>
+                </template>
+
+                <!-- 提示 Alert 卡片 -->
+                <template v-else-if="getOuterItemType(item) === 'alert'">
+                  <el-alert
+                    :title="item.title"
+                    :type="item.alertType || 'info'"
+                    :description="item.description"
+                    show-icon
+                    :closable="false"
+                    class="outer-alert"
                   />
-                  <iframe
-                    v-else-if="item.url"
-                    :src="item.url"
-                    class="outer-inline-iframe"
-                    loading="lazy"
-                    sandbox="allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-same-origin"
-                  ></iframe>
-                </div>
-              </template>
-            </div>
+                </template>
+
+                <!-- 纯文本 卡片 -->
+                <template v-else-if="getOuterItemType(item) === 'text'">
+                  <div class="outer-text-box">
+                    {{ item.content || item.text }}
+                  </div>
+                </template>
+
+                <!-- 链接 卡片 -->
+                <template v-else-if="getOuterItemType(item) === 'link'">
+                  <div class="outer-link-box">
+                    <a
+                      :href="item.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="outer-link-btn"
+                    >
+                      <span class="link-label">{{
+                        item.text || getOuterItemTitle(item, element.data)
+                      }}</span>
+                      <span class="link-url-hint">{{ item.url }}</span>
+                    </a>
+                  </div>
+                </template>
+
+                <!-- HTML / iframe / ShadowHtml 界面卡片 -->
+                <template v-else>
+                  <div class="outer-html-box">
+                    <ShadowHtml
+                      v-if="item.html"
+                      :html="item.html"
+                      @update:html="handleShadowHtmlUpdate(item, $event)"
+                    />
+                    <iframe
+                      v-else-if="item.url"
+                      :src="item.url"
+                      class="outer-inline-iframe"
+                      loading="lazy"
+                      sandbox="allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-same-origin"
+                    ></iframe>
+                  </div>
+                </template>
+              </div>
             </div>
           </template>
         </div>
@@ -685,6 +734,36 @@ import { useWorkspaceStore } from "@/stores/workspaceStore.js";
 const ForwardMsg = defineAsyncComponent(
   () => import("@/components/ForwardMsg.vue"),
 );
+
+// 图片“先量后插”：按已知的自然尺寸预留终态高度，消除图片解码完成时的跳动。
+// 尺寸由 lib/imageSize.js 量出后 patch 回元素（data.width / data.height）；
+// 还没量到时先用稳定占位比例占位，量到后修正一次。
+const IMAGE_MAX_WIDTH = 540;
+const IMAGE_MAX_HEIGHT = 520;
+const IMAGE_PLACEHOLDER_RATIO = "4 / 3";
+
+const imageSizeOf = (element) => {
+  const width = Number(element?.data?.width) || 0;
+  const height = Number(element?.data?.height) || 0;
+  return width > 0 && height > 0 ? { height, width } : null;
+};
+
+const imageSlotStyle = (element) => {
+  const size = imageSizeOf(element);
+  if (!size) {
+    return {
+      aspectRatio: IMAGE_PLACEHOLDER_RATIO,
+      maxHeight: `${IMAGE_MAX_HEIGHT}px`,
+      width: "100%",
+    };
+  }
+  return {
+    aspectRatio: `${size.width} / ${size.height}`,
+    maxHeight: `${IMAGE_MAX_HEIGHT}px`,
+    maxWidth: "100%",
+    width: `${Math.min(size.width, IMAGE_MAX_WIDTH)}px`,
+  };
+};
 
 const props = defineProps({
   content: {
@@ -817,9 +896,9 @@ function isImmersive(item) {
   if (!item) return false;
   return Boolean(
     item.immersive === true ||
-    item.frameless === true ||
-    item.seamless === true ||
-    item.bare === true
+      item.frameless === true ||
+      item.seamless === true ||
+      item.bare === true,
   );
 }
 
@@ -827,11 +906,14 @@ function getOuterItemType(item) {
   if (!item) return "render";
   const rawUrl = item.url || item.src || item.href || "";
   const name = item.fileName || item.title || item.name || "";
-  const clean = String(rawUrl || name).split("?")[0].split("#")[0];
+  const clean = String(rawUrl || name)
+    .split("?")[0]
+    .split("#")[0];
   const dotIndex = clean.lastIndexOf(".");
   const ext = dotIndex !== -1 ? clean.slice(dotIndex + 1).toLowerCase() : "";
 
-  if (["doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(ext)) return "office";
+  if (["doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(ext))
+    return "office";
   if (ext === "pdf") return "pdf";
   if (ext === "md" || ext === "markdown") return "markdown";
   if (ext === "html" || ext === "htm") return "html";
@@ -851,22 +933,34 @@ function getOuterItemType(item) {
 function getOuterItemBadge(item) {
   const t = getOuterItemType(item);
   switch (t) {
-    case "office": return "Office";
-    case "pdf": return "PDF";
-    case "markdown": return "Markdown";
-    case "html": return "UI 卡片";
-    case "image": return "图片";
-    case "audio": return "音频";
-    case "video": return "视频";
-    case "alert": return "提示";
-    case "link": return "链接";
-    case "text": return "文本";
-    default: return "产物";
+    case "office":
+      return "Office";
+    case "pdf":
+      return "PDF";
+    case "markdown":
+      return "Markdown";
+    case "html":
+      return "UI 卡片";
+    case "image":
+      return "图片";
+    case "audio":
+      return "音频";
+    case "video":
+      return "视频";
+    case "alert":
+      return "提示";
+    case "link":
+      return "链接";
+    case "text":
+      return "文本";
+    default:
+      return "产物";
   }
 }
 
 function formatFileSize(bytes) {
-  if (bytes === undefined || bytes === null || bytes === "" || isNaN(bytes)) return "";
+  if (bytes === undefined || bytes === null || bytes === "" || isNaN(bytes))
+    return "";
   const num = Number(bytes);
   if (num <= 0) return "";
   const units = ["B", "KB", "MB", "GB", "TB"];
@@ -882,7 +976,9 @@ function formatFileSize(bytes) {
 function getOuterItemSubtext(item, toolData) {
   const rawUrl = item?.url || item?.src || item?.href || "";
   const name = item?.fileName || item?.title || item?.name || "";
-  const clean = String(rawUrl || name).split("?")[0].split("#")[0];
+  const clean = String(rawUrl || name)
+    .split("?")[0]
+    .split("#")[0];
   const dotIndex = clean.lastIndexOf(".");
   const ext = dotIndex !== -1 ? clean.slice(dotIndex + 1).toLowerCase() : "";
 
@@ -897,7 +993,9 @@ function getOuterItemSubtext(item, toolData) {
     typeName = "PDF 文档";
   } else if (ext === "md" || ext === "markdown") {
     typeName = "Markdown 文档";
-  } else if (["zip", "rar", "7z", "tar", "gz", "tgz", "bz2", "xz"].includes(ext)) {
+  } else if (
+    ["zip", "rar", "7z", "tar", "gz", "tgz", "bz2", "xz"].includes(ext)
+  ) {
     typeName = "压缩归档";
   } else if (["xmind", "drawio"].includes(ext)) {
     typeName = "图表导图";
@@ -939,7 +1037,9 @@ function isFileCardItem(item) {
 function getFileIconInfo(item, toolData) {
   const rawUrl = item?.url || item?.src || item?.href || "";
   const name = item?.fileName || item?.title || item?.name || "";
-  const clean = String(rawUrl || name).split("?")[0].split("#")[0];
+  const clean = String(rawUrl || name)
+    .split("?")[0]
+    .split("#")[0];
   const dotIndex = clean.lastIndexOf(".");
   const ext = dotIndex !== -1 ? clean.slice(dotIndex + 1).toLowerCase() : "";
 
@@ -956,10 +1056,18 @@ function getFileIconInfo(item, toolData) {
     return { type: "pdf", color: "#e11d48", bg: "rgba(225, 29, 72, 0.12)" };
   }
   if (["zip", "rar", "7z", "tar", "gz", "tgz", "bz2", "xz"].includes(ext)) {
-    return { type: "archive", color: "#8b5cf6", bg: "rgba(139, 92, 246, 0.12)" };
+    return {
+      type: "archive",
+      color: "#8b5cf6",
+      bg: "rgba(139, 92, 246, 0.12)",
+    };
   }
   if (ext === "md" || ext === "markdown") {
-    return { type: "markdown", color: "#0891b2", bg: "rgba(8, 145, 178, 0.12)" };
+    return {
+      type: "markdown",
+      color: "#0891b2",
+      bg: "rgba(8, 145, 178, 0.12)",
+    };
   }
   return { type: "file", color: "#64748b", bg: "rgba(100, 116, 139, 0.12)" };
 }
@@ -1381,6 +1489,28 @@ onUnmounted(disableIframeResize);
     max-height: 320px
     border-radius: 6px
     outline: none
+
+.image-slot
+  position: relative
+  display: flex
+  justify-content: center
+  overflow: hidden
+  border-radius: 8px
+  background: linear-gradient(100deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.04))
+
+  :deep(p)
+    margin: 0 !important
+    padding: 0 !important
+
+  :deep(img)
+    position: absolute
+    inset: 0
+    width: 100%
+    height: 100%
+    object-fit: contain
+    border-radius: 8px
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04)
+    cursor: zoom-in
 
 .outer-image-box
   display: flex

@@ -3,6 +3,7 @@ import { useConfigStore } from "@/stores/configStore.js";
 import { client } from "@/lib/runtime.js";
 import { assembleSystemPrompt } from "@/utils/SystemPromptAssembler.js";
 import { buildUserProfileXml } from "@/lib/clientSettings.js";
+import { resolveImageSizes } from "@/lib/imageSize.js";
 import { sendGroupCompletions } from "@/lib/groupGateway.js";
 import {
   buildInteractionMeta,
@@ -30,7 +31,12 @@ async function ackPersistedMessage(contactorId, messageId) {
 /**
  * 静默自动放行 YOLO 审批，带 ACK 确认与弱网超时重试机制
  */
-function emitSilentApproval({ interactionId, requestId, contactorId, maxRetries = 2 }) {
+function emitSilentApproval({
+  interactionId,
+  requestId,
+  contactorId,
+  maxRetries = 2,
+}) {
   let attempt = 0;
   const tryEmit = () => {
     attempt++;
@@ -39,7 +45,9 @@ function emitSilentApproval({ interactionId, requestId, contactorId, maxRetries 
       if (attempt <= maxRetries) {
         setTimeout(tryEmit, 1000);
       } else {
-        console.warn(`[gateway] 静默放行未就绪 (Socket未连接): ${interactionId}`);
+        console.warn(
+          `[gateway] 静默放行未就绪 (Socket未连接): ${interactionId}`,
+        );
       }
       return;
     }
@@ -52,7 +60,10 @@ function emitSilentApproval({ interactionId, requestId, contactorId, maxRetries 
       settled = true;
       if (ackTimer) clearTimeout(ackTimer);
       if (ack?.ok === false) {
-        console.warn(`[gateway] 静默放行服务端响应失败 (${interactionId}):`, ack.error);
+        console.warn(
+          `[gateway] 静默放行服务端响应失败 (${interactionId}):`,
+          ack.error,
+        );
         if (attempt <= maxRetries) {
           setTimeout(tryEmit, 1000);
         }
@@ -686,6 +697,47 @@ function getOrCreateBuffer(contactorId, messageId, store) {
 }
 
 /**
+ * 图片“先量后插”的第二步：量到固有尺寸后 patch 回消息元素（data.width/height），
+ * 渲染侧即可按真实比例预留高度，图片解码完成时不再擑开气泡。
+ * OneBot 的图是 data:/blob: 本地源，基本几毫秒内量完；量不到则保持占位比例。
+ */
+function patchImageSizes(store, contactorId, message) {
+  const content = message?.content;
+  if (!Array.isArray(content) || content.length === 0) return;
+
+  const targets = content
+    .map((element, index) => ({ element, index }))
+    .filter(
+      ({ element }) =>
+        element?.type === "image" &&
+        element.data?.file &&
+        !(Number(element.data.width) > 0 && Number(element.data.height) > 0),
+    );
+  if (targets.length === 0) return;
+
+  resolveImageSizes(targets.map(({ element }) => element.data.file)).then(
+    (sizes) => {
+      if (sizes.every((size) => !size)) return;
+      const nextContent = content.map((element) => ({ ...element }));
+      targets.forEach(({ index }, i) => {
+        const size = sizes[i];
+        if (!size) return;
+        nextContent[index] = {
+          ...nextContent[index],
+          data: { ...nextContent[index].data, ...size },
+        };
+      });
+      store.applyMessageEvent({
+        type: "message.patch",
+        contactorId,
+        messageId: message.id,
+        patch: { content: nextContent },
+      });
+    },
+  );
+}
+
+/**
  * 统一网关：发送消息、中断生成、处理 Socket 回调事件的单例
  */
 export const gateway = {
@@ -1246,9 +1298,9 @@ export const gateway = {
         // 与后端下发的真实 QQ / 群号（data.id = params.user_id || params.group_id）
         // 永远不可能相等。仅当全场只有一个 OneBot 联系人时才兜底，
         // 避免把消息误投到另一个无关会话（多个时宁可不渲染，也不猜）。
-        const onebotContactors = Object.values(contactorStore.contactors).filter(
-          (c) => c.platform === "onebot",
-        );
+        const onebotContactors = Object.values(
+          contactorStore.contactors,
+        ).filter((c) => c.platform === "onebot");
         if (onebotContactors.length === 1) {
           contactor = onebotContactors[0];
         } else if (onebotContactors.length > 1) {
@@ -1265,6 +1317,8 @@ export const gateway = {
           message: webMessage,
           markPending: true,
         });
+        // 量出图片尺寸后 patch 回去，让气泡按真实比例预留高度
+        patchImageSizes(contactorStore, contactor.id, webMessage);
       }
     } else if (type === "del_msg") {
       const onebotContactors = Object.values(contactorStore.contactors).filter(

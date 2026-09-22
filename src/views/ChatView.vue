@@ -1103,16 +1103,23 @@ onMounted(() => {
 
   if (window.ResizeObserver && messagesInner.value) {
     resizeObserver = new ResizeObserver((entries) => {
-      if (!isObservingResize || !chatWindow.value || autoScroll.value) return;
+      if (!chatWindow.value) return;
       for (const entry of entries) {
-        if (entry.target === messagesInner.value) {
-          const newHeight = messagesInner.value.offsetHeight;
-          const diff = newHeight - oldInnerHeight;
-          if (diff > 0) {
-            chatWindow.value.scrollTop += diff;
-            prevScrollTop.value = chatWindow.value.scrollTop;
-          }
-          oldInnerHeight = newHeight;
+        if (entry.target !== messagesInner.value) continue;
+        const newHeight = messagesInner.value.offsetHeight;
+        const diff = newHeight - oldInnerHeight;
+        oldInnerHeight = newHeight;
+        if (diff <= 0) continue;
+
+        if (autoScroll.value) {
+          // 跟随状态：内容异步变高（图片 / 代码块 / mermaid / 工具条…）就贴底，
+          // 不再只依赖 img load 事件和消息链长度变化。
+          chatWindow.value.scrollTop = chatWindow.value.scrollHeight;
+          prevScrollTop.value = chatWindow.value.scrollTop;
+        } else if (isObservingResize) {
+          // 分页加载历史时保持视口相对位置不变
+          chatWindow.value.scrollTop += diff;
+          prevScrollTop.value = chatWindow.value.scrollTop;
         }
       }
     });
