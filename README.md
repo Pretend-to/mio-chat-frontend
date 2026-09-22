@@ -44,8 +44,46 @@
 - **崩溃安全的流式链路** —— 消息先落盘（`localforage`）成功才发 ACK；落盘失败不发 ACK，服务端保留缓存待重同步。`StreamBuffer` 以 80ms 节流批量写 store，防止 Safari 高频重绘 OOM。
 - **群聊上下文隔离引擎** —— 一条共享消息链、N 个成员各自的视图。自己的发言保持原生 `assistant` 格式，其他人打包进 `group_chat_history` XML；数组强制以 user 轮收尾；`@` 路由按 ID 解析，从构造上避免前缀误唤起。
 - **客户端记忆工程** —— `SystemPromptAssembler` 把人格 + 全局长期记忆 + 结晶记忆合并成唯一一条 system 消息；`MemoryManager.vue` 让用户可视化查看/编辑五个记忆分区。
-- **手写 PWA，不用 Workbox** —— 版本化 Service Worker（v4/v5）+ 自研 IndexedDB 响应缓存：7 天 TTL、每日过期清扫、`CACHE_VERSION=17` 迁移、`postMessage` 开发模式握手。
-- **还有** —— Web Worker 分块 MD5 上传、自写 markdown-it @提及插件、Shadow DOM 动态渲染（AnyUI）、20+ 交互组合式函数、8 组手调 Rolldown 分包（把 1MB 图表库隔离在启动路径之外）。
+- **手写 PWA，不用 Workbox** —— 版本化 Service Worker（`public/service-worker.v5.js`，`CACHE_VERSION = v21`）+ 自研 IndexedDB 响应缓存：7 天 TTL、每日过期清扫、版本化迁移、`postMessage` 开发模式握手。
+- **图片先量后插** —— 预加载读图片固有尺寸后再插 DOM，气泡按 `aspect-ratio` 预留终态高度，图片解码完成时布局零跳动（`lib/imageSize.js` + `MessageContent.vue` 的 `.image-slot`）。
+- **还有** —— Web Worker 分块 MD5 上传、自写 markdown-it @提及插件、Shadow DOM 动态渲染（AnyUI）、19 个交互组合式函数、8 组手调 Rolldown 分包（把 1MB 图表库隔离在启动路径之外）。
+
+## 类型清单
+
+> 数字取自当前 `src/`，改代码时顺手同步这一节。完整约定见 [`AGENTS.md`](./AGENTS.md)。
+
+### 联系人类型（`contactor.platform`）
+
+| 值         | 含义                                                             |
+| ---------- | ---------------------------------------------------------------- |
+| `openai`   | 前端自定义 LLM 会话：模型、预设、工具都在前端配置                |
+| `agent`    | 服务端 Agent 会话：人格、工具、记忆、Session 由后端持有          |
+| `group`    | 多 Agent 群聊：一条共享消息链，每个成员各自组装上下文            |
+| `onebot`   | QQ / OneBot 联系人（后端 OneBot 客户端接入）                     |
+| `sub_agent` | SubAgent 派生的只读会话（输入框被只读条替换）                   |
+
+### 消息类型
+
+消息链的 `role` 共三种：`user` / `other`（AI 回复）/ `mio_system`（本地系统提示，**不进 LLM 上下文**）。发给模型时再映射为 `user` / `assistant` / `tool` / `system`。
+
+消息元素 `element.type` 共十一种：`text`、`image`、`file`、`reply`、`nodes`（合并转发）、`at`、`blank`、`reason`（思维链）、`tool_call`、`prompt_hint`、`crystallize_event`。
+
+工具产物走外层渲染，`getOuterItemType()` 按扩展名/类型分流：`office`、`pdf`、`markdown`、`html`、`image`、`audio`、`video`、`alert`、`link`。
+
+### 输入区徽标（`.command-badge` 的 `data-type`）
+
+`mention`（@ 群成员，按 ID 路由）/ `preset`（一键指令模板）/ `tool` / `skill` / `channel_slash`。
+
+### 规模
+
+| 指标                        | 数量             |
+| --------------------------- | ---------------- |
+| 交互组合式函数 `composables/` | 19               |
+| Pinia store                 | 8                |
+| 组件                        | 60               |
+| 视图                        | 27（设置页 17）  |
+| 单测文件                    | 16               |
+| 手调分包组                  | 8                |
 
 ## 技术栈
 
@@ -69,6 +107,7 @@ pnpm lint       # 运行 oxlint；注意：该命令包含 --fix，会修改文�
 
 如果只想检查 lint 而不自动修改文件，可运行 `pnpm exec oxlint .`。执行带修复的 lint 前，请先确认工作树中的改动已经妥善保存。
 
+> 生产构建产物由后端 Express 作为静态资源托管，因此只在本仓库 `pnpm build` 还不够 —— 需要把 `dist/` 同步到后端仓库的 `dist/`。
 > 后端、架构图与完整双语 README：[**mio-chat-backend**](https://github.com/Pretend-to/mio-chat-backend)。
 
 ## 🙏 致谢
