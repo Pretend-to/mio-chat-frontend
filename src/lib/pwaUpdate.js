@@ -5,7 +5,7 @@
  * 只靠注册一个 SW 不够，需要三件事配合：
  * 1. 页面重新可见时主动 `registration.update()`（长驻 PWA 否则可能几天都不查）；
  * 2. 新 SW 接管控制权后自动重载一次页面（SW 在 install 里已 skipWaiting）；
- * 3. 给用户一个手动入口（设置 → Web 配置 →「应用更新」）：检查更新 / 强制更新。
+ * 3. 给用户一个手动入口（设置 → 客户端设置 →「应用更新」）：检查更新 / 强制更新。
  *
  * 另外 SW 的导航请求是 network-first（见 public/service-worker.v5.js），
  * 所以只要真的导航一次就能拿到最新 shell。
@@ -113,10 +113,100 @@ export async function forceUpdate() {
   window.location.reload();
 }
 
-/** 当前页面看到的 SW 缓存版本（用于「应用更新」处显示，便于确认是否真的换了版本） */
-export async function getCacheVersion() {
-  if (!("caches" in window)) return "";
-  const keys = await caches.keys();
-  const shell = keys.find((key) => key.startsWith("mio-shell-"));
-  return shell || keys[0] || "";
+/** 取文本的 SHA-256 前 12 位：仅用于「服务器 / 本地」两侧对拍 */
+async function sha256Short(text) {
+  if (!text || !globalThis.crypto?.subtle) return "";
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(text),
+  );
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 12);
+}
+
+/**
+ * 取文本：fresh=true 时加时间戳 + no-store 强制走服务器；
+ * 否则用 force-cache，拿到的就是当前客户端实际会用的那份缓存副本。
+ */
+function probeText(url, { fresh = false } = {}) {
+  if (!url) return Promise.resolve("");
+  const target = fresh
+    ? `${url}${url.includes("?") ? "&" : "?"}__verify=${Date.now()}`
+    : url;
+  return fetch(target, { cache: fresh ? "no-store" : "force-cache" })
+    .then((response) => (response.ok ? response.text() : ""))
+    .catch(() => "");
+}
+
+function fileNameOf(url) {
+  return url ? url.split("/").pop().split("?")[0] : "";
+}
+
+/** 当前页面真正在跑的入口脚本 URL */
+function runningEntryUrl() {
+  const script = document.querySelector('script[src*="/assets/js/index-"]');
+  if (!script) return "";
+  return new URL(script.getAttribute("src"), window.location.origin).href;
+}
+
+/** 服务器最新 index.html 里引用的入口脚本 URL */
+function serverEntryUrl(html) {
+  const match = html.match(/assets\/js\/index-[A-Za-z0-9_-]+\.js/);
+  if (!match) return "";
+  return new URL(match[0], window.location.origin).href;
+}
+
+/**
+ * 同时校验 SW 与入口 JS 的哈希：服务器当前内容 vs 本机缓存副本。
+ * 两侧不一致 ⇒ 客户端还停在旧构建（SW / HTTP 缓存没换）。
+ * @returns {Promise<{supported: boolean, sw: object, entry: object}>}
+ */
+export async function verifyAssets() {
+  const swUrl = new URL(SW_URL, window.location.origin).href;
+  const registration = await getRegistration();
+  const installedSwUrl = registration?.active?.scriptURL || swUrl;
+  const installedSwVersion = installedSwUrl.includes("?v=")
+    ? installedSwUrl.split("?v=")[1]
+    : "";
+
+  const html = await probeText(window.location.href.split("#")[0], {
+    fresh: true,
+  });
+  const serverUrl = serverEntryUrl(html) || runningEntryUrl();
+  const localUrl = runningEntryUrl();
+
+  const [swServerText, swLocalText, entryServerText, entryLocalText] =
+    await Promise.all([
+      probeText(swUrl, { fresh: true }),
+      probeText(installedSwUrl),
+      probeText(serverUrl, { fresh: true }),
+      probeText(localUrl),
+    ]);
+
+  const [swServer, swLocal, entryServer, entryLocal] = await Promise.all([
+    sha256Short(swServerText),
+    sha256Short(swLocalText),
+    sha256Short(entryServerText),
+    sha256Short(entryLocalText),
+  ]);
+
+  return {
+    supported: Boolean(globalThis.crypto?.subtle),
+    sw: {
+      server: swServer,
+      local: swLocal,
+      same: Boolean(swServer) && swServer === swLocal,
+      installedVersion: installedSwVersion,
+      buildVersion: SW_VERSION,
+    },
+    entry: {
+      server: entryServer,
+      local: entryLocal,
+      same: Boolean(entryServer) && entryServer === entryLocal,
+      serverName: fileNameOf(serverUrl),
+      localName: fileNameOf(localUrl),
+    },
+  };
 }

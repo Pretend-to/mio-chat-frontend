@@ -46,6 +46,12 @@
         >
           推送通知
         </div>
+        <div
+          :class="{ 'tab-item': true, active: activeTab === 'update' }"
+          @click="openUpdateTab"
+        >
+          应用更新
+        </div>
       </div>
     </div>
 
@@ -740,6 +746,83 @@
       @close="cropperVisible = false"
       @confirm="handleCropperConfirm"
     />
+
+    <!-- ========== 应用更新 ========== -->
+    <div v-if="activeTab === 'update'" class="tab-pane">
+      <div class="update-card">
+        <div class="update-head">
+          <span class="update-title">应用更新</span>
+          <el-button link size="small" :loading="verifying" @click="runVerify">
+            重新校验
+          </el-button>
+        </div>
+        <p class="update-desc">
+          手机上如果发现界面还是旧版本，先点「检查更新」；仍无效再点「强制更新」——
+          它会注销 Service Worker 并清空本地缓存后重新加载。
+        </p>
+        <div class="update-actions">
+          <el-button :loading="checking" @click="handleCheckUpdate">
+            检查更新
+          </el-button>
+          <el-button
+            type="danger"
+            plain
+            :loading="forcing"
+            @click="handleForceUpdate"
+          >
+            强制更新（清缓存并重载）
+          </el-button>
+        </div>
+
+        <!-- sw / 入口 JS 双哈希对拍：两边不一致就是客户端还在旧构建上 -->
+        <div v-if="verifyError" class="verify-error">{{ verifyError }}</div>
+        <div v-else-if="verifying && !verify" class="verify-note">
+          正在校验…
+        </div>
+        <div v-else-if="verify" class="verify-list">
+          <div class="verify-block">
+            <div class="verify-head">
+              <span class="verify-name">Service Worker</span>
+              <span class="verify-flag" :class="verify.sw.same ? 'ok' : 'bad'">
+                {{ verify.sw.same ? "✓ 一致" : "✗ 不一致" }}
+              </span>
+            </div>
+            <div class="verify-line">
+              <span class="verify-label">服务器</span>
+              <code>{{ verify.sw.server || "—" }}</code>
+            </div>
+            <div class="verify-line">
+              <span class="verify-label">本地</span>
+              <code>{{ verify.sw.local || "—" }}</code>
+            </div>
+          </div>
+          <div class="verify-block">
+            <div class="verify-head">
+              <span class="verify-name">入口 index.js</span>
+              <span
+                class="verify-flag"
+                :class="verify.entry.same ? 'ok' : 'bad'"
+              >
+                {{ verify.entry.same ? "✓ 一致" : "✗ 不一致" }}
+              </span>
+            </div>
+            <div class="verify-line">
+              <span class="verify-label">服务器</span>
+              <code>{{ verify.entry.server || "—" }}</code>
+            </div>
+            <div class="verify-line">
+              <span class="verify-label">本地</span>
+              <code>{{ verify.entry.local || "—" }}</code>
+            </div>
+          </div>
+          <div class="verify-meta">
+            已装 SW {{ verify.sw.installedVersion || "—" }} · 本页构建
+            {{ verify.sw.buildVersion || "—" }} · 运行中
+            {{ verify.entry.localName || "—" }}
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -772,6 +855,7 @@ import {
   testPushNotification,
   showLocalTestNotification,
 } from "@/lib/pushClient.js";
+import { checkForUpdate, forceUpdate, verifyAssets } from "@/lib/pwaUpdate.js";
 
 const configStore = useConfigStore();
 const activeTab = ref("profile");
@@ -780,6 +864,64 @@ const activeTab = ref("profile");
 const pushSubscribed = ref(false);
 const pushLoading = ref(false);
 const testPushLoading = ref(false);
+
+// 应用更新（Service Worker 与本地缓存）
+const checking = ref(false);
+const forcing = ref(false);
+const verifying = ref(false);
+const verify = ref(null);
+const verifyError = ref("");
+
+const runVerify = async () => {
+  verifying.value = true;
+  verifyError.value = "";
+  try {
+    const result = await verifyAssets();
+    if (!result.supported) {
+      verify.value = null;
+      verifyError.value = "当前环境不支持 WebCrypto（需 https 访问）";
+      return;
+    }
+    verify.value = result;
+  } catch (error) {
+    verify.value = null;
+    verifyError.value = `校验失败：${error.message}`;
+  } finally {
+    verifying.value = false;
+  }
+};
+
+const openUpdateTab = () => {
+  activeTab.value = "update";
+  runVerify();
+};
+
+const handleCheckUpdate = async () => {
+  checking.value = true;
+  try {
+    const { supported, updated } = await checkForUpdate();
+    if (!supported) {
+      ElMessage.warning("当前环境不支持 Service Worker");
+    } else if (updated) {
+      ElMessage.success("发现新版本，正在重新加载…");
+    } else {
+      await runVerify();
+      ElMessage.success("已是最新版本");
+    }
+  } finally {
+    checking.value = false;
+  }
+};
+
+const handleForceUpdate = async () => {
+  forcing.value = true;
+  try {
+    await forceUpdate();
+  } catch (error) {
+    ElMessage.error(`强制更新失败：${error.message}`);
+    forcing.value = false;
+  }
+};
 
 const pushSupported = computed(() => isPushSupported());
 const isIOS = computed(() => isIOSDevice());
@@ -1744,5 +1886,101 @@ const handleClearAllMemories = async () => {
   font-size: 12px;
   color: var(--mio-text-secondary, #606266);
   line-height: 1.5;
+}
+
+/* 应用更新 */
+.update-card {
+  padding: 4px 2px;
+}
+
+.update-card .update-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.update-card .update-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--mio-text-primary, #303133);
+}
+
+.update-card .verify-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--mio-border-color, rgba(0, 0, 0, 0.08));
+}
+
+.update-card .verify-block {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.update-card .verify-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.update-card .verify-name {
+  font-weight: 600;
+  color: var(--mio-text-primary, #303133);
+}
+
+.update-card .verify-flag.ok {
+  color: var(--el-color-success, #67c23a);
+}
+
+.update-card .verify-flag.bad {
+  color: var(--el-color-danger, #f56c6c);
+}
+
+.update-card .verify-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--mio-text-secondary, #606266);
+}
+
+.update-card .verify-line code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.4px;
+  color: var(--mio-text-primary, #303133);
+  word-break: break-all;
+}
+
+.update-card .verify-label {
+  flex: 0 0 42px;
+}
+
+.update-card .verify-meta,
+.update-card .verify-note,
+.update-card .verify-error {
+  font-size: 12px;
+  color: var(--mio-text-secondary, #606266);
+  word-break: break-all;
+}
+
+.update-card .verify-error {
+  color: var(--el-color-danger, #f56c6c);
+}
+
+.update-card .update-desc {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--mio-text-secondary, #606266);
+}
+
+.update-card .update-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 </style>
