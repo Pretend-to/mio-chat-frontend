@@ -785,7 +785,10 @@ export const useContactorsStore = defineStore("contactors", () => {
         client.setLocalStorage();
         // 消息本体也要落盘：此前只有 complete/failed 等少数生命周期会写
         // mio_msg_*，入站消息走的 message.upsert 只写了元数据 → 一刷新就丢。
-        client.saveContactorMessages(contactorId);
+        // 守卫与文件内其余落盘点保持一致（单测里的 client 是部分 mock）。
+        if (client.saveContactorMessages) {
+          client.saveContactorMessages(contactorId);
+        }
       }
     }
     return result;
