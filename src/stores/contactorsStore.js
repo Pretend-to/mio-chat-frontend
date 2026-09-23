@@ -781,7 +781,12 @@ export const useContactorsStore = defineStore("contactors", () => {
         contactor.hasPendingTask = true;
       }
       updateContactorSummary(contactor);
-      if (event.persist !== false) client.setLocalStorage();
+      if (event.persist !== false) {
+        client.setLocalStorage();
+        // 消息本体也要落盘：此前只有 complete/failed 等少数生命周期会写
+        // mio_msg_*，入站消息走的 message.upsert 只写了元数据 → 一刷新就丢。
+        client.saveContactorMessages(contactorId);
+      }
     }
     return result;
   }

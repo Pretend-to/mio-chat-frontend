@@ -90,7 +90,41 @@ export default class Client extends EventEmitter {
     this.saveNow = this._setLocalStorage.bind(this); // 立即持久化元数据
     this.setLocalStorage = debounce(this.saveNow, 500); // 防抖版本持久化元数据
     this.saveContactorMessagesNow = this._saveContactorMessagesNow.bind(this);
-    this.saveContactorMessages = debounce(this.saveContactorMessagesNow, 300);
+
+    // 按会话维度的写入队列。
+    // 原先这里是全局 debounce：300ms 内不同会话的落盘会互相顶掉，只写最后一个
+    // （长期表现就是"总有些消息没被持久化"）。改成集合 + 统一冲刷。
+    this._pendingMessageSaves = new Set();
+    this._messageSaveTimer = null;
+    this.saveContactorMessages = (contactorId) => {
+      if (!contactorId) return;
+      this._pendingMessageSaves.add(contactorId);
+      clearTimeout(this._messageSaveTimer);
+      this._messageSaveTimer = setTimeout(() => {
+        this.flushContactorMessages();
+      }, 300);
+    };
+    /** 立刻写出所有待落盘的会话消息（离开页面 / 切后台前调用） */
+    this.flushContactorMessages = () => {
+      clearTimeout(this._messageSaveTimer);
+      this._messageSaveTimer = null;
+      const ids = [...this._pendingMessageSaves];
+      this._pendingMessageSaves.clear();
+      return Promise.all(ids.map((id) => this.saveContactorMessagesNow(id)));
+    };
+
+    // 移动端（尤其 iOS PWA）切后台常被系统直接回收，页面事件都不给。
+    // 所以在隐藏/离开时立刻冲刷，避免防抖窗口里的消息丢掉。
+    if (typeof document !== "undefined") {
+      const flush = () => {
+        this.flushContactorMessages();
+        this.saveNow();
+      };
+      document.addEventListener("pagehide", flush);
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") flush();
+      });
+    }
   }
 
   get avatar() {
