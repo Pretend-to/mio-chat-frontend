@@ -358,6 +358,8 @@ export default class Socket extends EventEmitter {
    * @param {String} contactorId - Contactor ID
    */
   enterChat(contactorId) {
+    // 记下来：回到前台 / 重连后要用它重新对齐会话流（见 client.resyncActiveChat）
+    this.activeContactorId = contactorId;
     const request = {
       request_id: randomString(16),
       protocol: "llm",

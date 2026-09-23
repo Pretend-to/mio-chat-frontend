@@ -113,8 +113,19 @@ export default class Client extends EventEmitter {
       return Promise.all(ids.map((id) => this.saveContactorMessagesNow(id)));
     };
 
+    /**
+     * 回到前台 / 重连后重新对齐当前会话的流。
+     * 移动端切走时 socket 与计时器会被挂起，回来时流就停在断点上（只有刷新才补全）——
+     * 这里复用既有的 enter_chat：服务端会把 streamCache 的快照回放一遍，前端自然补齐。
+     */
+    this.resyncActiveChat = () => {
+      const contactorId = this.socket?.activeContactorId;
+      if (!contactorId || !this.socket?.available) return;
+      this.socket.enterChat(contactorId);
+    };
+
     // 移动端（尤其 iOS PWA）切后台常被系统直接回收，页面事件都不给。
-    // 所以在隐藏/离开时立刻冲刷，避免防抖窗口里的消息丢掉。
+    // 所以在隐藏/离开时立刻冲刷，避免防抖窗口里的消息丢掉；回来时重新对齐会话流。
     if (typeof document !== "undefined") {
       const flush = () => {
         this.flushContactorMessages();
@@ -122,9 +133,16 @@ export default class Client extends EventEmitter {
       };
       document.addEventListener("pagehide", flush);
       document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "hidden") flush();
+        if (document.visibilityState === "hidden") {
+          flush();
+        } else {
+          this.resyncActiveChat();
+        }
       });
     }
+
+    // 意外断连重连成功后同样要对齐一次
+    this.on("connection_restored", () => this.resyncActiveChat());
   }
 
   get avatar() {
