@@ -1,5 +1,39 @@
 import { onMounted, onUnmounted, ref } from "vue";
 
+/** 取纯文本时视为「独立成行」的块级标签 */
+const BLOCK_TAGS = new Set([
+  "ADDRESS",
+  "ARTICLE",
+  "ASIDE",
+  "BLOCKQUOTE",
+  "DD",
+  "DIV",
+  "DL",
+  "DT",
+  "FIELDSET",
+  "FIGCAPTION",
+  "FIGURE",
+  "FOOTER",
+  "FORM",
+  "H1",
+  "H2",
+  "H3",
+  "H4",
+  "H5",
+  "H6",
+  "HEADER",
+  "LI",
+  "MAIN",
+  "NAV",
+  "OL",
+  "P",
+  "PRE",
+  "SECTION",
+  "TABLE",
+  "TR",
+  "UL",
+]);
+
 /**
  * 编辑区（contenteditable）光标与插入逻辑。
  *
@@ -162,28 +196,38 @@ export function useInputCursorAndTextarea({ textareaRef }) {
   };
 
   /**
-   * 取渲染后的纯文本。
-   * detached 节点的 innerText 会退化成 textContent —— <br> 与块级边界带来的
-   * 换行会全部丢失，所以必须先挂到离屏位置渲染再读。
+   * 取编辑器纯文本（<br> 与块级边界映射成换行）。
+   *
+   * 不能用 innerText：它依赖渲染盒，实测 iOS 上（镜像 width:0px 时）会返回空串，
+   * 而同一节点的 textContent 是完整的 —— 移动端"发出去变成 blank 块"就是这么来的
+   * （presend 取到空串 → 容器没有 text → store 兜底成 [blank]）。
+   * 这里改成纯 DOM 遍历：跨端确定，完全不看布局。
+   * .command-badge 不计入正文（入链前徽章已由 presend 处理）。
    */
   const getSafeText = (element) => {
     if (typeof element === "string") return element;
-    if (!element?.cloneNode) return String(element ?? "");
+    if (!element?.childNodes) return String(element ?? "");
 
-    const mirror = element.cloneNode(true);
-    mirror.style.position = "fixed";
-    mirror.style.left = "-9999px";
-    mirror.style.top = "0";
-    mirror.style.width = `${element.offsetWidth || 0}px`;
-    mirror.style.height = "auto";
-    mirror.style.maxHeight = "none";
-    // 用 opacity 而非 visibility：innerText 只在元素"确实生成盒"时才按渲染结果取文本
-    mirror.style.opacity = "0";
-    mirror.style.pointerEvents = "none";
-    mirror.setAttribute("aria-hidden", "true");
-    document.body.appendChild(mirror);
-    const text = mirror.innerText;
-    mirror.remove();
+    let text = "";
+    const walk = (node) => {
+      node.childNodes.forEach((child) => {
+        if (child.nodeType === Node.TEXT_NODE) {
+          text += child.nodeValue;
+          return;
+        }
+        if (child.nodeType !== Node.ELEMENT_NODE) return;
+        if (child.classList?.contains("command-badge")) return;
+        if (child.tagName === "BR") {
+          text += "\n";
+          return;
+        }
+        const isBlock = BLOCK_TAGS.has(child.tagName);
+        if (isBlock && text && !text.endsWith("\n")) text += "\n";
+        walk(child);
+        if (isBlock && !text.endsWith("\n")) text += "\n";
+      });
+    };
+    walk(element);
     return text;
   };
 

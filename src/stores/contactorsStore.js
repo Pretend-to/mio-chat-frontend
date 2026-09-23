@@ -6,6 +6,7 @@ import { config, client } from "@/lib/runtime.js";
 import { resolveUnhandledMentions } from "@/lib/groupGateway.js";
 import { isLegacyInteractionBubble } from "@/lib/interactionFrames.js";
 import {
+  isBlankPlaceholder,
   isStreamingMessage,
   isTerminalMessage,
   mergeMessageHistory,
@@ -233,6 +234,8 @@ export const useContactorsStore = defineStore("contactors", () => {
               // 防止旧数据以非规范状态进入消息链
               .map((m) => (m && m.id ? normalizeMessage(m) : m))
               .filter((message) => !isLegacyInteractionBubble(message))
+              // 存量清洗：丢掉只剩 blank 占位的历史消息（不承载内容，留着只会变成空消息）
+              .filter((message) => !isBlankPlaceholder(message))
               .map((m) =>
                 m && (m.status === "completed" || m.status === "failed")
                   ? markRaw(m)
@@ -1053,11 +1056,7 @@ export const useContactorsStore = defineStore("contactors", () => {
     if (!host) return;
 
     const question =
-      params.question ||
-      params.target ||
-      params.topic ||
-      params.key ||
-      "";
+      params.question || params.target || params.topic || params.key || "";
     const answer =
       params.answer ||
       params.content ||
@@ -1696,6 +1695,8 @@ export const useContactorsStore = defineStore("contactors", () => {
         message && message.id ? normalizeMessage(message) : message,
       )
       .filter((message) => !isLegacyInteractionBubble(message))
+      // 存量清洗：与主加载路径一致，丢掉只剩 blank 占位的历史消息
+      .filter((message) => !isBlankPlaceholder(message))
       .map((message) =>
         message &&
         (message.status === "completed" || message.status === "failed")

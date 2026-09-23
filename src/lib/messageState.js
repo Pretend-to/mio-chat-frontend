@@ -27,6 +27,20 @@ export function isActiveMessage(message) {
 }
 
 /**
+ * 「纯占位消息」：整条消息只剩一个 blank 块，不承载任何内容。
+ * 它是前端渲染用的临时态，一旦被写进会话链就成了「发了一条空消息」——
+ * 水合时必须丢掉，否则历史残留会一直跟着会话（移动端发不出消息时攒了一堆）。
+ */
+export function isBlankPlaceholder(message) {
+  const content = message?.content;
+  return (
+    Array.isArray(content) &&
+    content.length === 1 &&
+    content[0]?.type === "blank"
+  );
+}
+
+/**
  * UI 层「消息仍在生成中」的统一判定（打字机光标 / 右键停止 / 中断删除等入口共用）。
  * 规范三态：pending / streaming / retrying；历史别名（running / processing）经
  * normalizeMessageStatus 在读时吸收，避免旁路数据掉入"既无光标、也无停止入口"的空档。
