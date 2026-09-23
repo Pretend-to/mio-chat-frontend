@@ -11,6 +11,10 @@
  * 所以只要真的导航一次就能拿到最新 shell。
  */
 const SW_URL = "/service-worker.v5.js";
+// 构建时注入（见 vite.config.js）：SW 内容变了才变。
+// 目的：SW 的 URL 随内容变化，CDN / 边缘缓存的 max-age=604800 无法再把旧 SW 钉住。
+const SW_VERSION = import.meta.env.VITE_SW_VERSION || "";
+const SW_REGISTER_URL = SW_VERSION ? `${SW_URL}?v=${SW_VERSION}` : SW_URL;
 
 let registrationPromise = null;
 
@@ -30,7 +34,7 @@ async function getRegistration() {
   if (!("serviceWorker" in navigator)) return null;
   if (!registrationPromise) {
     registrationPromise = navigator.serviceWorker
-      .register(SW_URL, { updateViaCache: "none" })
+      .register(SW_REGISTER_URL, { updateViaCache: "none" })
       .then((registration) => {
         console.log("Service Worker registered:", registration);
         return registration;

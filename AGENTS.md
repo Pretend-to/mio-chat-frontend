@@ -165,6 +165,8 @@ fittedWidth = Math.min(自然宽, 540, 520 * (自然宽 / 自然高));
 
 ## 已知的坑
 
+- **生产环境不能让 SW / index.html 长缓存**：SW 的脚本 URL 是固定的，一旦被 CDN 或源站用 `max-age=604800` 缓存，设备就永远拿不到新 SW（曾导致移动端 PWA 卡在旧版本、旧 shell 指向已删除的 chunk → 白屏）。
+  代码侧已有防护：注册 URL 带「SW 内容哈希」（`?v=`，见 `vite.config.js` 的 `VITE_SW_VERSION`），SW 一改 URL 就变，可绕过陈旧边缘缓存；但 `index.html` 仍必须由服务端返回 `no-cache`（后端已如此，生产反代/CDN 需一致）。
 - 前端**没有** `logger`（那是后端的全局），调试用 `console`。
 - `README.md` / `README.en-US.md` 面向使用者（介绍 + 「类型清单」），本文件面向改动者（约定 + 红线）。**README 里的类型清单与规模数字是手工维护的，改代码时记得同步**。
 - `pnpm lint` 带 `--fix`：在未提交的改动上跑它可能顺带改到别的文件，注意 `git diff`。

@@ -1,4 +1,6 @@
 import { defineConfig, loadEnv } from "vite";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
 import vue from "@vitejs/plugin-vue";
 import VueDevTools from "vite-plugin-vue-devtools";
@@ -8,6 +10,21 @@ import { visualizer } from "rollup-plugin-visualizer";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+
+  // SW 注册 URL 带上「按 SW 内容算的哈希」：SW 一改，URL 就变，CDN 的
+  // max-age=604800 再也钉不住它（生产曾因此让移动端 PWA 永远卡在旧版本）。
+  // 内容不变则哈希不变 —— 不会白换，也不会反复重装 SW。
+  const swVersion = createHash("md5")
+    .update(
+      readFileSync(
+        fileURLToPath(
+          new URL("./public/service-worker.v5.js", import.meta.url),
+        ),
+        "utf8",
+      ),
+    )
+    .digest("hex")
+    .slice(0, 8);
 
   return {
     plugins: [
@@ -52,7 +69,9 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": fileURLToPath(new URL("./src", import.meta.url)),
-        "@napi-rs/canvas": fileURLToPath(new URL("./src/utils/emptyShim.js", import.meta.url)),
+        "@napi-rs/canvas": fileURLToPath(
+          new URL("./src/utils/emptyShim.js", import.meta.url),
+        ),
       },
     },
     optimizeDeps: {
@@ -70,9 +89,9 @@ export default defineConfig(({ mode }) => {
           additionalData: `
             @use "@/assets/styles/variables" as *;
             @use "@/assets/styles/mixins" as *;
-          `
-        }
-      }
+          `,
+        },
+      },
     },
     build: {
       target: "es2022",
@@ -131,7 +150,7 @@ export default defineConfig(({ mode }) => {
                 // 路由时异步加载
                 test: (id) =>
                   /[\\/]src[\\/]views[\\/]/.test(id) &&
-                  !id.includes('/views/DashboardView.vue'),
+                  !id.includes("/views/DashboardView.vue"),
                 priority: 15,
               },
               {
@@ -142,9 +161,9 @@ export default defineConfig(({ mode }) => {
                 // 让它们保留动态 import 的异步拆分，避免污染主 vendor 并在启动时被提前加载
                 test: (id) =>
                   /[\\/]node_modules[\\/]/.test(id) &&
-                  !id.includes('/mio-previewer/dist/') &&
-                  !id.includes('@open-file-viewer') &&
-                  !id.includes('pdfjs-dist'),
+                  !id.includes("/mio-previewer/dist/") &&
+                  !id.includes("@open-file-viewer") &&
+                  !id.includes("pdfjs-dist"),
                 priority: 10,
               },
               {
@@ -154,10 +173,9 @@ export default defineConfig(({ mode }) => {
                 // DashboardView（懒加载路由）异步加载
                 test: (id) =>
                   /[\\/]src[\\/]components[\\/]/.test(id) &&
-                  !id.includes('/components/dashboard/'),
+                  !id.includes("/components/dashboard/"),
                 priority: 20,
               },
-
             ],
           },
           chunkFileNames: `assets/js/[name]-[hash].js`,
@@ -191,6 +209,9 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
         },
       },
+    },
+    define: {
+      "import.meta.env.VITE_SW_VERSION": JSON.stringify(swVersion),
     },
     base: env.VITE_BASE_URL || "/",
   };
