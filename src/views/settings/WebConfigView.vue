@@ -106,6 +106,35 @@
         </el-form-item>
       </el-form>
     </el-card>
+
+    <!-- 应用更新：移动端 PWA 没有浏览器自带的更新入口，这里给它一个 -->
+    <el-card class="update-card">
+      <template #header>
+        <div class="update-header">
+          <span>应用更新</span>
+          <span v-if="cacheVersion" class="update-version">
+            当前缓存：{{ cacheVersion }}
+          </span>
+        </div>
+      </template>
+      <p class="update-tip">
+        手机上如果发现界面还是旧版本，先用「检查更新」；仍然无效就用「强制更新」
+        —— 它会注销 Service Worker 并清空本地缓存后重新加载。
+      </p>
+      <div class="update-actions">
+        <el-button :loading="checking" @click="handleCheckUpdate">
+          检查更新
+        </el-button>
+        <el-button
+          type="danger"
+          plain
+          :loading="forcing"
+          @click="handleForceUpdate"
+        >
+          强制更新（清缓存并重载）
+        </el-button>
+      </div>
+    </el-card>
   </div>
 </template>
 
@@ -114,12 +143,49 @@ import { ref, reactive, onMounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { View, Hide } from "@element-plus/icons-vue";
 import { useConfigStore } from "@/stores/configStore.js";
+import {
+  checkForUpdate,
+  forceUpdate,
+  getCacheVersion,
+} from "@/lib/pwaUpdate.js";
 
 const configStore = useConfigStore();
 const formRef = ref(null);
 const saving = ref(false);
 const showAdminCode = ref(false);
 const showUserCode = ref(false);
+
+// 应用更新
+const checking = ref(false);
+const forcing = ref(false);
+const cacheVersion = ref("");
+
+const handleCheckUpdate = async () => {
+  checking.value = true;
+  try {
+    const { supported, updated } = await checkForUpdate();
+    if (!supported) {
+      ElMessage.warning("当前环境不支持 Service Worker");
+    } else if (updated) {
+      ElMessage.success("发现新版本，正在重新加载…");
+    } else {
+      cacheVersion.value = await getCacheVersion();
+      ElMessage.success("已是最新版本");
+    }
+  } finally {
+    checking.value = false;
+  }
+};
+
+const handleForceUpdate = async () => {
+  forcing.value = true;
+  try {
+    await forceUpdate();
+  } catch (error) {
+    ElMessage.error(`强制更新失败：${error.message}`);
+    forcing.value = false;
+  }
+};
 
 // 表单数据
 const formData = reactive({
@@ -205,6 +271,7 @@ const handleReset = () => {
 
 // 初始化
 onMounted(async () => {
+  cacheVersion.value = await getCacheVersion();
   if (!configStore.config) {
     await configStore.fetchConfig();
   }
@@ -217,6 +284,35 @@ onMounted(async () => {
   padding: 24px;
   max-width: 900px;
   margin: 0 auto;
+}
+
+.update-card {
+  margin-top: 16px;
+
+  .update-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .update-version {
+    color: var(--mio-text-secondary);
+    font-size: 12px;
+  }
+
+  .update-tip {
+    margin: 0 0 16px;
+    color: var(--mio-text-secondary);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .update-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
 }
 
 .page-header {
