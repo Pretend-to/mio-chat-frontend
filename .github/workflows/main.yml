@@ -8,15 +8,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0 # 获取所有提交历史，以便获取最新提交信息
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
       - name: Cache dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         with:
           path: |
             **/node_modules
@@ -62,8 +62,14 @@ jobs:
       - name: Get latest commit message
         id: get_commit_message
         run: |
-          LATEST_COMMIT_MESSAGE=$(git log -1 --pretty=%B)
-          echo "::set-output name=message::$LATEST_COMMIT_MESSAGE"
+          # 只取标题（%s）：多行 body 插进下面的 -m "..." 既脆弱又不必要。
+          # 并用 $GITHUB_OUTPUT 代替已弃用的 set-output 写法（GitHub 很快禁用它）。
+          LATEST_COMMIT_MESSAGE=$(git log -1 --pretty=%s)
+          {
+            echo "message<<COMMIT_MESSAGE_EOF"
+            echo "$LATEST_COMMIT_MESSAGE"
+            echo "COMMIT_MESSAGE_EOF"
+          } >> "$GITHUB_OUTPUT"
       - name: Commit and push changes
         run: |
           cd mio-chat-backend
