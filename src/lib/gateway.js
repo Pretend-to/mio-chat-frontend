@@ -760,10 +760,22 @@ export const gateway = {
         throw new Error("WebSocket 链接未就绪");
       }
 
-      const lastMsg = messagesChain[messagesChain.length - 1];
+      // 必须按 messageId 定位要发的那条消息，不能按位置取链尾：
+      // 助手占位块（blank / pending）常残留在链尾，取尾巴就会把占位块当正文
+      // 发出去 —— 服务端只回「未知类型:blank」，消息永远卡在 pending。
+      const target = messagesChain.find((msg) => msg.id === messageId);
+      if (!target) {
+        throw new Error("找不到要发送的消息，请刷新后重试");
+      }
+      // 占位块是纯前端状态，绝不能上行
+      const content = target.content.filter((elm) => elm.type !== "blank");
+      if (!content.length) {
+        throw new Error("消息内容为空，已取消发送");
+      }
+
       const response = await client.socket.fetch(
         `/api/onebot/message/${contactorId}`,
-        lastMsg.content,
+        content,
       );
 
       return response.message_id;
