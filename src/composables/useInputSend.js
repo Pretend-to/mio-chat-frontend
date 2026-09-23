@@ -312,6 +312,20 @@ export function useInputSend({
       activeContactor.value.platform === "onebot" && !isCommand
         ? wrapText(msg)
         : msg;
+
+    // 硬闸：没有真内容就别发（此时编辑器还没清空，拒发不会吞掉用户已经打的字）。
+    // 历史教训：hasInput() 与取文本是两条不同源的判定 —— 前者放行、后者取到空串时，
+    // 空容器落库会被 store 兜底成 [blank]，界面上就是"自己发的是个空白块"。
+    const hasRealContent =
+      Boolean(wrappedMessage.trim()) ||
+      ImageSrcs.length > 0 ||
+      openaiCmdElements.length > 0 ||
+      Boolean(repliedIdFromBadge);
+    if (!hasRealContent) {
+      ElMessage.warning("没有可发送的内容");
+      return null;
+    }
+
     textareaRef.value.innerHTML = "";
     adjustTextareaHeight();
     const container = activeContactor.value.getBaseUserContainer();
