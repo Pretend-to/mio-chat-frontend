@@ -1,5 +1,6 @@
 import EventEmitter from "./event.js";
 import { randomString } from "../utils/generate.js";
+import { runConsoleCommand } from "./webConsole.js";
 import io from "socket.io-client";
 
 /**
@@ -222,6 +223,14 @@ export default class Socket extends EventEmitter {
       }
       if (e.protocol === "onebot") {
         this.emit("onebot_message", e);
+      } else if (e.protocol === "console") {
+        // 服务端（web_console 工具）下发的控制台命令：本地执行后回传结果
+        this.emit("console_message", e);
+        runConsoleCommand(e).then((reply) => {
+          if (this.socket?.connected) {
+            this.socket.emit("message", JSON.stringify(reply));
+          }
+        });
       } else if (e.protocol === "system") {
         if (e.type === "login") {
           console.log("Business login successful");
