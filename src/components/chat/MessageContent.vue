@@ -740,7 +740,6 @@ const ForwardMsg = defineAsyncComponent(
 // 还没量到时先用稳定占位比例占位，量到后修正一次。
 const IMAGE_MAX_WIDTH = 540;
 const IMAGE_MAX_HEIGHT = 520;
-const IMAGE_PLACEHOLDER_RATIO = "4 / 3";
 
 const imageSizeOf = (element) => {
   const width = Number(element?.data?.width) || 0;
@@ -751,12 +750,9 @@ const imageSizeOf = (element) => {
 const imageSlotStyle = (element) => {
   const size = imageSizeOf(element);
   if (!size) {
-    return {
-      aspectRatio: IMAGE_PLACEHOLDER_RATIO,
-      maxHeight: `${IMAGE_MAX_HEIGHT}px`,
-      maxWidth: `${IMAGE_MAX_WIDTH}px`,
-      width: "100%",
-    };
+    // 历史消息没有量过尺寸：什么都不加，走 .image-slot:not(.is-sized) 的自然流。
+    // 绝不能给 width:100% —— 气泡宽度由内容决定，百分比宽度会塌成一条缝。
+    return {};
   }
   // 宽度必须自带上限：aspect-ratio 只在另一边是 auto 时才能推出这边，
   // 若给确定性宽度再配 max-height，宽度不会回缩，比例被破坏 → contain 补白。
@@ -1520,6 +1516,24 @@ onUnmounted(disableIframeResize);
     border-radius: 8px
     box-shadow: 0 3px 14px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04)
     cursor: zoom-in
+
+  /* 存量消息没有 width/height：退回自然流，让框贴着图。
+     不再用 4:3 占位框 —— 3:2 的图被 contain 进 4:3 里，下方会留一条生硬空白。
+     align-self 必须 flex-start：flex 默认 stretch 会把框拉成整行宽，而插件给
+     img 的 inline max-width:100% 会跟着变宽，图片就撑满了。上限与
+     IMAGE_MAX_WIDTH / IMAGE_MAX_HEIGHT 保持一致。 */
+  &:not(.is-sized)
+    align-self: flex-start
+    max-width: 540px
+    background: none
+
+    :deep(img)
+      position: static
+      inset: auto
+      width: auto
+      height: auto
+      max-width: 100%
+      max-height: 520px
 
 .outer-image-box
   display: flex
