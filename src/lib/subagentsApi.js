@@ -29,6 +29,10 @@ export const subagentsAPI = {
     );
   },
 
+  async listAgentSessions(agentId) {
+    return configAPI.request(`/api/agents/${agentId}/sessions`);
+  },
+
   async continueRun(runId, instruction) {
     return configAPI.request(`/api/subagent-runs/${runId}/continue`, {
       body: { instruction },
