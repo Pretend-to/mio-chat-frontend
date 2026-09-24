@@ -416,6 +416,7 @@ export const useContactorsStore = defineStore("contactors", () => {
       run.finishedAt || run.startedAt || run.createdAt || Date.now(),
     ).getTime();
     const name =
+      run.objective ||
       run.role ||
       run.subagentRole ||
       run.title ||
@@ -433,6 +434,7 @@ export const useContactorsStore = defineStore("contactors", () => {
         runStatus: run.status || existing.runStatus || "",
         readOnly: true,
         name,
+        intro: run.objective || existing.intro || "只读 SubAgent Session",
         title: run.status ? `SubAgent · ${run.status}` : "SubAgent",
         lastUpdate: Math.max(existing.lastUpdate || 0, lastUpdate || 0),
       });

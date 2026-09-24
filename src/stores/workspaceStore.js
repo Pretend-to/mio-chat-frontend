@@ -107,6 +107,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     const sessionId = run.sessionId;
     const tabId = `subagent_${sessionId || runId}`;
     const title =
+      run.objective ||
       run.role ||
       run.subagentRole ||
       run.title ||

@@ -86,6 +86,7 @@
               <div class="card-info">
                 <div class="card-title">
                   {{
+                    run.objective ||
                     run.role ||
                     run.subagentRole ||
                     run.title ||
@@ -95,7 +96,7 @@
                   }}
                 </div>
                 <div class="card-subtitle">
-                  {{ run.objective || statusText(run.status) }}
+                  {{ run.role || statusText(run.status) }}
                 </div>
               </div>
             </div>

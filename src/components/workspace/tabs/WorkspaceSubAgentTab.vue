@@ -5,7 +5,12 @@
       <div class="header-main">
         <div class="task-title-row">
           <span class="task-icon">⚡</span>
-          <span class="task-name">{{
+          <span
+            class="task-name"
+            :class="{ 'is-expanded': isObjectiveExpanded }"
+            :title="runInfo.objective || undefined"
+          >{{
+            runInfo.objective ||
             runInfo.role ||
             runInfo.subagentRole ||
             runInfo.title ||
@@ -17,21 +22,15 @@
             {{ statusText(runInfo.status) }}
           </span>
         </div>
-        <div
-          v-if="runInfo.objective"
-          class="task-objective"
-          :class="{ 'is-expanded': isObjectiveExpanded }"
-        >
-          <div class="objective-content" :title="!isObjectiveExpanded ? runInfo.objective : undefined">
-            {{ runInfo.objective }}
-          </div>
+        <div class="task-secondary">
+          <span v-if="runInfo.role" class="task-role">{{ runInfo.role }}</span>
           <button
             v-if="showObjectiveToggle"
             type="button"
             class="objective-toggle-btn"
             @click.stop="isObjectiveExpanded = !isObjectiveExpanded"
           >
-            {{ isObjectiveExpanded ? "收起" : "展开完整目标" }}
+            {{ isObjectiveExpanded ? "收起目标" : "展开目标" }}
           </button>
         </div>
       </div>
@@ -134,8 +133,8 @@ const runInfo = computed(() => {
 
 const isObjectiveExpanded = ref(false);
 const showObjectiveToggle = computed(() => {
-  const obj = runInfo.value?.objective;
-  return typeof obj === "string" && obj.trim().length > 60;
+  const objective = runInfo.value?.objective;
+  return typeof objective === "string" && objective.trim().length > 60;
 });
 
 const subContactorId = computed(() => {
@@ -153,6 +152,7 @@ const subContactor = computed(() => {
   return {
     id: subContactorId.value || "temp_subagent",
     name:
+      runInfo.value.objective ||
       runInfo.value.role ||
       runInfo.value.subagentRole ||
       runInfo.value.title ||
@@ -317,6 +317,17 @@ const statusText = (status) => {
         font-size: 0.875rem;
         font-weight: 600;
         color: var(--mio-text-primary, #303133);
+        min-width: 0;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        word-break: break-word;
+        &.is-expanded {
+          -webkit-line-clamp: unset;
+          max-height: 220px;
+          overflow-y: auto;
+        }
       }
 
       .status-pill {
@@ -354,44 +365,24 @@ const statusText = (status) => {
       }
     }
 
-    .task-objective {
+    .task-role {
       font-size: 0.75rem;
       color: var(--mio-text-secondary, #606266);
-      line-height: 1.45;
+    }
+
+    .task-secondary {
       display: flex;
-      flex-direction: column;
-      gap: 0.2rem;
+      align-items: center;
+      gap: 0.5rem;
+    }
 
-      .objective-content {
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
-        overflow: hidden;
-        word-break: break-word;
-        transition: all 0.2s ease;
-      }
-
-      &.is-expanded .objective-content {
-        -webkit-line-clamp: unset;
-        max-height: 220px;
-        overflow-y: auto;
-      }
-
-      .objective-toggle-btn {
-        align-self: flex-start;
-        padding: 0;
-        margin: 0;
-        border: none;
-        background: transparent;
-        color: var(--mio-color-primary, #0099ff);
-        font-size: 0.7rem;
-        cursor: pointer;
-        line-height: 1;
-
-        &:hover {
-          text-decoration: underline;
-        }
-      }
+    .objective-toggle-btn {
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: var(--mio-color-primary, #0099ff);
+      font-size: 0.7rem;
+      cursor: pointer;
     }
   }
 

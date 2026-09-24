@@ -180,9 +180,10 @@ export default {
       }
       if (baseName === "subagent") {
         const p = this.toolCall.parameters || {};
-        const role = p.role || p.subagentRole || p.subagentKey;
-        if (role) {
-          return `SubAgent · ${role}`;
+        const objective =
+          p.objective || p.instruction || p.jobs?.[0]?.objective;
+        if (objective) {
+          return `SubAgent · ${objective}`;
         }
         return "SubAgent";
       }

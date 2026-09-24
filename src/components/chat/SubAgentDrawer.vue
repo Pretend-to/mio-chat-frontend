@@ -39,9 +39,9 @@
             <button class="run-main" type="button" @click="openRun(run.id)">
               <span class="run-state" :data-state="run.status"></span>
               <span class="run-copy">
-                <b>{{ run.jobKey }}</b>
+                <b>{{ run.objective || run.jobKey }}</b>
                 <small>
-                  {{ statusText(run.status) }}
+                  {{ run.role || statusText(run.status) }}
                 </small>
               </span>
             </button>
@@ -221,7 +221,7 @@ const openRun = async (runId) => {
 const cancelRun = async (run) => {
   try {
     await ElMessageBox.confirm(
-      `停止 SubAgent 任务「${run.jobKey}」？已执行的内容将保留，可随时继续或调整。`,
+      `停止 SubAgent 任务「${run.objective || run.jobKey}」？已执行的内容将保留，可随时继续或调整。`,
       "停止任务",
       {
         type: "warning",

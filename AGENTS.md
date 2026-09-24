@@ -19,7 +19,7 @@ Mio-Chat 的 Vue 3 前端。作者自用的个人项目，仍在开发阶段，*
 3. **输入区是 contenteditable，不是 textarea**：所有往编辑区塞内容的动作必须走 `insertAtCursor()`（`composables/useInputCursorAndTextarea.js`），它内部用 `document.execCommand('insertText'/'insertHTML')` —— 只有走浏览器编辑管线才会落在光标处、才能被 Ctrl+Z 撤销。**禁止** `innerHTML +=` 或手工 `insertNode` 插入（不进 undo 栈、丢光标）。
 4. **编辑区取文本必须用 `getSafeText(节点)`**：脱离文档的克隆节点 `innerText` 等价 `textContent`，`<br>` / 块级边界带来的换行会全部丢失。`getSafeText` 会把节点挂到离屏位置渲染后再读。
 5. **图片尺寸只由一处决定**：`MessageContent.vue::imageSlotStyle`（公式见"图片渲染"）。不要再往 `.image-slot` 内的 `img` 上加 `max-height` 之类的二次上限。
-6. **产物必须同步到后端**：`pnpm build` 之后执行 `rsync -a --delete dist/ ../mio-chat-backend/dist/`（后端 Express 托管 `dist/`）。只 build 不同步 = 线上（后端托管的版本）没变。
+6. **按分支处理构建产物**：`master` 上的前端改动由 GitHub Action 构建并更新后端产物，**不要手动**把 `dist/` 同步到后端；`dev` 上可以在 `pnpm build` 后执行 `rsync -a --delete dist/ ../mio-chat-backend/dist/`，让本地后端使用最新前端构建产物。
 7. **HMR 会把中间态实时推给正在运行的页面**：同一处逻辑的"定义 + 调用"不要分两次落盘 —— 曾因此在 `mounted` 里抛 `ReferenceError`，导致 ChatView 初始化中断、消息列表全空（只能硬刷新恢复）。改大块代码要么一次写完，要么先落定义再落调用。
 
 ## 命令
