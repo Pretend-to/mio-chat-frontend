@@ -309,6 +309,42 @@ const groups = ref([]);
 let subAgentRefreshTimer = null;
 
 const activeContactor = computed(() => contactorsStore.activeContactor);
+const activeSessionKey = computed(() => {
+  const contactor = activeContactor.value;
+  return `${contactor?.agentId || ""}:${contactor?.sessionId || ""}`;
+});
+
+const successfulSubAgentDeleteIds = computed(() => {
+  const ids = [];
+  for (const message of activeContactor.value?.messageChain || []) {
+    for (const element of message.content || []) {
+      if (element.type !== "tool_call" || !element.data) continue;
+      const toolCall = element.data;
+      if (
+        String(toolCall.name || "").split("_mid_")[0] !== "subagent" ||
+        !toolCall.result?.success
+      ) {
+        continue;
+      }
+
+      let parameters = toolCall.parameters || toolCall.arguments;
+      if (typeof parameters === "string") {
+        try {
+          parameters = JSON.parse(parameters);
+        } catch {
+          continue;
+        }
+      }
+      if (parameters?.action === "delete" && toolCall.id) {
+        ids.push(String(toolCall.id));
+      }
+    }
+  }
+  return ids;
+});
+
+let observedDeleteSessionKey = activeSessionKey.value;
+let observedDeleteIds = new Set(successfulSubAgentDeleteIds.value);
 
 const loadSubAgents = async () => {
   const contactor = activeContactor.value;
@@ -375,10 +411,24 @@ watch(
 );
 
 watch(
-  () => activeContactor.value?.lastUpdate,
-  () => {
+  () => [activeSessionKey.value, JSON.stringify(successfulSubAgentDeleteIds.value)],
+  ([sessionKey, serializedIds]) => {
+    const ids = JSON.parse(serializedIds);
+    if (sessionKey !== observedDeleteSessionKey) {
+      observedDeleteSessionKey = sessionKey;
+      observedDeleteIds = new Set(ids);
+      return;
+    }
+
+    const hasNewDelete = ids.some((id) => !observedDeleteIds.has(id));
+    observedDeleteIds = new Set(ids);
+    if (!hasNewDelete) return;
+
     clearTimeout(subAgentRefreshTimer);
-    subAgentRefreshTimer = setTimeout(loadSubAgents, 1000);
+    const targetSessionKey = sessionKey;
+    subAgentRefreshTimer = setTimeout(() => {
+      if (targetSessionKey === activeSessionKey.value) loadSubAgents();
+    }, 1000);
   },
 );
 
