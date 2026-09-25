@@ -1084,13 +1084,19 @@ export const useContactorsStore = defineStore("contactors", () => {
       if (!Array.isArray(crystal.pendingMemoryEvents)) {
         crystal.pendingMemoryEvents = [];
       }
-      crystal.pendingMemoryEvents.push({
-        action: params.action || "add",
-        zone: params.zone || "long_term_profile",
-        content: params.content || answer || "",
-        target: params.target || question || "",
-        time: Date.now(),
-      });
+      // 事件的权威来源是【工具回执里的 event】：后端按契约产出它，前端只负责原样记账。
+      // 不要用 params + fallback 自己拼一份 —— 那会造出「同一个编辑、两侧记录不同」的
+      // 第二套语义，而且这些事件会被压缩会话当成参考读进提示词。
+      const toolEvent =
+        result && typeof result === "object" ? result.event : null;
+      if (!toolEvent) {
+        console.error(
+          "[Memory] 记忆工具回执缺少 event 字段，违反镜像契约：本地镜像无法同步这次编辑。",
+          result,
+        );
+        return;
+      }
+      crystal.pendingMemoryEvents.push({ ...toolEvent });
       client.setLocalStorage();
       return;
     }

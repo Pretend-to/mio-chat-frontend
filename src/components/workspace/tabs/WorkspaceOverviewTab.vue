@@ -291,10 +291,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { useWorkspaceStore } from "@/stores/workspaceStore.js";
 import { useContactorsStore } from "@/stores/contactorsStore.js";
 import { subagentsAPI } from "@/lib/subagentsApi.js";
+import { client } from "@/lib/runtime.js";
 import GroupAvatar from "@/components/GroupAvatar.vue";
 import { previewImages } from "@/utils/imageViewer.js";
 
@@ -306,8 +307,45 @@ const imagesCollapsed = ref(false);
 const filesCollapsed = ref(false);
 const loading = ref(false);
 const groups = ref([]);
+let subAgentRefreshTimer = null;
 
 const activeContactor = computed(() => contactorsStore.activeContactor);
+const activeSessionKey = computed(() => {
+  const contactor = activeContactor.value;
+  return `${contactor?.agentId || ""}:${contactor?.sessionId || ""}`;
+});
+
+const successfulSubAgentDeleteIds = computed(() => {
+  const ids = [];
+  for (const message of activeContactor.value?.messageChain || []) {
+    for (const element of message.content || []) {
+      if (element.type !== "tool_call" || !element.data) continue;
+      const toolCall = element.data;
+      if (
+        String(toolCall.name || "").split("_mid_")[0] !== "subagent" ||
+        !toolCall.result?.success
+      ) {
+        continue;
+      }
+
+      let parameters = toolCall.parameters || toolCall.arguments;
+      if (typeof parameters === "string") {
+        try {
+          parameters = JSON.parse(parameters);
+        } catch {
+          continue;
+        }
+      }
+      if (parameters?.action === "delete" && toolCall.id) {
+        ids.push(String(toolCall.id));
+      }
+    }
+  }
+  return ids;
+});
+
+let observedDeleteSessionKey = activeSessionKey.value;
+let observedDeleteIds = new Set(successfulSubAgentDeleteIds.value);
 
 const loadSubAgents = async () => {
   const contactor = activeContactor.value;
@@ -315,13 +353,45 @@ const loadSubAgents = async () => {
     groups.value = [];
     return;
   }
+  const targetAgentId = String(contactor.agentId);
+  const targetSessionId = String(contactor.sessionId);
   loading.value = true;
   try {
-    const res = await subagentsAPI.listGroups(
-      contactor.agentId,
-      contactor.sessionId,
-    );
-    groups.value = res.data?.groups || [];
+    const [groupsResponse, sessionsResponse] = await Promise.all([
+      subagentsAPI.listGroups(targetAgentId, targetSessionId),
+      subagentsAPI.listAgentSessions(targetAgentId),
+    ]);
+    if (
+      String(activeContactor.value?.agentId || "") !== targetAgentId ||
+      String(activeContactor.value?.sessionId || "") !== targetSessionId
+    ) {
+      return;
+    }
+    groups.value = groupsResponse.data?.groups || [];
+
+    const sessions = sessionsResponse.data?.sessions;
+    if (Array.isArray(sessions)) {
+      const existingSubAgentSessionIds = new Set(
+        sessions
+          .filter((session) => session.kind === "subagent")
+          .map((session) => String(session.id)),
+      );
+      const staleContacts = Object.values(contactorsStore.contactors).filter(
+        (item) =>
+          item?.platform === "sub_agent" &&
+          String(item.agentId || "") === String(contactor.agentId) &&
+          !existingSubAgentSessionIds.has(String(item.sessionId || "")),
+      );
+      for (const item of staleContacts) {
+        contactorsStore.removeContactor(item.id);
+        if (item.sessionId) {
+          workspaceStore.closeTab(`subagent_${item.sessionId}`);
+        }
+      }
+      if (staleContacts.length > 0) {
+        await client.saveNow();
+      }
+    }
   } catch (err) {
     console.warn("[WorkspaceOverviewTab] load subagents failed:", err);
   } finally {
@@ -340,6 +410,32 @@ watch(
     imageLimit.value = INITIAL_IMAGE_LIMIT;
   },
 );
+
+watch(
+  () => [activeSessionKey.value, JSON.stringify(successfulSubAgentDeleteIds.value)],
+  ([sessionKey, serializedIds]) => {
+    const ids = JSON.parse(serializedIds);
+    if (sessionKey !== observedDeleteSessionKey) {
+      observedDeleteSessionKey = sessionKey;
+      observedDeleteIds = new Set(ids);
+      return;
+    }
+
+    const hasNewDelete = ids.some((id) => !observedDeleteIds.has(id));
+    observedDeleteIds = new Set(ids);
+    if (!hasNewDelete) return;
+
+    clearTimeout(subAgentRefreshTimer);
+    const targetSessionKey = sessionKey;
+    subAgentRefreshTimer = setTimeout(() => {
+      if (targetSessionKey === activeSessionKey.value) loadSubAgents();
+    }, 1000);
+  },
+);
+
+onBeforeUnmount(() => {
+  clearTimeout(subAgentRefreshTimer);
+});
 
 const subagentRuns = computed(() => {
   const liveContacts = Object.values(contactorsStore.contactors).filter(
