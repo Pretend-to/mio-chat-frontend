@@ -120,6 +120,22 @@ describe("Socket message lifecycle", () => {
     expect(socket.emit).toHaveBeenCalledOnce();
   });
 
+  it("syncs a workspace chat without replacing the foreground chat", () => {
+    const socket = createConnectedSocket();
+    client.socket = socket;
+
+    client.enterChat("agent-main");
+    client.syncChat("sub_agent_session-1");
+
+    expect(client.activeContactorId).toBe("agent-main");
+    expect(socket.emit).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(socket.emit.mock.calls[1][1])).toMatchObject({
+      protocol: "llm",
+      type: "enter_chat",
+      data: { contactorId: "sub_agent_session-1" },
+    });
+  });
+
   it("queues an interrupt offline and flushes it after reconnection", () => {
     client.interruptGeneration("message-1", "contact-1");
     expect(client.pendingInterrupts.size).toBe(1);

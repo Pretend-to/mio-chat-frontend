@@ -367,6 +367,16 @@ const loadChannelHistory = async (options = {}) => {
     console.error("[ChatView] 加载渠道历史失败:", err);
   } finally {
     isLoadingServerHistory.value = false;
+    if (activeContactor.value?.id === contactor.id) {
+      // DB history may contain only a partial running row. Replay the full
+      // streamCache snapshot after it so the current turn stays complete.
+      if (!before && client.socket?.available) {
+        client.socket.enterChat(contactor.id);
+      }
+    } else {
+      // The user switched chats while this history request was in flight.
+      trySync();
+    }
   }
 };
 
@@ -974,10 +984,11 @@ const trySync = () => {
   if (!contactor) return;
 
   if (isServerSessionContactor(contactor)) {
+    if (isLoadingServerHistory.value) return;
     if (!contactor.messageChain || contactor.messageChain.length === 0) {
       loadChannelHistory({ limit: 20 });
+      return;
     }
-    return;
   }
 
   if (client.socket && client.socket.available) {
