@@ -96,12 +96,15 @@ export default class Client extends EventEmitter {
     // （长期表现就是"总有些消息没被持久化"）。改成集合 + 统一冲刷。
     this._pendingMessageSaves = new Set();
     this._messageSaveTimer = null;
+    this._messageSavePromise = Promise.resolve();
     this.saveContactorMessages = (contactorId) => {
       if (!contactorId) return;
       this._pendingMessageSaves.add(contactorId);
       clearTimeout(this._messageSaveTimer);
       this._messageSaveTimer = setTimeout(() => {
-        this.flushContactorMessages();
+        void this.flushContactorMessages().catch((error) => {
+          console.error("保存会话消息失败:", error);
+        });
       }, 300);
     };
     /** 立刻写出所有待落盘的会话消息（离开页面 / 切后台前调用） */
@@ -110,7 +113,14 @@ export default class Client extends EventEmitter {
       this._messageSaveTimer = null;
       const ids = [...this._pendingMessageSaves];
       this._pendingMessageSaves.clear();
-      return Promise.all(ids.map((id) => this.saveContactorMessagesNow(id)));
+      if (ids.length) {
+        // Serialize batches so an older delayed write cannot overwrite a newer
+        // completion after its ACK has already been sent.
+        this._messageSavePromise = this._messageSavePromise
+          .catch(() => {})
+          .then(() => Promise.all(ids.map((id) => this.saveContactorMessagesNow(id))));
+      }
+      return this._messageSavePromise;
     };
 
     /**
@@ -142,7 +152,10 @@ export default class Client extends EventEmitter {
     }
 
     // 意外断连重连成功后同样要对齐一次
-    this.on("connection_restored", () => this.resyncActiveChat());
+    this.on("connection_restored", () => {
+      this.resyncActiveChat();
+      gateway.recoverPendingAdjustments();
+    });
   }
 
   get avatar() {
@@ -844,6 +857,7 @@ export default class Client extends EventEmitter {
       }
     } catch (err) {
       console.error(`[Client] 保存会话 ${contactorId} 消息失败:`, err);
+      throw err;
     }
   }
 
@@ -872,6 +886,10 @@ export default class Client extends EventEmitter {
     } catch (err) {
       console.error("Failed to flush all stream buffers:", err);
     }
+
+    // saveNow is also the persistence barrier before stream-cache ACKs. Flush
+    // message shards first; metadata alone cannot restore an adjusted reply.
+    await this.flushContactorMessages();
 
     const client = {
       id: this.id,
@@ -928,6 +946,7 @@ export default class Client extends EventEmitter {
           if (store && typeof store.markInterruptedToolCalls === "function") {
             store.markInterruptedToolCalls();
           }
+          gateway.recoverPendingAdjustments({ backendRestart: true });
           console.log(
             "[BootId] 检测到后端重启 (" +
               this._bootId +

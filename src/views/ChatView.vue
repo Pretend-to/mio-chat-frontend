@@ -418,7 +418,7 @@ const pullSubAgentSession = async (contactor) => {
       current.hasPendingTask = true;
     }
     if (activeContactor.value?.id === current.id) {
-      renderedCount.value = Math.max(20, res.messages.length);
+      renderedCount.value = Math.max(20, current.messageChain.length);
     }
   } catch (error) {
     console.warn("[ChatView] 拉取 SubAgent Session 失败:", error);

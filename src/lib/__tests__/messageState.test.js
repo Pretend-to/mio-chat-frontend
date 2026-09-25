@@ -51,17 +51,33 @@ describe("canonical message state", () => {
     expect(chain[0].status).toBe("streaming");
   });
 
-  it("initial history keeps in-flight messages but drops stale completed rows", () => {
+  it("keeps completed and live rows missing from a paginated history response", () => {
     const chain = [
-      normalizeMessage({ id: "old", status: "completed", content: text("x") }),
-      normalizeMessage({ id: "live", status: "streaming" }),
+      normalizeMessage({ id: "old", time: 1, status: "completed", content: text("x") }),
+      normalizeMessage({ id: "live", time: 3, status: "streaming", content: text("live") }),
     ];
 
     mergeMessageHistory(chain, [
-      { id: "persisted", status: "completed", content: text("saved") },
+      { id: "persisted", time: 2, status: "streaming", content: text("saved") },
     ]);
 
-    expect(chain.map((message) => message.id)).toEqual(["persisted", "live"]);
+    expect(chain.map((message) => message.id)).toEqual(["old", "persisted", "live"]);
+    expect(chain.map((message) => message.content[0].data.text)).toEqual([
+      "x", "saved", "live",
+    ]);
+
+    mergeMessageHistory(chain, []);
+    expect(chain.map((message) => message.id)).toEqual(["old", "persisted", "live"]);
+  });
+
+  it("uses a richer persisted snapshot for the same active message", () => {
+    const chain = [normalizeMessage({
+      id: "partial", time: 1, status: "streaming", content: text("a"),
+    })];
+    mergeMessageHistory(chain, [{
+      id: "partial", time: 1, status: "streaming", content: text("already saved"),
+    }]);
+    expect(chain[0].content[0].data.text).toBe("already saved");
   });
 
   it("never rolls a terminal message back to streaming", () => {

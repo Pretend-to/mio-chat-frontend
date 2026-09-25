@@ -12,6 +12,191 @@ import {
 } from "@/lib/interactionFrames.js";
 import { collectAgentTurnPayload } from "@/lib/agentTurnPayload.js";
 
+const flushingAdjustments = new Set();
+
+async function flushDeferredAdjustments(contactorId) {
+  if (flushingAdjustments.has(contactorId)) return;
+  const store = useContactorsStore();
+  const contactor = store.contactors[contactorId];
+  if (!contactor || !client.socket?.socket?.connected) return;
+  flushingAdjustments.add(contactorId);
+  try {
+    for (const item of contactor.pendingAdjustments || []) {
+      if (item.status !== "deferred" && item.status !== "defer_to_next_turn") continue;
+      if (item.awaitOwnerTerminal && !item.ownerFinished) continue;
+      const target = contactor.messageChain.find((message) =>
+        String(message.id) === String(item.targetRequestId),
+      );
+      if (target && ["pending", "streaming"].includes(target.status)) continue;
+      try {
+        item.status = "resubmitting";
+        await client.saveNow();
+        const replyId = item.resubmitMessageId || item.eventId;
+        if (contactor.messageChain.some((entry) => String(entry.id) === String(replyId))) {
+          store.applyMessageEvent({
+            type: "message.patch", contactorId, messageId: replyId,
+            patch: { status: "pending", content: [{ type: "blank", data: {} }] },
+          });
+        }
+        if (item.origin === "normal_completions") {
+          await gateway.send(
+            "openai",
+            contactorId,
+            contactor.messageChain,
+            replyId,
+            contactor.options,
+          );
+        } else {
+          let message = item.resubmitUserId && contactor.messageChain.find(
+            (entry) => entry.id === item.resubmitUserId,
+          );
+          if (!message) {
+            message = {
+              id: item.resubmitUserId || `user_adjust_${item.eventId}`,
+              role: "user", status: "completed",
+              content: [{ type: "text", data: { text: item.text } }],
+            };
+            item.resubmitUserId = message.id;
+            store.applyMessageEvent({ type: "message.upsert", contactorId, message });
+          }
+          item.resubmitMessageId ||= item.eventId;
+          if (!contactor.messageChain.some((entry) =>
+            String(entry.id) === String(item.resubmitMessageId),
+          )) {
+            store.applyMessageEvent({
+              type: "message.upsert",
+              contactorId,
+              message: {
+                id: item.resubmitMessageId,
+                role: "other",
+                status: "pending",
+                content: [{ type: "blank", data: {} }],
+              },
+            });
+          }
+          await client.saveNow();
+          await gateway.send(
+            "openai", contactorId, contactor.messageChain,
+            item.resubmitMessageId, contactor.options,
+          );
+          store.applyMessageEvent({
+            type: "message.complete", contactorId, messageId: message.id,
+          });
+        }
+        item.status = "resubmitted";
+        await client.saveNow();
+      } catch (error) {
+        item.status = "deferred";
+        await client.saveNow().catch(() => {});
+        console.error("延期插话重新发送失败:", error);
+        break;
+      }
+    }
+  } finally {
+    flushingAdjustments.delete(contactorId);
+  }
+}
+
+function handleAdjustmentStatus(data) {
+  const {
+    contactorId, continuationMessageId, eventId, origin,
+    previousMessageId, status, targetRequestId, text,
+  } = data || {};
+  if (!contactorId || !eventId) return;
+  const store = useContactorsStore();
+  const contactor = store.contactors[contactorId];
+  if (!contactor) return;
+  contactor.pendingAdjustments ||= [];
+  let item = contactor.pendingAdjustments.find((entry) => entry.eventId === eventId);
+  if (!item && text && status !== "rejected") {
+    item = { eventId, origin, targetRequestId, text, status };
+    contactor.pendingAdjustments.push(item);
+  }
+  if (!item) return;
+  if (item.status === "resubmitted" &&
+      (status === "deferred" || status === "defer_to_next_turn")) return;
+  item.status = status;
+  if (origin) item.origin = origin;
+  if (status === "accepted_for_checkpoint") {
+    item.awaitOwnerTerminal = true;
+    item.ownerFinished = false;
+  }
+  const nextMessageId = continuationMessageId || eventId;
+  const candidate = contactor.messageChain.find((entry) =>
+    String(entry.id) === String(nextMessageId),
+  );
+  if (candidate && targetRequestId && status !== "rejected") {
+    store.applyMessageEvent({
+      type: "message.patch", contactorId, messageId: candidate.id,
+      patch: { continuationOfRequestId: targetRequestId },
+    });
+  }
+  if (status === "absorbed") {
+    item.awaitOwnerTerminal = true;
+    item.ownerFinished = false;
+    const closingId = previousMessageId || targetRequestId;
+    const buffer = streamBuffers.get(closingId);
+    buffer?.flush();
+    if (contactor.messageChain.some((entry) => String(entry.id) === String(closingId))) {
+      store.applyMessageEvent({
+        type: "message.complete", contactorId, messageId: closingId,
+        options: { triggerInvocation: false },
+      });
+    }
+    const anchorIndex = contactor.messageChain.findIndex((entry) =>
+      String(entry.id) === String(closingId),
+    );
+    const candidateIndex = contactor.messageChain.findIndex((entry) =>
+      String(entry.id) === String(nextMessageId),
+    );
+    const userBetween = anchorIndex < 0 ? null : contactor.messageChain.slice(
+      anchorIndex + 1,
+      candidateIndex < 0 ? undefined : candidateIndex,
+    ).find((entry) => entry.role === "user" && !entry.absorbedByEventId);
+    const knownUser = item.resubmitUserId && contactor.messageChain.some((entry) =>
+      String(entry.id) === String(item.resubmitUserId),
+    );
+    if (!knownUser && !userBetween) {
+      const insertionIndex = candidateIndex >= 0
+        ? candidateIndex
+        : anchorIndex < 0 ? contactor.messageChain.length : anchorIndex + 1;
+      const user = {
+        id: `user_adjust_${eventId}`, role: "user", status: "completed",
+        content: [{ type: "text", data: { text: item.text } }],
+      };
+      item.resubmitUserId = user.id;
+      store.applyMessageEvent({ type: "message.upsert", contactorId, message: user, index: insertionIndex });
+      store.applyMessageEvent({
+        type: "message.complete", contactorId, messageId: user.id,
+        options: { triggerInvocation: false },
+      });
+    } else if (userBetween && !item.resubmitUserId) {
+      item.resubmitUserId = userBetween.id;
+    }
+    if (!candidate) {
+      store.applyMessageEvent({
+        type: "message.upsert", contactorId,
+        index: contactor.messageChain.findIndex((entry) =>
+          String(entry.id) === String(item.resubmitUserId),
+        ) + 1,
+        message: {
+          id: nextMessageId, role: "other", status: "pending",
+          continuationOfRequestId: targetRequestId,
+          content: [{ type: "blank", data: {} }],
+        },
+      });
+      item.resubmitMessageId = nextMessageId;
+    }
+  } else if (status === "deferred" || status === "defer_to_next_turn") {
+    if (item.awaitOwnerTerminal && !item.ownerFinished) {
+      void client.saveNow();
+      return;
+    }
+    void flushDeferredAdjustments(contactorId);
+  }
+  void client.saveNow();
+}
+
 /**
  * 消息落盘后再向服务端发送 ACK，通知其清除 streamCache。
  * 必须等 saveNow 落盘完成才能发，否则缓存已清而本地未持久化时消息会永久丢失。
@@ -191,7 +376,9 @@ export function getValidOpenaiMessage(
   maxMessagesNum = 20,
 ) {
   // Only include chat messages (filter out task messages)
-  const chatMessages = messageChain.filter((msg) => msg.triggerType !== "task");
+  const chatMessages = messageChain.filter(
+    (msg) => msg.triggerType !== "task" && !msg.absorbedByEventId,
+  );
 
   const fromIndexMessages = chatMessages.slice(firstMessageIndex);
 
@@ -335,6 +522,16 @@ export function getValidOpenaiMessage(
             toolMsgObj.thoughtSignature = elm.data.thoughtSignature;
           }
           pendingToolMessages.push(toolMsgObj);
+        } else if (elm.type === "context_message") {
+          // An adjustment belongs after the preceding tool result in this
+          // assistant turn. Restore it as a user message for the next request.
+          flushAssistant();
+          const context = elm.data?.content;
+          if (typeof context === "string" && context.trim()) {
+            subArray.push({ role: "user", content: context });
+          } else if (Array.isArray(context) && context.length > 0) {
+            subArray.push({ role: "user", content: context });
+          }
         }
       });
 
@@ -741,6 +938,42 @@ function patchImageSizes(store, contactorId, message) {
  * 统一网关：发送消息、中断生成、处理 Socket 回调事件的单例
  */
 export const gateway = {
+  recoverPendingAdjustments({ backendRestart = false } = {}) {
+    const store = useContactorsStore();
+    for (const [contactorId, contactor] of Object.entries(store.contactors)) {
+      if (!Array.isArray(contactor.pendingAdjustments)) continue;
+      for (const item of contactor.pendingAdjustments) {
+        if (backendRestart && item.status === "absorbed") {
+          handleAdjustmentStatus({
+            ...item, contactorId, status: "deferred",
+          });
+        }
+        if (["submitting", "accepted_for_checkpoint", "queued", "resubmitting"].includes(item.status)) {
+          item.status = "deferred";
+        }
+        if (backendRestart && !["resubmitted", "rejected"].includes(item.status)) {
+          item.status = "deferred";
+          item.ownerFinished = true;
+          for (const target of contactor.messageChain) {
+            if (
+              (String(target.id) === String(item.targetRequestId) ||
+                String(target.continuationOfRequestId) === String(item.targetRequestId)) &&
+              ["pending", "streaming"].includes(target.status)
+            ) {
+              store.applyMessageEvent({
+                type: "message.failed",
+                contactorId,
+                messageId: target.id,
+                error: "服务已重启，消息将作为新请求继续",
+              });
+            }
+          }
+        }
+      }
+      void flushDeferredAdjustments(contactorId);
+    }
+    if (backendRestart) void client.saveNow();
+  },
   /**
    * 发送消息给对应的平台
    */
@@ -1020,6 +1253,10 @@ export const gateway = {
    */
   handleLlmMessageEvent(e) {
     const data = e.data;
+    if (e.message === "adjust_status") {
+      handleAdjustmentStatus(data);
+      return;
+    }
     const { metaData } = data || {};
     const contactorId = metaData?.contactorId;
     const messageId = metaData?.messageId || e.request_id;
@@ -1134,6 +1371,11 @@ export const gateway = {
             error: data.error,
           },
         });
+        for (const chunk of data.chunks || []) {
+          if (chunk?.type === "adjustment" && chunk.content) {
+            handleAdjustmentStatus(chunk.content);
+          }
+        }
 
         // 如果同步回来的是已完成/已失败的终态消息，也给后端发 ACK 清除流缓存
         if (["completed", "failed"].includes(data.status)) {
@@ -1211,6 +1453,8 @@ export const gateway = {
               tool_call: data.content,
             },
           });
+        } else if (data.type === "adjustment" && data.content) {
+          handleAdjustmentStatus(data.content);
         } else if (data.type === "crystallize") {
           // 结晶事件：通知 store 更新 latestSummary 和 UI 事件条
           const buffer = streamBuffers.get(messageId);
@@ -1279,7 +1523,20 @@ export const gateway = {
           type: "message.complete",
           contactorId,
           messageId,
+          options: data?.segmentBoundary ? { triggerInvocation: false } : undefined,
         });
+        const contactor = contactorStore.contactors[contactorId];
+        if (contactor?.pendingAdjustments && !data?.segmentBoundary) {
+          for (const item of contactor.pendingAdjustments) {
+            if (String(item.targetRequestId) === String(e.request_id)) {
+              item.ownerFinished = true;
+            }
+          }
+          contactor.pendingAdjustments = contactor.pendingAdjustments.filter(
+            (item) => !(item.status === "absorbed" &&
+              String(item.targetRequestId) === String(e.request_id)),
+          );
+        }
       } else if (e.message === "failed") {
         contactorStore.applyMessageEvent({
           type: "message.failed",
@@ -1287,8 +1544,19 @@ export const gateway = {
           messageId,
           error: e.data,
         });
+        const contactor = contactorStore.contactors[contactorId];
+        for (const item of contactor?.pendingAdjustments || []) {
+          if (String(item.targetRequestId) === String(e.request_id)) {
+            item.ownerFinished = true;
+          }
+          if (item.status === "absorbed" &&
+              String(item.targetRequestId) === String(e.request_id)) {
+            handleAdjustmentStatus({ ...item, contactorId, status: "deferred" });
+          }
+        }
       }
       ackPersistedMessage(contactorId, messageId);
+      if (!data?.segmentBoundary) void flushDeferredAdjustments(contactorId);
     }
   },
 

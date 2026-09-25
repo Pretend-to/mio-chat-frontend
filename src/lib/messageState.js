@@ -113,7 +113,8 @@ export function mergeSameMessage(current, incoming, authority = "event") {
     authority !== "replace" &&
     authority === "history" &&
     currentActive &&
-    !nextTerminal
+    !nextTerminal &&
+    contentWeight(current.content) >= contentWeight(next.content)
   ) {
     merged.status = current.status;
     merged.content = current.content;
@@ -192,9 +193,9 @@ export function upsertMessage(chain, incoming, options = {}) {
 }
 
 /**
- * Reconcile persisted history with local state. Initial pages replace only the
- * persisted baseline; in-flight and local system messages survive. Older pages
- * are prepended. Every duplicate is merged in place by message id.
+ * Reconcile a page of persisted history with local state. History responses are
+ * paginated snapshots, so their absence of an id must never delete a message
+ * already received through the live stream (including completed messages).
  */
 export function mergeMessageHistory(chain, messages, mode = "replace") {
   const incoming = (Array.isArray(messages) ? messages : [])
@@ -237,10 +238,16 @@ export function mergeMessageHistory(chain, messages, mode = "replace") {
 
   const incomingIds = new Set(resolvedIncoming.map((message) => message.id));
   const localOnly = chain.filter(
-    (message) =>
-      !incomingIds.has(String(message.id)) &&
-      (isActiveMessage(message) || message.role === "mio_system"),
+    (message) => !incomingIds.has(String(message.id)),
   );
-  chain.splice(0, chain.length, ...resolvedIncoming, ...localOnly);
+  // Keep the server page in order and insert local-only rows by their original
+  // timestamps. This covers both older loaded pages and newer live completions.
+  const combined = [...resolvedIncoming, ...localOnly];
+  const timestamp = (message) => {
+    const numeric = Number(message.time);
+    return Number.isFinite(numeric) ? numeric : Date.parse(message.time) || 0;
+  };
+  combined.sort((left, right) => timestamp(left) - timestamp(right));
+  chain.splice(0, chain.length, ...combined);
   return { added: resolvedIncoming.length, messages: resolvedIncoming };
 }

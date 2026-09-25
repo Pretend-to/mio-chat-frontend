@@ -188,6 +188,31 @@ describe("Split Storage & Auto-Migration Test Suite", () => {
     expect(mockStorage.has("mio_msg_c_dynamic")).toBe(false);
   });
 
+  it("saveNow waits for an adjusted reply's message shard", async () => {
+    store.addContactor("openai", { id: "adjusted", name: "Adjusted" });
+    store.applyMessageEvent({
+      type: "message.upsert",
+      contactorId: "adjusted",
+      message: {
+        id: "reply-after-adjust", role: "other", status: "streaming",
+        content: [{ type: "text", data: { text: "Updated direction" } }],
+      },
+    });
+    store.applyMessageEvent({
+      type: "message.complete",
+      contactorId: "adjusted",
+      messageId: "reply-after-adjust",
+    });
+
+    await client.saveNow();
+    const saved = JSON.parse(mockStorage.get("mio_msg_adjusted"));
+    expect(saved).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "reply-after-adjust", status: "completed" }),
+    ]));
+    expect(saved.find((message) => message.id === "reply-after-adjust")
+      .content[0].data.text).toBe("Updated direction");
+  });
+
   it("4. SubAgent 联系人按 child Session 去重且消息不落本地", async () => {
     const first = store.upsertSubAgentContactor({
       agentId: "agent_1",
