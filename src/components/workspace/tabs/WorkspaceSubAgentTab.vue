@@ -81,6 +81,7 @@ import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import MessageItem from "@/components/chat/MessageItem.vue";
 import { useContactorsStore } from "@/stores/contactorsStore.js";
+import { useConnectionStore } from "@/stores/connectionStore.js";
 import { subagentsAPI } from "@/lib/subagentsApi.js";
 import { client } from "@/lib/runtime.js";
 import {
@@ -98,8 +99,11 @@ const props = defineProps({
 });
 
 const contactorsStore = useContactorsStore();
+const connectionStore = useConnectionStore();
 const scrollContainerRef = ref(null);
 const loading = ref(false);
+let historyRequestId = 0;
+let detailRequestId = 0;
 const actionLoading = ref(false);
 const runDetail = ref(null);
 
@@ -181,9 +185,10 @@ const canCancel = computed(() => activeStatuses.has(runInfo.value.status));
 const fetchRunDetail = async () => {
   const runId = runInfo.value.runId || runInfo.value.id;
   if (!runId) return;
+  const requestId = ++detailRequestId;
   try {
     const res = await subagentsAPI.getRun(runId);
-    if (res.data) {
+    if (requestId === detailRequestId && res.data) {
       runDetail.value = res.data;
     }
   } catch (err) {
@@ -192,18 +197,33 @@ const fetchRunDetail = async () => {
 };
 
 const fetchHistory = async () => {
-  const contactor = subContactor.value;
-  const agentId = runInfo.value.agentId || contactor.agentId;
-  const sessionId = runInfo.value.sessionId || contactor.sessionId;
-  if (!agentId || !sessionId || !client.socket) return;
+  const agentId = runInfo.value.agentId || subContactor.value.agentId;
+  const sessionId = runInfo.value.sessionId || subContactor.value.sessionId;
+  const socket = client.socket;
+  if (
+    !agentId ||
+    !sessionId ||
+    !connectionStore.isConnected ||
+    !socket?.available
+  ) return;
+
+  // The workspace tab can open before contact discovery has created its
+  // contactor. Both history and stream frames need a real store target.
+  const contactor = contactorsStore.upsertSubAgentContactor({
+    ...runInfo.value,
+    agentId,
+    sessionId,
+  });
+  if (!contactor) return;
+  const requestId = ++historyRequestId;
 
   loading.value = true;
   try {
-    const res = await client.socket.fetch(`/api/agent/history/${agentId}`, {
+    const res = await socket.fetch(`/api/agent/history/${agentId}`, {
       limit: 200,
       sessionId,
     });
-    if (Array.isArray(res?.messages)) {
+    if (requestId === historyRequestId && Array.isArray(res?.messages)) {
       contactorsStore.applyMessageEvent({
         type: "history.reconcile",
         contactorId: contactor.id,
@@ -214,8 +234,17 @@ const fetchHistory = async () => {
   } catch (err) {
     console.warn("[WorkspaceSubAgentTab] fetch history failed:", err);
   } finally {
-    loading.value = false;
-    scrollToBottom();
+    if (requestId === historyRequestId) {
+      loading.value = false;
+      if (
+        subContactorId.value === contactor.id &&
+        client.socket === socket &&
+        socket.available
+      ) {
+        socket.syncChat(contactor.id);
+      }
+      scrollToBottom();
+    }
   }
 };
 
@@ -230,15 +259,29 @@ const scrollToBottom = () => {
 
 onMounted(() => {
   fetchRunDetail();
-  fetchHistory();
 });
 
 watch(
   () => props.tab.payload?.sessionId,
   () => {
+    detailRequestId++;
+    historyRequestId++;
+    loading.value = false;
+    runDetail.value = null;
     fetchRunDetail();
-    fetchHistory();
   },
+);
+
+watch(
+  [
+    () => runInfo.value.agentId || subContactor.value.agentId,
+    () => runInfo.value.sessionId || subContactor.value.sessionId,
+    () => connectionStore.isConnected,
+  ],
+  ([agentId, sessionId, connected]) => {
+    if (agentId && sessionId && connected) fetchHistory();
+  },
+  { immediate: true },
 );
 
 const handleCancel = async () => {

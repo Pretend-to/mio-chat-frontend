@@ -131,4 +131,58 @@ describe("断点续传复现", () => {
     expect(msg.status).toBe("streaming");
     expect(JSON.stringify(msg.content)).toContain("Hello world");
   });
+
+  it("服务端 Agent 历史中的运行中行应被完整缓存快照补齐，再继续接收增量", async () => {
+    const store = useContactorsStore();
+    store.loadContactors([
+      { id: CONTACTOR, platform: "agent", name: "Agent", title: "t" },
+    ]);
+    store.applyMessageEvent({
+      type: "history.reconcile",
+      contactorId: CONTACTOR,
+      mode: "replace",
+      messages: [
+        {
+          id: "completed-turn",
+          role: "other",
+          status: "completed",
+          time: 1,
+          content: [{ type: "text", data: { text: "Earlier answer" } }],
+        },
+        {
+          id: MID,
+          role: "other",
+          status: "streaming",
+          time: 2,
+          content: [{ type: "text", data: { text: "partial DB row" } }],
+        },
+      ],
+    });
+
+    gateway.handleLlmMessageEvent(
+      syncFrame(
+        [
+          { type: "reason", data: { text: "Thinking", startTime: 1, duration: 0 } },
+          { type: "content", content: "Beginning of this answer" },
+          { type: "toolCall", content: { id: "tool-1", name: "search", arguments: "{}", action: "running" } },
+          { type: "content", content: "Before the breakpoint" },
+        ],
+        "streaming",
+      ),
+    );
+    gateway.handleLlmMessageEvent(liveChunk(" and after"));
+    gateway.flushAllBuffers?.();
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    const chain = store.contactors[CONTACTOR].messageChain;
+    expect(chain.map((message) => message.id)).toEqual(["completed-turn", MID]);
+    expect(chain[0].content[0].data.text).toBe("Earlier answer");
+    expect(chain[1].status).toBe("streaming");
+    expect(chain[1].content.map((block) => block.type)).toEqual([
+      "reason", "text", "tool_call", "text",
+    ]);
+    expect(chain[1].content.filter((block) => block.type === "text")
+      .map((block) => block.data.text).join(" "))
+      .toContain("Before the breakpoint and after");
+  });
 });
