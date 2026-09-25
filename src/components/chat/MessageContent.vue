@@ -45,6 +45,7 @@
     />
     <span v-else-if="element.type === 'at'" />
     <span v-else-if="element.type === 'prompt_hint'" />
+    <span v-else-if="element.type === 'context_message'" />
     <ReasonBlock
       v-else-if="element.type === 'reason'"
       :end-time="element.data.endTime"
@@ -1178,7 +1179,6 @@ onUnmounted(disableIframeResize);
 
   & > *
     margin: 2px 0
-
 
 @keyframes move
   0%

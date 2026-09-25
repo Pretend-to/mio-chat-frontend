@@ -25,6 +25,46 @@ vi.mock("@/stores/contactorsStore.js", () => ({
 }));
 
 describe("getValidOpenaiMessage - Step & Signature Preservation", () => {
+  it("restores a separate user adjustment after the preceding tool result", () => {
+    const chain = [
+      { id: "user", role: "user", content: [{ type: "text", data: { text: "Start" } }] },
+      {
+        id: "answer-before-adjustment", role: "other", content: [
+          { type: "tool_call", data: { id: "call_1", name: "lookup", parameters: "{}", result: "found", step: 1 } },
+        ],
+      },
+      { id: "new-user", role: "user", content: [{ type: "text", data: { text: "Also compare" } }] },
+      { id: "answer-after-adjustment", role: "other", content: [{ type: "text", data: { text: "Compared." } }] },
+    ];
+
+    const messages = getValidOpenaiMessage(chain);
+    expect(messages.map((message) => message.role)).toEqual([
+      "user", "assistant", "tool", "user", "assistant",
+    ]);
+    expect(messages[3].content).toBe("Also compare");
+  });
+
+  it("restores an adjustment after tool results before later assistant work", () => {
+    const chain = [
+      { id: "user", role: "user", content: [{ type: "text", data: { text: "Start" } }] },
+      {
+        id: "answer",
+        role: "other",
+        content: [
+          { type: "tool_call", data: { id: "call_1", name: "lookup", parameters: "{}", result: "found", step: 1 } },
+          { type: "context_message", data: { eventId: "adjust_1", role: "user", content: "Also compare" } },
+          { type: "text", data: { text: "Compared." } },
+        ],
+      },
+    ];
+
+    const messages = getValidOpenaiMessage(chain);
+    expect(messages.map((message) => message.role)).toEqual([
+      "user", "assistant", "tool", "user", "assistant",
+    ]);
+    expect(messages[3].content).toBe("Also compare");
+  });
+
   it("should split serial tool calls with different steps into distinct Turns", () => {
     const messageChain = [
       {

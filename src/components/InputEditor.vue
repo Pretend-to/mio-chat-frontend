@@ -221,7 +221,7 @@
           @drop.prevent="handleDrop"
         ></div>
       </div>
-      <button id="sendButton" @click.prevent="send" :disabled="isUploading">
+      <button id="sendButton" @click.prevent="sendOrAdjust" :disabled="isUploading || adjusting">
         发送{{ getWraperName() ? ` | ${getWraperName()}` : "" }}
       </button>
     </div>
@@ -231,6 +231,7 @@
 <script setup>
 import { ref, watch, computed, onMounted, onUnmounted } from "vue";
 import { client } from "@/lib/runtime.js";
+import { useContactorsStore } from "@/stores/contactorsStore.js";
 import { debounce } from "../utils/tools.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { skillAPI } from "@/lib/configApi.js";
@@ -262,6 +263,20 @@ const emit = defineEmits([
 
 const activeContactor = computed(() => props.activeContactor);
 const textarea = ref(null);
+const adjusting = ref(false);
+const activeWebRequestId = computed(() => {
+  if (activeContactor.value?.platform !== "openai") return null;
+  const contactor = activeContactor.value;
+  const messages = contactor.messageChain || [];
+  const active = [...messages].reverse().find((message) =>
+    message.role === "other" && ["pending", "streaming"].includes(message.status) &&
+    !(contactor.pendingAdjustments || []).some((item) =>
+      String(item.resubmitMessageId || item.eventId) === String(message.id) &&
+      ["deferred", "defer_to_next_turn", "resubmitting"].includes(item.status),
+    ),
+  );
+  return active?.continuationOfRequestId || active?.id || null;
+});
 const inputBarRef = ref(null);
 const isMobileDevice = ref(window.innerWidth < 768);
 const availableSkills = ref([]);
@@ -376,11 +391,96 @@ const { hasInput, isUploading, presend, send } = useInputSend({
   emit,
 });
 
+const sendAdjustment = async () => {
+  const contactor = activeContactor.value;
+  const targetRequestId = activeWebRequestId.value;
+  if (!contactor || !targetRequestId || adjusting.value || !textarea.value) return;
+  if (textarea.value.querySelector("img, .command-badge, .reply-badge")) {
+    ElMessage.warning("插话目前仅支持纯文本");
+    return;
+  }
+  const text = getSafeText(textarea.value).trim();
+  if (!text) return;
+  const eventId = crypto.randomUUID();
+  const user = contactor.getBaseUserContainer();
+  user.content.push({ type: "text", data: { text } });
+  const pending = {
+    eventId,
+    targetRequestId,
+    text,
+    resubmitUserId: user.id,
+    resubmitMessageId: eventId,
+    continuationMessageId: eventId,
+    status: "submitting",
+  };
+  adjusting.value = true;
+  try {
+    const store = useContactorsStore();
+    store.applyMessageEvent({ type: "message.upsert", contactorId: contactor.id, message: user });
+    store.applyMessageEvent({
+      type: "message.upsert", contactorId: contactor.id,
+      message: {
+        id: eventId, role: "other", status: "pending",
+        continuationOfRequestId: targetRequestId,
+        content: [{ type: "blank", data: {} }],
+      },
+    });
+    contactor.pendingAdjustments ||= [];
+    contactor.pendingAdjustments.push(pending);
+    await client.saveNow();
+    const result = await client.socket.adjustGeneration({
+      contactorId: contactor.id,
+      targetRequestId,
+      eventId,
+      text,
+    });
+    if (pending.status === "submitting") pending.status = result.status;
+    useContactorsStore().applyMessageEvent({
+      type: "message.complete", contactorId: contactor.id, messageId: user.id,
+      options: { triggerInvocation: false },
+    });
+    await client.saveNow();
+    textarea.value.innerHTML = "";
+    clearDraft();
+    adjustTextareaHeight();
+    if (["deferred", "defer_to_next_turn"].includes(result.status)) {
+      ElMessage.info("消息将在当前回复结束后发送");
+    }
+  } catch (error) {
+    if (error.code === "adjust_rejected") {
+      const store = useContactorsStore();
+      store.applyMessageEvent({ type: "message.remove", contactorId: contactor.id, messageId: user.id });
+      store.applyMessageEvent({ type: "message.remove", contactorId: contactor.id, messageId: eventId });
+      contactor.pendingAdjustments = (contactor.pendingAdjustments || []).filter(
+        (item) => item.eventId !== eventId,
+      );
+      ElMessage.error(error.message || "插话提交失败");
+    } else {
+      if (pending.status === "submitting") pending.status = "deferred";
+      useContactorsStore().applyMessageEvent({
+        type: "message.complete", contactorId: contactor.id, messageId: user.id,
+        options: { triggerInvocation: false },
+      });
+      textarea.value.innerHTML = "";
+      clearDraft();
+      adjustTextareaHeight();
+      ElMessage.warning("插话回执未到达，已保存并会在当前回复结束后续发");
+    }
+    await client.saveNow();
+  } finally {
+    adjusting.value = false;
+  }
+};
+
+const sendOrAdjust = (...args) => activeWebRequestId.value
+  ? sendAdjustment()
+  : send(...args);
+
 const handleKeyDown = (event) => {
   const isHandled = baseHandleKeyDown(
     event,
     inputBarRef.value || textarea.value?.closest(".input-bar"),
-    send,
+    sendOrAdjust,
   );
   if (isHandled) return;
 
@@ -573,7 +673,7 @@ const currentChange = (data, event) => {
   } else if (event.level === 2) {
     if (activeContactor.value.platform === "onebot") {
       if (getOnebotPreset() && !getOnebotPreset().includes("xxx")) {
-        send();
+        sendOrAdjust();
       }
     }
   }

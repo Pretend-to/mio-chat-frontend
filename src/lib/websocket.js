@@ -353,6 +353,48 @@ export default class Socket extends EventEmitter {
     console.log("WebSocket sending request", request);
   }
 
+  /** Submit text to the active turn without creating another assistant stream. */
+  adjustGeneration({ contactorId, targetRequestId, eventId, text }) {
+    return new Promise((resolve, reject) => {
+      if (!this.socket?.connected) {
+        reject(new Error("Socket not connected"));
+        return;
+      }
+      const requestId = eventId || randomString(16);
+      const timeout = setTimeout(() => {
+        this.off(requestId, onReply);
+        this.pendingRequests.delete(requestId);
+        reject(new Error("插话请求超时"));
+      }, 15000);
+      const onReply = (response) => {
+        if (response.message !== "adjust_status") return;
+        clearTimeout(timeout);
+        this.off(requestId, onReply);
+        this.pendingRequests.delete(requestId);
+        const result = response.data || {};
+        if (result.status === "rejected") {
+          const error = new Error(result.reason || "插话未被接收");
+          error.code = "adjust_rejected";
+          reject(error);
+        } else {
+          resolve(result);
+        }
+      };
+      this.on(requestId, onReply);
+      this.sendMessage({
+        request_id: requestId,
+        protocol: "llm",
+        type: "adjust",
+        data: { contactorId, targetRequestId, eventId: requestId, text },
+        metaData: { contactorId },
+      }).catch((error) => {
+        clearTimeout(timeout);
+        this.off(requestId, onReply);
+        reject(error);
+      });
+    });
+  }
+
   /**
    * Enter chat room and request stream sync
    * @param {String} contactorId - Contactor ID

@@ -70,6 +70,36 @@ describe("Socket message lifecycle", () => {
     expect(client.socket.emit).not.toHaveBeenCalled();
   });
 
+  it("submits an adjustment under its own request id and waits for receipt", async () => {
+    const socket = createConnectedSocket();
+    client.socket = socket;
+    const receipt = client.adjustGeneration({
+      contactorId: "contact-1",
+      targetRequestId: "active-reply",
+      eventId: "adjust-1",
+      text: "Change direction",
+    });
+    const [event, payload] = socket.emit.mock.calls[0];
+    expect(event).toBe("message");
+    expect(JSON.parse(payload)).toMatchObject({
+      request_id: "adjust-1",
+      type: "adjust",
+      data: {
+        targetRequestId: "active-reply",
+        text: "Change direction",
+      },
+    });
+    client.messageHandler(JSON.stringify({
+      protocol: "llm",
+      request_id: "adjust-1",
+      message: "adjust_status",
+      data: { eventId: "adjust-1", status: "accepted_for_checkpoint" },
+    }));
+    await expect(receipt).resolves.toMatchObject({
+      eventId: "adjust-1", status: "accepted_for_checkpoint",
+    });
+  });
+
   it("sends persistence acknowledgements only while connected", () => {
     const socket = createConnectedSocket();
     client.socket = socket;
