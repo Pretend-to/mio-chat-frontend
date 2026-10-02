@@ -1051,6 +1051,7 @@ export const gateway = {
           files,
           messageId,
           userMessageId: lastUserMsg?.id || null,
+          isAdjustment: lastUserMsg?.agentAdjustment === true,
           sessionId: contactor.sessionId,
         },
       );
