@@ -198,6 +198,12 @@
                 :mdOptions="mdOptions"
               />
             </div>
+            <div
+              v-if="item.role === 'other' && item.queueStatus"
+              class="message-queue-status"
+            >
+              {{ item.queueStatus }}
+            </div>
           </div>
         </div>
         <div v-else class="system-message">
@@ -638,6 +644,11 @@ $mobile: 768px
     justify-content: center
     margin: 0 8px
     flex-shrink: 0
+
+.message-queue-status
+    margin: 6px 0 0 8px
+    color: var(--mio-text-placeholder)
+    font-size: 12px
 
 .loading-spinner
     font-size: 16px

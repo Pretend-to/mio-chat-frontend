@@ -1245,6 +1245,17 @@ export const gateway = {
       // 主动 ACK：若服务端已无对应活跃事件，则不会回 complete 帧，
       // 缓存里的 streaming 记录会残留并在每次 enter_chat 被重复同步
       ackPersistedMessage(contactorId, messageId);
+    } else if (platform === "agent") {
+      const contactor = useContactorsStore().contactors[contactorId];
+      const agentId = contactor?.agentId || contactor?.id;
+      if (!client.socket || !agentId || !contactor?.sessionId) return;
+      try {
+        await client.socket.fetch(`/api/agent/abort/${agentId}`, {
+          sessionId: contactor.sessionId,
+        });
+      } catch (error) {
+        console.error("停止 Server Agent 任务失败:", error);
+      }
     }
   },
 
@@ -1425,7 +1436,20 @@ export const gateway = {
           }
         }
       } else {
-        if (data.type === "reason") {
+        if (data.type === "queue_status") {
+          contactorStore.applyMessageEvent({
+            type: "message.patch",
+            contactorId,
+            messageId,
+            patch: { queueStatus: data.content?.text || "" },
+          });
+        } else if (data.type === "reason") {
+          contactorStore.applyMessageEvent({
+            type: "message.patch",
+            contactorId,
+            messageId,
+            patch: { queueStatus: "" },
+          });
           const buffer = getOrCreateBuffer(
             contactorId,
             messageId,
@@ -1433,6 +1457,12 @@ export const gateway = {
           );
           buffer.addReason(data.data?.text ?? "", data.data);
         } else if (data.type === "content") {
+          contactorStore.applyMessageEvent({
+            type: "message.patch",
+            contactorId,
+            messageId,
+            patch: { queueStatus: "" },
+          });
           const buffer = getOrCreateBuffer(
             contactorId,
             messageId,
@@ -1440,6 +1470,12 @@ export const gateway = {
           );
           buffer.addContent(data.content);
         } else if (data.type === "toolCall") {
+          contactorStore.applyMessageEvent({
+            type: "message.patch",
+            contactorId,
+            messageId,
+            patch: { queueStatus: "" },
+          });
           const buffer = streamBuffers.get(messageId);
           if (buffer) {
             buffer.flush();
@@ -1510,6 +1546,12 @@ export const gateway = {
         }
       }
     } else if (["complete", "failed"].includes(e.message)) {
+      contactorStore.applyMessageEvent({
+        type: "message.patch",
+        contactorId,
+        messageId,
+        patch: { queueStatus: "" },
+      });
       import("@/stores/interactionStore.js").then(({ useInteractionStore }) => {
         useInteractionStore().resolveRequest(messageId);
       });

@@ -1520,7 +1520,20 @@ export const useContactorsStore = defineStore("contactors", () => {
       const message = contactor.messageChain[index];
       // 删除进行中的消息时中断服务端生成（生成态判定与光标/停止入口共用）
       if (isStreamingMessage(message)) {
-        client.socket?.interruptGeneration(message.id, contactorId);
+        if (contactor.platform === "agent") {
+          const agentId = contactor.agentId || contactor.id;
+          if (agentId && contactor.sessionId) {
+            client.socket
+              ?.fetch(`/api/agent/abort/${agentId}`, {
+                sessionId: contactor.sessionId,
+              })
+              .catch((error) =>
+                console.error("停止 Server Agent 任务失败:", error),
+              );
+          }
+        } else {
+          client.socket?.interruptGeneration(message.id, contactorId);
+        }
       }
       contactor.messageChain.splice(index, 1);
 

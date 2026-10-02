@@ -127,7 +127,13 @@ export function useInputCommandPopup({
           label: "abort",
           value: "abort",
           preset: "/abort",
-          description: "中止当前正在运行的任务 (别名 /crush)",
+          description: "中止当前任务；后接新输入时中止后立即开启下一轮",
+        },
+        {
+          label: "adjust",
+          value: "adjust",
+          preset: "/adjust",
+          description: "在当前任务的检查点插入补充指令",
         },
         {
           label: "model",
