@@ -199,10 +199,13 @@
               </div>
             </div>
           </div>
-          <div v-if="hasMoreImages" class="gallery-load-more">
-            <button class="load-more-btn" @click.stop="loadMoreImages">
-              加载更多图片 (剩余 {{ remainingImageCount }} 张)
-            </button>
+          <div
+            v-if="hasMoreImages"
+            ref="imageLoadSentinel"
+            class="gallery-load-more"
+            aria-live="polite"
+          >
+            继续下滑加载更多图片（剩余 {{ remainingImageCount }} 张）
           </div>
         </div>
       </div>
@@ -291,7 +294,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
+import {
+  ref,
+  computed,
+  onMounted,
+  onBeforeUnmount,
+  watch,
+  nextTick,
+} from "vue";
 import { useWorkspaceStore } from "@/stores/workspaceStore.js";
 import { useContactorsStore } from "@/stores/contactorsStore.js";
 import { subagentsAPI } from "@/lib/subagentsApi.js";
@@ -305,9 +315,13 @@ const contactorsStore = useContactorsStore();
 const subagentsCollapsed = ref(false);
 const imagesCollapsed = ref(false);
 const filesCollapsed = ref(false);
+const INITIAL_IMAGE_LIMIT = 12;
+const imageLimit = ref(INITIAL_IMAGE_LIMIT);
 const loading = ref(false);
 const groups = ref([]);
+const imageLoadSentinel = ref(null);
 let subAgentRefreshTimer = null;
+let imageLoadObserver = null;
 
 const activeContactor = computed(() => contactorsStore.activeContactor);
 const activeSessionKey = computed(() => {
@@ -401,6 +415,42 @@ const loadSubAgents = async () => {
 
 onMounted(() => {
   loadSubAgents();
+  imageLoadObserver = new IntersectionObserver(
+    (entries) => {
+      if (
+        entries.some((entry) => entry.isIntersecting) &&
+        !imagesCollapsed.value
+      ) {
+        loadMoreImages();
+      }
+    },
+    { rootMargin: "240px 0px" },
+  );
+  if (imageLoadSentinel.value) {
+    imageLoadObserver.observe(imageLoadSentinel.value);
+  }
+});
+
+watch(imageLoadSentinel, (element, previous) => {
+  if (previous) imageLoadObserver?.unobserve(previous);
+  if (element) imageLoadObserver?.observe(element);
+});
+
+watch(imageLimit, async () => {
+  await nextTick();
+  const sentinel = imageLoadSentinel.value;
+  if (!sentinel || !imageLoadObserver || imagesCollapsed.value) return;
+  imageLoadObserver.unobserve(sentinel);
+  imageLoadObserver.observe(sentinel);
+});
+
+watch(imagesCollapsed, async (collapsed) => {
+  if (collapsed) return;
+  await nextTick();
+  const sentinel = imageLoadSentinel.value;
+  if (!sentinel || !imageLoadObserver) return;
+  imageLoadObserver.unobserve(sentinel);
+  imageLoadObserver.observe(sentinel);
 });
 
 watch(
@@ -435,6 +485,7 @@ watch(
 
 onBeforeUnmount(() => {
   clearTimeout(subAgentRefreshTimer);
+  imageLoadObserver?.disconnect();
 });
 
 const subagentRuns = computed(() => {
@@ -702,11 +753,23 @@ const imagesList = computed(() => {
     }
   });
 
-  return list;
-});
+  const timeValue = (value) => {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    const numeric = Number(value);
+    if (Number.isFinite(numeric) && numeric > 0) return numeric;
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
 
-const INITIAL_IMAGE_LIMIT = 12;
-const imageLimit = ref(INITIAL_IMAGE_LIMIT);
+  return list
+    .map((image, sourceOrder) => ({ ...image, _sourceOrder: sourceOrder }))
+    .sort(
+      (a, b) =>
+        timeValue(b.timestamp) - timeValue(a.timestamp) ||
+        b._sourceOrder - a._sourceOrder,
+    )
+    .map(({ _sourceOrder, ...image }) => image);
+});
 
 const displayedImagesList = computed(() => {
   return imagesList.value.slice(0, imageLimit.value);
@@ -720,9 +783,10 @@ const remainingImageCount = computed(() => {
   return Math.max(0, imagesList.value.length - imageLimit.value);
 });
 
-const loadMoreImages = () => {
+function loadMoreImages() {
+  if (!hasMoreImages.value) return;
   imageLimit.value += 12;
-};
+}
 
 // 从当前会话消息链中提取产生过的非图片渲染产物 (ExtraRender) 与 Artifacts
 const rendersAndArtifactsList = computed(() => {
@@ -1371,23 +1435,9 @@ const statusText = (status) => {
   justify-content: center;
   margin-top: 0.65rem;
   margin-bottom: 0.35rem;
-
-  .load-more-btn {
-    border: 1px solid var(--mio-border-color-light, #e4e7ed);
-    background: var(--mio-bg-surface, #f8f9fa);
-    color: var(--mio-text-secondary, #909399);
-    font-size: 0.75rem;
-    padding: 0.35rem 0.85rem;
-    border-radius: 0.35rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-      color: var(--mio-color-primary, #0099ff);
-      border-color: var(--mio-color-primary, #0099ff);
-      background: var(--mio-bg-hover, rgba(0, 0, 0, 0.04));
-    }
-  }
+  min-height: 1rem;
+  color: var(--mio-text-secondary, #909399);
+  font-size: 0.75rem;
 }
 
 .image-thumb-card {
