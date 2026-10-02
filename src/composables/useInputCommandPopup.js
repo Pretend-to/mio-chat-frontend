@@ -133,7 +133,7 @@ export function useInputCommandPopup({
           label: "adjust",
           value: "adjust",
           preset: "/adjust",
-          description: "当前回复结束后，将补充指令作为新输入继续处理",
+          description: "在工具结果检查点收口当前气泡并继续处理",
         },
         {
           label: "model",

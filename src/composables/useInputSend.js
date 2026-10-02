@@ -308,18 +308,6 @@ export function useInputSend({
       }
     }
 
-    // ServerAgent /adjust is a routing hint for the client only. Persist and
-    // display its instruction as an ordinary user message, then let the
-    // regular Agent turn path create the separate pending assistant bubble.
-    let agentAdjustment = false;
-    if (activeContactor.value.platform === "agent") {
-      const match = msg.trim().match(/^\/adjust(?:\s+([\s\S]*))?$/i);
-      if (match) {
-        msg = String(match[1] || "").trim();
-        agentAdjustment = true;
-      }
-    }
-
     const wrappedMessage =
       activeContactor.value.platform === "onebot" && !isCommand
         ? wrapText(msg)
@@ -341,7 +329,6 @@ export function useInputSend({
     textareaRef.value.innerHTML = "";
     adjustTextareaHeight();
     const container = activeContactor.value.getBaseUserContainer();
-    if (agentAdjustment) container.agentAdjustment = true;
 
     if (openaiCmdElements.length > 0) {
       openaiCmdElements.forEach((elm) => {

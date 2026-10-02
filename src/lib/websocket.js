@@ -354,7 +354,7 @@ export default class Socket extends EventEmitter {
   }
 
   /** Submit text to the active turn without creating another assistant stream. */
-  adjustGeneration({ contactorId, targetRequestId, eventId, text }) {
+  adjustGeneration({ contactorId, targetRequestId, eventId, text, userMessageId }) {
     return new Promise((resolve, reject) => {
       if (!this.socket?.connected) {
         reject(new Error("Socket not connected"));
@@ -385,7 +385,7 @@ export default class Socket extends EventEmitter {
         request_id: requestId,
         protocol: "llm",
         type: "adjust",
-        data: { contactorId, targetRequestId, eventId: requestId, text },
+        data: { contactorId, targetRequestId, eventId: requestId, text, userMessageId },
         metaData: { contactorId },
       }).catch((error) => {
         clearTimeout(timeout);

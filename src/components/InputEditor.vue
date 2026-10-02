@@ -265,17 +265,20 @@ const activeContactor = computed(() => props.activeContactor);
 const textarea = ref(null);
 const adjusting = ref(false);
 const activeWebRequestId = computed(() => {
-  if (activeContactor.value?.platform !== "openai") return null;
+  if (!['openai', 'agent'].includes(activeContactor.value?.platform)) return null;
   const contactor = activeContactor.value;
   const messages = contactor.messageChain || [];
   const active = [...messages].reverse().find((message) =>
-    message.role === "other" && ["pending", "streaming"].includes(message.status) &&
+    message.role === "other" &&
+    (message.status === "streaming" ||
+      (contactor.platform === "openai" && message.status === "pending") ||
+      (contactor.platform === "agent" && message.status === "pending" && message.continuationOfRequestId)) &&
     !(contactor.pendingAdjustments || []).some((item) =>
       String(item.resubmitMessageId || item.eventId) === String(message.id) &&
       ["deferred", "defer_to_next_turn", "resubmitting"].includes(item.status),
     ),
   );
-  return active?.continuationOfRequestId || active?.id || null;
+  return active?.continuationOfRequestId || active?.requestId || active?.id || null;
 });
 const inputBarRef = ref(null);
 const isMobileDevice = ref(window.innerWidth < 768);
@@ -395,11 +398,23 @@ const sendAdjustment = async () => {
   const contactor = activeContactor.value;
   const targetRequestId = activeWebRequestId.value;
   if (!contactor || !targetRequestId || adjusting.value || !textarea.value) return;
-  if (textarea.value.querySelector("img, .command-badge, .reply-badge")) {
+  const commandBadge = textarea.value.querySelector(".command-badge");
+  const isAgentAdjustCommand =
+    contactor.platform === "agent" &&
+    commandBadge?.getAttribute("data-type") === "channel_slash" &&
+    commandBadge?.getAttribute("data-preset") === "/adjust";
+  if (
+    textarea.value.querySelector("img, .reply-badge") ||
+    (commandBadge && !isAgentAdjustCommand)
+  ) {
     ElMessage.warning("插话目前仅支持纯文本");
     return;
   }
-  const text = getSafeText(textarea.value).trim();
+  let text = getSafeText(textarea.value).trim();
+  if (contactor.platform === "agent") {
+    const commandText = text.match(/^\/adjust(?:\s+([\s\S]*))?$/i);
+    if (commandText) text = String(commandText[1] || "").trim();
+  }
   if (!text) return;
   const eventId = crypto.randomUUID();
   const user = contactor.getBaseUserContainer();
@@ -433,6 +448,7 @@ const sendAdjustment = async () => {
       targetRequestId,
       eventId,
       text,
+      userMessageId: user.id,
     });
     if (pending.status === "submitting") pending.status = result.status;
     useContactorsStore().applyMessageEvent({
@@ -472,9 +488,20 @@ const sendAdjustment = async () => {
   }
 };
 
-const sendOrAdjust = (...args) => activeWebRequestId.value
-  ? sendAdjustment()
-  : send(...args);
+const sendOrAdjust = (...args) => {
+  if (!activeWebRequestId.value) return send(...args);
+  const contactor = activeContactor.value;
+  if (contactor?.platform === "agent") {
+    const badge = textarea.value?.querySelector(".command-badge");
+    const preset = badge?.getAttribute("data-preset");
+    const text = getSafeText(textarea.value).trim();
+    const isAdjust = preset === "/adjust" || /^\/adjust(?:\s|$)/i.test(text);
+    if ((preset && preset !== "/adjust") || (text.startsWith("/") && !isAdjust)) {
+      return send(...args);
+    }
+  }
+  return sendAdjustment();
+};
 
 const handleKeyDown = (event) => {
   const isHandled = baseHandleKeyDown(

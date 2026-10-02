@@ -100,7 +100,7 @@ async function flushDeferredAdjustments(contactorId) {
 function handleAdjustmentStatus(data) {
   const {
     contactorId, continuationMessageId, eventId, origin,
-    previousMessageId, status, targetRequestId, text,
+    previousMessageId, status, targetRequestId, text, userMessageId,
   } = data || {};
   if (!contactorId || !eventId) return;
   const store = useContactorsStore();
@@ -153,15 +153,17 @@ function handleAdjustmentStatus(data) {
       anchorIndex + 1,
       candidateIndex < 0 ? undefined : candidateIndex,
     ).find((entry) => entry.role === "user" && !entry.absorbedByEventId);
-    const knownUser = item.resubmitUserId && contactor.messageChain.some((entry) =>
-      String(entry.id) === String(item.resubmitUserId),
+    const knownUserId = item.resubmitUserId || userMessageId;
+    const knownUser = knownUserId && contactor.messageChain.some((entry) =>
+      String(entry.id) === String(knownUserId),
     );
     if (!knownUser && !userBetween) {
       const insertionIndex = candidateIndex >= 0
         ? candidateIndex
         : anchorIndex < 0 ? contactor.messageChain.length : anchorIndex + 1;
       const user = {
-        id: `user_adjust_${eventId}`, role: "user", status: "completed",
+        id: userMessageId || `user_adjust_${eventId}`,
+        role: "user", status: "completed",
         content: [{ type: "text", data: { text: item.text } }],
       };
       item.resubmitUserId = user.id;
@@ -172,6 +174,8 @@ function handleAdjustmentStatus(data) {
       });
     } else if (userBetween && !item.resubmitUserId) {
       item.resubmitUserId = userBetween.id;
+    } else if (knownUserId && !item.resubmitUserId) {
+      item.resubmitUserId = knownUserId;
     }
     if (!candidate) {
       store.applyMessageEvent({
@@ -1051,7 +1055,6 @@ export const gateway = {
           files,
           messageId,
           userMessageId: lastUserMsg?.id || null,
-          isAdjustment: lastUserMsg?.agentAdjustment === true,
           sessionId: contactor.sessionId,
         },
       );
@@ -1338,8 +1341,12 @@ export const gateway = {
       persist: false,
       message: {
         id: messageId,
+        requestId: e.request_id,
         role: "other",
-        status: "streaming",
+        status: e.message === "pending" ? "pending" : "streaming",
+        ...(data?.continuationOfRequestId
+          ? { continuationOfRequestId: data.continuationOfRequestId }
+          : {}),
         time: metaData?.timestamp,
         triggerType:
           metaData?.triggerType || (metaData?.isTask ? "task" : "chat"),
