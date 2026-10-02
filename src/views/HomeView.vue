@@ -201,7 +201,7 @@ export default {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 4100;
+  z-index: 1000;
   transition: all 0.15s ease;
   padding: 0;
   box-sizing: border-box;
