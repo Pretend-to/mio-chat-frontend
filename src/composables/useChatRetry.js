@@ -4,7 +4,7 @@ import { client } from "@/lib/runtime.js";
 import { gateway } from "@/lib/gateway.js";
 import { numberString } from "@/utils/generate.js";
 import { useContactorsStore } from "@/stores/contactorsStore.js";
-import { reuploadBlobImages } from "@/composables/useChatMedia.js";
+import { reuploadLocalAssets } from "@/composables/useChatMedia.js";
 
 /**
  * 消息重试子系统
@@ -56,6 +56,20 @@ export function useChatRetry({ activeContactor, toBottom, inputEditor }) {
 
     const uploadFn = inputEditor?.value?.compressAndUploadImage;
 
+    // 重发前先把本地 blob/data 资产重传为远程 URL；无法恢复则终止（上传不触发对话）
+    const rePre = await reuploadLocalAssets(item, uploadFn);
+    if (!rePre.ok) {
+      ElMessage.warning(rePre.message || "附件仍未成功上传，已终止发送");
+      contactorsStore.applyMessageEvent({
+        type: "message.patch",
+        contactorId: contactor.id,
+        messageId: item.id,
+        patch: { status: "failed" },
+      });
+      client.setLocalStorage();
+      return;
+    }
+
     if (contactor.platform === "onebot") {
       contactorsStore.applyMessageEvent({
         type: "message.patch",
@@ -65,7 +79,6 @@ export function useChatRetry({ activeContactor, toBottom, inputEditor }) {
       });
       client.setLocalStorage();
       try {
-        await reuploadBlobImages(item, uploadFn);
         await contactor.webSend(item);
         ElMessage.success("消息已重新发送");
       } catch (e) {
@@ -116,8 +129,6 @@ export function useChatRetry({ activeContactor, toBottom, inputEditor }) {
       client.setLocalStorage();
       if (toBottom) toBottom();
 
-      await reuploadBlobImages(item, uploadFn);
-
       try {
         await gateway.send(
           contactor.platform,
@@ -165,6 +176,21 @@ export function useChatRetry({ activeContactor, toBottom, inputEditor }) {
 
     const uploadFn = inputEditor?.value?.compressAndUploadImage;
 
+    // 早于任何状态变更：先重传本地资产，失败则终止（不触发对话、不发 blob）
+    const srcUser =
+      message?.role === "user"
+        ? message
+        : contactor.messageChain[messageIndex - 1]?.role === "user"
+          ? contactor.messageChain[messageIndex - 1]
+          : null;
+    if (srcUser) {
+      const rePre = await reuploadLocalAssets(srcUser, uploadFn);
+      if (!rePre.ok) {
+        ElMessage.warning(rePre.message || "附件仍未成功上传，已终止发送");
+        return;
+      }
+    }
+
     if (contactor.platform === "onebot") {
       const msgToSend = {
         ...message,
@@ -173,7 +199,6 @@ export function useChatRetry({ activeContactor, toBottom, inputEditor }) {
         status: "pending",
         time: Date.now(),
       };
-      await reuploadBlobImages(msgToSend, uploadFn);
       activeContactor.value.webSend(msgToSend);
       ElMessage.success("消息已重新发送");
     } else {
@@ -223,14 +248,6 @@ export function useChatRetry({ activeContactor, toBottom, inputEditor }) {
       }
 
       retryList.value.push(validMessage.id);
-
-      const userMsg =
-        message.role === "user"
-          ? message
-          : contactor.messageChain[messageIndex - 1];
-      if (userMsg?.role === "user") {
-        await reuploadBlobImages(userMsg, uploadFn);
-      }
 
       try {
         await gateway.send(

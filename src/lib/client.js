@@ -1447,6 +1447,8 @@ export default class Client extends EventEmitter {
             headers: {
               "Content-Type": "application/json",
               "x-browser-fingerprint": fingerprint,
+              "x-admin-code": localStorage.getItem("admin_code") || "",
+              "x-user-code": localStorage.getItem("user_code") || "",
             },
             body: JSON.stringify({
               totalChunks,
@@ -1491,6 +1493,8 @@ export default class Client extends EventEmitter {
           const xhr = new XMLHttpRequest();
           xhr.open("POST", "/api/upload/chunk", true);
           xhr.setRequestHeader("x-browser-fingerprint", fingerprint);
+          xhr.setRequestHeader("x-admin-code", localStorage.getItem("admin_code") || "");
+          xhr.setRequestHeader("x-user-code", localStorage.getItem("user_code") || "");
 
           // Track progress if callback provided
           if (onProgress) {
@@ -1535,6 +1539,8 @@ export default class Client extends EventEmitter {
             headers: {
               "Content-Type": "application/json",
               "x-browser-fingerprint": fingerprint,
+              "x-admin-code": localStorage.getItem("admin_code") || "",
+              "x-user-code": localStorage.getItem("user_code") || "",
             },
             body: JSON.stringify({
               totalChunks: 1,
@@ -1542,6 +1548,12 @@ export default class Client extends EventEmitter {
               filename: file.name,
             }),
           });
+          // 415 = 类型不支持（终局判定）：直接终止，绝不再回退去传分片
+          if (response.status === 415) {
+            const err = await response.json().catch(() => ({}));
+            console.warn("秒传预检：文件类型不支持，终止上传:", err.message);
+            return reject({ error: err.message || "不支持的文件类型" });
+          }
           if (response.ok) {
             const data = await response.json();
             // 如果后端确认文件已存在，会返回带有 data.url 的成功响应

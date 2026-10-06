@@ -2,53 +2,95 @@ import { ElMessage } from "element-plus";
 import { client } from "@/lib/runtime.js";
 
 /**
- * 重试前检查消息中是否有 blob:/data: 本地图片 URL，
- * 若有则从浏览器缓存取回 Blob 后重新上传为远程 URL。
- * 上传失败则移除该图片元素并提示用户。
+ * 重发前把消息里所有“本地资产”（data.file 为 blob:/data: 的 image/file 元素）
+ * 重新上传为远程 URL。
  *
- * @param {Object} message - 消息对象
- * @param {Function} [compressAndUploadFn] - 可选的 InputEditor 压缩上传方法
+ * 返回 { ok, message? }：
+ *   - ok=true  → 所有本地资产都已变远程 URL（或本就没有本地资产），可安全发送；
+ *   - ok=false → 至少一个本地资产无法恢复（类型不支持被后端拒 / 本地 blob 源已丢失 /
+ *                文件未从 iCloud 同步）→ 调用方必须终止发送，避免把本地 blob 发给后端
+ *                或误触发一轮对话。失败元素保持原样（仍是本地 URL），气泡维持可重试态。
+ *
+ * @param {Object} message - 消息对象（content 为块数组）
+ * @param {Function} [compressAndUploadFn] - 可选：InputEditor 的图片压缩上传方法
  */
-export async function reuploadBlobImages(message, compressAndUploadFn) {
-  if (!message || !Array.isArray(message.content)) return;
+export async function reuploadLocalAssets(message, compressAndUploadFn) {
+  if (!message || !Array.isArray(message.content)) return { ok: true };
+
+  let anyFail = false;
 
   for (const elm of message.content) {
-    if (elm.type !== "image") continue;
-    const url = elm.data?.file || "";
-    if (!url.startsWith("blob:") && !url.startsWith("data:")) continue;
+    if (elm.type !== "image" && elm.type !== "file") continue;
+
+    const url = elm.data?.file;
+    if (typeof url !== "string") continue; // 部分通道 data.file 是对象(base64)，非本地 URL，跳过
+    if (!url.startsWith("blob:") && !url.startsWith("data:")) continue; // 已是远程 URL
+
+    // uploadDocumentFile 产出形如 `${remote}?size=N&name=X`，据此还原元信息
+    let size = null;
+    let name = null;
+    try {
+      const q = url.split("?")[1];
+      if (q) {
+        const params = new URLSearchParams(q);
+        size = params.get("size") ? Number(params.get("size")) : null;
+        name = params.get("name");
+      }
+    } catch {
+      /* 查询畸形时忽略，走默认命名 */
+    }
 
     try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const filename = "retry-image." + (blob.type.split("/")[1] || "png");
-      const file = new File([blob], filename, { type: blob.type });
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error("本地源已失效");
+      const blob = await resp.blob();
+      if (!blob || blob.size === 0) {
+        throw new Error("本地源为空（可能尚未从 iCloud 同步）");
+      }
 
-      if (compressAndUploadFn) {
-        elm.data.file = await compressAndUploadFn(file);
+      const guessName = name || (elm.type === "image" ? "retry-image" : "retry-file");
+      const extFromType = (blob.type.split("/")[1] || "").split(";")[0];
+      const filename = /\.[a-z0-9]+$/i.test(guessName)
+        ? guessName
+        : `${guessName}.${extFromType || "bin"}`;
+      const file = new File([blob], filename, {
+        type: blob.type || "application/octet-stream",
+      });
+
+      if (elm.type === "image") {
+        let remoteUrl;
+        if (compressAndUploadFn) {
+          remoteUrl = await compressAndUploadFn(file);
+        } else {
+          const formData = new FormData();
+          formData.append("image", file, filename);
+          const upload = await client.uploadImage(formData);
+          remoteUrl = upload.data.url;
+        }
+        elm.data.file = remoteUrl;
       } else {
-        // InputEditor 未挂载（如多选模式）时直接走 client 上传，避免 blob URL 被原样发出
-        const formData = new FormData();
-        formData.append("image", file, filename);
-        const upload = await client.uploadImage(formData);
-        elm.data.file = upload.data.url;
+        const upload = await client.uploadFile(file);
+        const qs = size
+          ? `?size=${size}&name=${name || filename}`
+          : `?name=${name || filename}`;
+        elm.data.file = `${upload.data.url}${qs}`;
       }
     } catch (e) {
-      console.error("重试时重新上传图片失败:", e);
-      // 上传失败则移除该图片元素，并告知用户
-      elm._remove = true;
+      console.error(`重发时重新上传${elm.type}失败:`, e);
+      anyFail = true; // 保持该元素为本地 URL，交由调用方终止发送
     }
   }
 
-  // 清理标记为移除的元素
-  const before = message.content.length;
-  message.content = message.content.filter((elm) => !elm._remove);
-  if (message.content.length < before) {
-    ElMessage.warning("部分图片无法重新上传，已从消息中移除");
-  }
+  return anyFail
+    ? {
+        ok: false,
+        message: "附件无法重新上传（本地源丢失或类型不支持），已终止发送",
+      }
+    : { ok: true };
 }
 
 export function useChatMedia() {
   return {
-    reuploadBlobImages,
+    reuploadLocalAssets,
   };
 }
