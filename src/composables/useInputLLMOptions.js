@@ -2,7 +2,19 @@ import { ref, computed } from "vue";
 import { client, config } from "@/lib/runtime.js";
 
 export function useInputLLMOptions({ activeContactor }) {
-  const selectedOption = ref(null);
+  const localSelectedOption = ref(null);
+  const selectedOption = computed({
+    get: () =>
+      activeContactor.value?.platform === "agent"
+        ? activeContactor.value.options?.model ||
+          activeContactor.value.options?.base?.model ||
+          null
+        : localSelectedOption.value,
+    set: (value) => {
+      if (activeContactor.value?.platform !== "agent")
+        localSelectedOption.value = value;
+    },
+  });
   const openaiModels = ref(null);
   const onebotPresets = ref(config.onebotConfig?.textwraper?.options || []);
 
@@ -58,7 +70,10 @@ export function useInputLLMOptions({ activeContactor }) {
       }
     } else {
       initLLMExtraOptions();
-      selectedOption.value = contactor.options?.base?.model;
+      selectedOption.value =
+        contactor.platform === "agent"
+          ? contactor.options?.model || contactor.options?.base?.model
+          : contactor.options?.base?.model;
     }
   };
 
@@ -76,7 +91,7 @@ export function useInputLLMOptions({ activeContactor }) {
   const extraOptions = computed(() => {
     const contactor = activeContactor.value;
     if (!contactor) return [];
-    if (contactor.platform == "openai") {
+    if (["openai", "agent"].includes(contactor.platform)) {
       return openaiModels.value || [];
     } else {
       return onebotPresets.value || [];

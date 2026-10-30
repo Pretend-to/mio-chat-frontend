@@ -69,6 +69,7 @@
 
 <script setup>
 import { ref, computed, watch } from "vue";
+import { resolveSmartTools } from "@/lib/smartTools.js";
 
 const props = defineProps({
   modelValue: {
@@ -102,7 +103,10 @@ const filteredAllLLMTools = computed(() => {
 });
 
 const updateEnabledTools = () => {
-  const enabledTools = props.modelValue?.toolCallSettings?.tools || [];
+  const enabledTools = resolveSmartTools(
+    props.modelValue?.toolCallSettings?.tools || [],
+    props.allLlmToolsData,
+  );
 
   // Sync tools from modelValue
   localAllLLMTools.value = (localAllLLMTools.value || []).map((plugin) => {
@@ -115,23 +119,6 @@ const updateEnabledTools = () => {
       tools: updatedTools,
     };
   });
-
-  // Check if Skill is enabled, if so, force terminal tools
-  const isSkillEnabled = localAllLLMTools.value.some((plugin) =>
-    plugin.tools.some(
-      (tool) => tool.name.toLowerCase().startsWith("skill") && tool.enabled,
-    ),
-  );
-
-  if (isSkillEnabled) {
-    localAllLLMTools.value.forEach((plugin) => {
-      if (plugin.name.toLowerCase().includes("terminal")) {
-        plugin.tools.forEach((tool) => {
-          tool.enabled = true;
-        });
-      }
-    });
-  }
 
   // Update plugin.isAllEnabled
   localAllLLMTools.value.forEach((plugin) => {
@@ -158,23 +145,6 @@ const handleToolCallModeChange = () => {
 };
 
 const handleToolEnableChange = () => {
-  // Sync skill constraints
-  const isSkillEnabled = localAllLLMTools.value.some((plugin) =>
-    plugin.tools.some(
-      (tool) => tool.name.toLowerCase().startsWith("skill") && tool.enabled,
-    ),
-  );
-
-  if (isSkillEnabled) {
-    localAllLLMTools.value.forEach((plugin) => {
-      if (plugin.name.toLowerCase().includes("terminal")) {
-        plugin.tools.forEach((tool) => {
-          tool.enabled = true;
-        });
-      }
-    });
-  }
-
   // Re-calculate isAllEnabled
   localAllLLMTools.value.forEach((plugin) => {
     plugin.isAllEnabled =

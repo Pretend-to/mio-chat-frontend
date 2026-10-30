@@ -175,8 +175,7 @@ function formatTime(timestamp) {
 }
 
 function showTrace(row) {
-  store.activeTrace = row;
-  store.showTraceModal = true;
+  void store.openFailureTrace(row);
 }
 
 const categorizedErrors = computed(() => {

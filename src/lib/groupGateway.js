@@ -7,6 +7,7 @@
  * 3. 处理 @Mention 路由，触发特定或全体 Agent 响应。
  */
 
+import { resolveSmartTools } from "./smartTools.js";
 import { client } from "@/lib/runtime.js";
 import { getValidOpenaiMessage, cleanChatParams } from "@/lib/gateway.js";
 import { assembleSystemPrompt } from "@/utils/SystemPromptAssembler.js";
@@ -706,6 +707,12 @@ export async function sendGroupCompletions(
     const options = member.options || {};
     const memberCrystal = options.crystallization;
     const settings = { ...options };
+    if (options.toolCallSettings) {
+      settings.toolCallSettings = {
+        ...options.toolCallSettings,
+        tools: resolveSmartTools(options.toolCallSettings.tools || [], client.config?.llmTools),
+      };
+    }
 
     // 群聊结晶恒开，无条件下发水位线参数
     settings.crystallization_token_watermark =

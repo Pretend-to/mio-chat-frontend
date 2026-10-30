@@ -2,12 +2,16 @@
   <el-dialog
     v-model="store.showTraceModal"
     title="异常堆栈诊断追踪"
-    width="680px"
+    width="min(1040px, calc(100vw - 32px))"
     align-center
     class="saas-dialog"
     destroy-on-close
   >
-    <div v-if="store.activeTrace" class="trace-modal-body">
+    <div
+      v-if="store.activeTrace"
+      v-loading="store.loadingFailureTrace"
+      class="trace-modal-body"
+    >
       <div class="trace-info-grid">
         <div class="info-row">
           <span class="info-label">Request ID</span>
@@ -44,6 +48,59 @@
         </p>
       </div>
 
+      <section class="request-diagnostics">
+        <div class="stack-header request-header">
+          <span
+            >失败请求体<span v-if="diagnostics?.round">
+              · 第 {{ diagnostics.round }} 轮</span
+            ></span
+          >
+          <el-button v-if="selectedBody" size="small" @click="copyRequest"
+            >复制 JSON</el-button
+          >
+        </div>
+        <template v-if="sections.length">
+          <el-tabs v-model="selectedSection">
+            <el-tab-pane
+              v-for="section in sections"
+              :key="section.key"
+              :name="section.key"
+              :label="section.label"
+            />
+          </el-tabs>
+          <p class="request-hint">
+            认证凭据和内联二进制内容已脱敏；消息正文与工具定义保留。
+          </p>
+          <details v-if="tools.length" class="request-section">
+            <summary>工具定义 · {{ tools.length }} 个</summary>
+            <div class="tool-list">
+              <details
+                v-for="tool in tools"
+                :key="tool.path"
+                class="tool-schema"
+              >
+                <summary>
+                  {{ tool.name }}
+                  <span class="request-hint">{{ tool.path }}</span>
+                </summary>
+                <pre
+                  class="stack-content"
+                ><code>{{ formatDiagnosticJson(tool.schema) }}</code></pre>
+              </details>
+            </div>
+          </details>
+          <details class="request-section" open>
+            <summary>完整请求 JSON</summary>
+            <pre
+              class="stack-content request-content"
+            ><code>{{ formatDiagnosticJson(selectedBody) }}</code></pre>
+          </details>
+        </template>
+        <p v-else class="request-hint">
+          此记录未保存请求体（历史记录无法补采）。
+        </p>
+      </section>
+
       <div class="stack-trace-container">
         <div class="stack-header">
           <span>异常追踪调用栈</span>
@@ -57,9 +114,47 @@
 </template>
 
 <script setup>
+import { computed, ref, watch } from "vue";
+import { ElMessage } from "element-plus";
+import {
+  parseRequestDiagnostics,
+  requestBodySections,
+  requestTools,
+  formatDiagnosticJson,
+} from "@/lib/requestDiagnostics.js";
 import { useDashboardStore } from "@/stores/dashboardStore";
 
 const store = useDashboardStore();
+const diagnostics = computed(() =>
+  parseRequestDiagnostics(store.activeTrace?.requestBody),
+);
+const sections = computed(() =>
+  requestBodySections(store.activeTrace?.requestBody),
+);
+const selectedSection = ref("");
+watch(
+  sections,
+  (value) => {
+    selectedSection.value = value[0]?.key || "";
+  },
+  { immediate: true },
+);
+const selectedBody = computed(
+  () =>
+    sections.value.find((section) => section.key === selectedSection.value)
+      ?.body,
+);
+const tools = computed(() => requestTools(selectedBody.value));
+async function copyRequest() {
+  try {
+    await navigator.clipboard.writeText(
+      formatDiagnosticJson(selectedBody.value),
+    );
+    ElMessage.success("请求体已复制");
+  } catch {
+    ElMessage.error("复制失败，可在请求体区域选中复制");
+  }
+}
 
 function formatTime(timestamp) {
   if (!timestamp) return "-";
@@ -70,6 +165,8 @@ function formatTime(timestamp) {
 
 <style scoped>
 .trace-modal-body {
+  max-height: calc(100dvh - 180px);
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -185,8 +282,54 @@ function formatTime(timestamp) {
 
 :deep(.el-dialog__body) {
   padding: 24px 20px !important;
-  max-height: calc(100vh - 160px);
+  max-height: calc(100dvh - 160px);
   overflow-y: auto;
   background-color: var(--mio-bg-card, #ffffff) !important;
+}
+</style>
+
+<style scoped>
+.request-diagnostics {
+  border: 1px solid var(--mio-border-color-light, #e2e8f0);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.request-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.request-diagnostics :deep(.el-tabs__header) {
+  padding: 0 16px;
+  margin-bottom: 0;
+}
+.request-hint {
+  color: var(--mio-text-secondary, #64748b);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+p.request-hint {
+  padding: 0 16px;
+}
+.request-section > summary,
+.tool-schema > summary {
+  cursor: pointer;
+  padding: 10px 16px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.tool-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+.tool-schema {
+  margin: 0 12px 8px;
+  border: 1px solid var(--mio-border-color-light, #e2e8f0);
+  border-radius: 6px;
+}
+.request-content {
+  max-height: 420px;
+  white-space: pre;
+  overflow: auto;
 }
 </style>

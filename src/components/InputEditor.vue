@@ -93,7 +93,7 @@
       </div>
       <div v-if="activeContactor?.platform !== 'group'" class="bu-emoji">
         <p class="ho-emoji">
-          {{ activeContactor.platform == "openai" ? "模型选择" : "工具选择" }}
+          {{ ["openai", "agent"].includes(activeContactor.platform) ? "模型选择" : "工具选择" }}
         </p>
         <el-tree-select
           id="wraper-selector"
@@ -685,17 +685,6 @@ const currentChange = (data, event) => {
       event.parent.data.value,
       data.value,
     ];
-    ElMessage({
-      message: "已切换到 " + selectedValues[2] + " 模型",
-      type: "success",
-    });
-    const seletedProvider = selectedValues[0];
-    if (seletedProvider !== activeContactor.value.options?.provider) {
-      ElMessage({
-        message: "已切换到 " + seletedProvider + " 协议",
-        type: "success",
-      });
-    }
     emit("setModel", selectedValues);
   } else if (event.level === 2) {
     if (activeContactor.value.platform === "onebot") {

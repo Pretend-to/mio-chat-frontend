@@ -1,3 +1,4 @@
+import { collectBrowserContext } from "./browserContext.js";
 import EventEmitter from "./event.js";
 import { randomString } from "../utils/generate.js";
 import { runConsoleCommand } from "./webConsole.js";
@@ -164,7 +165,7 @@ export default class Socket extends EventEmitter {
     this.socket = io(this.url, {
       path: "/socket.io",
       transports: transports, // <-- 使用指定的 transports
-      auth: { id: this.id, token: this.code, firstLogin: this.firstLogin },
+      auth: { id: this.id, token: this.code, firstLogin: this.firstLogin, browserContext: collectBrowserContext() },
       reconnection: true, // 保持开启，让 Socket.IO 处理后续的重连尝试
       reconnectionAttempts: Infinity,
       reconnectionDelay: 3000, // 固定 3 秒重连一次

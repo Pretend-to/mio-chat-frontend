@@ -6,37 +6,37 @@
         :class="{ 'sub-tab': true, active: activeTab === 'soul' }"
         @click="activeTab = 'soul'"
       >
-        📜 灵魂与基础信息
+        灵魂与基础信息
       </div>
       <div
         :class="{ 'sub-tab': true, active: activeTab === 'model' }"
         @click="activeTab = 'model'"
       >
-        🤖 模型与提供商
+        模型与提供商
       </div>
       <div
         :class="{ 'sub-tab': true, active: activeTab === 'tools' }"
         @click="activeTab = 'tools'"
       >
-        🛠️ 插件工具
+        插件工具
       </div>
       <div
         :class="{ 'sub-tab': true, active: activeTab === 'skills' }"
         @click="activeTab = 'skills'"
       >
-        🤹 技能库
+        技能库
       </div>
       <div
         :class="{ 'sub-tab': true, active: activeTab === 'memory' }"
         @click="activeTab = 'memory'"
       >
-        💎 服务端记忆与结晶
+        服务端记忆与结晶
       </div>
       <div
         :class="{ 'sub-tab': true, active: activeTab === 'status' }"
         @click="activeTab = 'status'"
       >
-        ⚡ Agent 状态
+        Agent 状态
       </div>
     </div>
 
@@ -168,23 +168,40 @@
 
     <!-- Tab 3: Tools -->
     <div v-if="activeTab === 'tools'" class="tab-pane">
-      <div class="group-title">Agent 工具策略</div>
+      <div class="group-title">插件工具</div>
       <div class="settings-card">
-        <div class="setting-field">
-          <div class="field-label">工具插件</div>
-          <div class="field-value">
-            <el-tag type="success" effect="plain">ai-plugin</el-tag>
-            <el-tag type="success" effect="plain">terminal-pty</el-tag>
-            <el-tag type="success" effect="plain">file-editor-plugin</el-tag>
-          </div>
-        </div>
-        <div class="setting-field">
-          <div class="field-label">调用模式</div>
-          <div class="field-value">AUTO（固定）</div>
-        </div>
         <div class="card-desc">
-          工具能力归属于 Agent，并在 Web、微信等所有绑定渠道中保持一致。
+          以下工具由服务端按当前 Agent 会话加载，调用模式为
+          AUTO。终端操作仍受管理员权限限制。
         </div>
+        <el-skeleton v-if="toolsLoading" :rows="4" animated />
+        <el-alert
+          v-else-if="toolsError"
+          :title="toolsError"
+          type="error"
+          :closable="false"
+        />
+        <el-empty
+          v-else-if="!agentToolGroups.length"
+          description="当前没有可用工具"
+        />
+        <el-collapse v-else>
+          <el-collapse-item
+            v-for="plugin in agentToolGroups"
+            :key="plugin.name"
+            :name="plugin.name"
+            :title="`${plugin.name}（${plugin.tools.length}）`"
+          >
+            <div
+              v-for="tool in plugin.tools"
+              :key="tool.name"
+              class="agent-tool-item"
+            >
+              <strong>{{ tool.name.split("_mid_")[0] }}</strong>
+              <p>{{ tool.description || "暂无说明" }}</p>
+            </div>
+          </el-collapse-item>
+        </el-collapse>
       </div>
     </div>
 
@@ -432,6 +449,36 @@ const agentId = computed(() => props.contactor.agentId || props.contactor.id);
 const sessionId = computed(() => props.contactor.sessionId || "");
 const loading = ref(true);
 const cacheKey = computed(() => `mio_agent_cache_${agentId.value}`);
+
+const agentToolGroups = ref([]);
+const toolsLoading = ref(false);
+const toolsError = ref("");
+let toolsRequestVersion = 0;
+async function loadAgentTools() {
+  const version = ++toolsRequestVersion;
+  toolsLoading.value = true;
+  toolsError.value = "";
+  try {
+    const query = sessionId.value
+      ? `?sessionId=${encodeURIComponent(sessionId.value)}`
+      : "";
+    const response = await configAPI.request(
+      `/api/agents/${agentId.value}/tools${query}`,
+    );
+    if (version !== toolsRequestVersion) return;
+    agentToolGroups.value = Object.entries(response.data.plugins || {}).map(
+      ([name, tools]) => ({ name, tools: Object.values(tools) }),
+    );
+  } catch (error) {
+    if (version === toolsRequestVersion)
+      toolsError.value = error.message || "加载工具失败";
+  } finally {
+    if (version === toolsRequestVersion) toolsLoading.value = false;
+  }
+}
+watch([activeTab, agentId, sessionId], () => {
+  if (activeTab.value === "tools") loadAgentTools();
+});
 
 // Basic Info
 const basicName = ref(props.contactor.name || "");
@@ -1006,5 +1053,16 @@ watch(
 
 .muted {
   color: #999;
+}
+
+.agent-tool-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+.agent-tool-item p {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--el-text-color-secondary);
 }
 </style>

@@ -11,6 +11,8 @@ export const useDashboardStore = defineStore("dashboard", () => {
   const showCostModal = ref(false);
   const showTraceModal = ref(false);
   const activeTrace = ref(null);
+  const loadingFailureTrace = ref(false);
+  let failureTraceSeq = 0;
   const slaMetric = ref("ttft");
 
   // Real-time metrics
@@ -370,6 +372,26 @@ export const useDashboardStore = defineStore("dashboard", () => {
     }
   }
 
+  async function openFailureTrace(row) {
+    const sequence = ++failureTraceSeq;
+    activeTrace.value = row;
+    showTraceModal.value = true;
+    loadingFailureTrace.value = true;
+    try {
+      const response = await configAPI.request(`/api/admin/dashboard/failures/${row.id}`);
+      if (sequence === failureTraceSeq && activeTrace.value?.id === row.id) {
+        if (!response.success) throw new Error(response.error || "加载失败");
+        activeTrace.value = response.data;
+      }
+    } catch (error) {
+      if (sequence === failureTraceSeq) {
+        ElMessage.error(`获取请求诊断失败：${error.message}`);
+      }
+    } finally {
+      if (sequence === failureTraceSeq) loadingFailureTrace.value = false;
+    }
+  }
+
   function setSelectedUser(userId) {
     selectedUser.value = userId || "All";
     return fetchHistoricalStats();
@@ -389,6 +411,8 @@ export const useDashboardStore = defineStore("dashboard", () => {
     showCostModal,
     showTraceModal,
     activeTrace,
+    loadingFailureTrace,
+    openFailureTrace,
     slaMetric,
     stats,
     historicalData,

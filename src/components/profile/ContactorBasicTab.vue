@@ -160,14 +160,14 @@
         </div>
       </div>
 
-      <!-- 智能模式 (一键启用 ai-plugin 核心智能工具集) -->
+      <!-- 智能模式：AI 与终端工具使用同一套实际选择规则 -->
       <div class="setting-field">
         <div class="field-label">
           智能模式
           <el-tooltip
             placement="top"
             popper-class="mio-hint-popper"
-            content="一键启用包含搜索、绘图、视觉分析、记忆和定时任务等核心智能工具集"
+            content="一键启用包含搜索、绘图、视觉分析、记忆、定时任务与终端工具；终端操作仍需管理员权限"
           >
             <el-icon class="label-hint-icon">
               <InfoFilled />
@@ -187,6 +187,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from "vue";
+import { getSmartToolNames, resolveSmartTools } from "@/lib/smartTools.js";
 import { config } from "@/lib/runtime.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { InfoFilled } from "@element-plus/icons-vue";
@@ -238,48 +239,24 @@ const emit = defineEmits([
   "provider-changed",
 ]);
 
-// 智能模式 (一键启用 ai-plugin 插件组全部工具)
+// Smart mode uses the same bundle as defaults and outgoing requests.
+const smartCatalog = computed(() =>
+  props.allLlmToolsData.length ? props.allLlmToolsData : config.llmTools,
+);
 const isAiPluginEnabled = computed(() => {
-  const currentTools = props.modelValue?.toolCallSettings?.tools || [];
-  if (currentTools.length === 0) return false;
-
-  const aiPlugin = (props.allLlmToolsData || []).find(
-    (p) =>
-      p.name?.toLowerCase().includes("ai-plugin") ||
-      p.name?.toLowerCase() === "ai",
+  const target = getSmartToolNames(smartCatalog.value);
+  const selected = resolveSmartTools(
+    props.modelValue?.toolCallSettings?.tools || [],
+    smartCatalog.value,
   );
-  if (aiPlugin && aiPlugin.tools && aiPlugin.tools.length > 0) {
-    return aiPlugin.tools.every((t) => currentTools.includes(t.name));
-  }
-
-  const aiTools =
-    typeof config.getAiPluginToolNames === "function"
-      ? config.getAiPluginToolNames()
-      : [];
-  if (aiTools.length > 0) {
-    return aiTools.every((t) => currentTools.includes(t));
-  }
-
-  return false;
+  return target.length > 0 && target.every((name) => selected.includes(name));
 });
 
 const handleToggleAiPlugin = (enable) => {
   const newOptions = JSON.parse(JSON.stringify(props.modelValue || {}));
   if (!newOptions.toolCallSettings) newOptions.toolCallSettings = {};
   let currentTools = [...(newOptions.toolCallSettings.tools || [])];
-
-  const aiPlugin = (props.allLlmToolsData || []).find(
-    (p) =>
-      p.name?.toLowerCase().includes("ai-plugin") ||
-      p.name?.toLowerCase() === "ai",
-  );
-
-  let targetToolNames = [];
-  if (aiPlugin && aiPlugin.tools && aiPlugin.tools.length > 0) {
-    targetToolNames = aiPlugin.tools.map((t) => t.name);
-  } else if (typeof config.getAiPluginToolNames === "function") {
-    targetToolNames = config.getAiPluginToolNames();
-  }
+  const targetToolNames = getSmartToolNames(smartCatalog.value);
 
   if (enable) {
     targetToolNames.forEach((name) => {
@@ -294,9 +271,8 @@ const handleToggleAiPlugin = (enable) => {
       newOptions.toolCallSettings.mode = "AUTO";
     }
   } else {
-    currentTools = currentTools.filter(
-      (name) => !targetToolNames.includes(name),
-    );
+    const disabled = new Set(targetToolNames.map(name => name.split("_mid_")[0]));
+    currentTools = currentTools.filter(name => !disabled.has(name.split("_mid_")[0]));
   }
 
   newOptions.toolCallSettings.tools = currentTools;

@@ -40,6 +40,8 @@ import { useStatusBarColor } from "@/composables/useStatusBarColor";
 import { useContactorsStore, getShownTime } from "@/stores/contactorsStore.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { client } from "@/lib/runtime.js";
+import { configAPI } from "@/lib/configApi.js";
+import { setContactorModel } from "@/lib/contactorModel.js";
 import { shareOrCopy } from "@/utils/tools.js";
 import { gateway } from "@/lib/gateway.js";
 import { numberString } from "@/utils/generate.js";
@@ -868,12 +870,14 @@ const tolist = () => {
 };
 
 const setModel = async (list) => {
-  const provider = list[0];
-  const model = list[2];
-  activeContactor.value.options.provider = provider;
-  activeContactor.value.options.base.model = model;
-  activeContactor.value.loadAvatar();
-  await client.setLocalStorage();
+  const contactor = activeContactor.value;
+  const [provider, , model] = list;
+  try {
+    await setContactorModel(contactor, provider, model, { api: configAPI, client });
+    ElMessage.success(`已切换到 ${model} 模型`);
+  } catch (error) {
+    ElMessage.error(error.message || "切换模型失败");
+  }
 };
 
 const toimg = async () => {

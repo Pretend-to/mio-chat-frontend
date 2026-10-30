@@ -1,3 +1,4 @@
+import { getSmartToolNames } from "./smartTools.js";
 // =============================================================
 // 常量定义
 // =============================================================
@@ -643,6 +644,10 @@ export default class Config {
   /**
    * 动态获取 ai-plugin 分组下的所有工具全名（带 hash）
    */
+  getSmartModeToolNames() {
+    return getSmartToolNames(this.llmTools);
+  }
+
   getAiPluginToolNames() {
     if (!this.llmTools || typeof this.llmTools !== "object") return [];
     for (const [groupName, toolsObj] of Object.entries(this.llmTools)) {
@@ -694,13 +699,13 @@ export default class Config {
       }
     }
 
-    // 智能模式默认启用：如果没有设置激活工具，默认认准并挂载 ai-plugin 分组的当前全部工具
+    // 智能模式默认启用：如果没有设置激活工具，挂载 ai-plugin 与 terminal-pty 的当前全部工具
     if (
       copiedConfig.toolCallSettings &&
       (!copiedConfig.toolCallSettings.tools ||
         copiedConfig.toolCallSettings.tools.length === 0)
     ) {
-      const aiPluginTools = this.getAiPluginToolNames();
+      const aiPluginTools = this.getSmartModeToolNames();
       if (aiPluginTools.length > 0) {
         copiedConfig.toolCallSettings.tools = [...aiPluginTools];
       }

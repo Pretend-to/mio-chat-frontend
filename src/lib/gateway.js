@@ -1,3 +1,4 @@
+import { resolveSmartTools } from "./smartTools.js";
 import { useContactorsStore } from "@/stores/contactorsStore.js";
 import { useConfigStore } from "@/stores/configStore.js";
 import { client } from "@/lib/runtime.js";
@@ -1161,6 +1162,12 @@ export const gateway = {
 
       // 在 settings 中注入结晶与 YOLO 等会话级参数
       const enrichedOptions = { ...options };
+      if (options?.toolCallSettings) {
+        enrichedOptions.toolCallSettings = {
+          ...options.toolCallSettings,
+          tools: resolveSmartTools(options.toolCallSettings.tools || [], client.config.llmTools),
+        };
+      }
       if (contactor?.options?.yolo === true) {
         enrichedOptions.yolo = true;
       }
@@ -1606,6 +1613,41 @@ export const gateway = {
         }
       }
       ackPersistedMessage(contactorId, messageId);
+      if (e.message === "complete" && data?.selectedSessionId) {
+        void (async () => {
+          const contactor = contactorStore.contactors[contactorId];
+          if (
+            contactor?.platform === "agent" &&
+            contactor.sessionId === metaData?.sessionId
+          ) {
+            const selectedSessionId = String(data.selectedSessionId);
+            contactor.sessionId = selectedSessionId;
+            // Replace the visible history with the selected server session. Never
+            // keep the previous session's transcript under the new session ID.
+            contactor.messageChain = [];
+            await client.saveNow();
+            try {
+              const history = await client.socket.fetch(
+                `/api/agent/history/${contactor.agentId || contactor.id}`,
+                { sessionId: selectedSessionId, limit: 200 },
+              );
+              if (
+                contactor.sessionId === selectedSessionId &&
+                Array.isArray(history?.messages)
+              ) {
+                contactorStore.applyMessageEvent({
+                  type: "history.reconcile",
+                  contactorId,
+                  messages: history.messages,
+                });
+                await client.saveNow();
+              }
+            } catch (error) {
+              console.error("加载斜杠命令选中的会话失败:", error);
+            }
+          }
+        })().catch((error) => console.error("保存命令选中的会话失败:", error));
+      }
       if (!data?.segmentBoundary) void flushDeferredAdjustments(contactorId);
     }
   },
